@@ -6,7 +6,8 @@
       "Bash(nest --version)",
       "Bash(npm install)",
       "Bash(npm run start:dev)",
-      "Bash(npm run dev)"
+      "Bash(npm run dev)",
+      "Bash(git rm -r frontend/tv-frontend/)"
     ],
     "deny": [],
     "ask": []

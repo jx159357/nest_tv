@@ -45,7 +45,7 @@
 ### 前端技术栈
 - **框架**: Vue 3.x + TypeScript
 - **构建工具**: Vite 5.x
-- **样式**: UnoCSS + Tailwind Wind
+- **样式**: UnoCSS + Sass
 - **状态管理**: Pinia (计划中)
 - **路由**: Vue Router (计划中)
 - **HTTP客户端**: Axios (计划中)
@@ -81,7 +81,6 @@ nest_tv/
 │   ├── package.json          # 后端依赖配置
 │   └── .env                  # 环境变量配置
 ├── frontend/                   # 前端 Vue3 项目
-│   └── tv-frontend/
 │       ├── src/
 │       │   ├── components/      # Vue 组件
 │       │   ├── views/           # 页面视图
@@ -156,7 +155,7 @@ npm run start:dev
 
 ### 4. 启动前端项目
 ```bash
-cd frontend/tv-frontend
+cd frontend
 npm install
 npm run dev
 ```
@@ -286,7 +285,7 @@ npm run test:cov
 ### 前端测试（计划中）
 ```bash
 # 单元测试
-cd frontend/tv-frontend
+cd frontend
 npm run test
 
 # 端到端测试
@@ -332,7 +331,7 @@ npx tsc --noEmit
 #### 4. 前端启动失败
 ```bash
 # 清理依赖并重新安装
-cd frontend/tv-frontend
+cd frontend
 rm -rf node_modules package-lock.json
 npm install
 
