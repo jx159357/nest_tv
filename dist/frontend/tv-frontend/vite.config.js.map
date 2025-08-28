@@ -1,1 +1,0 @@
-{"version":3,"file":"vite.config.js","sourceRoot":"","sources":["../../../frontend/tv-frontend/vite.config.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,YAAY,EAAE,MAAM,MAAM,CAAA;AACnC,OAAO,GAAG,MAAM,oBAAoB,CAAA;AACpC,OAAO,MAAM,MAAM,aAAa,CAAA;AAGhC,eAAe,YAAY,CAAC;IAC1B,OAAO,EAAE;QACP,GAAG,EAAE;QACL,MAAM,EAAE;KACT;CACF,CAAC,CAAA"}
