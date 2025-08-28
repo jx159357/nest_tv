@@ -4,6 +4,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { RedisModule } from './redis/redis.module';
 import { UserModule } from './users/user.module';
 import { AuthModule } from './auth/auth.module';
+import { MediaResourceModule } from './media/media.module';
+import { PlaySourceModule } from './play-sources/play-source.module';
+import { WatchHistoryModule } from './watch-history/watch-history.module';
 import { User } from './entities/user.entity';
 import { MediaResource } from './entities/media-resource.entity';
 import { PlaySource } from './entities/play-source.entity';
@@ -44,6 +47,15 @@ import { AppService } from './app.service';
     
     // 认证模块 - JWT令牌认证
     forwardRef(() => AuthModule),
+    
+    // 影视资源模块 - 影视资源管理
+    MediaResourceModule,
+    
+    // 播放源模块 - 播放源管理
+    PlaySourceModule,
+    
+    // 观看历史模块 - 观看历史管理
+    WatchHistoryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

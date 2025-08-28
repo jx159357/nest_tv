@@ -2,6 +2,8 @@ import { User } from './user.entity';
 import { MediaResource } from './media-resource.entity';
 export declare class WatchHistory {
     id: number;
+    currentTime: number;
+    duration?: number;
     progress?: {
         currentTime: number;
         duration: number;

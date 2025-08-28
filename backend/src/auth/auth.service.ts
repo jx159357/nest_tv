@@ -16,14 +16,18 @@ export class AuthService {
 
   /**
    * 验证用户
-   * @param username 用户名
+   * @param identifier 用户名或邮箱
    * @param pass 密码
    * @returns 用户信息或null
    */
-  async validateUser(username: string, pass: string): Promise<any> {
-    // 这里应该调用UserService来验证用户
-    // 为了简化示例，我们直接返回null
-    return null;
+  async validateUser(identifier: string, pass: string): Promise<any> {
+    try {
+      // 调用UserService的登录方法来验证用户
+      const result = await this.userService.login({ identifier, password: pass });
+      return result.user;
+    } catch (error) {
+      return null;
+    }
   }
 
   /**

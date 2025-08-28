@@ -15,6 +15,8 @@ const user_entity_1 = require("./user.entity");
 const media_resource_entity_1 = require("./media-resource.entity");
 let WatchHistory = class WatchHistory {
     id;
+    currentTime;
+    duration;
     progress;
     watchDuration;
     isCompleted;
@@ -35,6 +37,14 @@ __decorate([
     (0, typeorm_1.PrimaryGeneratedColumn)(),
     __metadata("design:type", Number)
 ], WatchHistory.prototype, "id", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: 0 }),
+    __metadata("design:type", Number)
+], WatchHistory.prototype, "currentTime", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Number)
+], WatchHistory.prototype, "duration", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'json', nullable: true }),
     __metadata("design:type", Object)

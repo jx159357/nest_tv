@@ -5,6 +5,8 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  Body,
+  HttpException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
@@ -42,5 +44,24 @@ export class AuthController {
   @Post('profile')
   getProfile(@Request() req) {
     return req.user;
+  }
+
+  /**
+   * 简化登录接口（直接使用body参数）
+   * @param loginData 登录数据
+   * @returns JWT令牌信息
+   */
+  @Post('simple-login')
+  @HttpCode(HttpStatus.OK)
+  async simpleLogin(@Body() loginData: { identifier: string; password: string }) {
+    // 这里直接调用UserService来验证用户
+    // 为了简化，我们暂时使用AuthService中的validateUser方法
+    const user = await this.authService.validateUser(loginData.identifier, loginData.password);
+    
+    if (!user) {
+      throw new HttpException('用户名或密码错误', HttpStatus.UNAUTHORIZED);
+    }
+
+    return this.authService.login(user);
   }
 }

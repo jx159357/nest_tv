@@ -28,6 +28,13 @@ let AuthController = class AuthController {
     getProfile(req) {
         return req.user;
     }
+    async simpleLogin(loginData) {
+        const user = await this.authService.validateUser(loginData.identifier, loginData.password);
+        if (!user) {
+            throw new common_1.HttpException('用户名或密码错误', common_1.HttpStatus.UNAUTHORIZED);
+        }
+        return this.authService.login(user);
+    }
 };
 exports.AuthController = AuthController;
 __decorate([
@@ -47,6 +54,14 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "getProfile", null);
+__decorate([
+    (0, common_1.Post)('simple-login'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "simpleLogin", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService])

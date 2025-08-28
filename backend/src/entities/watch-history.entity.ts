@@ -11,6 +11,12 @@ export class WatchHistory {
   @PrimaryGeneratedColumn()
   id: number; // 观看记录ID，自增主键
 
+  @Column({ default: 0 })
+  currentTime: number; // 当前播放时间（秒）
+
+  @Column({ nullable: true })
+  duration?: number;    // 总时长（秒）
+
   @Column({ type: 'json', nullable: true })
   progress?: { // 观看进度
     currentTime: number; // 当前播放时间（秒）

@@ -20,8 +20,14 @@ let AuthService = class AuthService {
         this.userService = userService;
         this.jwtService = jwtService;
     }
-    async validateUser(username, pass) {
-        return null;
+    async validateUser(identifier, pass) {
+        try {
+            const result = await this.userService.login({ identifier, password: pass });
+            return result.user;
+        }
+        catch (error) {
+            return null;
+        }
     }
     async login(user) {
         const payload = {

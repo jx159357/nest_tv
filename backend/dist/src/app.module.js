@@ -13,6 +13,9 @@ const typeorm_1 = require("@nestjs/typeorm");
 const redis_module_1 = require("./redis/redis.module");
 const user_module_1 = require("./users/user.module");
 const auth_module_1 = require("./auth/auth.module");
+const media_module_1 = require("./media/media.module");
+const play_source_module_1 = require("./play-sources/play-source.module");
+const watch_history_module_1 = require("./watch-history/watch-history.module");
 const user_entity_1 = require("./entities/user.entity");
 const media_resource_entity_1 = require("./entities/media-resource.entity");
 const play_source_entity_1 = require("./entities/play-source.entity");
@@ -47,6 +50,9 @@ exports.AppModule = AppModule = __decorate([
             redis_module_1.RedisModule,
             user_module_1.UserModule,
             (0, common_1.forwardRef)(() => auth_module_1.AuthModule),
+            media_module_1.MediaResourceModule,
+            play_source_module_1.PlaySourceModule,
+            watch_history_module_1.WatchHistoryModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
