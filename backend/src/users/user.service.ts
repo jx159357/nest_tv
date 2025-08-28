@@ -63,16 +63,41 @@ export class UserService {
    * @returns JWT令牌和用户信息
    */
   async login(loginUserDto: LoginUserDto): Promise<any> {
-    // 根据用户名或邮箱查找用户
+    // 根据用户名或邮箱查找用户，并显式选择password字段
     const user = await this.userRepository.findOne({
       where: [
         { username: loginUserDto.identifier },
         { email: loginUserDto.identifier },
       ],
+      select: [
+        'id',
+        'username',
+        'email',
+        'phone',
+        'nickname',
+        'role',
+        'isActive',
+        'avatar',
+        'lastLoginAt',
+        'createdAt',
+        'updatedAt',
+        'password'
+      ]
     });
 
     // 如果用户不存在或密码错误，抛出异常
-    if (!user || !(await bcrypt.compare(loginUserDto.password, user.password))) {
+    if (!user) {
+      throw new UnauthorizedException('用户名或密码错误');
+    }
+
+    // 检查用户密码是否存在
+    if (!user.password) {
+      throw new UnauthorizedException('用户密码未设置，请联系管理员');
+    }
+
+    // 验证密码
+    const isPasswordValid = await bcrypt.compare(loginUserDto.password, user.password);
+    if (!isPasswordValid) {
       throw new UnauthorizedException('用户名或密码错误');
     }
 
@@ -81,8 +106,8 @@ export class UserService {
     await this.userRepository.save(user);
 
     // 生成JWT令牌
-    const payload = { 
-      sub: user.id, 
+    const payload = {
+      sub: user.id,
       username: user.username,
       email: user.email,
       role: user.role,

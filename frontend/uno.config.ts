@@ -1,32 +1,26 @@
-import { defineConfig, presetUno, presetIcons } from 'unocss'
+import { defineConfig, presetAttributify, presetIcons, presetUno } from 'unocss'
 
 export default defineConfig({
   presets: [
-    presetUno(), // 默认UnoCSS预设
-    presetIcons({
-      scale: 1.2,
-      warn: true,
-    }), // 图标预设
+    presetUno(),
+    presetAttributify(),
+    presetIcons(),
   ],
   theme: {
     colors: {
-      // 自定义主题颜色
-      primary: '#007AFF',
-      secondary: '#34C759',
-      accent: '#FF9500',
-      danger: '#FF3B30',
-      warning: '#FFCC00',
-      info: '#5AC8FA',
-      light: '#F8F9FA',
-      dark: '#212529',
-    }
+      primary: {
+        50: '#eff6ff',
+        500: '#3b82f6',
+        600: '#2563eb',
+        700: '#1d4ed8',
+      },
+    },
   },
   shortcuts: {
-    // 自定义快捷类
-    'btn': 'px-4 py-2 rounded font-medium transition-all duration-200',
-    'btn-primary': 'btn bg-primary text-white hover:bg-blue-600',
-    'btn-secondary': 'btn bg-secondary text-white hover:bg-green-600',
-    'card': 'bg-white rounded-lg shadow-md p-4',
-    'container': 'max-w-6xl mx-auto px-4',
-  }
+    'btn': 'px-4 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2',
+    'btn-primary': 'btn bg-primary-500 text-white hover:bg-primary-600 focus:ring-primary-500',
+    'btn-secondary': 'btn bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500',
+    'card': 'bg-white rounded-lg shadow-sm border border-gray-200',
+    'input': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500',
+  },
 })

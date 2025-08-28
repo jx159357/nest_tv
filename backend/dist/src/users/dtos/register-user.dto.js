@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RegisterUserDto = void 0;
 const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
 class RegisterUserDto {
     username;
     password;
@@ -27,8 +28,8 @@ __decorate([
 ], RegisterUserDto.prototype, "username", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)({ message: '密码不能为空' }),
-    (0, class_validator_1.IsString)({ message: '密码必须是字符串' }),
-    (0, class_validator_1.MinLength)(6, { message: '密码长度不能少于6个字符' }),
+    (0, class_transformer_1.Transform)(({ value }) => String(value).trim()),
+    (0, class_validator_1.Matches)(/^.{6,}$/, { message: '密码长度不能少于6个字符' }),
     __metadata("design:type", String)
 ], RegisterUserDto.prototype, "password", void 0);
 __decorate([

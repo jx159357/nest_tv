@@ -1,3 +1,11 @@
+/*
+ * @Descripttion:
+ * @version:
+ * @Author: jxwd
+ * @Date: 2025-08-28 11:23:26
+ * @LastEditors: jxwd
+ * @LastEditTime: 2025-08-28 17:40:09
+ */
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToMany, JoinTable } from 'typeorm';
 import { WatchHistory } from './watch-history.entity';
 import { MediaResource } from './media-resource.entity';
@@ -15,7 +23,7 @@ export class User {
   @Column({ unique: true, length: 50 })
   username: string; // 用户名，唯一
 
-  @Column({ select: false }) // 查询时默认不返回密码
+  @Column()
   password: string; // 密码，加密存储
 
   @Column({ unique: true, length: 100 })

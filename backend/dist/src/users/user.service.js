@@ -85,8 +85,29 @@ let UserService = class UserService {
                 { username: loginUserDto.identifier },
                 { email: loginUserDto.identifier },
             ],
+            select: [
+                'id',
+                'username',
+                'email',
+                'phone',
+                'nickname',
+                'role',
+                'isActive',
+                'avatar',
+                'lastLoginAt',
+                'createdAt',
+                'updatedAt',
+                'password'
+            ]
         });
-        if (!user || !(await bcrypt.compare(loginUserDto.password, user.password))) {
+        if (!user) {
+            throw new common_1.UnauthorizedException('用户名或密码错误');
+        }
+        if (!user.password) {
+            throw new common_1.UnauthorizedException('用户密码未设置，请联系管理员');
+        }
+        const isPasswordValid = await bcrypt.compare(loginUserDto.password, user.password);
+        if (!isPasswordValid) {
             throw new common_1.UnauthorizedException('用户名或密码错误');
         }
         user.lastLoginAt = new Date();
