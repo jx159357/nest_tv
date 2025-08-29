@@ -10,6 +10,15 @@
           
           <div class="flex items-center space-x-4">
             <template v-if="authStore.isAuthenticated">
+              <router-link to="/crawler" class="text-gray-700 hover:text-gray-900">
+                爬虫管理
+              </router-link>
+              <router-link to="/play-sources" class="text-gray-700 hover:text-gray-900">
+                播放源管理
+              </router-link>
+              <router-link to="/recommendations" class="text-gray-700 hover:text-gray-900">
+                为你推荐
+              </router-link>
               <router-link to="/profile" class="text-gray-700 hover:text-gray-900">
                 个人中心
               </router-link>

@@ -1,3 +1,11 @@
+/*
+ * @Descripttion:
+ * @version:
+ * @Author: jxwd
+ * @Date: 2025-08-28 12:04:16
+ * @LastEditors: jxwd
+ * @LastEditTime: 2025-08-29 16:42:58
+ */
 import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../entities/user.entity';
@@ -15,7 +23,7 @@ import { AuthModule } from '../auth/auth.module';
   imports: [
     // 导入TypeORM模块，用于数据库操作
     TypeOrmModule.forFeature([User]),
-    
+
     // 导入JWT模块，用于JWT令牌生成和验证
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -25,7 +33,7 @@ import { AuthModule } from '../auth/auth.module';
       }),
       inject: [ConfigService],
     }),
-    
+
     // 导入认证模块，使用forwardRef解决循环依赖
     forwardRef(() => AuthModule),
   ],

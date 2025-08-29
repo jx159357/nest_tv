@@ -1,6 +1,7 @@
 import { User } from './user.entity';
 import { WatchHistory } from './watch-history.entity';
 import { PlaySource } from './play-source.entity';
+import { Recommendation } from './recommendation.entity';
 export declare enum MediaType {
     MOVIE = "movie",
     TV_SERIES = "tv_series",
@@ -38,4 +39,5 @@ export declare class MediaResource {
     favorites: User[];
     watchHistory: WatchHistory[];
     playSources: PlaySource[];
+    recommendations: Recommendation[];
 }

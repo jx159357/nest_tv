@@ -7,7 +7,21 @@
       "Bash(npm install)",
       "Bash(npm run start:dev)",
       "Bash(npm run dev)",
-      "Bash(git rm -r frontend/tv-frontend/)"
+      "Bash(git rm -r frontend/tv-frontend/)",
+      "Bash(curl -X GET http://localhost:3334/crawler/targets -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjMsInVzZXJuYW1lIjoidGVzdHVzZXIiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJyb2xlIjoidXNlciIsImlhdCI6MTc1NjQzNjkwOSwiZXhwIjoxNzU2NTIzMzA5fQ.wRRbF06Tzue1lwGaIUAyuVJXYnhVuEUP5iqUwmNB7Gk\")",
+      "Bash(curl -X GET http://localhost:3334/media -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjMsInVzZXJuYW1lIjoidGVzdHVzZXIiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJyb2xlIjoidXNlciIsImlhdCI6MTc1NjQzNjkwOSwiZXhwIjoxNzU2NTIzMzA5fQ.wRRbF06Tzue1lwGaIUAyuVJXYnhVuEUP5iqUwmNB7Gk\")",
+      "Bash(curl -X POST http://localhost:3334/media -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjMsInVzZXJuYW1lIjoidGVzdHVzZXIiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJyb2xlIjoidXNlciIsImlhdCI6MTc1NjQzNjkwOSwiZXhwIjoxNzU2NTIzMzA5fQ.wRRbF06Tzue1lwGaIUAyuVJXYnhVuEUP5iqUwmNB7Gk\" -H \"Content-Type: application/json\" -d \"{\"\"title\"\":\"\"阿凡达2：水之道\"\",\"\"description\"\":\"\"杰克·萨利再次回归，继续在潘多拉星球上的冒险故事。\"\",\"\"type\"\":\"\"movie\"\",\"\"director\"\":\"\"詹姆斯·卡梅隆\"\",\"\"actors\"\":\"\"萨姆·沃辛顿,佐伊·索尔达娜,西格妮·韦弗\"\",\"\"genres\"\":[\"\"科幻\"\",\"\"冒险\"\",\"\"动作\"\"],\"\"releaseDate\"\":\"\"2022-12-16T00:00:00.000Z\"\",\"\"quality\"\":\"\"hd\"\",\"\"poster\"\":\"\"https://example.com/avatar2-poster.jpg\"\",\"\"backdrop\"\":\"\"https://example.com/avatar2-backdrop.jpg\"\",\"\"rating\"\":8.5,\"\"source\"\":\"\"示例数据\"\",\"\"episodeCount\"\":1,\"\"downloadUrls\"\":[\"\"https://example.com/avatar2-torrent.mp4\"\"]}\")",
+      "Bash(curl -X GET \"http://localhost:3334/media?type=tv_series\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjMsInVzZXJuYW1lIjoidGVzdHVzZXIiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJyb2xlIjoidXNlciIsImlhdCI6MTc1NjQzNjkwOSwiZXhwIjoxNzU2NTIzMzA5fQ.wRRbF06Tzue1lwGaIUAyuVJXYnhVuEUP5iqUwmNB7Gk\")",
+      "Bash(curl -X GET \"http://localhost:3334/media?minRating=8.5\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjMsInVzZXJuYW1lIjoidGVzdHVzZXIiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJyb2xlIjoidXNlciIsImlhdCI6MTc1NjQzNjkwOSwiZXhwIjoxNzU2NTIzMzA5fQ.wRRbF06Tzue1lwGaIUAyuVJXYnhVuEUP5iqUwmNB7Gk\")",
+      "Bash(curl -X GET \"http://localhost:3334/media/popular\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjMsInVzZXJuYW1lIjoidGVzdHVzZXIiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJyb2xlIjoidXNlciIsImlhdCI6MTc1NjQzNjkwOSwiZXhwIjoxNzU2NTIzMzA5fQ.wRRbF06Tzue1lwGaIUAyuVJXYnhVuEUP5iqUwmNB7Gk\")",
+      "Bash(curl -X POST http://localhost:3334/media/2/favorites -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjMsInVzZXJuYW1lIjoidGVzdHVzZXIiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJyb2xlIjoidXNlciIsImlhdCI6MTc1NjQzNjkwOSwiZXhwIjoxNzU2NTIzMzA5fQ.wRRbF06Tzue1lwGaIUAyuVJXYnhVuEUP5iqUwmNB7Gk\")",
+      "Bash(curl -X POST http://localhost:3334/play-sources -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjMsInVzZXJuYW1lIjoidGVzdHVzZXIiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJyb2xlIjoidXNlciIsImlhdCI6MTc1NjQzNjkwOSwiZXhwIjoxNzU2NTIzMzA5fQ.wRRbF06Tzue1lwGaIUAyuVJXYnhVuEUP5iqUwmNB7Gk\" -H \"Content-Type: application/json\" -d \"{\"\"mediaResourceId\"\":2,\"\"type\"\":\"\"online\"\",\"\"name\"\":\"\"高清在线播放\"\",\"\"url\"\":\"\"https://example.com/dark-knight-720p.mp4\"\",\"\"resolution\"\":\"\"720p\"\",\"\"language\"\":\"\"中文\"\",\"\"subtitle\"\":\"\"https://example.com/dark-knight.srt\"\",\"\"priority\"\":1,\"\"isActive\"\":true,\"\"status\"\":\"\"active\"\",\"\"playCount\"\":0}\")",
+      "Bash(curl -X GET \"http://localhost:3334/play-sources/media/2\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjMsInVzZXJuYW1lIjoidGVzdHVzZXIiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJyb2xlIjoidXNlciIsImlhdCI6MTc1NjQzNjkwOSwiZXhwIjoxNzU2NTIzMzA5fQ.wRRbF06Tzue1lwGaIUAyuVJXYnhVuEUP5iqUwmNB7Gk\")",
+      "Bash(curl -X GET \"http://localhost:3334/play-sources/media/2/best\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjMsInVzZXJuYW1lIjoidGVzdHVzZXIiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJyb2xlIjoidXNlciIsImlhdCI6MTc1NjQzNjkwOSwiZXhwIjoxNzU2NTIzMzA5fQ.wRRbF06Tzue1lwGaIUAyuVJXYnhVuEUP5iqUwmNB7Gk\")",
+      "Bash(taskkill:*)",
+      "Bash(curl:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

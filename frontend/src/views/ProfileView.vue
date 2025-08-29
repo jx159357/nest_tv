@@ -50,6 +50,14 @@
                 <span class="text-gray-600">最后登录:</span>
                 <span class="text-gray-900">{{ formatDate(authStore.user?.lastLoginAt) }}</span>
               </div>
+              <div class="pt-4">
+                <router-link 
+                  to="/watch-history" 
+                  class="w-full inline-flex justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  查看完整观看历史
+                </router-link>
+              </div>
             </div>
           </div>
         </div>

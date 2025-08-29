@@ -2,6 +2,7 @@ import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateCol
 import { User } from './user.entity';
 import { WatchHistory } from './watch-history.entity';
 import { PlaySource } from './play-source.entity';
+import { Recommendation } from './recommendation.entity';
 
 /**
  * 影视分类枚举
@@ -102,4 +103,8 @@ export class MediaResource {
   // 关联播放源（一对多）
   @OneToMany(() => PlaySource, playSource => playSource.mediaResource)
   playSources: PlaySource[];
+  
+  // 关联推荐记录（一对多）
+  @OneToMany(() => Recommendation, recommendation => recommendation.mediaResource)
+  recommendations: Recommendation[];
 }

@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
   UsePipes,
   ValidationPipe,
@@ -15,7 +16,7 @@ import { RegisterUserDto } from './dtos/register-user.dto';
 import { LoginUserDto } from './dtos/login-user.dto';
 import { UserResponseDto } from './dtos/user-response.dto';
 import { JwtResponseDto } from '../auth/dtos/jwt-response.dto';
-import { LocalAuthGuard } from '../auth/local-auth.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 /**
  * 用户控制器
@@ -58,8 +59,8 @@ export class UserController {
    * @param req 请求对象
    * @returns 当前用户信息
    */
-  @Post('profile')
-  @UseGuards(LocalAuthGuard)
+  @Get('profile')
+  @UseGuards(JwtAuthGuard)
   getProfile(@Request() req) {
     return req.user;
   }

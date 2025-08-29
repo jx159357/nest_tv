@@ -34,6 +34,30 @@ const router = createRouter({
       name: 'profile',
       component: () => import('../views/ProfileView.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/crawler',
+      name: 'crawler',
+      component: () => import('../views/CrawlerView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/play-sources',
+      name: 'play-sources',
+      component: () => import('../views/PlaySourcesView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/watch-history',
+      name: 'watch-history',
+      component: () => import('../views/WatchHistoryView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/recommendations',
+      name: 'recommendations',
+      component: () => import('../views/RecommendationsView.vue'),
+      meta: { requiresAuth: true }
     }
   ]
 })

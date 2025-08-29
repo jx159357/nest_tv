@@ -62,6 +62,30 @@ let MediaResourceController = class MediaResourceController {
     async softDelete(id) {
         return await this.mediaResourceService.softDelete(id);
     }
+    async addToFavorites(mediaResourceId, req) {
+        const userId = req.user.id;
+        return await this.mediaResourceService.addToFavorites(userId, mediaResourceId);
+    }
+    async removeFromFavorites(mediaResourceId, req) {
+        const userId = req.user.id;
+        return await this.mediaResourceService.removeFromFavorites(userId, mediaResourceId);
+    }
+    async checkFavoriteStatus(mediaResourceId, req) {
+        const userId = req.user.id;
+        const isFavorited = await this.mediaResourceService.isFavoritedByUser(userId, mediaResourceId);
+        return { isFavorited };
+    }
+    async getUserFavorites(req, page = 1, limit = 10) {
+        const userId = req.user.id;
+        return await this.mediaResourceService.getUserFavorites(userId, page, limit);
+    }
+    async rateResource(mediaResourceId, rating, req) {
+        const userId = req.user.id;
+        return await this.mediaResourceService.rateResource(userId, mediaResourceId, rating);
+    }
+    async getRatingStats(mediaResourceId) {
+        return await this.mediaResourceService.getRatingStats(mediaResourceId);
+    }
 };
 exports.MediaResourceController = MediaResourceController;
 __decorate([
@@ -194,6 +218,80 @@ __decorate([
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], MediaResourceController.prototype, "softDelete", null);
+__decorate([
+    (0, common_1.Post)(':id/favorites'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, swagger_1.ApiOperation)({ summary: '添加影视资源到收藏' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: '影视资源ID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '收藏成功' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", Promise)
+], MediaResourceController.prototype, "addToFavorites", null);
+__decorate([
+    (0, common_1.Delete)(':id/favorites'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, swagger_1.ApiOperation)({ summary: '从收藏中移除影视资源' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: '影视资源ID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '取消收藏成功' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", Promise)
+], MediaResourceController.prototype, "removeFromFavorites", null);
+__decorate([
+    (0, common_1.Get)(':id/favorites/status'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, swagger_1.ApiOperation)({ summary: '检查是否已收藏影视资源' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: '影视资源ID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '返回收藏状态', type: Object }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", Promise)
+], MediaResourceController.prototype, "checkFavoriteStatus", null);
+__decorate([
+    (0, common_1.Get)('my-favorites'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, swagger_1.ApiOperation)({ summary: '获取用户收藏列表' }),
+    (0, swagger_1.ApiQuery)({ name: 'page', required: false, type: Number, description: '页码', default: 1 }),
+    (0, swagger_1.ApiQuery)({ name: 'limit', required: false, type: Number, description: '每页数量', default: 10 }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '成功获取收藏列表' }),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)('page')),
+    __param(2, (0, common_1.Query)('limit')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Number, Number]),
+    __metadata("design:returntype", Promise)
+], MediaResourceController.prototype, "getUserFavorites", null);
+__decorate([
+    (0, common_1.Patch)(':id/rate'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, swagger_1.ApiOperation)({ summary: '用户评分影视资源' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: '影视资源ID' }),
+    (0, swagger_1.ApiQuery)({ name: 'rating', required: true, type: Number, description: '评分(0-10)' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '评分成功', type: media_resource_entity_1.MediaResource }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('rating')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Number, Object]),
+    __metadata("design:returntype", Promise)
+], MediaResourceController.prototype, "rateResource", null);
+__decorate([
+    (0, common_1.Get)(':id/rating/stats'),
+    (0, swagger_1.ApiOperation)({ summary: '获取影视资源评分统计' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: '影视资源ID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '成功获取评分统计', type: Object }),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], MediaResourceController.prototype, "getRatingStats", null);
 exports.MediaResourceController = MediaResourceController = __decorate([
     (0, swagger_1.ApiTags)('影视资源'),
     (0, common_1.Controller)('media'),

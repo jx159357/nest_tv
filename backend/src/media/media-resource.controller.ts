@@ -10,6 +10,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Req,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { MediaResourceService } from './media-resource.service';
@@ -136,5 +137,76 @@ export class MediaResourceController {
   @ApiResponse({ status: 200, description: '影视资源软删除成功', type: MediaResource })
   async softDelete(@Param('id') id: number): Promise<MediaResource> {
     return await this.mediaResourceService.softDelete(id);
+  }
+
+  // ===== 收藏和评分功能 =====
+
+  @Post(':id/favorites')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '添加影视资源到收藏' })
+  @ApiParam({ name: 'id', description: '影视资源ID' })
+  @ApiResponse({ status: 200, description: '收藏成功' })
+  async addToFavorites(@Param('id') mediaResourceId: number, @Req() req): Promise<void> {
+    const userId = req.user.id;
+    return await this.mediaResourceService.addToFavorites(userId, mediaResourceId);
+  }
+
+  @Delete(':id/favorites')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '从收藏中移除影视资源' })
+  @ApiParam({ name: 'id', description: '影视资源ID' })
+  @ApiResponse({ status: 200, description: '取消收藏成功' })
+  async removeFromFavorites(@Param('id') mediaResourceId: number, @Req() req): Promise<void> {
+    const userId = req.user.id;
+    return await this.mediaResourceService.removeFromFavorites(userId, mediaResourceId);
+  }
+
+  @Get(':id/favorites/status')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '检查是否已收藏影视资源' })
+  @ApiParam({ name: 'id', description: '影视资源ID' })
+  @ApiResponse({ status: 200, description: '返回收藏状态', type: Object })
+  async checkFavoriteStatus(@Param('id') mediaResourceId: number, @Req() req) {
+    const userId = req.user.id;
+    const isFavorited = await this.mediaResourceService.isFavoritedByUser(userId, mediaResourceId);
+    return { isFavorited };
+  }
+
+  @Get('my-favorites')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '获取用户收藏列表' })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: '页码', default: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: '每页数量', default: 10 })
+  @ApiResponse({ status: 200, description: '成功获取收藏列表' })
+  async getUserFavorites(
+    @Req() req,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    const userId = req.user.id;
+    return await this.mediaResourceService.getUserFavorites(userId, page, limit);
+  }
+
+  @Patch(':id/rate')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '用户评分影视资源' })
+  @ApiParam({ name: 'id', description: '影视资源ID' })
+  @ApiQuery({ name: 'rating', required: true, type: Number, description: '评分(0-10)' })
+  @ApiResponse({ status: 200, description: '评分成功', type: MediaResource })
+  async rateResource(
+    @Param('id') mediaResourceId: number,
+    @Query('rating') rating: number,
+    @Req() req,
+  ): Promise<MediaResource> {
+    const userId = req.user.id;
+    return await this.mediaResourceService.rateResource(userId, mediaResourceId, rating);
+  }
+
+  @Get(':id/rating/stats')
+  @ApiOperation({ summary: '获取影视资源评分统计' })
+  @ApiParam({ name: 'id', description: '影视资源ID' })
+  @ApiResponse({ status: 200, description: '成功获取评分统计', type: Object })
+  async getRatingStats(@Param('id') mediaResourceId: number) {
+    return await this.mediaResourceService.getRatingStats(mediaResourceId);
   }
 }

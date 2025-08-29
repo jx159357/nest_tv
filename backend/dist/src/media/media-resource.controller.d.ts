@@ -24,4 +24,24 @@ export declare class MediaResourceController {
     update(id: number, updateMediaResourceDto: UpdateMediaResourceDto): Promise<MediaResource>;
     remove(id: number): Promise<void>;
     softDelete(id: number): Promise<MediaResource>;
+    addToFavorites(mediaResourceId: number, req: any): Promise<void>;
+    removeFromFavorites(mediaResourceId: number, req: any): Promise<void>;
+    checkFavoriteStatus(mediaResourceId: number, req: any): Promise<{
+        isFavorited: boolean;
+    }>;
+    getUserFavorites(req: any, page?: number, limit?: number): Promise<{
+        data: MediaResource[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    }>;
+    rateResource(mediaResourceId: number, rating: number, req: any): Promise<MediaResource>;
+    getRatingStats(mediaResourceId: number): Promise<{
+        averageRating: number;
+        totalRatings: number;
+        ratingDistribution: {
+            [key: string]: number;
+        };
+    }>;
 }

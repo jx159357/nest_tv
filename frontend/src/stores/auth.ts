@@ -89,7 +89,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (!token.value) return
 
     try {
-      const response = await api.post('/users/profile')
+      const response = await api.get('/users/profile')
       user.value = response.data
     } catch (error) {
       console.error('获取用户信息失败:', error)

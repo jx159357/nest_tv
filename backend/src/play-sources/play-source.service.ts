@@ -204,12 +204,22 @@ export class PlaySourceService {
     const playSource = await this.findById(id);
     
     try {
-      // 这里应该实现实际的链接验证逻辑
-      // 可以使用HTTP请求检查链接是否可访问
-      // 为了简化，我们假设链接都是有效的
-      const isValid = true; // 实际应用中需要实现验证逻辑
+      // 实现实际的链接验证逻辑
+      // 使用HTTP HEAD请求检查链接是否可访问
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
       
-      await this.updateStatus(id, isValid ? PlaySourceStatus.ACTIVE : PlaySourceStatus.ERROR);
+      const response = await fetch(playSource.url, {
+        method: 'HEAD',
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      
+      const isValid = response.ok;
+      const status = isValid ? PlaySourceStatus.ACTIVE : PlaySourceStatus.ERROR;
+      
+      await this.updateStatus(id, status);
       return isValid;
     } catch (error) {
       await this.updateStatus(id, PlaySourceStatus.ERROR);

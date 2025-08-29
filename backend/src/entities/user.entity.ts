@@ -10,6 +10,7 @@ import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateCol
 import { WatchHistory } from './watch-history.entity';
 import { MediaResource } from './media-resource.entity';
 import { PlaySource } from './play-source.entity';
+import { Recommendation } from './recommendation.entity';
 
 /**
  * 用户实体类
@@ -66,4 +67,8 @@ export class User {
   @ManyToMany(() => PlaySource, playSource => playSource.configuredBy)
   @JoinTable()
   configuredPlaySources: PlaySource[];
+  
+  // 关联推荐记录（一对多）
+  @OneToMany(() => Recommendation, recommendation => recommendation.user)
+  recommendations: Recommendation[];
 }

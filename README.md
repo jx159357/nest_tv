@@ -11,26 +11,28 @@
 - ✅ 用户信息管理
 
 ### 📺 影视资源管理
-- 🚧 影视信息爬取（开发中）
-- 🚧 资源存储和分类（开发中）
-- 🚧 支持多种影视类型（电影、电视剧、综艺、动漫、纪录片）
-- 🚧 评分和收藏功能（开发中）
+- ✅ 影视信息爬取（基础功能完成）
+- ✅ 资源存储和分类（完成）
+- ✅ 支持多种影视类型（电影、电视剧、综艺、动漫、纪录片）
+- ✅ 评分和收藏功能（完成）
 
 ### 🎥 播放源管理
-- 🚧 多播放源聚合（开发中）
-- 🚧 播放源验证和优先级管理（开发中）
-- 🚧 支持在线播放、下载、流媒体等多种播放方式（开发中）
+- ✅ 多播放源聚合（已完成）
+- ✅ 播放源验证和优先级管理（已完成）
+- ✅ 支持在线播放、下载、流媒体等多种播放方式（已完成）
 
 ### 📊 观看历史
 - 🚧 观看进度记录（开发中）
 - 🚧 播放历史管理（开发中）
-- 🚧 个性化推荐（开发中）
+- ✅ 个性化推荐（已完成）
 
 ### 🌐 前端界面
-- 🚧 现代化 Vue3 + Vite 响应式界面（开发中）
-- 🚧 UnoCSS 原子化 CSS 框架（开发中）
-- 🚧 首页、搜索、分类浏览（开发中）
-- 🚧 详情页和播放器（开发中）
+- ✅ 现代化 Vue3 + Vite 响应式界面（已完成）
+- ✅ UnoCSS 原子化 CSS 框架（已完成）
+- ✅ 首页、搜索、分类浏览（已完成）
+- ✅ 详情页和播放器（已完成）
+- ✅ 播放源管理界面（已完成）
+- ✅ 爬虫管理界面（已完成）
 
 ## 🏗️ 技术架构
 
@@ -73,6 +75,17 @@ nest_tv/
 │   │   │   └── user.module.ts
 │   │   ├── redis/             # Redis 缓存模块
 │   │   │   └── redis.module.ts
+│   │   ├── crawler/          # 爬虫模块
+│   │   │   ├── crawler.service.ts
+│   │   │   ├── crawler.controller.ts
+│   │   │   ├── crawler.module.ts
+│   │   │   └── dtos/
+│   │   │       └── crawl-request.dto.ts
+│   │   ├── recommendations/  # 个性化推荐模块
+│   │   │   ├── recommendation.service.ts
+│   │   │   ├── recommendation.controller.ts
+│   │   │   ├── recommendation.module.ts
+│   │   │   └── dtos/
 │   │   ├── app.module.ts     # 主应用模块
 │   │   └── main.ts           # 应用入口
 │   ├── docs/                  # 数据库设计文档
@@ -84,6 +97,16 @@ nest_tv/
 │       ├── src/
 │       │   ├── components/      # Vue 组件
 │       │   ├── views/           # 页面视图
+│       │   │   ├── HomeView.vue          # 首页
+│       │   │   ├── LoginView.vue         # 登录页
+│       │   │   ├── RegisterView.vue      # 注册页
+│       │   │   ├── MediaDetailView.vue   # 影视详情页
+│       │   │   ├── WatchView.vue         # 播放页
+│       │   │   ├── ProfileView.vue       # 个人中心页
+│       │   │   ├── CrawlerView.vue       # 爬虫管理页
+│       │   │   ├── PlaySourcesView.vue   # 播放源管理页
+│       │   │   ├── WatchHistoryView.vue  # 观看历史页
+│       │   │   └── RecommendationsView.vue # 个性化推荐页
 │       │   ├── stores/          # Pinia 状态管理
 │       │   ├── router/          # Vue Router 路由
 │       │   ├── utils/           # 工具函数
@@ -210,17 +233,119 @@ GET /media-resources/search?keyword=关键词
 GET /media-resources/category/:category
 ```
 
-### 播放源接口（开发中）
+### 爬虫资源接口 ✅
+```bash
+# 获取可用的爬虫目标列表
+GET /crawler/targets
+Authorization: Bearer <JWT_TOKEN>
+
+# 爬取单个资源
+POST /crawler/crawl
+Authorization: Bearer <JWT_TOKEN>
+Content-Type: application/json
+{
+  "targetName": "电影天堂",
+  "url": "https://example.com/movie/123"
+}
+
+# 批量爬取资源
+POST /crawler/batch-crawl
+Authorization: Bearer <JWT_TOKEN>
+Content-Type: application/json
+{
+  "targetName": "电影天堂",
+  "urls": ["https://example.com/movie/123", "https://example.com/movie/456"]
+}
+
+# 爬取并保存资源
+POST /crawler/crawl-and-save
+Authorization: Bearer <JWT_TOKEN>
+Content-Type: application/json
+{
+  "url": "https://example.com/movie/123",
+  "targetName": "电影天堂"
+}
+
+# 获取爬虫统计信息
+GET /crawler/stats
+Authorization: Bearer <JWT_TOKEN>
+
+# 测试爬虫目标连接
+GET /crawler/test-connection?targetName=电影天堂
+Authorization: Bearer <JWT_TOKEN>
+```
+
+### 播放源接口 ✅
 ```bash
 # 获取影视资源的播放源列表
-GET /play/sources/:mediaId
+GET /play-sources/media/:mediaId
+Authorization: Bearer <JWT_TOKEN>
+
+# 获取所有播放源（支持筛选和分页）
+GET /play-sources?page=1&limit=10&mediaResourceId=1&type=online
+Authorization: Bearer <JWT_TOKEN>
 
 # 添加播放源
-POST /play/sources
+POST /play-sources
+Authorization: Bearer <JWT_TOKEN>
+Content-Type: application/json
+{
+  "mediaResourceId": 1,
+  "type": "online",
+  "url": "https://example.com/play/123",
+  "resolution": "1080p",
+  "language": "中文",
+  "subtitleUrl": "https://example.com/subtitle.srt",
+  "priority": 1,
+  "isActive": true
+}
+
+# 更新播放源
+PATCH /play-sources/:id
+Authorization: Bearer <JWT_TOKEN>
+Content-Type: application/json
+{
+  "url": "https://example.com/play/456",
+  "priority": 2
+}
+
+# 删除播放源
+DELETE /play-sources/:id
+Authorization: Bearer <JWT_TOKEN>
 
 # 验证播放源有效性
-POST /play/sources/validate
+PATCH /play-sources/:id/validate
+Authorization: Bearer <JWT_TOKEN>
+
+# 获取最佳播放源
+GET /play-sources/media/:mediaId/best
+Authorization: Bearer <JWT_TOKEN>
 ```
+
+### 个性化推荐接口 ✅
+```bash
+# 获取用户的个性化推荐
+GET /recommendations/user/:userId?limit=10
+Authorization: Bearer <JWT_TOKEN>
+
+# 生成用户的个性化推荐
+POST /recommendations/generate/:userId
+Authorization: Bearer <JWT_TOKEN>
+Content-Type: application/json
+{
+  "limit": 10
+}
+
+# 获取热门推荐
+GET /recommendations/trending?limit=10
+
+# 获取编辑推荐
+GET /recommendations/editorial?limit=10
+
+# 获取推荐详情
+GET /recommendations/:id
+```
+
 
 ## 🗄️ 数据库设计
 
@@ -229,11 +354,14 @@ POST /play/sources/validate
 - **media_resources** - 影视资源表
 - **play_sources** - 播放源表
 - **watch_history** - 观看历史表
+- **recommendations** - 个性化推荐表
 
 ### 表关系说明
 - 一个用户可以收藏多个影视资源（多对多）
 - 一个影视资源可以有多个播放源（一对多）
 - 一个用户可以有多条观看历史（一对多）
+- 一个用户可以有多条推荐记录（一对多）
+- 一个影视资源可以出现在多条推荐记录中（一对多）
 
 详细设计请参考：[数据库设计文档](./docs/database-schema.md)
 
@@ -246,19 +374,20 @@ POST /play/sources/validate
 - [x] 前后端分离配置
 - [x] Redis和MySQL连接配置
 
-### 阶段二：核心功能（当前）
-- [ ] 影视资源模块开发
-- [ ] 播放源模块开发
-- [ ] 前端页面开发
-- [ ] 用户界面实现
-- [ ] API接口完善
+### 阶段二：核心功能（完成）
+- [x] 影视资源爬虫开发 ✅
+- [x] 影视资源模块开发 ✅
+- [x] 播放源模块开发 ✅
+- [x] 前端页面开发 ✅
+- [x] 用户界面实现 ✅
+- [x] API接口完善 ✅
 
-### 阶段三：高级功能（计划）
-- [ ] 影视资源爬虫开发
-- [ ] 播放源自动验证
-- [ ] 观看历史和进度管理
-- [ ] 个性化推荐系统
-- [ ] 后台管理系统
+### 阶段三：高级功能（当前）
+- [x] 播放源模块开发（已完成） ✅
+- [x] 前端页面开发（已完成） ✅
+- [ ] 观看历史和进度管理（进行中）
+- [x] 个性化推荐系统（已完成）
+- [ ] 后台管理系统（计划）
 
 ### 阶段四：优化和部署（计划）
 - [ ] 性能优化
@@ -375,4 +504,4 @@ npm run build
 
 ---
 
-*最后更新时间：2024年8月28日*
+*最后更新时间：2025年8月29日*

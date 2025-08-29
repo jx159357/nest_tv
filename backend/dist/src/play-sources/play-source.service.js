@@ -126,8 +126,16 @@ let PlaySourceService = class PlaySourceService {
     async validatePlaySource(id) {
         const playSource = await this.findById(id);
         try {
-            const isValid = true;
-            await this.updateStatus(id, isValid ? play_source_entity_1.PlaySourceStatus.ACTIVE : play_source_entity_1.PlaySourceStatus.ERROR);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            const response = await fetch(playSource.url, {
+                method: 'HEAD',
+                signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+            const isValid = response.ok;
+            const status = isValid ? play_source_entity_1.PlaySourceStatus.ACTIVE : play_source_entity_1.PlaySourceStatus.ERROR;
+            await this.updateStatus(id, status);
             return isValid;
         }
         catch (error) {

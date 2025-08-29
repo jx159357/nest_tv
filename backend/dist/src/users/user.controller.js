@@ -18,7 +18,7 @@ const user_service_1 = require("./user.service");
 const auth_service_1 = require("../auth/auth.service");
 const register_user_dto_1 = require("./dtos/register-user.dto");
 const login_user_dto_1 = require("./dtos/login-user.dto");
-const local_auth_guard_1 = require("../auth/local-auth.guard");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 let UserController = class UserController {
     userService;
     authService;
@@ -55,8 +55,8 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], UserController.prototype, "login", null);
 __decorate([
-    (0, common_1.Post)('profile'),
-    (0, common_1.UseGuards)(local_auth_guard_1.LocalAuthGuard),
+    (0, common_1.Get)('profile'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),

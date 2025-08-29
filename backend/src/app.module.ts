@@ -7,10 +7,13 @@ import { AuthModule } from './auth/auth.module';
 import { MediaResourceModule } from './media/media.module';
 import { PlaySourceModule } from './play-sources/play-source.module';
 import { WatchHistoryModule } from './watch-history/watch-history.module';
+import { CrawlerModule } from './crawler/crawler.module';
+import { RecommendationModule } from './recommendations/recommendation.module';
 import { User } from './entities/user.entity';
 import { MediaResource } from './entities/media-resource.entity';
 import { PlaySource } from './entities/play-source.entity';
 import { WatchHistory } from './entities/watch-history.entity';
+import { Recommendation } from './entities/recommendation.entity';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -32,7 +35,7 @@ import { AppService } from './app.service';
         username: configService.get<string>('DB_USERNAME'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_DATABASE'),
-        entities: [User, MediaResource, PlaySource, WatchHistory], // 所有实体类
+        entities: [User, MediaResource, PlaySource, WatchHistory, Recommendation], // 所有实体类
         synchronize: true, // 开发环境下同步数据库结构
         logging: true, // 开启SQL日志
       }),
@@ -56,6 +59,12 @@ import { AppService } from './app.service';
     
     // 观看历史模块 - 观看历史管理
     WatchHistoryModule,
+    
+    // 爬虫模块 - 资源爬取功能
+    CrawlerModule,
+    
+    // 推荐模块 - 个性化推荐功能
+    RecommendationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

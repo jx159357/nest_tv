@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const media_resource_entity_1 = require("../entities/media-resource.entity");
+const user_entity_1 = require("../entities/user.entity");
 let MediaResourceService = class MediaResourceService {
     mediaResourceRepository;
     constructor(mediaResourceRepository) {
@@ -127,6 +128,109 @@ let MediaResourceService = class MediaResourceService {
             order: { rating: 'DESC', viewCount: 'DESC' },
             take: limit,
         });
+    }
+    async addToFavorites(userId, mediaResourceId) {
+        const mediaResource = await this.mediaResourceRepository.findOne({
+            where: { id: mediaResourceId },
+            relations: ['favorites'],
+        });
+        if (!mediaResource) {
+            throw new common_1.NotFoundException('影视资源不存在');
+        }
+        const user = await this.mediaResourceRepository.manager
+            .createQueryBuilder(user_entity_1.User, 'user')
+            .leftJoinAndSelect('user.favorites', 'favorites')
+            .where('user.id = :userId', { userId })
+            .getOne();
+        if (!user) {
+            throw new common_1.NotFoundException('用户不存在');
+        }
+        const isAlreadyFavorited = user.favorites.some(fav => fav.id === mediaResourceId);
+        if (isAlreadyFavorited) {
+            throw new common_1.HttpException('已经收藏该资源', common_1.HttpStatus.BAD_REQUEST);
+        }
+        user.favorites.push(mediaResource);
+        await this.mediaResourceRepository.manager.save(user);
+    }
+    async removeFromFavorites(userId, mediaResourceId) {
+        const mediaResource = await this.mediaResourceRepository.findOne({
+            where: { id: mediaResourceId },
+        });
+        if (!mediaResource) {
+            throw new common_1.NotFoundException('影视资源不存在');
+        }
+        const user = await this.mediaResourceRepository.manager
+            .createQueryBuilder(user_entity_1.User, 'user')
+            .leftJoinAndSelect('user.favorites', 'favorites')
+            .where('user.id = :userId', { userId })
+            .getOne();
+        if (!user) {
+            throw new common_1.NotFoundException('用户不存在');
+        }
+        user.favorites = user.favorites.filter(fav => fav.id !== mediaResourceId);
+        await this.mediaResourceRepository.manager.save(user);
+    }
+    async isFavoritedByUser(userId, mediaResourceId) {
+        const user = await this.mediaResourceRepository.manager
+            .createQueryBuilder(user_entity_1.User, 'user')
+            .leftJoinAndSelect('user.favorites', 'favorites')
+            .where('user.id = :userId', { userId })
+            .andWhere('favorites.id = :mediaResourceId', { mediaResourceId })
+            .getOne();
+        return !!user;
+    }
+    async getUserFavorites(userId, page = 1, limit = 10) {
+        const user = await this.mediaResourceRepository.manager
+            .createQueryBuilder(user_entity_1.User, 'user')
+            .leftJoinAndSelect('user.favorites', 'favorites')
+            .leftJoinAndSelect('favorites.playSources', 'playSources')
+            .leftJoinAndSelect('favorites.watchHistory', 'watchHistory')
+            .where('user.id = :userId', { userId })
+            .orderBy('favorites.createdAt', 'DESC')
+            .skip((page - 1) * limit)
+            .take(limit)
+            .getOne();
+        if (!user) {
+            throw new common_1.NotFoundException('用户不存在');
+        }
+        const total = user.favorites.length;
+        const totalPages = Math.ceil(total / limit);
+        return {
+            data: user.favorites,
+            total,
+            page,
+            limit,
+            totalPages,
+        };
+    }
+    async rateResource(userId, mediaResourceId, rating) {
+        if (rating < 0 || rating > 10) {
+            throw new common_1.HttpException('评分必须在0-10之间', common_1.HttpStatus.BAD_REQUEST);
+        }
+        const mediaResource = await this.mediaResourceRepository.findOne({
+            where: { id: mediaResourceId },
+            relations: ['watchHistory'],
+        });
+        if (!mediaResource) {
+            throw new common_1.NotFoundException('影视资源不存在');
+        }
+        mediaResource.rating = rating;
+        return await this.mediaResourceRepository.save(mediaResource);
+    }
+    async getRatingStats(mediaResourceId) {
+        const mediaResource = await this.findById(mediaResourceId);
+        return {
+            averageRating: mediaResource.rating,
+            totalRatings: 1,
+            ratingDistribution: {
+                '5': 0,
+                '6': 0,
+                '7': 0,
+                '8': 0,
+                '9': 0,
+                '10': 1,
+            },
+        };
     }
 };
 exports.MediaResourceService = MediaResourceService;

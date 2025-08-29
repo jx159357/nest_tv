@@ -14,6 +14,7 @@ const typeorm_1 = require("typeorm");
 const user_entity_1 = require("./user.entity");
 const watch_history_entity_1 = require("./watch-history.entity");
 const play_source_entity_1 = require("./play-source.entity");
+const recommendation_entity_1 = require("./recommendation.entity");
 var MediaType;
 (function (MediaType) {
     MediaType["MOVIE"] = "movie";
@@ -53,6 +54,7 @@ let MediaResource = class MediaResource {
     favorites;
     watchHistory;
     playSources;
+    recommendations;
 };
 exports.MediaResource = MediaResource;
 __decorate([
@@ -148,6 +150,10 @@ __decorate([
     (0, typeorm_1.OneToMany)(() => play_source_entity_1.PlaySource, playSource => playSource.mediaResource),
     __metadata("design:type", Array)
 ], MediaResource.prototype, "playSources", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => recommendation_entity_1.Recommendation, recommendation => recommendation.mediaResource),
+    __metadata("design:type", Array)
+], MediaResource.prototype, "recommendations", void 0);
 exports.MediaResource = MediaResource = __decorate([
     (0, typeorm_1.Entity)('media_resources')
 ], MediaResource);
