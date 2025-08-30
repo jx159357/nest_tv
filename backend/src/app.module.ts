@@ -9,11 +9,15 @@ import { PlaySourceModule } from './play-sources/play-source.module';
 import { WatchHistoryModule } from './watch-history/watch-history.module';
 import { CrawlerModule } from './crawler/crawler.module';
 import { RecommendationModule } from './recommendations/recommendation.module';
+import { AdminModule } from './admin/admin.module';
 import { User } from './entities/user.entity';
 import { MediaResource } from './entities/media-resource.entity';
 import { PlaySource } from './entities/play-source.entity';
 import { WatchHistory } from './entities/watch-history.entity';
 import { Recommendation } from './entities/recommendation.entity';
+import { AdminRole } from './entities/admin-role.entity';
+import { AdminPermission } from './entities/admin-permission.entity';
+import { AdminLog } from './entities/admin-log.entity';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -35,7 +39,7 @@ import { AppService } from './app.service';
         username: configService.get<string>('DB_USERNAME'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_DATABASE'),
-        entities: [User, MediaResource, PlaySource, WatchHistory, Recommendation], // 所有实体类
+        entities: [User, MediaResource, PlaySource, WatchHistory, Recommendation, AdminRole, AdminPermission, AdminLog], // 所有实体类
         synchronize: true, // 开发环境下同步数据库结构
         logging: true, // 开启SQL日志
       }),
@@ -65,6 +69,9 @@ import { AppService } from './app.service';
     
     // 推荐模块 - 个性化推荐功能
     RecommendationModule,
+    
+    // 后台管理模块 - 系统管理功能
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

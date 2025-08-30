@@ -1,0 +1,188 @@
+version: '3.8'
+
+services:
+  # 后端API服务
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nest_tv_api_prod
+    ports:
+      - "3335:3335"
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=mysql_prod
+      - DB_PORT=3306
+      - DB_USERNAME=nest_user
+      - DB_PASSWORD=nest_password
+      - DB_DATABASE=nest_tv
+      - REDIS_HOST=redis_prod
+      - REDIS_PORT=6379
+      - JWT_SECRET=your-super-secret-jwt-key-here-change-in-production
+      - JWT_EXPIRES_IN=7d
+    volumes:
+      - /var/log/nest_tv:/app/logs
+    depends_on:
+      - mysql_prod
+      - redis_prod
+    networks:
+      - prod-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "const http = require('http'); const options = { hostname: 'localhost', port: 3335, path: '/', timeout: 3000 }; const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.end();"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # MySQL数据库服务
+  mysql_prod:
+    image: mysql:8.0
+    container_name: nest_tv_mysql_prod
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password_prod
+      - MYSQL_DATABASE=nest_tv
+      - MYSQL_USER=nest_user
+      - MYSQL_PASSWORD=nest_password
+    volumes:
+      - mysql_prod_data:/var/lib/mysql
+      - ./backp/backup:/var/lib/mysql/backp
+      - ./backend/database/init:/docker-entrypoint-initdb.d
+    networks:
+      - prod-network
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password --max-connections=200 --innodb-buffer-pool-size=256M --query-cache-size=64M
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "nest_user", "-pnest_password"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+
+  # Redis缓存服务
+  redis_prod:
+    image: redis:7-alpine
+    container_name: nest_tv_redis_prod
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_prod_data:/data
+      - ./backp/redis:/data/backup
+    networks:
+      - prod-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru --save 900 1 --save 300 10 --save 60 100
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.2'
+          memory: 256M
+
+  # 前端Nginx服务
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nest_tv_frontend_prod
+    ports:
+      - "80:80"
+      - "443:443"  # HTTPS端口（如果配置了SSL证书）
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - /var/log/nginx:/var/log/nginx
+    depends_on:
+      - api
+    networks:
+      - prod-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.2'
+          memory: 256M
+
+  # 监控服务（可选，Prometheus + Grafana）
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   container_name: nest_tv_prometheus
+  #   ports:
+  #     - "9090:9090"
+  #   volumes:
+  #     - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+  #     - prometheus_data:/prometheus
+  #   command:
+  #     - '--config.file=/etc/prometheus/prometheus.yml'
+  #     - '--storage.tsdb.path=/prometheus'
+  #     - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+  #   networks:
+  #     - prod-network
+  #   restart: unless-stopped
+
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   container_name: nest_tv_grafana
+  #   ports:
+  #     - "3001:3000"
+  #   environment:
+  #     - GF_SECURITY_ADMIN_PASSWORD=admin_password
+  #   volumes:
+  #     - grafana_data:/var/lib/grafana
+  #     - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+  #   networks:
+  #     - prod-network
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - prometheus
+
+volumes:
+  mysql_prod_data:
+    driver: local
+  redis_prod_data:
+    driver: local
+  # prometheus_data:
+  #   driver: local
+  # grafana_data:
+  #   driver: local
+
+networks:
+  prod-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+          gateway: 172.20.0.1

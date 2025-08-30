@@ -58,6 +58,49 @@ const router = createRouter({
       name: 'recommendations',
       component: () => import('../views/RecommendationsView.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/admin',
+      name: 'admin',
+      component: () => import('../views/AdminLayout.vue'),
+      meta: { requiresAuth: true },
+      children: [
+        {
+          path: '',
+          name: 'admin-dashboard',
+          component: () => import('../views/AdminDashboardView.vue')
+        },
+        {
+          path: 'users',
+          name: 'admin-users',
+          component: () => import('../views/AdminUsersView.vue')
+        },
+        {
+          path: 'media',
+          name: 'admin-media',
+          component: () => import('../views/AdminMediaView.vue')
+        },
+        {
+          path: 'play-sources',
+          name: 'admin-play-sources',
+          component: () => import('../views/AdminPlaySourcesView.vue')
+        },
+        {
+          path: 'watch-history',
+          name: 'admin-watch-history',
+          component: () => import('../views/AdminWatchHistoryView.vue')
+        },
+        {
+          path: 'roles',
+          name: 'admin-roles',
+          component: () => import('../views/AdminRolesView.vue')
+        },
+        {
+          path: 'logs',
+          name: 'admin-logs',
+          component: () => import('../views/AdminLogsView.vue')
+        }
+      ]
     }
   ]
 })
@@ -66,11 +109,26 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   
-  if (to.meta.requiresAuth && !token) {
-    next('/login')
-  } else {
-    next()
+  // 处理需要认证的路由
+  if (to.meta.requiresAuth) {
+    if (!token) {
+      // 保存目标路由，登录后重定向
+      sessionStorage.setItem('redirectPath', to.fullPath)
+      next({
+        path: '/login',
+        query: { redirect: to.fullPath }
+      })
+      return
+    }
   }
+  
+  // 如果已登录用户访问登录/注册页面，重定向到首页
+  if ((to.path === '/login' || to.path === '/register') && token) {
+    next('/')
+    return
+  }
+  
+  next()
 })
 
 export default router

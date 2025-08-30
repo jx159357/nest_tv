@@ -18,11 +18,15 @@ const play_source_module_1 = require("./play-sources/play-source.module");
 const watch_history_module_1 = require("./watch-history/watch-history.module");
 const crawler_module_1 = require("./crawler/crawler.module");
 const recommendation_module_1 = require("./recommendations/recommendation.module");
+const admin_module_1 = require("./admin/admin.module");
 const user_entity_1 = require("./entities/user.entity");
 const media_resource_entity_1 = require("./entities/media-resource.entity");
 const play_source_entity_1 = require("./entities/play-source.entity");
 const watch_history_entity_1 = require("./entities/watch-history.entity");
 const recommendation_entity_1 = require("./entities/recommendation.entity");
+const admin_role_entity_1 = require("./entities/admin-role.entity");
+const admin_permission_entity_1 = require("./entities/admin-permission.entity");
+const admin_log_entity_1 = require("./entities/admin-log.entity");
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
 let AppModule = class AppModule {
@@ -44,7 +48,7 @@ exports.AppModule = AppModule = __decorate([
                     username: configService.get('DB_USERNAME'),
                     password: configService.get('DB_PASSWORD'),
                     database: configService.get('DB_DATABASE'),
-                    entities: [user_entity_1.User, media_resource_entity_1.MediaResource, play_source_entity_1.PlaySource, watch_history_entity_1.WatchHistory, recommendation_entity_1.Recommendation],
+                    entities: [user_entity_1.User, media_resource_entity_1.MediaResource, play_source_entity_1.PlaySource, watch_history_entity_1.WatchHistory, recommendation_entity_1.Recommendation, admin_role_entity_1.AdminRole, admin_permission_entity_1.AdminPermission, admin_log_entity_1.AdminLog],
                     synchronize: true,
                     logging: true,
                 }),
@@ -58,6 +62,7 @@ exports.AppModule = AppModule = __decorate([
             watch_history_module_1.WatchHistoryModule,
             crawler_module_1.CrawlerModule,
             recommendation_module_1.RecommendationModule,
+            admin_module_1.AdminModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

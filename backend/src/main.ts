@@ -11,7 +11,13 @@ import { AppModule } from './app.module'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
-  const port = process.env.PORT || '3335'
+  const port = parseInt(process.env.PORT) || 3335
   await app.listen(port)
+  console.log(`🚀 Nest TV Backend is running on port ${port}`)
+  console.log(`📚 API Documentation: http://localhost:${port}/api`)
 }
-bootstrap()
+
+bootstrap().catch(error => {
+  console.error('❌ Failed to start Nest TV Backend:', error)
+  process.exit(1)
+})

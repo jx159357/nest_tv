@@ -22,8 +22,10 @@
 - ✅ 支持在线播放、下载、流媒体等多种播放方式（已完成）
 
 ### 📊 观看历史
-- 🚧 观看进度记录（开发中）
-- 🚧 播放历史管理（开发中）
+- ✅ 观看进度记录（已完成）
+- ✅ 播放历史管理（已完成）
+- ✅ 继续观看功能（已完成）
+- ✅ 观看统计功能（已完成）
 - ✅ 个性化推荐（已完成）
 
 ### 🌐 前端界面
@@ -322,6 +324,52 @@ GET /play-sources/media/:mediaId/best
 Authorization: Bearer <JWT_TOKEN>
 ```
 
+### 观看历史接口 ✅
+```bash
+# 获取用户的观看历史
+GET /watch-history/user/:userId?page=1&limit=10
+Authorization: Bearer <JWT_TOKEN>
+
+# 获取用户的继续观看列表
+GET /watch-history/user/:userId/continue?limit=10
+Authorization: Bearer <JWT_TOKEN>
+
+# 获取用户已看完的影视
+GET /watch-history/user/:userId/completed?page=1&limit=10
+Authorization: Bearer <JWT_TOKEN>
+
+# 获取用户观看统计
+GET /watch-history/user/:userId/stats
+Authorization: Bearer <JWT_TOKEN>
+
+# 更新观看进度
+PATCH /watch-history/progress?userId=1&mediaResourceId=1&currentTime=300&duration=3600
+Authorization: Bearer <JWT_TOKEN>
+
+# 创建观看历史记录
+POST /watch-history
+Authorization: Bearer <JWT_TOKEN>
+Content-Type: application/json
+{
+  "userId": 1,
+  "mediaResourceId": 1,
+  "currentTime": 300,
+  "duration": 3600
+}
+
+# 标记为已看完
+PATCH /watch-history/:id/complete
+Authorization: Bearer <JWT_TOKEN>
+
+# 删除观看历史
+DELETE /watch-history/:id
+Authorization: Bearer <JWT_TOKEN>
+
+# 清空用户观看历史
+DELETE /watch-history/user/:userId/all
+Authorization: Bearer <JWT_TOKEN>
+```
+
 ### 个性化推荐接口 ✅
 ```bash
 # 获取用户的个性化推荐
@@ -346,6 +394,67 @@ GET /recommendations/editorial?limit=10
 GET /recommendations/:id
 ```
 
+### 后台管理接口 ✅
+```bash
+# 获取系统统计数据
+GET /admin/stats
+Authorization: Bearer <JWT_TOKEN>
+
+# 获取系统健康状态
+GET /admin/health
+Authorization: Bearer <JWT_TOKEN>
+
+# 创建角色
+POST /admin/roles
+Authorization: Bearer <JWT_TOKEN>
+Content-Type: application/json
+{
+  "name": "content_admin",
+  "description": "内容管理员",
+  "permissions": ["user_read", "media_create", "media_update"]
+}
+
+# 获取所有角色
+GET /admin/roles
+Authorization: Bearer <JWT_TOKEN>
+
+# 创建权限
+POST /admin/permissions
+Authorization: Bearer <JWT_TOKEN>
+Content-Type: application/json
+{
+  "code": "user_create",
+  "name": "创建用户",
+  "description": "允许创建新用户",
+  "resource": "user",
+  "action": "create"
+}
+
+# 获取所有权限
+GET /admin/permissions
+Authorization: Bearer <JWT_TOKEN>
+
+# 获取管理操作日志
+GET /admin/logs?page=1&limit=20&action=create&resource=user&status=success
+Authorization: Bearer <JWT_TOKEN>
+
+# 获取用户管理列表
+GET /admin/users?page=1&limit=20&search=keyword
+Authorization: Bearer <JWT_TOKEN>
+
+# 获取媒体资源管理列表
+GET /admin/media?page=1&limit=20&type=movie
+Authorization: Bearer <JWT_TOKEN>
+
+# 获取播放源管理列表
+GET /admin/play-sources?page=1&limit=20&type=online
+Authorization: Bearer <JWT_TOKEN>
+
+# 获取观看历史管理列表
+GET /admin/watch-history?page=1&limit=20&userId=1
+Authorization: Bearer <JWT_TOKEN>
+```
+
 
 ## 🗄️ 数据库设计
 
@@ -355,6 +464,9 @@ GET /recommendations/:id
 - **play_sources** - 播放源表
 - **watch_history** - 观看历史表
 - **recommendations** - 个性化推荐表
+- **admin_roles** - 管理员角色表
+- **admin_permissions** - 管理员权限表
+- **admin_logs** - 管理员操作日志表
 
 ### 表关系说明
 - 一个用户可以收藏多个影视资源（多对多）
@@ -385,9 +497,9 @@ GET /recommendations/:id
 ### 阶段三：高级功能（当前）
 - [x] 播放源模块开发（已完成） ✅
 - [x] 前端页面开发（已完成） ✅
-- [ ] 观看历史和进度管理（进行中）
-- [x] 个性化推荐系统（已完成）
-- [ ] 后台管理系统（计划）
+- [x] 观看历史和进度管理（已完成） ✅
+- [x] 个性化推荐系统（已完成） ✅
+- [x] 后台管理系统（已完成） ✅
 
 ### 阶段四：优化和部署（计划）
 - [ ] 性能优化
@@ -504,4 +616,4 @@ npm run build
 
 ---
 
-*最后更新时间：2025年8月29日*
+*最后更新时间：2025年8月30日*
