@@ -27,4 +27,9 @@ export declare class PlaySourceController {
     updateBulkStatus(ids: number[], status: PlaySourceStatus): Promise<void>;
     remove(id: number): Promise<void>;
     softDelete(id: number): Promise<PlaySource>;
+    getMagnetPlayInfo(id: number, userId?: number): Promise<any>;
+    validateMagnetPlaySource(id: number, userId?: number): Promise<{
+        isValid: boolean;
+    }>;
+    getMagnetStats(mediaResourceId: number, userId?: number): Promise<any>;
 }

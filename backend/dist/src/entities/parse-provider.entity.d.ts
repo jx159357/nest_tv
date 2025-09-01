@@ -1,0 +1,35 @@
+export declare class ParseProvider {
+    id: number;
+    name: string;
+    baseUrl: string;
+    parseRule: string;
+    apiUrl?: string;
+    apiMethod?: string;
+    apiHeaders?: string;
+    description?: string;
+    isActive: boolean;
+    successRate: number;
+    requestCount: number;
+    successCount: number;
+    config: any;
+    metadata?: any;
+    category?: string;
+    supportOnlinePlay: boolean;
+    supportDownload: boolean;
+    priority?: string;
+    expireDate?: Date;
+    createdAt: Date;
+    updatedAt: Date;
+    lastUsedAt?: Date;
+    lastCheckedAt?: Date;
+    dailyRequestLimit: number;
+    dailyRequestCount: number;
+    dailyResetDate?: Date;
+    getProviderInfo(): any;
+    canMakeRequest(): boolean;
+    updateRequestStats(success: boolean): void;
+    resetDailyCount(): void;
+    getParseConfig(): any;
+    getApiHeaders(): any;
+    isExpired(): boolean;
+}

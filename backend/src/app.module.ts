@@ -10,11 +10,17 @@ import { WatchHistoryModule } from './watch-history/watch-history.module';
 import { CrawlerModule } from './crawler/crawler.module';
 import { RecommendationModule } from './recommendations/recommendation.module';
 import { AdminModule } from './admin/admin.module';
+import { IPTVModule } from './iptv/iptv.module';
+import { ParseProvidersModule } from './parse-providers/parse-providers.module';
+import { TorrentModule } from './torrent/torrent.module';
+import { DataCollectionModule } from './data-collection/data-collection.module';
 import { User } from './entities/user.entity';
 import { MediaResource } from './entities/media-resource.entity';
 import { PlaySource } from './entities/play-source.entity';
 import { WatchHistory } from './entities/watch-history.entity';
 import { Recommendation } from './entities/recommendation.entity';
+import { IPTVChannel } from './entities/iptv-channel.entity';
+import { ParseProvider } from './entities/parse-provider.entity';
 import { AdminRole } from './entities/admin-role.entity';
 import { AdminPermission } from './entities/admin-permission.entity';
 import { AdminLog } from './entities/admin-log.entity';
@@ -39,7 +45,7 @@ import { AppService } from './app.service';
         username: configService.get<string>('DB_USERNAME'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_DATABASE'),
-        entities: [User, MediaResource, PlaySource, WatchHistory, Recommendation, AdminRole, AdminPermission, AdminLog], // 所有实体类
+        entities: [User, MediaResource, PlaySource, WatchHistory, Recommendation, AdminRole, AdminPermission, AdminLog, IPTVChannel, ParseProvider], // 所有实体类
         synchronize: true, // 开发环境下同步数据库结构
         logging: true, // 开启SQL日志
       }),
@@ -72,6 +78,18 @@ import { AppService } from './app.service';
     
     // 后台管理模块 - 系统管理功能
     AdminModule,
+    
+    // IPTV模块 - 直播频道管理
+    IPTVModule,
+    
+    // 解析提供商模块 - 解析站资源管理
+    ParseProvidersModule,
+    
+    // 磁力链接模块 - 磁力链接播放功能
+    TorrentModule,
+    
+    // 数据采集模块 - 扩展数据采集功能
+    DataCollectionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

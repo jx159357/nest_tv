@@ -66,6 +66,16 @@ let PlaySourceController = class PlaySourceController {
     async softDelete(id) {
         return await this.playSourceService.softDelete(id);
     }
+    async getMagnetPlayInfo(id, userId) {
+        return await this.playSourceService.getMagnetPlayInfo(id, userId);
+    }
+    async validateMagnetPlaySource(id, userId) {
+        const isValid = await this.playSourceService.validateMagnetPlaySource(id, userId);
+        return { isValid };
+    }
+    async getMagnetStats(mediaResourceId, userId) {
+        return await this.playSourceService.getMagnetStats(mediaResourceId, userId);
+    }
 };
 exports.PlaySourceController = PlaySourceController;
 __decorate([
@@ -208,6 +218,42 @@ __decorate([
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], PlaySourceController.prototype, "softDelete", null);
+__decorate([
+    (0, common_1.Get)(':id/magnet/play-info'),
+    (0, swagger_1.ApiOperation)({ summary: '获取磁力链接播放信息' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: '播放源ID' }),
+    (0, swagger_1.ApiQuery)({ name: 'userId', description: '用户ID', required: false }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '获取磁力链接播放信息成功' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('userId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Number]),
+    __metadata("design:returntype", Promise)
+], PlaySourceController.prototype, "getMagnetPlayInfo", null);
+__decorate([
+    (0, common_1.Get)(':id/magnet/validate'),
+    (0, swagger_1.ApiOperation)({ summary: '验证磁力链接播放源' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: '播放源ID' }),
+    (0, swagger_1.ApiQuery)({ name: 'userId', description: '用户ID', required: false }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '验证磁力链接播放源成功' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('userId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Number]),
+    __metadata("design:returntype", Promise)
+], PlaySourceController.prototype, "validateMagnetPlaySource", null);
+__decorate([
+    (0, common_1.Get)('media/:mediaResourceId/magnet/stats'),
+    (0, swagger_1.ApiOperation)({ summary: '获取影视资源的磁力链接统计信息' }),
+    (0, swagger_1.ApiParam)({ name: 'mediaResourceId', description: '影视资源ID' }),
+    (0, swagger_1.ApiQuery)({ name: 'userId', description: '用户ID', required: false }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '获取磁力链接统计信息成功' }),
+    __param(0, (0, common_1.Param)('mediaResourceId')),
+    __param(1, (0, common_1.Query)('userId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Number]),
+    __metadata("design:returntype", Promise)
+], PlaySourceController.prototype, "getMagnetStats", null);
 exports.PlaySourceController = PlaySourceController = __decorate([
     (0, swagger_1.ApiTags)('播放源'),
     (0, common_1.Controller)('play-sources'),

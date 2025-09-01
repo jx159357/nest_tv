@@ -9,7 +9,11 @@ export enum PlaySourceType {
   ONLINE = 'online',       // 在线播放
   DOWNLOAD = 'download',   // 下载链接
   STREAM = 'stream',       // 流媒体
-  THIRD_PARTY = 'third_party' // 第三方播放器
+  THIRD_PARTY = 'third_party', // 第三方播放器
+  MAGNET = 'magnet',       // 磁力链接
+  IPTV = 'iptv',           // IPTV资源
+  WEBDISK = 'webdisk',     // 网盘资源
+  PARSER = 'parser'        // 解析站资源
 }
 
 /**
@@ -72,6 +76,21 @@ export class PlaySource {
 
   @Column({ type: 'date', nullable: true })
   expireDate?: Date; // 过期时间
+
+  @Column({ length: 50, nullable: true })
+  channelGroup?: string; // 频道分组（IPTV专用）
+
+  @Column({ length: 20, nullable: true })
+  channelLogo?: string; // 频道Logo（IPTV专用）
+
+  @Column({ length: 100, nullable: true })
+  providerName?: string; // 提供商名称（解析站专用）
+
+  @Column({ type: 'json', nullable: true })
+  magnetInfo?: any; // 磁力链接信息（磁力链接专用）
+
+  @Column({ type: 'json', nullable: true })
+  webDiskInfo?: any; // 网盘信息（网盘资源专用）
 
   @Column({ nullable: true })
   episodeNumber?: number; // 剧集号（如果是电视剧）

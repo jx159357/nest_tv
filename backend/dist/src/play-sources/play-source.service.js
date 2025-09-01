@@ -17,14 +17,54 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const play_source_entity_1 = require("../entities/play-source.entity");
+const torrent_service_1 = require("../common/services/torrent.service");
+const app_logger_service_1 = require("../common/services/app-logger.service");
 let PlaySourceService = class PlaySourceService {
     playSourceRepository;
-    constructor(playSourceRepository) {
+    torrentService;
+    logger;
+    constructor(playSourceRepository, torrentService, appLoggerService) {
         this.playSourceRepository = playSourceRepository;
+        this.torrentService = torrentService;
+        this.logger = appLoggerService;
     }
     async create(createPlaySourceDto) {
-        const playSource = this.playSourceRepository.create(createPlaySourceDto);
-        return await this.playSourceRepository.save(playSource);
+        const context = { function: 'createPlaySource' };
+        try {
+            const playSource = this.playSourceRepository.create(createPlaySourceDto);
+            if (createPlaySourceDto.type === play_source_entity_1.PlaySourceType.MAGNET) {
+                try {
+                    const parsed = this.torrentService.parseMagnetUri(createPlaySourceDto.url);
+                    playSource.magnetInfo = {
+                        infoHash: parsed.infoHash,
+                        name: parsed.name,
+                        announce: parsed.announce,
+                    };
+                    const health = await this.torrentService.checkMagnetHealth(createPlaySourceDto.url);
+                    playSource.status = health.isHealthy ? play_source_entity_1.PlaySourceStatus.ACTIVE : play_source_entity_1.PlaySourceStatus.ERROR;
+                    this.logger.logParseProvider(0, 'magnet_created', {
+                        url: createPlaySourceDto.url,
+                        infoHash: parsed.infoHash,
+                        isHealthy: health.isHealthy,
+                    }, context);
+                }
+                catch (error) {
+                    this.logger.error(`Failed to process magnet URL: ${error.message}`, context, error.stack);
+                    playSource.status = play_source_entity_1.PlaySourceStatus.ERROR;
+                }
+            }
+            const result = await this.playSourceRepository.save(playSource);
+            this.logger.logDatabase('create', 'play_sources', {
+                id: result.id,
+                type: result.type,
+                mediaResourceId: result.mediaResourceId
+            }, context);
+            return result;
+        }
+        catch (error) {
+            this.logger.error(`Failed to create play source: ${error.message}`, context, error.stack);
+            throw error;
+        }
     }
     async findAll(queryDto) {
         const { page = 1, limit = 10, mediaResourceId, type, status, resolution, activeOnly = true, sortBy = 'priority', sortOrder = 'ASC' } = queryDto;
@@ -143,11 +183,202 @@ let PlaySourceService = class PlaySourceService {
             return false;
         }
     }
+    async getMagnetPlayInfo(id, userId) {
+        const context = { userId, function: 'getMagnetPlayInfo', playSourceId: id };
+        try {
+            const playSource = await this.findById(id);
+            if (playSource.type !== play_source_entity_1.PlaySourceType.MAGNET) {
+                this.logger.warn(`Play source is not magnet type: ${id}`, context);
+                return {
+                    success: false,
+                    message: '播放源不是磁力链接类型',
+                };
+            }
+            if (!playSource.magnetInfo?.infoHash) {
+                this.logger.warn(`Magnet info not found: ${id}`, context);
+                return {
+                    success: false,
+                    message: '磁力链接信息不存在',
+                };
+            }
+            const infoHash = playSource.magnetInfo.infoHash;
+            const torrentInfo = this.torrentService.getTorrentInfo(infoHash);
+            if (!torrentInfo) {
+                try {
+                    await this.torrentService.addMagnet(playSource.url);
+                    this.logger.log('Re-added magnet to client', 'info', { infoHash, playSourceId: id }, context);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    const retryInfo = this.torrentService.getTorrentInfo(infoHash);
+                    if (!retryInfo) {
+                        return {
+                            success: false,
+                            message: '磁力链接加载失败',
+                        };
+                    }
+                    return this.processTorrentInfo(retryInfo, id, context);
+                }
+                catch (error) {
+                    this.logger.error(`Failed to re-add magnet: ${error.message}`, context, error.stack);
+                    return {
+                        success: false,
+                        message: '磁力链接重新加载失败',
+                    };
+                }
+            }
+            return this.processTorrentInfo(torrentInfo, id, context);
+        }
+        catch (error) {
+            this.logger.error(`Failed to get magnet play info: ${error.message}`, context, error.stack);
+            return {
+                success: false,
+                message: '获取磁力链接播放信息失败',
+            };
+        }
+    }
+    async processTorrentInfo(torrentInfo, playSourceId, context) {
+        try {
+            const largestFile = this.torrentService.findLargestVideoFile(torrentInfo.infoHash);
+            if (!largestFile) {
+                this.logger.warn(`No video file found in torrent: ${torrentInfo.infoHash}`, context);
+                return {
+                    success: false,
+                    message: '磁力链接中未找到视频文件',
+                    torrentInfo,
+                };
+            }
+            const playUrl = this.torrentService.generatePlayUrl(torrentInfo.infoHash, largestFile.index);
+            this.logger.logParseProvider(0, 'magnet_play_info_ready', {
+                playSourceId,
+                infoHash: torrentInfo.infoHash,
+                fileName: largestFile.name,
+                playUrl,
+            }, context);
+            return {
+                success: true,
+                message: '获取磁力链接播放信息成功',
+                playUrl,
+                torrentInfo,
+                fileInfo: largestFile,
+            };
+        }
+        catch (error) {
+            this.logger.error(`Failed to process torrent info: ${error.message}`, context, error.stack);
+            return {
+                success: false,
+                message: '处理磁力链接信息失败',
+            };
+        }
+    }
+    async validateMagnetPlaySource(id, userId) {
+        const context = { userId, function: 'validateMagnetPlaySource', playSourceId: id };
+        try {
+            const playSource = await this.findById(id);
+            if (playSource.type !== play_source_entity_1.PlaySourceType.MAGNET) {
+                this.logger.warn(`Play source is not magnet type: ${id}`, context);
+                return false;
+            }
+            if (!playSource.magnetInfo?.infoHash) {
+                this.logger.warn(`Magnet info not found: ${id}`, context);
+                return false;
+            }
+            const infoHash = playSource.magnetInfo.infoHash;
+            const torrentInfo = this.torrentService.getTorrentInfo(infoHash);
+            if (!torrentInfo) {
+                return false;
+            }
+            const isValid = torrentInfo.numPeers > 0 && torrentInfo.progress > 0;
+            this.logger.logParseProvider(0, 'magnet_validated', {
+                playSourceId: id,
+                infoHash,
+                isValid,
+                numPeers: torrentInfo.numPeers,
+                progress: torrentInfo.progress,
+            }, context);
+            return isValid;
+        }
+        catch (error) {
+            this.logger.error(`Failed to validate magnet play source: ${error.message}`, context, error.stack);
+            return false;
+        }
+    }
+    async getMagnetStats(mediaResourceId, userId) {
+        const context = { userId, function: 'getMagnetStats', mediaResourceId };
+        try {
+            const playSources = await this.playSourceRepository.find({
+                where: {
+                    mediaResourceId,
+                    type: play_source_entity_1.PlaySourceType.MAGNET,
+                    isActive: true,
+                },
+            });
+            const magnetDetails = [];
+            let totalSize = 0;
+            let totalPeers = 0;
+            let totalProgress = 0;
+            let activeCount = 0;
+            for (const playSource of playSources) {
+                if (playSource.magnetInfo?.infoHash) {
+                    const torrentInfo = this.torrentService.getTorrentInfo(playSource.magnetInfo.infoHash);
+                    if (torrentInfo) {
+                        totalSize += torrentInfo.length;
+                        totalPeers += torrentInfo.numPeers;
+                        totalProgress += torrentInfo.progress;
+                        activeCount++;
+                        magnetDetails.push({
+                            id: playSource.id,
+                            infoHash: playSource.magnetInfo.infoHash,
+                            name: torrentInfo.name,
+                            length: torrentInfo.length,
+                            progress: torrentInfo.progress,
+                            numPeers: torrentInfo.numPeers,
+                            downloadSpeed: torrentInfo.downloadSpeed,
+                            status: torrentInfo.numPeers > 0 ? 'active' : 'inactive',
+                        });
+                    }
+                    else {
+                        magnetDetails.push({
+                            id: playSource.id,
+                            infoHash: playSource.magnetInfo.infoHash,
+                            status: 'not_loaded',
+                        });
+                    }
+                }
+            }
+            const averageProgress = activeCount > 0 ? totalProgress / activeCount : 0;
+            this.logger.log('Retrieved magnet stats', 'info', {
+                mediaResourceId,
+                totalMagnets: playSources.length,
+                activeMagnets: activeCount,
+                ...context,
+            });
+            return {
+                totalMagnets: playSources.length,
+                activeMagnets: activeCount,
+                totalSize,
+                totalPeers,
+                averageProgress: Math.round(averageProgress * 100),
+                magnetDetails,
+            };
+        }
+        catch (error) {
+            this.logger.error(`Failed to get magnet stats: ${error.message}`, context, error.stack);
+            return {
+                totalMagnets: 0,
+                activeMagnets: 0,
+                totalSize: 0,
+                totalPeers: 0,
+                averageProgress: 0,
+                magnetDetails: [],
+            };
+        }
+    }
 };
 exports.PlaySourceService = PlaySourceService;
 exports.PlaySourceService = PlaySourceService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(play_source_entity_1.PlaySource)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        torrent_service_1.TorrentService,
+        app_logger_service_1.AppLoggerService])
 ], PlaySourceService);
 //# sourceMappingURL=play-source.service.js.map

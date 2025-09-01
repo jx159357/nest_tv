@@ -3,6 +3,7 @@ import { User } from './user.entity';
 import { WatchHistory } from './watch-history.entity';
 import { PlaySource } from './play-source.entity';
 import { Recommendation } from './recommendation.entity';
+import { IPTVChannel } from './iptv-channel.entity';
 
 /**
  * 影视分类枚举
@@ -107,4 +108,8 @@ export class MediaResource {
   // 关联推荐记录（一对多）
   @OneToMany(() => Recommendation, recommendation => recommendation.mediaResource)
   recommendations: Recommendation[];
+
+  // 关联IPTV频道（多对多）
+  @ManyToMany(() => IPTVChannel, iptvChannel => iptvChannel.mediaResources)
+  iptvChannels: IPTVChannel[];
 }

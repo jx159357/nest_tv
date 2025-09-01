@@ -144,4 +144,41 @@ export class PlaySourceController {
   async softDelete(@Param('id') id: number): Promise<PlaySource> {
     return await this.playSourceService.softDelete(id);
   }
+
+  @Get(':id/magnet/play-info')
+  @ApiOperation({ summary: '获取磁力链接播放信息' })
+  @ApiParam({ name: 'id', description: '播放源ID' })
+  @ApiQuery({ name: 'userId', description: '用户ID', required: false })
+  @ApiResponse({ status: 200, description: '获取磁力链接播放信息成功' })
+  async getMagnetPlayInfo(
+    @Param('id') id: number,
+    @Query('userId') userId?: number,
+  ): Promise<any> {
+    return await this.playSourceService.getMagnetPlayInfo(id, userId);
+  }
+
+  @Get(':id/magnet/validate')
+  @ApiOperation({ summary: '验证磁力链接播放源' })
+  @ApiParam({ name: 'id', description: '播放源ID' })
+  @ApiQuery({ name: 'userId', description: '用户ID', required: false })
+  @ApiResponse({ status: 200, description: '验证磁力链接播放源成功' })
+  async validateMagnetPlaySource(
+    @Param('id') id: number,
+    @Query('userId') userId?: number,
+  ): Promise<{ isValid: boolean }> {
+    const isValid = await this.playSourceService.validateMagnetPlaySource(id, userId);
+    return { isValid };
+  }
+
+  @Get('media/:mediaResourceId/magnet/stats')
+  @ApiOperation({ summary: '获取影视资源的磁力链接统计信息' })
+  @ApiParam({ name: 'mediaResourceId', description: '影视资源ID' })
+  @ApiQuery({ name: 'userId', description: '用户ID', required: false })
+  @ApiResponse({ status: 200, description: '获取磁力链接统计信息成功' })
+  async getMagnetStats(
+    @Param('mediaResourceId') mediaResourceId: number,
+    @Query('userId') userId?: number,
+  ): Promise<any> {
+    return await this.playSourceService.getMagnetStats(mediaResourceId, userId);
+  }
 }

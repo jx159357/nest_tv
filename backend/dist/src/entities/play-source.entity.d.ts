@@ -4,7 +4,11 @@ export declare enum PlaySourceType {
     ONLINE = "online",
     DOWNLOAD = "download",
     STREAM = "stream",
-    THIRD_PARTY = "third_party"
+    THIRD_PARTY = "third_party",
+    MAGNET = "magnet",
+    IPTV = "iptv",
+    WEBDISK = "webdisk",
+    PARSER = "parser"
 }
 export declare enum PlaySourceStatus {
     ACTIVE = "active",
@@ -28,6 +32,11 @@ export declare class PlaySource {
     isActive: boolean;
     headers?: any;
     expireDate?: Date;
+    channelGroup?: string;
+    channelLogo?: string;
+    providerName?: string;
+    magnetInfo?: any;
+    webDiskInfo?: any;
     episodeNumber?: number;
     createdAt: Date;
     updatedAt: Date;

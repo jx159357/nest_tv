@@ -19,6 +19,10 @@ var PlaySourceType;
     PlaySourceType["DOWNLOAD"] = "download";
     PlaySourceType["STREAM"] = "stream";
     PlaySourceType["THIRD_PARTY"] = "third_party";
+    PlaySourceType["MAGNET"] = "magnet";
+    PlaySourceType["IPTV"] = "iptv";
+    PlaySourceType["WEBDISK"] = "webdisk";
+    PlaySourceType["PARSER"] = "parser";
 })(PlaySourceType || (exports.PlaySourceType = PlaySourceType = {}));
 var PlaySourceStatus;
 (function (PlaySourceStatus) {
@@ -43,6 +47,11 @@ let PlaySource = class PlaySource {
     isActive;
     headers;
     expireDate;
+    channelGroup;
+    channelLogo;
+    providerName;
+    magnetInfo;
+    webDiskInfo;
     episodeNumber;
     createdAt;
     updatedAt;
@@ -112,6 +121,26 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'date', nullable: true }),
     __metadata("design:type", Date)
 ], PlaySource.prototype, "expireDate", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ length: 50, nullable: true }),
+    __metadata("design:type", String)
+], PlaySource.prototype, "channelGroup", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ length: 20, nullable: true }),
+    __metadata("design:type", String)
+], PlaySource.prototype, "channelLogo", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ length: 100, nullable: true }),
+    __metadata("design:type", String)
+], PlaySource.prototype, "providerName", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'json', nullable: true }),
+    __metadata("design:type", Object)
+], PlaySource.prototype, "magnetInfo", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'json', nullable: true }),
+    __metadata("design:type", Object)
+], PlaySource.prototype, "webDiskInfo", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", Number)

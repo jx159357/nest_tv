@@ -19,11 +19,17 @@ const watch_history_module_1 = require("./watch-history/watch-history.module");
 const crawler_module_1 = require("./crawler/crawler.module");
 const recommendation_module_1 = require("./recommendations/recommendation.module");
 const admin_module_1 = require("./admin/admin.module");
+const iptv_module_1 = require("./iptv/iptv.module");
+const parse_providers_module_1 = require("./parse-providers/parse-providers.module");
+const torrent_module_1 = require("./torrent/torrent.module");
+const data_collection_module_1 = require("./data-collection/data-collection.module");
 const user_entity_1 = require("./entities/user.entity");
 const media_resource_entity_1 = require("./entities/media-resource.entity");
 const play_source_entity_1 = require("./entities/play-source.entity");
 const watch_history_entity_1 = require("./entities/watch-history.entity");
 const recommendation_entity_1 = require("./entities/recommendation.entity");
+const iptv_channel_entity_1 = require("./entities/iptv-channel.entity");
+const parse_provider_entity_1 = require("./entities/parse-provider.entity");
 const admin_role_entity_1 = require("./entities/admin-role.entity");
 const admin_permission_entity_1 = require("./entities/admin-permission.entity");
 const admin_log_entity_1 = require("./entities/admin-log.entity");
@@ -48,7 +54,7 @@ exports.AppModule = AppModule = __decorate([
                     username: configService.get('DB_USERNAME'),
                     password: configService.get('DB_PASSWORD'),
                     database: configService.get('DB_DATABASE'),
-                    entities: [user_entity_1.User, media_resource_entity_1.MediaResource, play_source_entity_1.PlaySource, watch_history_entity_1.WatchHistory, recommendation_entity_1.Recommendation, admin_role_entity_1.AdminRole, admin_permission_entity_1.AdminPermission, admin_log_entity_1.AdminLog],
+                    entities: [user_entity_1.User, media_resource_entity_1.MediaResource, play_source_entity_1.PlaySource, watch_history_entity_1.WatchHistory, recommendation_entity_1.Recommendation, admin_role_entity_1.AdminRole, admin_permission_entity_1.AdminPermission, admin_log_entity_1.AdminLog, iptv_channel_entity_1.IPTVChannel, parse_provider_entity_1.ParseProvider],
                     synchronize: true,
                     logging: true,
                 }),
@@ -63,6 +69,10 @@ exports.AppModule = AppModule = __decorate([
             crawler_module_1.CrawlerModule,
             recommendation_module_1.RecommendationModule,
             admin_module_1.AdminModule,
+            iptv_module_1.IPTVModule,
+            parse_providers_module_1.ParseProvidersModule,
+            torrent_module_1.TorrentModule,
+            data_collection_module_1.DataCollectionModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
