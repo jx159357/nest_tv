@@ -3,8 +3,8 @@ import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/
 import { DataCollectionService } from './data-collection.service';
 import { MediaResource, MediaType } from '../entities/media-resource.entity';
 import { PlaySource, PlaySourceType } from '../entities/play-source.entity';
-import { AppLoggerService, LogContext } from '../common/services/app-logger.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AppLoggerService, LogContext, LogLevel } from '../common/services/app-logger.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('数据采集管理')
 @Controller('data-collection')
@@ -46,11 +46,7 @@ export class DataCollectionController {
         };
       }
 
-      this.logger.log('Data collection successful', LogLevel.INFO, { 
-        title: result.title, 
-        type: result.type, 
-        source: result.source 
-      }, context);
+      this.logger.log('Data collection successful', LogLevel.INFO, context);
       
       return {
         success: true,
@@ -81,11 +77,7 @@ export class DataCollectionController {
       
       const results = await this.dataCollectionService.batchCollect(sourceName, urls, userId);
       
-      this.logger.log('Batch data collection completed', LogLevel.INFO, { 
-        sourceName, 
-        totalUrls: urls.length, 
-        successCount: results.length 
-      }, context);
+      this.logger.log('Batch data collection completed', LogLevel.INFO, context);
       
       return {
         success: true,
@@ -121,11 +113,7 @@ export class DataCollectionController {
       
       const results = await this.dataCollectionService.collectPopularResources(sourceName, count, userId);
       
-      this.logger.log('Popular resources collection completed', LogLevel.INFO, { 
-        sourceName, 
-        count, 
-        successCount: results.length 
-      }, context);
+      this.logger.log('Popular resources collection completed', LogLevel.INFO, context);
       
       return {
         success: true,
@@ -152,9 +140,7 @@ export class DataCollectionController {
     try {
       const sources = this.dataCollectionService.getAvailableSources();
       
-      this.logger.log('Retrieved available sources', LogLevel.INFO, { 
-        count: sources.length 
-      }, context);
+      this.logger.log('Retrieved available sources', LogLevel.INFO, context);
       
       return {
         success: true,
@@ -192,10 +178,7 @@ export class DataCollectionController {
         };
       }
 
-      this.logger.log('Source toggled successfully', LogLevel.INFO, { 
-        sourceName, 
-        enabled 
-      }, context);
+      this.logger.log('Source toggled successfully', LogLevel.INFO, context);
       
       return {
         success: true,
@@ -251,11 +234,7 @@ export class DataCollectionController {
         playSources: [], // 需要调用PlaySourceService创建
       };
 
-      this.logger.log('Data processed and saved successfully', LogLevel.INFO, { 
-        title: mediaData.title, 
-        type: mediaData.type, 
-        createPlaySources 
-      }, context);
+      this.logger.log('Data processed and saved successfully', LogLevel.INFO, context);
       
       return {
         success: true,
@@ -313,9 +292,7 @@ export class DataCollectionController {
 
       const result = sourceName ? { [sourceName]: templates[sourceName] } : templates;
       
-      this.logger.log('Retrieved collection templates', LogLevel.INFO, { 
-        sourceName 
-      }, context);
+      this.logger.log('Retrieved collection templates', LogLevel.INFO, context);
       
       return {
         success: true,

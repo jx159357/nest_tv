@@ -11,17 +11,16 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b, _c;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IPTVController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const iptv_service_1 = require("./iptv.service");
-const create_iptv_channel_dto_1 = require("./dtos/create-iptv-channel.dto");
-const update_iptv_channel_dto_1 = require("./dtos/update-iptv-channel.dto");
-const iptv_channel_query_dto_1 = require("./dtos/iptv-channel-query.dto");
+const create_iptv_channel_dto_1 = require("./dto/create-iptv-channel.dto");
+const update_iptv_channel_dto_1 = require("./dto/update-iptv-channel.dto");
+const iptv_channel_query_dto_1 = require("./dto/iptv-channel-query.dto");
 const iptv_channel_entity_1 = require("../entities/iptv-channel.entity");
-const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 let IPTVController = class IPTVController {
     iptvService;
     constructor(iptvService) {
@@ -81,7 +80,7 @@ __decorate([
     (0, swagger_1.ApiResponse)({ status: 201, description: 'IPTV频道创建成功', type: iptv_channel_entity_1.IPTVChannel }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_a = typeof create_iptv_channel_dto_1.CreateIPTVChannelDto !== "undefined" && create_iptv_channel_dto_1.CreateIPTVChannelDto) === "function" ? _a : Object]),
+    __metadata("design:paramtypes", [create_iptv_channel_dto_1.CreateIPTVChannelDto]),
     __metadata("design:returntype", Promise)
 ], IPTVController.prototype, "create", null);
 __decorate([
@@ -90,7 +89,7 @@ __decorate([
     (0, swagger_1.ApiResponse)({ status: 200, description: '查询成功' }),
     __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_b = typeof iptv_channel_query_dto_1.IPTVChannelQueryDto !== "undefined" && iptv_channel_query_dto_1.IPTVChannelQueryDto) === "function" ? _b : Object]),
+    __metadata("design:paramtypes", [iptv_channel_query_dto_1.IPTVChannelQueryDto]),
     __metadata("design:returntype", Promise)
 ], IPTVController.prototype, "findAll", null);
 __decorate([
@@ -111,7 +110,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, typeof (_c = typeof update_iptv_channel_dto_1.UpdateIPTVChannelDto !== "undefined" && update_iptv_channel_dto_1.UpdateIPTVChannelDto) === "function" ? _c : Object]),
+    __metadata("design:paramtypes", [Number, update_iptv_channel_dto_1.UpdateIPTVChannelDto]),
     __metadata("design:returntype", Promise)
 ], IPTVController.prototype, "update", null);
 __decorate([

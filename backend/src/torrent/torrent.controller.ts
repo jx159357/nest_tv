@@ -1,8 +1,8 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, Res } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, Res, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { TorrentService } from '../common/services/torrent.service';
 import { AppLoggerService, LogLevel, LogContext } from '../common/services/app-logger.service';
-import { Response, Request } from 'express';
+import type { Response, Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('磁力链接播放')
@@ -116,8 +116,8 @@ export class TorrentController {
     @Param('infoHash') infoHash: string,
     @Param('fileIndex') fileIndex: number,
     @Query('userId') userId?: number,
-    @Res() res: Response,
-    @Req() req: any,
+    @Res() res?: Response,
+    @Req() req?: any,
   ): Promise<void> {
     const context: LogContext = { userId, function: 'getFileStream', infoHash, fileIndex };
     
@@ -126,7 +126,9 @@ export class TorrentController {
       
       if (!stream) {
         this.logger.error(`Stream not found: ${infoHash}/${fileIndex}`, context);
-        res.status(404).send('文件流不存在');
+        if (res) {
+          res.status(404).send('文件流不存在');
+        }
         return;
       }
 
@@ -134,7 +136,7 @@ export class TorrentController {
       const torrentInfo = this.torrentService.getTorrentInfo(infoHash);
       const file = torrentInfo?.files[parseInt(fileIndex.toString())];
       
-      if (file) {
+      if (file && res) {
         // 设置响应头
         res.setHeader('Content-Type', file.type || 'video/mp4');
         res.setHeader('Content-Length', file.length);
@@ -148,30 +150,40 @@ export class TorrentController {
           const end = parts[1] ? parseInt(parts[1], 10) : file.length - 1;
           const chunksize = (end - start) + 1;
           
-          res.writeHead(206, {
-            'Content-Range': `bytes ${start}-${end}/${file.length}`,
-            'Accept-Ranges': 'bytes',
-            'Content-Length': chunksize,
-            'Content-Type': file.type || 'video/mp4',
-          });
-          
-          const fileStream = file.createReadStream({ start, end });
-          fileStream.pipe(res);
+          if (res) {
+            res.writeHead(206, {
+              'Content-Range': `bytes ${start}-${end}/${file.length}`,
+              'Accept-Ranges': 'bytes',
+              'Content-Length': chunksize,
+              'Content-Type': file.type || 'video/mp4',
+            });
+            
+            const fileStream = (file as any).createReadStream({ start, end });
+            fileStream.pipe(res);
+          }
         } else {
-          res.setHeader('Content-Type', file.type || 'video/mp4');
-          res.setHeader('Content-Length', file.length);
-          stream.pipe(res);
+          if (res) {
+            res.setHeader('Content-Type', file.type || 'video/mp4');
+            res.setHeader('Content-Length', file.length);
+          }
+          if (res) {
+            stream.pipe(res);
+          }
         }
 
         this.logger.logTorrent(infoHash, 'stream_started', { fileIndex, fileName: file.name }, context);
       } else {
-        stream.pipe(res);
+        if (res) {
+          stream.pipe(res);
+        }
         this.logger.logTorrent(infoHash, 'stream_started', { fileIndex }, context);
       }
 
     } catch (error) {
       this.logger.error(`Failed to get file stream: ${error.message}`, context, error.stack);
-      res.status(500).send('获取文件流失败');
+      if (res) {
+        res.status(500).send('获取文件流失败');
+      }
     }
   }
 

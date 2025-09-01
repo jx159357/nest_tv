@@ -12,17 +12,27 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.LoginUserDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
+const swagger_1 = require("@nestjs/swagger");
 class LoginUserDto {
     identifier;
     password;
 }
 exports.LoginUserDto = LoginUserDto;
 __decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '用户名或邮箱地址',
+        example: 'testuser'
+    }),
     (0, class_validator_1.IsNotEmpty)({ message: '用户名或邮箱不能为空' }),
     (0, class_validator_1.IsString)({ message: '用户名或邮箱必须是字符串' }),
     __metadata("design:type", String)
 ], LoginUserDto.prototype, "identifier", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '密码',
+        example: 'password123',
+        minLength: 6
+    }),
     (0, class_validator_1.IsNotEmpty)({ message: '密码不能为空' }),
     (0, class_transformer_1.Transform)(({ value }) => String(value).trim()),
     (0, class_validator_1.Matches)(/^.{6,}$/, { message: '密码长度不能少于6个字符' }),

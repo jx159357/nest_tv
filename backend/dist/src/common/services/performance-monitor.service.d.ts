@@ -20,10 +20,10 @@ export declare class PerformanceMonitorService implements OnModuleInit {
         };
         details: {
             recentRequests: {
-                method: any;
-                path: any;
+                method: string;
+                path: string;
                 duration: string;
-                statusCode: any;
+                statusCode: number;
                 timestamp: string;
             }[];
             slowQueries: {

@@ -1,6 +1,6 @@
 import { TorrentService } from '../common/services/torrent.service';
 import { AppLoggerService } from '../common/services/app-logger.service';
-import { Response, Request } from 'express';
+import type { Response } from 'express';
 export declare class TorrentController {
     private readonly torrentService;
     private readonly logger;
@@ -8,7 +8,7 @@ export declare class TorrentController {
     addMagnet(magnetUri: string, userId?: number): Promise<any>;
     getTorrentInfo(infoHash: string, userId?: number): Promise<any>;
     findLargestVideoFile(infoHash: string, userId?: number): Promise<any>;
-    getFileStream(infoHash: string, fileIndex: number, userId?: number, res: Response, req: Request): Promise<void>;
+    getFileStream(infoHash: string, fileIndex: number, userId?: number, res?: Response, req?: any): Promise<void>;
     checkMagnetHealth(magnetUri: string, userId?: number): Promise<any>;
     removeTorrent(infoHash: string, userId?: number): Promise<any>;
     getAllTorrents(userId?: number): Promise<any>;

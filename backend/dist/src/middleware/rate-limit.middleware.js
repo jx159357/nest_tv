@@ -65,7 +65,7 @@ let RateLimitMiddleware = class RateLimitMiddleware {
             request.headers['x-real-ip'] ||
             request.connection.remoteAddress ||
             request.socket.remoteAddress;
-        const clientIp = ip ? ip.split(',')[0].trim() : 'unknown';
+        const clientIp = ip ? (Array.isArray(ip) ? ip[0] : ip.toString()).split(',')[0].trim() : 'unknown';
         return `ip_${clientIp}`;
     }
     cleanupExpiredCounters() {

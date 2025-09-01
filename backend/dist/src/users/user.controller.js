@@ -14,10 +14,13 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserController = void 0;
 const common_1 = require("@nestjs/common");
+const swagger_1 = require("@nestjs/swagger");
 const user_service_1 = require("./user.service");
 const auth_service_1 = require("../auth/auth.service");
 const register_user_dto_1 = require("./dtos/register-user.dto");
 const login_user_dto_1 = require("./dtos/login-user.dto");
+const user_response_dto_1 = require("./dtos/user-response.dto");
+const jwt_response_dto_1 = require("../auth/dtos/jwt-response.dto");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 let UserController = class UserController {
     userService;
@@ -39,6 +42,16 @@ let UserController = class UserController {
 exports.UserController = UserController;
 __decorate([
     (0, common_1.Post)('register'),
+    (0, swagger_1.ApiOperation)({ summary: '用户注册' }),
+    (0, swagger_1.ApiResponse)({
+        status: 201,
+        description: '用户注册成功',
+        type: user_response_dto_1.UserResponseDto,
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 400,
+        description: '用户数据验证失败',
+    }),
     (0, common_1.UsePipes)(new common_1.ValidationPipe({ transform: true })),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -47,6 +60,16 @@ __decorate([
 ], UserController.prototype, "register", null);
 __decorate([
     (0, common_1.Post)('login'),
+    (0, swagger_1.ApiOperation)({ summary: '用户登录' }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: '登录成功，返回JWT令牌',
+        type: jwt_response_dto_1.JwtResponseDto,
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 401,
+        description: '用户名或密码错误',
+    }),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, common_1.UsePipes)(new common_1.ValidationPipe({ transform: true })),
     __param(0, (0, common_1.Body)()),
@@ -56,6 +79,17 @@ __decorate([
 ], UserController.prototype, "login", null);
 __decorate([
     (0, common_1.Get)('profile'),
+    (0, swagger_1.ApiOperation)({ summary: '获取当前用户信息' }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: '成功获取当前用户信息',
+        type: user_response_dto_1.UserResponseDto,
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 401,
+        description: '未提供有效的JWT令牌',
+    }),
+    (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
@@ -63,6 +97,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], UserController.prototype, "getProfile", null);
 exports.UserController = UserController = __decorate([
+    (0, swagger_1.ApiTags)('用户管理'),
     (0, common_1.Controller)('users'),
     __metadata("design:paramtypes", [user_service_1.UserService,
         auth_service_1.AuthService])

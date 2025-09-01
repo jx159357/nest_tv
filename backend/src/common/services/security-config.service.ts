@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Multer } from 'multer';
 
 @Injectable()
 export class SecurityConfigService {
@@ -122,7 +123,7 @@ export class SecurityConfigService {
   }
 
   // 验证文件类型
-  validateFileType(file: Express.Multer.File): boolean {
+  validateFileType(file: Multer.File): boolean {
     const fileConfig = this.getFileUploadConfig();
     const fileExtension = file.originalname.split('.').pop()?.toLowerCase();
     
@@ -130,7 +131,7 @@ export class SecurityConfigService {
   }
 
   // 验证文件大小
-  validateFileSize(file: Express.Multer.File): boolean {
+  validateFileSize(file: Multer.File): boolean {
     const fileConfig = this.getFileUploadConfig();
     return file.size <= fileConfig.maxSize;
   }
@@ -206,7 +207,7 @@ export class SecurityConfigService {
 
   // 密码验证规则
   validatePassword(password: string): { isValid: boolean; errors: string[] } {
-    const policy = this.passwordPolicy();
+    const policy = this.passwordPolicy;
     const errors: string[] = [];
 
     // 长度验证

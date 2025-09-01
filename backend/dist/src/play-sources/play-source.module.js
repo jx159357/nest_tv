@@ -13,6 +13,7 @@ const play_source_service_1 = require("./play-source.service");
 const play_source_controller_1 = require("./play-source.controller");
 const play_source_entity_1 = require("../entities/play-source.entity");
 const media_resource_entity_1 = require("../entities/media-resource.entity");
+const common_module_1 = require("../common/common.module");
 let PlaySourceModule = class PlaySourceModule {
 };
 exports.PlaySourceModule = PlaySourceModule;
@@ -20,6 +21,7 @@ exports.PlaySourceModule = PlaySourceModule = __decorate([
     (0, common_1.Module)({
         imports: [
             typeorm_1.TypeOrmModule.forFeature([play_source_entity_1.PlaySource, media_resource_entity_1.MediaResource]),
+            common_module_1.CommonModule.forFeature(),
         ],
         controllers: [play_source_controller_1.PlaySourceController],
         providers: [play_source_service_1.PlaySourceService],

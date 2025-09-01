@@ -74,7 +74,7 @@ export class RateLimitMiddleware implements NestMiddleware {
                  request.socket.remoteAddress;
     
     // 如果有用户代理，取第一个IP
-    const clientIp = ip ? ip.split(',')[0].trim() : 'unknown';
+    const clientIp = ip ? (Array.isArray(ip) ? ip[0] : ip.toString()).split(',')[0].trim() : 'unknown';
     
     return `ip_${clientIp}`;
   }

@@ -4,9 +4,24 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class PerformanceMonitorService implements OnModuleInit {
   private readonly metrics = {
-    requests: { count: 0, duration: [] },
+    requests: { 
+      count: 0, 
+      duration: [] as Array<{ 
+        duration: number; 
+        method: string; 
+        path: string; 
+        statusCode: number; 
+        timestamp: number; 
+      }> 
+    },
     errors: { count: 0, lastError: null as any },
-    database: { slowQueries: [] as Array<{ query: string; duration: number }> },
+    database: { 
+      slowQueries: [] as Array<{ 
+        query: string; 
+        duration: number; 
+        timestamp: number; 
+      }> 
+    },
     memory: { usage: [] as Array<{ timestamp: number; usage: number }> }
   };
 

@@ -177,7 +177,7 @@ let SecurityConfigService = class SecurityConfigService {
         };
     }
     validatePassword(password) {
-        const policy = this.passwordPolicy();
+        const policy = this.passwordPolicy;
         const errors = [];
         if (password.length < policy.minLength) {
             errors.push(`Password must be at least ${policy.minLength} characters long`);

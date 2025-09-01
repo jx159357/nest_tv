@@ -160,6 +160,7 @@ let DataCollectionService = class DataCollectionService {
     ];
     async collectFromUrl(sourceName, url, userId) {
         const context = { userId, function: 'collectFromUrl', sourceName, url };
+        const startTime = Date.now();
         try {
             const source = this.sources.find(s => s.name === sourceName);
             if (!source || !source.enabled) {
@@ -167,7 +168,6 @@ let DataCollectionService = class DataCollectionService {
                 return null;
             }
             this.logger.logCrawler(sourceName, url, 'start', null, context);
-            const startTime = Date.now();
             const response = await axios_1.default.get(url, {
                 timeout: 30000,
                 headers: {
@@ -209,7 +209,7 @@ let DataCollectionService = class DataCollectionService {
         catch (error) {
             this.logger.logCrawler(sourceName, url, 'error', {
                 error: error.message,
-                responseTime: Date.now() - (startTime || Date.now()),
+                responseTime: Date.now() - startTime,
             }, context);
             return null;
         }
@@ -399,7 +399,10 @@ let DataCollectionService = class DataCollectionService {
         $(selector).each((index, element) => {
             const href = $(element).attr('href');
             if (href) {
-                urls.push(this.resolveUrl(href, baseUrl));
+                const resolvedUrl = this.resolveUrl(href, baseUrl);
+                if (resolvedUrl) {
+                    urls.push(resolvedUrl);
+                }
             }
         });
         return urls;

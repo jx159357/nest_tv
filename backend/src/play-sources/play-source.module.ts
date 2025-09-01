@@ -4,10 +4,12 @@ import { PlaySourceService } from './play-source.service';
 import { PlaySourceController } from './play-source.controller';
 import { PlaySource } from '../entities/play-source.entity';
 import { MediaResource } from '../entities/media-resource.entity';
+import { CommonModule } from '../common/common.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([PlaySource, MediaResource]),
+    CommonModule.forFeature(),
   ],
   controllers: [PlaySourceController],
   providers: [PlaySourceService],

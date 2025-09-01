@@ -54,11 +54,11 @@ __decorate([
     __metadata("design:type", Boolean)
 ], AdminPermission.prototype, "isActive", void 0);
 __decorate([
-    CreateDateColumn(),
+    (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)
 ], AdminPermission.prototype, "createdAt", void 0);
 __decorate([
-    UpdateDateColumn(),
+    (0, typeorm_1.UpdateDateColumn)(),
     __metadata("design:type", Date)
 ], AdminPermission.prototype, "updatedAt", void 0);
 __decorate([

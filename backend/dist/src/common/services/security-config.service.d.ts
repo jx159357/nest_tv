@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+import { Multer } from 'multer';
 export declare class SecurityConfigService {
     private readonly configService;
     constructor(configService: ConfigService);
@@ -46,8 +47,8 @@ export declare class SecurityConfigService {
         storagePath: string;
         allowedMimeTypes: string[];
     };
-    validateFileType(file: Express.Multer.File): boolean;
-    validateFileSize(file: Express.Multer.File): boolean;
+    validateFileType(file: Multer.File): boolean;
+    validateFileSize(file: Multer.File): boolean;
     getContentSecurityPolicy(): {
         defaultSrc: string[];
         scriptSrc: string[];

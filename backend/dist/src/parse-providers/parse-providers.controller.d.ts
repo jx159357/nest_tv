@@ -1,7 +1,7 @@
 import { ParseProvidersService } from './parse-providers.service';
-import { CreateParseProviderDto } from './dtos/create-parse-provider.dto';
-import { UpdateParseProviderDto } from './dtos/update-parse-provider.dto';
-import { ParseProviderQueryDto } from './dtos/parse-provider-query.dto';
+import { CreateParseProviderDto } from './dto/create-parse-provider.dto';
+import { UpdateParseProviderDto } from './dto/update-parse-provider.dto';
+import { ParseProviderQueryDto } from './dto/parse-provider-query.dto';
 import { ParseProvider } from '../entities/parse-provider.entity';
 export declare class ParseProvidersController {
     private readonly parseProvidersService;

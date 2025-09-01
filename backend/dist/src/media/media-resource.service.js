@@ -18,10 +18,16 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const media_resource_entity_1 = require("../entities/media-resource.entity");
 const user_entity_1 = require("../entities/user.entity");
+const performance_monitor_service_1 = require("../common/services/performance-monitor.service");
+const media_cache_service_1 = require("../common/services/media-cache.service");
 let MediaResourceService = class MediaResourceService {
     mediaResourceRepository;
-    constructor(mediaResourceRepository) {
+    performanceMonitorService;
+    mediaCacheService;
+    constructor(mediaResourceRepository, performanceMonitorService, mediaCacheService) {
         this.mediaResourceRepository = mediaResourceRepository;
+        this.performanceMonitorService = performanceMonitorService;
+        this.mediaCacheService = mediaCacheService;
     }
     async create(createMediaResourceDto) {
         const mediaResource = this.mediaResourceRepository.create(createMediaResourceDto);
@@ -29,6 +35,7 @@ let MediaResourceService = class MediaResourceService {
     }
     async findAll(queryDto) {
         const { page = 1, limit = 10, search, type, genre, minRating, maxRating, sortBy = 'createdAt', sortOrder = 'DESC' } = queryDto;
+        const startTime = Date.now();
         const queryBuilder = this.mediaResourceRepository.createQueryBuilder('media');
         if (search) {
             queryBuilder.andWhere('(media.title LIKE :search OR media.description LIKE :search OR media.director LIKE :search OR media.actors LIKE :search)', { search: `%${search}%` });
@@ -48,22 +55,32 @@ let MediaResourceService = class MediaResourceService {
         const validSortFields = ['id', 'title', 'rating', 'viewCount', 'createdAt', 'releaseDate'];
         const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
         queryBuilder.orderBy(`media.${sortField}`, sortOrder);
-        const offset = (page - 1) * limit;
-        queryBuilder.skip(offset).take(limit);
+        const validatedLimit = Math.min(Math.max(limit, 1), 100);
+        const offset = (page - 1) * validatedLimit;
+        queryBuilder.skip(offset).take(validatedLimit);
         const [data, total] = await queryBuilder.getManyAndCount();
+        const duration = Date.now() - startTime;
+        this.performanceMonitorService.recordDatabaseQuery(`MediaResource.findAll - ${JSON.stringify(queryDto)}`, duration);
         return {
             data,
             total,
             page: Number(page),
-            limit: Number(limit),
-            totalPages: Math.ceil(total / limit),
+            limit: validatedLimit,
+            totalPages: Math.ceil(total / validatedLimit),
         };
     }
     async findById(id) {
-        const mediaResource = await this.mediaResourceRepository.findOne({
-            where: { id },
-            relations: ['playSources', 'watchHistory'],
-        });
+        const startTime = Date.now();
+        const mediaResource = await this.mediaResourceRepository
+            .createQueryBuilder('media')
+            .leftJoinAndSelect('media.playSources', 'playSources')
+            .leftJoinAndSelect('media.watchHistory', 'watchHistory')
+            .leftJoinAndSelect('media.recommendations', 'recommendations')
+            .leftJoinAndSelect('media.iptvChannels', 'iptvChannels')
+            .where('media.id = :id', { id })
+            .getOne();
+        const duration = Date.now() - startTime;
+        this.performanceMonitorService.recordDatabaseQuery(`MediaResource.findById - ${id}`, duration);
         if (!mediaResource) {
             throw new common_1.NotFoundException('影视资源不存在');
         }
@@ -87,28 +104,64 @@ let MediaResourceService = class MediaResourceService {
         await this.mediaResourceRepository.increment({ id }, 'viewCount', 1);
     }
     async getPopular(limit = 10) {
-        return await this.mediaResourceRepository.find({
-            where: { isActive: true },
-            order: { viewCount: 'DESC', rating: 'DESC' },
-            take: limit,
-        });
+        const validatedLimit = Math.min(Math.max(limit, 1), 50);
+        const cached = await this.mediaCacheService.getCachedPopularMedia(validatedLimit);
+        if (cached) {
+            return cached;
+        }
+        const startTime = Date.now();
+        const mediaResources = await this.mediaResourceRepository
+            .createQueryBuilder('media')
+            .where('media.isActive = :isActive', { isActive: true })
+            .orderBy('media.viewCount', 'DESC')
+            .addOrderBy('media.rating', 'DESC')
+            .take(validatedLimit)
+            .getMany();
+        const duration = Date.now() - startTime;
+        this.performanceMonitorService.recordDatabaseQuery(`MediaResource.getPopular - ${validatedLimit}`, duration);
+        await this.mediaCacheService.cachePopularMedia(mediaResources, validatedLimit);
+        return mediaResources;
     }
     async getLatest(limit = 10) {
-        return await this.mediaResourceRepository.find({
-            where: { isActive: true },
-            order: { createdAt: 'DESC' },
-            take: limit,
-        });
+        const validatedLimit = Math.min(Math.max(limit, 1), 50);
+        const cached = await this.mediaCacheService.getCachedLatestMedia(validatedLimit);
+        if (cached) {
+            return cached;
+        }
+        const startTime = Date.now();
+        const mediaResources = await this.mediaResourceRepository
+            .createQueryBuilder('media')
+            .where('media.isActive = :isActive', { isActive: true })
+            .orderBy('media.createdAt', 'DESC')
+            .take(validatedLimit)
+            .getMany();
+        const duration = Date.now() - startTime;
+        this.performanceMonitorService.recordDatabaseQuery(`MediaResource.getLatest - ${validatedLimit}`, duration);
+        await this.mediaCacheService.cacheLatestMedia(mediaResources, validatedLimit);
+        return mediaResources;
     }
     async getTopRated(limit = 10, minRating = 8) {
-        return await this.mediaResourceRepository.find({
-            where: {
-                isActive: true,
-                rating: (0, typeorm_2.Between)(minRating, 10)
-            },
-            order: { rating: 'DESC' },
-            take: limit,
-        });
+        const validatedLimit = Math.min(Math.max(limit, 1), 50);
+        const cached = await this.mediaCacheService.getCachedTopRatedMedia(validatedLimit, minRating);
+        if (cached) {
+            return cached;
+        }
+        const startTime = Date.now();
+        const mediaResources = await this.mediaResourceRepository
+            .createQueryBuilder('media')
+            .where('media.isActive = :isActive', { isActive: true })
+            .andWhere('media.rating BETWEEN :minRating AND :maxRating', {
+            minRating,
+            maxRating: 10
+        })
+            .orderBy('media.rating', 'DESC')
+            .addOrderBy('media.viewCount', 'DESC')
+            .take(validatedLimit)
+            .getMany();
+        const duration = Date.now() - startTime;
+        this.performanceMonitorService.recordDatabaseQuery(`MediaResource.getTopRated - ${validatedLimit}`, duration);
+        await this.mediaCacheService.cacheTopRatedMedia(mediaResources, validatedLimit, minRating);
+        return mediaResources;
     }
     async getByType(type, limit = 20) {
         return await this.mediaResourceRepository.find({
@@ -151,6 +204,8 @@ let MediaResourceService = class MediaResourceService {
         }
         user.favorites.push(mediaResource);
         await this.mediaResourceRepository.manager.save(user);
+        await this.mediaCacheService.clearUserCache(userId);
+        await this.mediaCacheService.clearMediaCache(mediaResourceId);
     }
     async removeFromFavorites(userId, mediaResourceId) {
         const mediaResource = await this.mediaResourceRepository.findOne({
@@ -169,6 +224,8 @@ let MediaResourceService = class MediaResourceService {
         }
         user.favorites = user.favorites.filter(fav => fav.id !== mediaResourceId);
         await this.mediaResourceRepository.manager.save(user);
+        await this.mediaCacheService.clearUserCache(userId);
+        await this.mediaCacheService.clearMediaCache(mediaResourceId);
     }
     async isFavoritedByUser(userId, mediaResourceId) {
         const user = await this.mediaResourceRepository.manager
@@ -180,28 +237,35 @@ let MediaResourceService = class MediaResourceService {
         return !!user;
     }
     async getUserFavorites(userId, page = 1, limit = 10) {
-        const user = await this.mediaResourceRepository.manager
-            .createQueryBuilder(user_entity_1.User, 'user')
-            .leftJoinAndSelect('user.favorites', 'favorites')
-            .leftJoinAndSelect('favorites.playSources', 'playSources')
-            .leftJoinAndSelect('favorites.watchHistory', 'watchHistory')
-            .where('user.id = :userId', { userId })
-            .orderBy('favorites.createdAt', 'DESC')
-            .skip((page - 1) * limit)
-            .take(limit)
-            .getOne();
-        if (!user) {
-            throw new common_1.NotFoundException('用户不存在');
+        const validatedLimit = Math.min(Math.max(limit, 1), 100);
+        const cached = await this.mediaCacheService.getCachedUserFavorites(userId, page, validatedLimit);
+        if (cached) {
+            return cached;
         }
-        const total = user.favorites.length;
-        const totalPages = Math.ceil(total / limit);
-        return {
-            data: user.favorites,
-            total,
+        const startTime = Date.now();
+        const offset = (page - 1) * validatedLimit;
+        const [favorites, totalCount] = await this.mediaResourceRepository.manager
+            .createQueryBuilder()
+            .select('media')
+            .from(media_resource_entity_1.MediaResource, 'media')
+            .innerJoin('media.favorites', 'user', 'user.id = :userId', { userId })
+            .leftJoinAndSelect('media.playSources', 'playSources')
+            .leftJoinAndSelect('media.watchHistory', 'watchHistory')
+            .orderBy('media.createdAt', 'DESC')
+            .skip(offset)
+            .take(validatedLimit)
+            .getManyAndCount();
+        const duration = Date.now() - startTime;
+        this.performanceMonitorService.recordDatabaseQuery(`MediaResource.getUserFavorites - ${userId}, page: ${page}`, duration);
+        const result = {
+            data: favorites,
+            total: totalCount,
             page,
-            limit,
-            totalPages,
+            limit: validatedLimit,
+            totalPages: Math.ceil(totalCount / validatedLimit),
         };
+        await this.mediaCacheService.cacheUserFavorites(userId, result, page, validatedLimit);
+        return result;
     }
     async rateResource(userId, mediaResourceId, rating) {
         if (rating < 0 || rating > 10) {
@@ -237,6 +301,8 @@ exports.MediaResourceService = MediaResourceService;
 exports.MediaResourceService = MediaResourceService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(media_resource_entity_1.MediaResource)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        performance_monitor_service_1.PerformanceMonitorService,
+        media_cache_service_1.MediaCacheService])
 ], MediaResourceService);
 //# sourceMappingURL=media-resource.service.js.map

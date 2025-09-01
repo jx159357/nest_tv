@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-gray-50">
     <!-- 导航栏 -->
     <nav class="bg-white shadow-sm">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="container-responsive">
         <div class="flex justify-between h-16">
           <div class="flex items-center">
             <router-link to="/" class="text-xl font-bold text-gray-900">视频平台</router-link>
@@ -21,11 +21,11 @@
     </nav>
 
     <!-- 主要内容 -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+    <main class="container-responsive py-8">
+      <div class="grid-responsive">
         <!-- 左侧用户信息 -->
         <div class="lg:col-span-1">
-          <div class="bg-white rounded-lg shadow-sm p-6">
+          <div class="card-responsive">
             <div class="text-center">
               <div class="w-24 h-24 bg-gray-200 rounded-full mx-auto mb-4 flex items-center justify-center">
                 <span class="text-2xl text-gray-500">
@@ -65,7 +65,7 @@
         <!-- 右侧内容区域 -->
         <div class="lg:col-span-3 space-y-6">
           <!-- 统计信息 -->
-          <div class="bg-white rounded-lg shadow-sm p-6">
+          <div class="card-responsive">
             <h2 class="text-xl font-bold text-gray-900 mb-6">观看统计</h2>
             
             <div v-if="statsLoading" class="text-center py-4">
@@ -91,7 +91,7 @@
           </div>
 
           <!-- 继续观看 -->
-          <div class="bg-white rounded-lg shadow-sm p-6">
+          <div class="card-responsive">
             <div class="flex justify-between items-center mb-6">
               <h2 class="text-xl font-bold text-gray-900">继续观看</h2>
               <router-link to="/continue-watching" class="text-indigo-600 hover:text-indigo-500 text-sm">
@@ -141,7 +141,7 @@
           </div>
 
           <!-- 已看完 -->
-          <div class="bg-white rounded-lg shadow-sm p-6">
+          <div class="card-responsive">
             <div class="flex justify-between items-center mb-6">
               <h2 class="text-xl font-bold text-gray-900">已看完</h2>
               <router-link to="/completed" class="text-indigo-600 hover:text-indigo-500 text-sm">
@@ -197,7 +197,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import axios from 'axios'
+import { watchHistoryApi } from '@/api/watchHistory'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -216,22 +216,24 @@ const continueLoading = ref(false)
 const completedLoading = ref(false)
 
 const loadUserProfile = async () => {
+  if (!authStore.user?.id) return
+  
   statsLoading.value = true
   continueLoading.value = true
   completedLoading.value = true
 
   try {
     // 加载用户统计
-    const statsResponse = await authStore.api.get(`/watch-history/user/${authStore.user.id}/stats`)
-    userStats.value = statsResponse.data
+    const statsResponse = await watchHistoryApi.getUserStats(authStore.user.id)
+    userStats.value = statsResponse
 
     // 加载继续观看列表
-    const continueResponse = await authStore.api.get(`/watch-history/user/${authStore.user.id}/continue?limit=5`)
-    continueWatching.value = continueResponse.data
+    const continueResponse = await watchHistoryApi.getContinueWatching(authStore.user.id, { limit: 5 })
+    continueWatching.value = continueResponse
 
     // 加载已看完列表
-    const completedResponse = await authStore.api.get(`/watch-history/user/${authStore.user.id}/completed?limit=4`)
-    completed.value = completedResponse.data
+    const completedResponse = await watchHistoryApi.getCompleted(authStore.user.id, { limit: 4 })
+    completed.value = completedResponse
   } catch (error) {
     console.error('加载用户数据失败:', error)
   } finally {

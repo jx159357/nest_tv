@@ -15,9 +15,14 @@ const config_1 = require("@nestjs/config");
 let PerformanceMonitorService = class PerformanceMonitorService {
     configService;
     metrics = {
-        requests: { count: 0, duration: [] },
+        requests: {
+            count: 0,
+            duration: []
+        },
         errors: { count: 0, lastError: null },
-        database: { slowQueries: [] },
+        database: {
+            slowQueries: []
+        },
         memory: { usage: [] }
     };
     constructor(configService) {

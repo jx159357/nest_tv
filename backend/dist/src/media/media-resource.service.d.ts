@@ -3,9 +3,13 @@ import { MediaResource, MediaType } from '../entities/media-resource.entity';
 import { CreateMediaResourceDto } from './dtos/create-media-resource.dto';
 import { UpdateMediaResourceDto } from './dtos/update-media-resource.dto';
 import { MediaResourceQueryDto } from './dtos/media-resource-query.dto';
+import { PerformanceMonitorService } from '../common/services/performance-monitor.service';
+import { MediaCacheService } from '../common/services/media-cache.service';
 export declare class MediaResourceService {
     private mediaResourceRepository;
-    constructor(mediaResourceRepository: Repository<MediaResource>);
+    private performanceMonitorService;
+    private mediaCacheService;
+    constructor(mediaResourceRepository: Repository<MediaResource>, performanceMonitorService: PerformanceMonitorService, mediaCacheService: MediaCacheService);
     create(createMediaResourceDto: CreateMediaResourceDto): Promise<MediaResource>;
     findAll(queryDto: MediaResourceQueryDto): Promise<{
         data: MediaResource[];

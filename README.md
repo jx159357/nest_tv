@@ -402,6 +402,7 @@ Authorization: Bearer <JWT_TOKEN>
 
 # 获取系统健康状态
 GET /admin/health
+
 Authorization: Bearer <JWT_TOKEN>
 
 # 创建角色

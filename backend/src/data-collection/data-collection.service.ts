@@ -152,6 +152,7 @@ export class DataCollectionService {
    */
   async collectFromUrl(sourceName: string, url: string, userId?: number): Promise<MediaData | null> {
     const context: LogContext = { userId, function: 'collectFromUrl', sourceName, url };
+    const startTime = Date.now();
     
     try {
       const source = this.sources.find(s => s.name === sourceName);
@@ -161,8 +162,6 @@ export class DataCollectionService {
       }
 
       this.logger.logCrawler(sourceName, url, 'start', null, context);
-
-      const startTime = Date.now();
       
       // 下载网页内容
       const response = await axios.get(url, {
@@ -211,7 +210,7 @@ export class DataCollectionService {
     } catch (error) {
       this.logger.logCrawler(sourceName, url, 'error', {
         error: error.message,
-        responseTime: Date.now() - (startTime || Date.now()),
+        responseTime: Date.now() - startTime,
       }, context);
       return null;
     }
@@ -473,7 +472,10 @@ export class DataCollectionService {
     $(selector).each((index, element) => {
       const href = $(element).attr('href');
       if (href) {
-        urls.push(this.resolveUrl(href, baseUrl));
+        const resolvedUrl = this.resolveUrl(href, baseUrl);
+        if (resolvedUrl) {
+          urls.push(resolvedUrl);
+        }
       }
     });
 

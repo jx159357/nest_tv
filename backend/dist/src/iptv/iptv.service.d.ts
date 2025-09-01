@@ -1,8 +1,8 @@
 import { Repository } from 'typeorm';
 import { IPTVChannel } from '../entities/iptv-channel.entity';
-import { CreateIPTVChannelDto } from './dtos/create-iptv-channel.dto';
-import { UpdateIPTVChannelDto } from './dtos/update-iptv-channel.dto';
-import { IPTVChannelQueryDto } from './dtos/iptv-channel-query.dto';
+import { CreateIPTVChannelDto } from './dto/create-iptv-channel.dto';
+import { UpdateIPTVChannelDto } from './dto/update-iptv-channel.dto';
+import { IPTVChannelQueryDto } from './dto/iptv-channel-query.dto';
 export declare class IPTVService {
     private iptvChannelRepository;
     private readonly logger;

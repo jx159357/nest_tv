@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# 运行类型检查
+npm run type-check
+
+# 运行代码检查
+npm run lint:check
+
+# 运行测试
+npm run test:ci

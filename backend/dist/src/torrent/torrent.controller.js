@@ -96,12 +96,14 @@ let TorrentController = class TorrentController {
             const stream = this.torrentService.getFileStream(infoHash, parseInt(fileIndex.toString()));
             if (!stream) {
                 this.logger.error(`Stream not found: ${infoHash}/${fileIndex}`, context);
-                res.status(404).send('文件流不存在');
+                if (res) {
+                    res.status(404).send('文件流不存在');
+                }
                 return;
             }
             const torrentInfo = this.torrentService.getTorrentInfo(infoHash);
             const file = torrentInfo?.files[parseInt(fileIndex.toString())];
-            if (file) {
+            if (file && res) {
                 res.setHeader('Content-Type', file.type || 'video/mp4');
                 res.setHeader('Content-Length', file.length);
                 res.setHeader('Accept-Ranges', 'bytes');
@@ -111,30 +113,40 @@ let TorrentController = class TorrentController {
                     const start = parseInt(parts[0], 10);
                     const end = parts[1] ? parseInt(parts[1], 10) : file.length - 1;
                     const chunksize = (end - start) + 1;
-                    res.writeHead(206, {
-                        'Content-Range': `bytes ${start}-${end}/${file.length}`,
-                        'Accept-Ranges': 'bytes',
-                        'Content-Length': chunksize,
-                        'Content-Type': file.type || 'video/mp4',
-                    });
-                    const fileStream = file.createReadStream({ start, end });
-                    fileStream.pipe(res);
+                    if (res) {
+                        res.writeHead(206, {
+                            'Content-Range': `bytes ${start}-${end}/${file.length}`,
+                            'Accept-Ranges': 'bytes',
+                            'Content-Length': chunksize,
+                            'Content-Type': file.type || 'video/mp4',
+                        });
+                        const fileStream = file.createReadStream({ start, end });
+                        fileStream.pipe(res);
+                    }
                 }
                 else {
-                    res.setHeader('Content-Type', file.type || 'video/mp4');
-                    res.setHeader('Content-Length', file.length);
-                    stream.pipe(res);
+                    if (res) {
+                        res.setHeader('Content-Type', file.type || 'video/mp4');
+                        res.setHeader('Content-Length', file.length);
+                    }
+                    if (res) {
+                        stream.pipe(res);
+                    }
                 }
                 this.logger.logTorrent(infoHash, 'stream_started', { fileIndex, fileName: file.name }, context);
             }
             else {
-                stream.pipe(res);
+                if (res) {
+                    stream.pipe(res);
+                }
                 this.logger.logTorrent(infoHash, 'stream_started', { fileIndex }, context);
             }
         }
         catch (error) {
             this.logger.error(`Failed to get file stream: ${error.message}`, context, error.stack);
-            res.status(500).send('获取文件流失败');
+            if (res) {
+                res.status(500).send('获取文件流失败');
+            }
         }
     }
     async checkMagnetHealth(magnetUri, userId) {
@@ -279,7 +291,7 @@ __decorate([
     __param(1, (0, common_1.Param)('fileIndex')),
     __param(2, (0, common_1.Query)('userId')),
     __param(3, (0, common_1.Res)()),
-    __param(4, Req()),
+    __param(4, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Number, Number, Object, Object]),
     __metadata("design:returntype", Promise)

@@ -17,7 +17,7 @@ export class SecurityHeadersMiddleware implements NestMiddleware {
     response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     
     // CSP策略
-    const isProduction = configService.get<string>('NODE_ENV') === 'production';
+    const isProduction = configService.get('NODE_ENV') === 'production';
     if (isProduction) {
       response.setHeader('Content-Security-Policy', [
         "default-src 'self'",

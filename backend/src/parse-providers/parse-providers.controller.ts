@@ -5,7 +5,7 @@ import { CreateParseProviderDto } from './dto/create-parse-provider.dto';
 import { UpdateParseProviderDto } from './dto/update-parse-provider.dto';
 import { ParseProviderQueryDto } from './dto/parse-provider-query.dto';
 import { ParseProvider } from '../entities/parse-provider.entity';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('解析提供商管理')
 @Controller('parse-providers')

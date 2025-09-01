@@ -6,7 +6,7 @@ import { CreatePlaySourceDto } from './dtos/create-play-source.dto';
 import { UpdatePlaySourceDto } from './dtos/update-play-source.dto';
 import { PlaySourceQueryDto } from './dtos/play-source-query.dto';
 import { TorrentService } from '../common/services/torrent.service';
-import { AppLoggerService, LogContext } from '../common/services/app-logger.service';
+import { AppLoggerService, LogContext, LogLevel } from '../common/services/app-logger.service';
 
 @Injectable()
 export class PlaySourceService {
@@ -316,7 +316,7 @@ export class PlaySourceService {
         // 如果磁力链接不存在，重新添加
         try {
           await this.torrentService.addMagnet(playSource.url);
-          this.logger.log('Re-added magnet to client', 'info', { infoHash, playSourceId: id }, context);
+          this.logger.log('Re-added magnet to client', LogLevel.INFO, context);
           
           // 等待1秒让元数据加载
           await new Promise(resolve => setTimeout(resolve, 1000));
@@ -503,12 +503,7 @@ export class PlaySourceService {
 
       const averageProgress = activeCount > 0 ? totalProgress / activeCount : 0;
 
-      this.logger.log('Retrieved magnet stats', 'info', {
-        mediaResourceId,
-        totalMagnets: playSources.length,
-        activeMagnets: activeCount,
-        ...context,
-      });
+      this.logger.log('Retrieved magnet stats', LogLevel.INFO, context);
 
       return {
         totalMagnets: playSources.length,

@@ -11,17 +11,16 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b, _c;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ParseProvidersController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const parse_providers_service_1 = require("./parse-providers.service");
-const create_parse_provider_dto_1 = require("./dtos/create-parse-provider.dto");
-const update_parse_provider_dto_1 = require("./dtos/update-parse-provider.dto");
-const parse_provider_query_dto_1 = require("./dtos/parse-provider-query.dto");
+const create_parse_provider_dto_1 = require("./dto/create-parse-provider.dto");
+const update_parse_provider_dto_1 = require("./dto/update-parse-provider.dto");
+const parse_provider_query_dto_1 = require("./dto/parse-provider-query.dto");
 const parse_provider_entity_1 = require("../entities/parse-provider.entity");
-const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 let ParseProvidersController = class ParseProvidersController {
     parseProvidersService;
     constructor(parseProvidersService) {
@@ -83,7 +82,7 @@ __decorate([
     (0, swagger_1.ApiResponse)({ status: 201, description: '解析提供商创建成功', type: parse_provider_entity_1.ParseProvider }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_a = typeof create_parse_provider_dto_1.CreateParseProviderDto !== "undefined" && create_parse_provider_dto_1.CreateParseProviderDto) === "function" ? _a : Object]),
+    __metadata("design:paramtypes", [create_parse_provider_dto_1.CreateParseProviderDto]),
     __metadata("design:returntype", Promise)
 ], ParseProvidersController.prototype, "create", null);
 __decorate([
@@ -92,7 +91,7 @@ __decorate([
     (0, swagger_1.ApiResponse)({ status: 200, description: '查询成功' }),
     __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_b = typeof parse_provider_query_dto_1.ParseProviderQueryDto !== "undefined" && parse_provider_query_dto_1.ParseProviderQueryDto) === "function" ? _b : Object]),
+    __metadata("design:paramtypes", [parse_provider_query_dto_1.ParseProviderQueryDto]),
     __metadata("design:returntype", Promise)
 ], ParseProvidersController.prototype, "findAll", null);
 __decorate([
@@ -113,7 +112,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, typeof (_c = typeof update_parse_provider_dto_1.UpdateParseProviderDto !== "undefined" && update_parse_provider_dto_1.UpdateParseProviderDto) === "function" ? _c : Object]),
+    __metadata("design:paramtypes", [Number, update_parse_provider_dto_1.UpdateParseProviderDto]),
     __metadata("design:returntype", Promise)
 ], ParseProvidersController.prototype, "update", null);
 __decorate([

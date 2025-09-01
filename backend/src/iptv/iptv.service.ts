@@ -2,9 +2,9 @@ import { Injectable, HttpException, HttpStatus, NotFoundException, Logger } from
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, In, Between, Not } from 'typeorm';
 import { IPTVChannel } from '../entities/iptv-channel.entity';
-import { CreateIPTVChannelDto } from './dtos/create-iptv-channel.dto';
-import { UpdateIPTVChannelDto } from './dtos/update-iptv-channel.dto';
-import { IPTVChannelQueryDto } from './dtos/iptv-channel-query.dto';
+import { CreateIPTVChannelDto } from './dto/create-iptv-channel.dto';
+import { UpdateIPTVChannelDto } from './dto/update-iptv-channel.dto';
+import { IPTVChannelQueryDto } from './dto/iptv-channel-query.dto';
 import axios from 'axios';
 import * as m3u8Parser from 'm3u8-parser';
 

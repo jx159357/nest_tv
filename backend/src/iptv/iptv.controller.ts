@@ -1,11 +1,11 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { IPTVService } from './iptv.service';
-import { CreateIPTVChannelDto } from './dtos/create-iptv-channel.dto';
-import { UpdateIPTVChannelDto } from './dtos/update-iptv-channel.dto';
-import { IPTVChannelQueryDto } from './dtos/iptv-channel-query.dto';
+import { CreateIPTVChannelDto } from './dto/create-iptv-channel.dto';
+import { UpdateIPTVChannelDto } from './dto/update-iptv-channel.dto';
+import { IPTVChannelQueryDto } from './dto/iptv-channel-query.dto';
 import { IPTVChannel } from '../entities/iptv-channel.entity';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('IPTV频道管理')
 @Controller('iptv')

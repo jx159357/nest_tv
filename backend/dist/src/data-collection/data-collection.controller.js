@@ -17,7 +17,7 @@ const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const data_collection_service_1 = require("./data-collection.service");
 const app_logger_service_1 = require("../common/services/app-logger.service");
-const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 let DataCollectionController = class DataCollectionController {
     dataCollectionService;
     logger;
@@ -42,11 +42,7 @@ let DataCollectionController = class DataCollectionController {
                     message: '数据采集失败',
                 };
             }
-            this.logger.log('Data collection successful', LogLevel.INFO, {
-                title: result.title,
-                type: result.type,
-                source: result.source
-            }, context);
+            this.logger.log('Data collection successful', app_logger_service_1.LogLevel.INFO, context);
             return {
                 success: true,
                 message: '数据采集成功',
@@ -63,11 +59,7 @@ let DataCollectionController = class DataCollectionController {
         try {
             this.logger.logUserAction(userId || 0, 'batch_collect', urls.length.toString(), { sourceName }, context);
             const results = await this.dataCollectionService.batchCollect(sourceName, urls, userId);
-            this.logger.log('Batch data collection completed', LogLevel.INFO, {
-                sourceName,
-                totalUrls: urls.length,
-                successCount: results.length
-            }, context);
+            this.logger.log('Batch data collection completed', app_logger_service_1.LogLevel.INFO, context);
             return {
                 success: true,
                 message: '批量采集完成',
@@ -88,11 +80,7 @@ let DataCollectionController = class DataCollectionController {
         try {
             this.logger.logUserAction(userId || 0, 'collect_popular', count.toString(), { sourceName }, context);
             const results = await this.dataCollectionService.collectPopularResources(sourceName, count, userId);
-            this.logger.log('Popular resources collection completed', LogLevel.INFO, {
-                sourceName,
-                count,
-                successCount: results.length
-            }, context);
+            this.logger.log('Popular resources collection completed', app_logger_service_1.LogLevel.INFO, context);
             return {
                 success: true,
                 message: '热门资源采集完成',
@@ -112,9 +100,7 @@ let DataCollectionController = class DataCollectionController {
         const context = { function: 'getAvailableSources' };
         try {
             const sources = this.dataCollectionService.getAvailableSources();
-            this.logger.log('Retrieved available sources', LogLevel.INFO, {
-                count: sources.length
-            }, context);
+            this.logger.log('Retrieved available sources', app_logger_service_1.LogLevel.INFO, context);
             return {
                 success: true,
                 data: sources,
@@ -137,10 +123,7 @@ let DataCollectionController = class DataCollectionController {
                     message: '数据源不存在',
                 };
             }
-            this.logger.log('Source toggled successfully', LogLevel.INFO, {
-                sourceName,
-                enabled
-            }, context);
+            this.logger.log('Source toggled successfully', app_logger_service_1.LogLevel.INFO, context);
             return {
                 success: true,
                 message: `数据源${enabled ? '启用' : '禁用'}成功`,
@@ -155,7 +138,7 @@ let DataCollectionController = class DataCollectionController {
         const context = { function: 'getSourceStats' };
         try {
             const stats = this.dataCollectionService.getSourceStats();
-            this.logger.log('Retrieved source stats', LogLevel.INFO, context);
+            this.logger.log('Retrieved source stats', app_logger_service_1.LogLevel.INFO, context);
             return {
                 success: true,
                 data: stats,
@@ -174,11 +157,7 @@ let DataCollectionController = class DataCollectionController {
                 mediaResource: null,
                 playSources: [],
             };
-            this.logger.log('Data processed and saved successfully', LogLevel.INFO, {
-                title: mediaData.title,
-                type: mediaData.type,
-                createPlaySources
-            }, context);
+            this.logger.log('Data processed and saved successfully', app_logger_service_1.LogLevel.INFO, context);
             return {
                 success: true,
                 message: '数据处理并保存成功',
@@ -226,9 +205,7 @@ let DataCollectionController = class DataCollectionController {
                 },
             };
             const result = sourceName ? { [sourceName]: templates[sourceName] } : templates;
-            this.logger.log('Retrieved collection templates', LogLevel.INFO, {
-                sourceName
-            }, context);
+            this.logger.log('Retrieved collection templates', app_logger_service_1.LogLevel.INFO, context);
             return {
                 success: true,
                 data: result,

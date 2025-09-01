@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-gray-50">
     <!-- 导航栏 -->
     <nav class="bg-white shadow-sm">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="container-responsive">
         <div class="flex justify-between h-16">
           <div class="flex items-center">
             <router-link to="/" class="text-xl font-bold text-gray-900">视频平台</router-link>
@@ -40,7 +40,7 @@
     </nav>
 
     <!-- 主要内容 -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="container-responsive py-8">
       <h1 class="text-3xl font-bold text-gray-900 mb-8">为你推荐</h1>
       
       <!-- 个性化推荐 -->
@@ -61,11 +61,11 @@
           <p class="mt-2 text-gray-600">正在为你生成个性化推荐...</p>
         </div>
         
-        <div v-else-if="personalizedRecommendations.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div v-else-if="personalizedRecommendations.length > 0" class="grid-responsive">
           <div
             v-for="item in personalizedRecommendations"
             :key="item.id"
-            class="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+            class="card hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
             @click="goToMediaDetail(item.mediaResource.id)"
           >
             <div class="aspect-w-16 aspect-h-9 bg-gray-200">
@@ -112,11 +112,11 @@
           <p class="mt-2 text-gray-600">正在加载热门推荐...</p>
         </div>
         
-        <div v-else-if="trendingRecommendations.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div v-else-if="trendingRecommendations.length > 0" class="grid-responsive">
           <div
             v-for="item in trendingRecommendations"
             :key="item.id"
-            class="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+            class="card hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
             @click="goToMediaDetail(item.mediaResource?.id || item.mediaResourceId)"
           >
             <div class="aspect-w-16 aspect-h-9 bg-gray-200">
@@ -150,11 +150,11 @@
           <p class="mt-2 text-gray-600">正在加载编辑推荐...</p>
         </div>
         
-        <div v-else-if="editorialRecommendations.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div v-else-if="editorialRecommendations.length > 0" class="grid-responsive">
           <div
             v-for="item in editorialRecommendations"
             :key="item.id"
-            class="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+            class="card hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
             @click="goToMediaDetail(item.mediaResource?.id || item.mediaResourceId)"
           >
             <div class="aspect-w-16 aspect-h-9 bg-gray-200">
@@ -196,7 +196,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import axios from 'axios'
+import { recommendationsApi, mediaApi } from '@/api'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -214,7 +214,7 @@ const refreshing = ref(false)
 
 // 获取推荐数据
 const loadRecommendations = async () => {
-  if (!authStore.isAuthenticated) {
+  if (!authStore.isAuthenticated || !authStore.user?.id) {
     router.push('/login')
     return
   }
@@ -222,15 +222,15 @@ const loadRecommendations = async () => {
   // 加载个性化推荐
   personalizedLoading.value = true
   try {
-    const response = await authStore.api.get(`/recommendations/user/${authStore.user.id}?limit=8`)
+    const response = await recommendationsApi.getPersonalized(authStore.user.id, { limit: 8 })
     // 获取推荐对应的影视资源详情
     const recommendationsWithMedia = await Promise.all(
-      response.data.map(async (rec) => {
+      response.map(async (rec) => {
         try {
-          const mediaResponse = await authStore.api.get(`/media/${rec.mediaResourceId}`)
+          const mediaResponse = await mediaApi.getMediaById(rec.mediaResourceId)
           return {
             ...rec,
-            mediaResource: mediaResponse.data
+            mediaResource: mediaResponse
           }
         } catch (error) {
           console.error('获取影视资源详情失败:', error)
@@ -248,15 +248,15 @@ const loadRecommendations = async () => {
   // 加载热门推荐
   trendingLoading.value = true
   try {
-    const response = await authStore.api.get('/recommendations/trending?limit=8')
+    const response = await recommendationsApi.getPopular({ limit: 8 })
     // 获取推荐对应的影视资源详情
     const recommendationsWithMedia = await Promise.all(
-      response.data.map(async (rec) => {
+      response.map(async (rec) => {
         try {
-          const mediaResponse = await authStore.api.get(`/media/${rec.mediaResourceId}`)
+          const mediaResponse = await mediaApi.getMediaById(rec.mediaResourceId)
           return {
             ...rec,
-            mediaResource: mediaResponse.data
+            mediaResource: mediaResponse
           }
         } catch (error) {
           console.error('获取影视资源详情失败:', error)
@@ -274,15 +274,15 @@ const loadRecommendations = async () => {
   // 加载编辑推荐
   editorialLoading.value = true
   try {
-    const response = await authStore.api.get('/recommendations/editorial?limit=8')
+    const response = await recommendationsApi.getPopular({ limit: 8, type: 'editorial' })
     // 获取推荐对应的影视资源详情
     const recommendationsWithMedia = await Promise.all(
-      response.data.map(async (rec) => {
+      response.map(async (rec) => {
         try {
-          const mediaResponse = await authStore.api.get(`/media/${rec.mediaResourceId}`)
+          const mediaResponse = await mediaApi.getMediaById(rec.mediaResourceId)
           return {
             ...rec,
-            mediaResource: mediaResponse.data
+            mediaResource: mediaResponse
           }
         } catch (error) {
           console.error('获取影视资源详情失败:', error)
@@ -300,21 +300,20 @@ const loadRecommendations = async () => {
 
 // 刷新个性化推荐
 const refreshRecommendations = async () => {
-  if (!authStore.isAuthenticated) return
+  if (!authStore.isAuthenticated || !authStore.user?.id) return
 
   refreshing.value = true
   try {
-    const response = await authStore.api.post(`/recommendations/generate/${authStore.user.id}`, {
-      limit: 8
-    })
+    // 注意：这里可能需要根据实际API调整
+    const response = await recommendationsApi.getPersonalized(authStore.user.id, { limit: 8, refresh: true })
     // 获取推荐对应的影视资源详情
     const recommendationsWithMedia = await Promise.all(
-      response.data.map(async (rec) => {
+      response.map(async (rec) => {
         try {
-          const mediaResponse = await authStore.api.get(`/media/${rec.mediaResourceId}`)
+          const mediaResponse = await mediaApi.getMediaById(rec.mediaResourceId)
           return {
             ...rec,
-            mediaResource: mediaResponse.data
+            mediaResource: mediaResponse
           }
         } catch (error) {
           console.error('获取影视资源详情失败:', error)

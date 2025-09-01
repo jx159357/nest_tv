@@ -206,7 +206,7 @@ let PlaySourceService = class PlaySourceService {
             if (!torrentInfo) {
                 try {
                     await this.torrentService.addMagnet(playSource.url);
-                    this.logger.log('Re-added magnet to client', 'info', { infoHash, playSourceId: id }, context);
+                    this.logger.log('Re-added magnet to client', app_logger_service_1.LogLevel.INFO, context);
                     await new Promise(resolve => setTimeout(resolve, 1000));
                     const retryInfo = this.torrentService.getTorrentInfo(infoHash);
                     if (!retryInfo) {
@@ -345,12 +345,7 @@ let PlaySourceService = class PlaySourceService {
                 }
             }
             const averageProgress = activeCount > 0 ? totalProgress / activeCount : 0;
-            this.logger.log('Retrieved magnet stats', 'info', {
-                mediaResourceId,
-                totalMagnets: playSources.length,
-                activeMagnets: activeCount,
-                ...context,
-            });
+            this.logger.log('Retrieved magnet stats', app_logger_service_1.LogLevel.INFO, context);
             return {
                 totalMagnets: playSources.length,
                 activeMagnets: activeCount,
