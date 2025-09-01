@@ -1,4 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { RedisModule } from './redis/redis.module';
@@ -27,6 +28,7 @@ import { AdminLog } from './entities/admin-log.entity';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
+@ApiTags('系统')
 @Module({
   imports: [
     // 配置模块 - 用于环境变量管理
