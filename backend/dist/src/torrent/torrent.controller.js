@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TorrentController = void 0;
 const common_1 = require("@nestjs/common");
@@ -349,7 +350,6 @@ exports.TorrentController = TorrentController = __decorate([
     (0, swagger_1.ApiTags)('磁力链接播放'),
     (0, common_1.Controller)('torrent'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    __metadata("design:paramtypes", [torrent_service_1.TorrentService,
-        app_logger_service_1.AppLoggerService])
+    __metadata("design:paramtypes", [typeof (_a = typeof torrent_service_1.TorrentService !== "undefined" && torrent_service_1.TorrentService) === "function" ? _a : Object, typeof (_b = typeof app_logger_service_1.AppLoggerService !== "undefined" && app_logger_service_1.AppLoggerService) === "function" ? _b : Object])
 ], TorrentController);
 //# sourceMappingURL=torrent.controller.js.map

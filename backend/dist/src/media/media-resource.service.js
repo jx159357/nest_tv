@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MediaResourceService = void 0;
 const common_1 = require("@nestjs/common");
@@ -301,8 +302,6 @@ exports.MediaResourceService = MediaResourceService;
 exports.MediaResourceService = MediaResourceService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(media_resource_entity_1.MediaResource)),
-    __metadata("design:paramtypes", [typeorm_2.Repository,
-        performance_monitor_service_1.PerformanceMonitorService,
-        media_cache_service_1.MediaCacheService])
+    __metadata("design:paramtypes", [typeorm_2.Repository, typeof (_a = typeof performance_monitor_service_1.PerformanceMonitorService !== "undefined" && performance_monitor_service_1.PerformanceMonitorService) === "function" ? _a : Object, typeof (_b = typeof media_cache_service_1.MediaCacheService !== "undefined" && media_cache_service_1.MediaCacheService) === "function" ? _b : Object])
 ], MediaResourceService);
 //# sourceMappingURL=media-resource.service.js.map

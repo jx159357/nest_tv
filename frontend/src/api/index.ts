@@ -146,4 +146,80 @@ class ApiClient {
   }
 }
 
+// 具体的API模块
+export const authApi = {
+  login: (data: any) => ApiClient.post('/auth/login', data),
+  register: (data: any) => ApiClient.post('/auth/register', data),
+  logout: () => ApiClient.post('/auth/logout'),
+  profile: () => ApiClient.get('/auth/profile'),
+  updateProfile: (data: any) => ApiClient.put('/auth/profile', data),
+}
+
+export const mediaApi = {
+  getMediaList: (params?: any) => ApiClient.get('/media', params),
+  getMediaDetail: (id: number) => ApiClient.get(`/media/${id}`),
+  addMedia: (data: any) => ApiClient.post('/media', data),
+  updateMedia: (id: number, data: any) => ApiClient.put(`/media/${id}`, data),
+  deleteMedia: (id: number) => ApiClient.delete(`/media/${id}`),
+  addFavorite: (id: number) => ApiClient.post(`/media/${id}/favorites`),
+  removeFavorite: (id: number) => ApiClient.delete(`/media/${id}/favorites`),
+  getPopular: () => ApiClient.get('/media/popular'),
+}
+
+export const playSourcesApi = {
+  getPlaySources: (mediaId: number) => ApiClient.get(`/play-sources/media/${mediaId}`),
+  getBestPlaySource: (mediaId: number) => ApiClient.get(`/play-sources/media/${mediaId}/best`),
+  addPlaySource: (data: any) => ApiClient.post('/play-sources', data),
+  updatePlaySource: (id: number, data: any) => ApiClient.put(`/play-sources/${id}`, data),
+  deletePlaySource: (id: number) => ApiClient.delete(`/play-sources/${id}`),
+}
+
+export const watchHistoryApi = {
+  getHistory: (params?: any) => ApiClient.get('/watch-history', params),
+  addToHistory: (data: any) => ApiClient.post('/watch-history', data),
+  updateHistory: (id: number, data: any) => ApiClient.put(`/watch-history/${id}`, data),
+  deleteHistory: (id: number) => ApiClient.delete(`/watch-history/${id}`),
+  clearHistory: () => ApiClient.delete('/watch-history'),
+}
+
+export const recommendationsApi = {
+  getRecommendations: (params?: any) => ApiClient.get('/recommendations', params),
+  getPersonalized: () => ApiClient.get('/recommendations/personalized'),
+  getTrending: () => ApiClient.get('/recommendations/trending'),
+  getSimilar: (mediaId: number) => ApiClient.get(`/recommendations/similar/${mediaId}`),
+}
+
+export const crawlerApi = {
+  getCrawlerStatus: () => ApiClient.get('/crawler/status'),
+  startCrawler: (data: any) => ApiClient.post('/crawler/start', data),
+  stopCrawler: (id: string) => ApiClient.post(`/crawler/${id}/stop`),
+  getCrawlerLogs: (id: string) => ApiClient.get(`/crawler/${id}/logs`),
+  getTargets: () => ApiClient.get('/crawler/targets'),
+  addTarget: (data: any) => ApiClient.post('/crawler/targets', data),
+  updateTarget: (id: number, data: any) => ApiClient.put(`/crawler/targets/${id}`, data),
+  deleteTarget: (id: number) => ApiClient.delete(`/crawler/targets/${id}`),
+}
+
+export const adminApi = {
+  getUsers: (params?: any) => ApiClient.get('/admin/users', params),
+  getUser: (id: number) => ApiClient.get(`/admin/users/${id}`),
+  createUser: (data: any) => ApiClient.post('/admin/users', data),
+  updateUser: (id: number, data: any) => ApiClient.put(`/admin/users/${id}`, data),
+  deleteUser: (id: number) => ApiClient.delete(`/admin/users/${id}`),
+  
+  getMedia: (params?: any) => ApiClient.get('/admin/media', params),
+  getMediaStats: () => ApiClient.get('/admin/media/stats'),
+  
+  getWatchHistory: (params?: any) => ApiClient.get('/admin/watch-history', params),
+  deleteWatchHistory: (id: number) => ApiClient.delete(`/admin/watch-history/${id}`),
+  
+  getLogs: (params?: any) => ApiClient.get('/admin/logs', params),
+  deleteLog: (id: number) => ApiClient.delete(`/admin/logs/${id}`),
+  
+  getRoles: () => ApiClient.get('/admin/roles'),
+  createRole: (data: any) => ApiClient.post('/admin/roles', data),
+  updateRole: (id: number, data: any) => ApiClient.put(`/admin/roles/${id}`, data),
+  deleteRole: (id: number) => ApiClient.delete(`/admin/roles/${id}`),
+}
+
 export default ApiClient

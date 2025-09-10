@@ -44,6 +44,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DataCollectionService = void 0;
 const common_1 = require("@nestjs/common");
@@ -453,6 +454,6 @@ let DataCollectionService = class DataCollectionService {
 exports.DataCollectionService = DataCollectionService;
 exports.DataCollectionService = DataCollectionService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [app_logger_service_1.AppLoggerService])
+    __metadata("design:paramtypes", [typeof (_a = typeof app_logger_service_1.AppLoggerService !== "undefined" && app_logger_service_1.AppLoggerService) === "function" ? _a : Object])
 ], DataCollectionService);
 //# sourceMappingURL=data-collection.service.js.map

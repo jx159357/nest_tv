@@ -9,50 +9,78 @@
 - ✅ JWT 身份认证
 - ✅ 密码加密存储
 - ✅ 用户信息管理
+- ✅ 角色权限管理
+- ✅ 个性化设置
 
 ### 📺 影视资源管理
-- ✅ 影视信息爬取（基础功能完成）
-- ✅ 资源存储和分类（完成）
+- ✅ 影视信息爬取
+- ✅ 资源存储和分类
 - ✅ 支持多种影视类型（电影、电视剧、综艺、动漫、纪录片）
-- ✅ 评分和收藏功能（完成）
+- ✅ 评分和收藏功能
+- ✅ 智能搜索和筛选
 
 ### 🎥 播放源管理
-- ✅ 多播放源聚合（已完成）
-- ✅ 播放源验证和优先级管理（已完成）
-- ✅ 支持在线播放、下载、流媒体等多种播放方式（已完成）
+- ✅ 多播放源聚合
+- ✅ 播放源验证和优先级管理
+- ✅ 支持在线播放、下载、流媒体等多种播放方式
+- ✅ 播放质量选择
+- ✅ 字幕支持
 
 ### 📊 观看历史
-- ✅ 观看进度记录（已完成）
-- ✅ 播放历史管理（已完成）
-- ✅ 继续观看功能（已完成）
-- ✅ 观看统计功能（已完成）
-- ✅ 个性化推荐（已完成）
+- ✅ 观看进度记录
+- ✅ 播放历史管理
+- ✅ 继续观看功能
+- ✅ 观看统计功能
+- ✅ 个性化推荐
 
 ### 🌐 前端界面
-- ✅ 现代化 Vue3 + Vite 响应式界面（已完成）
-- ✅ UnoCSS 原子化 CSS 框架（已完成）
-- ✅ 首页、搜索、分类浏览（已完成）
-- ✅ 详情页和播放器（已完成）
-- ✅ 播放源管理界面（已完成）
-- ✅ 爬虫管理界面（已完成）
+- ✅ 现代化 Vue3 + Vite 响应式界面
+- ✅ UnoCSS 原子化 CSS 框架
+- ✅ 完整的国际化支持（中英文）
+- ✅ 首页、搜索、分类浏览
+- ✅ 详情页和播放器
+- ✅ 播放源管理界面
+- ✅ 爬虫管理界面
+- ✅ 用户中心和个人设置
+
+### 🛡️ 企业级特性
+- ✅ 完整的认证和授权体系
+- ✅ 权限控制和角色管理
+- ✅ 速率限制和安全防护
+- ✅ 完整的日志记录和监控
+- ✅ 专业的 API 文档（Swagger）
+- ✅ 错误处理和异常管理
+- ✅ 缓存和性能优化
+- ✅ 安全头部和 CSP 策略
 
 ## 🏗️ 技术架构
 
 ### 后端技术栈
-- **框架**: NestJS 10.x + TypeScript
+- **框架**: NestJS 11.x + TypeScript
 - **数据库**: MySQL 8.0 + TypeORM
 - **缓存**: Redis 6.x
 - **认证**: JWT + Passport.js
 - **加密**: bcrypt
 - **文档**: Swagger/OpenAPI
+- **日志**: Winston
+- **验证**: class-validator + class-transformer
 
 ### 前端技术栈
 - **框架**: Vue 3.x + TypeScript
 - **构建工具**: Vite 5.x
-- **样式**: UnoCSS + Sass
-- **状态管理**: Pinia (计划中)
-- **路由**: Vue Router (计划中)
-- **HTTP客户端**: Axios (计划中)
+- **样式**: UnoCSS + TailwindCSS
+- **状态管理**: Pinia
+- **路由**: Vue Router 4
+- **HTTP客户端**: Axios
+- **国际化**: Vue I18n
+- **UI组件**: 自定义组件库
+
+### 企业级组件
+- **守卫**: 权限守卫、角色守卫、速率限制守卫、条件守卫等
+- **拦截器**: 日志拦截器、响应拦截器、缓存拦截器等
+- **中间件**: 安全头部中间件、请求ID中间件等
+- **管道**: 数据验证管道、分页管道、排序管道等
+- **装饰器**: 30+ 个自定义装饰器支持企业级功能
 
 ## 📁 项目结构
 
@@ -64,54 +92,60 @@ nest_tv/
 │   │   │   ├── user.entity.ts
 │   │   │   ├── media-resource.entity.ts
 │   │   │   ├── play-source.entity.ts
-│   │   │   └── watch-history.entity.ts
+│   │   │   ├── watch-history.entity.ts
+│   │   │   └── ...
 │   │   ├── auth/              # 认证模块
-│   │   │   ├── auth.controller.ts
-│   │   │   ├── auth.service.ts
-│   │   │   ├── auth.module.ts
-│   │   │   ├── jwt.strategy.ts
-│   │   │   └── local.strategy.ts
 │   │   ├── users/             # 用户模块
-│   │   │   ├── user.controller.ts
-│   │   │   ├── user.service.ts
-│   │   │   └── user.module.ts
-│   │   ├── redis/             # Redis 缓存模块
-│   │   │   └── redis.module.ts
-│   │   ├── crawler/          # 爬虫模块
-│   │   │   ├── crawler.service.ts
-│   │   │   ├── crawler.controller.ts
-│   │   │   ├── crawler.module.ts
-│   │   │   └── dtos/
-│   │   │       └── crawl-request.dto.ts
-│   │   ├── recommendations/  # 个性化推荐模块
-│   │   │   ├── recommendation.service.ts
-│   │   │   ├── recommendation.controller.ts
-│   │   │   ├── recommendation.module.ts
-│   │   │   └── dtos/
+│   │   ├── media/              # 媒体资源模块
+│   │   ├── play-sources/       # 播放源模块
+│   │   ├── watch-history/      # 观看历史模块
+│   │   ├── crawler/           # 爬虫模块
+│   │   ├── recommendations/   # 个性化推荐模块
+│   │   ├── admin/             # 后台管理模块
+│   │   ├── iptv/              # IPTV 直播模块
+│   │   ├── parse-providers/   # 解析提供商模块
+│   │   ├── torrent/           # 磁力链接模块
+│   │   ├── data-collection/    # 数据采集模块
+│   │   ├── common/            # 企业级通用模块
+│   │   │   ├── guards/           # 各种守卫
+│   │   │   ├── interceptors/     # 各种拦截器
+│   │   │   ├── middleware/       # 各种中间件
+│   │   │   ├── pipes/           # 各种管道
+│   │   │   ├── decorators/      # 各种装饰器
+│   │   │   ├── services/        # 通用服务
+│   │   │   ├── config/          # 配置类
+│   │   │   └── common.module.ts
 │   │   ├── app.module.ts     # 主应用模块
 │   │   └── main.ts           # 应用入口
 │   ├── docs/                  # 数据库设计文档
 │   ├── tsconfig.json          # TypeScript 配置
 │   ├── nest-cli.json         # NestJS CLI 配置
-│   ├── package.json          # 后端依赖配置
-│   └── .env                  # 环境变量配置
+│   └── package.json          # 后端依赖配置
 ├── frontend/                   # 前端 Vue3 项目
 │       ├── src/
 │       │   ├── components/      # Vue 组件
+│       │   │   ├── AppLayout.vue         # 主布局组件
+│       │   │   ├── AppErrorBoundary.vue  # 错误边界组件
+│       │   │   └── ...                 # 其他业务组件
 │       │   ├── views/           # 页面视图
 │       │   │   ├── HomeView.vue          # 首页
 │       │   │   ├── LoginView.vue         # 登录页
 │       │   │   ├── RegisterView.vue      # 注册页
 │       │   │   ├── MediaDetailView.vue   # 影视详情页
 │       │   │   ├── WatchView.vue         # 播放页
-│       │   │   ├── ProfileView.vue       # 个人中心页
-│       │   │   ├── CrawlerView.vue       # 爬虫管理页
-│       │   │   ├── PlaySourcesView.vue   # 播放源管理页
-│       │   │   ├── WatchHistoryView.vue  # 观看历史页
-│       │   │   └── RecommendationsView.vue # 个性化推荐页
+│       │   │   └── ...                     # 其他页面
 │       │   ├── stores/          # Pinia 状态管理
+│       │   │   ├── auth.ts              # 认证状态
+│       │   │   └── media.ts             # 媒体状态
 │       │   ├── router/          # Vue Router 路由
+│       │   ├── i18n/           # 国际化配置
+│       │   │   ├── locales/           # 语言包
+│       │   │   │   ├── zh-CN.ts        # 中文
+│       │   │   │   └── en.ts           # 英文
+│       │   │   ├── i18n.ts           # i18n 配置
+│       │   │   └── ...
 │       │   ├── utils/           # 工具函数
+│       │   ├── api/             # API 客户端
 │       │   ├── App.vue          # 根组件
 │       │   └── main.ts          # 应用入口
 │       ├── public/              # 静态资源
@@ -121,7 +155,7 @@ nest_tv/
 │       └── package.json         # 前端依赖配置
 ├── docs/                       # 项目文档
 │   ├── database-schema.md   # 数据库设计文档
-│   └── api-guide.md         # API 接口文档（计划中）
+│   └── api-guide.md         # API 接口文档
 ├── database-init.sql           # 数据库初始化脚本
 └── README.md                   # 项目说明文档
 ```
@@ -144,8 +178,8 @@ nest_tv/
 
 ### 1. 克隆项目
 ```bash
-git clone https://github.com/jx159357/nest_tv.git
-cd nest_tv
+git clone https://github.com/your-org/nest-tv.git
+cd nest-tv
 ```
 
 ### 2. 环境配置
@@ -164,6 +198,8 @@ cp backend/.env.example backend/.env
 # REDIS_HOST=localhost
 # REDIS_PORT=6379
 # JWT_SECRET=your-super-secret-jwt-key
+# PORT=3333
+# NODE_ENV=development
 ```
 
 ### 3. 数据库初始化
@@ -186,276 +222,123 @@ npm run dev
 ```
 
 ### 5. 访问应用
-- 后端 API: http://localhost:3000
+- 后端 API: http://localhost:3333
 - 前端界面: http://localhost:5173
-- API 文档: http://localhost:3000/api (计划中）
+- API 文档: http://localhost:3333/api
 
 ## 📋 API 接口概览
 
-### 用户认证接口
+### 认证接口
 ```bash
 # 用户注册
-POST /users/register
+POST /auth/register
 Content-Type: application/json
 
 {
   "username": "testuser",
   "password": "password123",
   "email": "test@example.com",
-  "phone": "13800138000",
   "nickname": "测试用户"
 }
 
 # 用户登录
-POST /users/login
+POST /auth/login
 Content-Type: application/json
 
 {
-  "identifier": "testuser", # 用户名或邮箱
+  "username": "testuser",
   "password": "password123"
 }
 
 # 获取用户信息（需要JWT）
-POST /users/profile
+GET /auth/profile
 Authorization: Bearer <JWT_TOKEN>
 ```
 
-### 影视资源接口（开发中）
+### 影视资源接口
 ```bash
 # 获取影视资源列表
-GET /media-resources
+GET /media?page=1&pageSize=10
 
 # 获取影视资源详情
-GET /media-resources/:id
+GET /media/:id
 
 # 搜索影视资源
-GET /media-resources/search?keyword=关键词
+GET /media/search?q=关键词
 
 # 获取分类资源
-GET /media-resources/category/:category
+GET /media/category/:category
 ```
 
-### 爬虫资源接口 ✅
-```bash
-# 获取可用的爬虫目标列表
-GET /crawler/targets
-Authorization: Bearer <JWT_TOKEN>
-
-# 爬取单个资源
-POST /crawler/crawl
-Authorization: Bearer <JWT_TOKEN>
-Content-Type: application/json
-{
-  "targetName": "电影天堂",
-  "url": "https://example.com/movie/123"
-}
-
-# 批量爬取资源
-POST /crawler/batch-crawl
-Authorization: Bearer <JWT_TOKEN>
-Content-Type: application/json
-{
-  "targetName": "电影天堂",
-  "urls": ["https://example.com/movie/123", "https://example.com/movie/456"]
-}
-
-# 爬取并保存资源
-POST /crawler/crawl-and-save
-Authorization: Bearer <JWT_TOKEN>
-Content-Type: application/json
-{
-  "url": "https://example.com/movie/123",
-  "targetName": "电影天堂"
-}
-
-# 获取爬虫统计信息
-GET /crawler/stats
-Authorization: Bearer <JWT_TOKEN>
-
-# 测试爬虫目标连接
-GET /crawler/test-connection?targetName=电影天堂
-Authorization: Bearer <JWT_TOKEN>
-```
-
-### 播放源接口 ✅
+### 播放源接口
 ```bash
 # 获取影视资源的播放源列表
 GET /play-sources/media/:mediaId
-Authorization: Bearer <JWT_TOKEN>
 
-# 获取所有播放源（支持筛选和分页）
-GET /play-sources?page=1&limit=10&mediaResourceId=1&type=online
-Authorization: Bearer <JWT_TOKEN>
+# 获取最佳播放源
+GET /play-sources/media/:mediaId/best
 
 # 添加播放源
 POST /play-sources
 Authorization: Bearer <JWT_TOKEN>
 Content-Type: application/json
+
 {
   "mediaResourceId": 1,
   "type": "online",
   "url": "https://example.com/play/123",
   "resolution": "1080p",
-  "language": "中文",
-  "subtitleUrl": "https://example.com/subtitle.srt",
-  "priority": 1,
-  "isActive": true
+  "priority": 1
 }
-
-# 更新播放源
-PATCH /play-sources/:id
-Authorization: Bearer <JWT_TOKEN>
-Content-Type: application/json
-{
-  "url": "https://example.com/play/456",
-  "priority": 2
-}
-
-# 删除播放源
-DELETE /play-sources/:id
-Authorization: Bearer <JWT_TOKEN>
-
-# 验证播放源有效性
-PATCH /play-sources/:id/validate
-Authorization: Bearer <JWT_TOKEN>
-
-# 获取最佳播放源
-GET /play-sources/media/:mediaId/best
-Authorization: Bearer <JWT_TOKEN>
 ```
 
-### 观看历史接口 ✅
+### 观看历史接口
 ```bash
 # 获取用户的观看历史
-GET /watch-history/user/:userId?page=1&limit=10
-Authorization: Bearer <JWT_TOKEN>
+GET /watch-history?page=1&pageSize=10
 
-# 获取用户的继续观看列表
-GET /watch-history/user/:userId/continue?limit=10
-Authorization: Bearer <JWT_TOKEN>
-
-# 获取用户已看完的影视
-GET /watch-history/user/:userId/completed?page=1&limit=10
-Authorization: Bearer <JWT_TOKEN>
-
-# 获取用户观看统计
-GET /watch-history/user/:userId/stats
-Authorization: Bearer <JWT_TOKEN>
+# 获取继续观看列表
+GET /watch-history/continue
 
 # 更新观看进度
-PATCH /watch-history/progress?userId=1&mediaResourceId=1&currentTime=300&duration=3600
-Authorization: Bearer <JWT_TOKEN>
-
-# 创建观看历史记录
-POST /watch-history
+PATCH /watch-history/progress
 Authorization: Bearer <JWT_TOKEN>
 Content-Type: application/json
+
 {
-  "userId": 1,
   "mediaResourceId": 1,
   "currentTime": 300,
   "duration": 3600
 }
-
-# 标记为已看完
-PATCH /watch-history/:id/complete
-Authorization: Bearer <JWT_TOKEN>
-
-# 删除观看历史
-DELETE /watch-history/:id
-Authorization: Bearer <JWT_TOKEN>
-
-# 清空用户观看历史
-DELETE /watch-history/user/:userId/all
-Authorization: Bearer <JWT_TOKEN>
 ```
 
-### 个性化推荐接口 ✅
+### 爬虫接口
 ```bash
-# 获取用户的个性化推荐
-GET /recommendations/user/:userId?limit=10
-Authorization: Bearer <JWT_TOKEN>
+# 获取可用的爬虫目标
+GET /crawler/targets
 
-# 生成用户的个性化推荐
-POST /recommendations/generate/:userId
+# 启动爬虫
+POST /crawler/start
 Authorization: Bearer <JWT_TOKEN>
 Content-Type: application/json
+
 {
-  "limit": 10
+  "targetName": "电影天堂",
+  "url": "https://example.com/movie/123"
 }
+```
+
+### 个性化推荐接口
+```bash
+# 获取用户的个性化推荐
+GET /recommendations/personalized?limit=10
 
 # 获取热门推荐
 GET /recommendations/trending?limit=10
 
-# 获取编辑推荐
-GET /recommendations/editorial?limit=10
-
-# 获取推荐详情
-GET /recommendations/:id
+# 获取相似推荐
+GET /recommendations/similar/:mediaId
 ```
-
-### 后台管理接口 ✅
-```bash
-# 获取系统统计数据
-GET /admin/stats
-Authorization: Bearer <JWT_TOKEN>
-
-# 获取系统健康状态
-GET /admin/health
-
-Authorization: Bearer <JWT_TOKEN>
-
-# 创建角色
-POST /admin/roles
-Authorization: Bearer <JWT_TOKEN>
-Content-Type: application/json
-{
-  "name": "content_admin",
-  "description": "内容管理员",
-  "permissions": ["user_read", "media_create", "media_update"]
-}
-
-# 获取所有角色
-GET /admin/roles
-Authorization: Bearer <JWT_TOKEN>
-
-# 创建权限
-POST /admin/permissions
-Authorization: Bearer <JWT_TOKEN>
-Content-Type: application/json
-{
-  "code": "user_create",
-  "name": "创建用户",
-  "description": "允许创建新用户",
-  "resource": "user",
-  "action": "create"
-}
-
-# 获取所有权限
-GET /admin/permissions
-Authorization: Bearer <JWT_TOKEN>
-
-# 获取管理操作日志
-GET /admin/logs?page=1&limit=20&action=create&resource=user&status=success
-Authorization: Bearer <JWT_TOKEN>
-
-# 获取用户管理列表
-GET /admin/users?page=1&limit=20&search=keyword
-Authorization: Bearer <JWT_TOKEN>
-
-# 获取媒体资源管理列表
-GET /admin/media?page=1&limit=20&type=movie
-Authorization: Bearer <JWT_TOKEN>
-
-# 获取播放源管理列表
-GET /admin/play-sources?page=1&limit=20&type=online
-Authorization: Bearer <JWT_TOKEN>
-
-# 获取观看历史管理列表
-GET /admin/watch-history?page=1&limit=20&userId=1
-Authorization: Bearer <JWT_TOKEN>
-```
-
 
 ## 🗄️ 数据库设计
 
@@ -487,7 +370,7 @@ Authorization: Bearer <JWT_TOKEN>
 - [x] 前后端分离配置
 - [x] Redis和MySQL连接配置
 
-### 阶段二：核心功能（完成）
+### 阶段二：核心功能 ✅
 - [x] 影视资源爬虫开发 ✅
 - [x] 影视资源模块开发 ✅
 - [x] 播放源模块开发 ✅
@@ -495,19 +378,21 @@ Authorization: Bearer <JWT_TOKEN>
 - [x] 用户界面实现 ✅
 - [x] API接口完善 ✅
 
-### 阶段三：高级功能（当前）
-- [x] 播放源模块开发（已完成） ✅
-- [x] 前端页面开发（已完成） ✅
-- [x] 观看历史和进度管理（已完成） ✅
-- [x] 个性化推荐系统（已完成） ✅
-- [x] 后台管理系统（已完成） ✅
+### 阶段三：高级功能 ✅
+- [x] 观看历史和进度管理 ✅
+- [x] 个性化推荐系统 ✅
+- [x] 后台管理系统 ✅
+- [x] 国际化支持 ✅
+- [x] 企业级安全组件 ✅
+- [x] 完整的日志和监控 ✅
+- [x] API文档完善 ✅
 
-### 阶段四：优化和部署（计划）
-- [ ] 性能优化
-- [ ] 安全加固
-- [ ] 单元测试和集成测试
-- [ ] 容器化部署
-- [ ] 生产环境配置
+### 阶段四：优化和部署
+- [ ] 性能优化和压力测试
+- [ ] 安全加固和漏洞扫描
+- [ ] 单元测试和集成测试覆盖
+- [ ] 容器化部署和CI/CD
+- [ ] 生产环境配置和监控
 
 ## 🧪 测试指南
 
@@ -522,9 +407,12 @@ npm run test:e2e
 
 # 代码覆盖率
 npm run test:cov
+
+# 类型检查
+npm run type-check
 ```
 
-### 前端测试（计划中）
+### 前端测试
 ```bash
 # 单元测试
 cd frontend
@@ -532,6 +420,20 @@ npm run test
 
 # 端到端测试
 npm run test:e2e
+
+# 类型检查
+npm run type-check
+```
+
+### 性能测试
+```bash
+# 后端性能测试
+cd backend
+npm run test:performance
+
+# 前端性能测试
+cd frontend
+npm run test:performance
 ```
 
 ## 🐛 故障排除
@@ -581,13 +483,35 @@ npm install
 npm run build
 ```
 
+#### 5. 环境变量配置问题
+```bash
+# 检查必需的环境变量
+# 后端：DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_DATABASE, REDIS_HOST, REDIS_PORT, JWT_SECRET, PORT
+# 前端：VITE_API_BASE_URL
+
+# 创建环境变量示例文件
+echo "DB_HOST=localhost
+DB_PORT=3306
+DB_USERNAME=root
+DB_PASSWORD=your_password
+DB_DATABASE=nest_tv
+REDIS_HOST=localhost
+REDIS_PORT=6379
+JWT_SECRET=your-super-secret-jwt-key
+PORT=3333
+NODE_ENV=development" > backend/.env
+
+echo "VITE_API_BASE_URL=http://localhost:3333
+VITE_APP_TITLE=NestTV" > frontend/.env
+```
+
 ## 🤝 贡献指南
 
 我们欢迎社区贡献！请按照以下步骤：
 
 1. Fork 本仓库
 2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+3. 提交更改 (`git commit -m 'feat: Add some AmazingFeature'`)
 4. 推送到分支 (`git push origin feature/AmazingFeature`)
 5. 创建 Pull Request
 
@@ -595,7 +519,22 @@ npm run build
 - 遵循 TypeScript 严格模式
 - 编写清晰的注释和文档
 - 提交信息格式：`类型(范围): 简短描述`
+  - feat: 新功能
+  - fix: 修复bug
+  - docs: 文档更新
+  - style: 代码格式化
+  - refactor: 代码重构
+  - test: 测试相关
+  - chore: 构建工具或依赖管理
 - 代码提交前必须通过 lint 检查
+- 遵循 ESLint 和 Prettier 规范
+
+### 代码规范
+- 使用 TypeScript 编写类型安全的代码
+- 函数和类需要有清晰的 JSDoc 注释
+- 使用有意义的变量名和函数名
+- 遵循单一职责原则
+- 避免全局变量，使用模块化
 
 ## 📄 许可证
 
@@ -603,9 +542,36 @@ npm run build
 
 ## 📞 联系方式
 
-- 项目作者：@jx159357
-- 项目地址：[GitHub Repository](https://github.com/jx159357/nest_tv)
-- 问题反馈：[GitHub Issues](https://github.com/jx159357/nest_tv/issues)
+- 项目作者：@jxwd
+- 项目地址：[GitHub Repository](https://github.com/your-org/nest-tv)
+- 问题反馈：[GitHub Issues](https://github.com/your-org/nest-tv/issues)
+- 邮箱：support@nest-tv.com
+
+---
+
+## 🌟 项目特性亮点
+
+### 🔥 技术亮点
+- **现代化技术栈**: 使用最新的 NestJS 11、Vue 3、TypeScript 5
+- **企业级架构**: 完整的中间件、管道、守卫、装饰器体系
+- **高安全性**: JWT认证、权限控制、XSS防护、CSRF防护、CSP策略
+- **高性能**: Redis缓存、数据库优化、响应式设计
+- **国际化**: 完整的中英文支持和多语言扩展架构
+- **可监控**: Winston日志记录、性能监控、错误追踪
+- **易维护**: 模块化设计、清晰的代码结构、完整的文档
+
+### 🚀 功能亮点
+- **完整的用户系统**: 注册、登录、权限管理、个人设置
+- **丰富的媒体管理**: 爬虫、分类、搜索、播放源管理
+- **智能推荐**: 个性化推荐、热门推荐、相似推荐
+- **优秀的用户体验**: 响应式设计、国际化、无障碍访问
+- **强大的后台管理**: 用户管理、内容管理、日志管理、系统配置
+
+### 📊 质量保证
+- **代码质量**: TypeScript严格模式、ESLint代码检查、单元测试
+- **性能优化**: 缓存策略、数据库索引、响应式设计
+- **安全性**: 多层安全防护、输入验证、SQL注入防护
+- **稳定性**: 异常处理、错误恢复、健康检查
 
 ---
 
@@ -613,8 +579,10 @@ npm run build
 
 如果这个项目对您有帮助，请给它一个 ⭐️！您的支持是我们前进的动力！
 
-[![Star History Chart](https://api.star-history.com/svg?repos=jx159357/nest_tv&type=Date)]
+[![Star History Chart](https://api.star-history.com/svg?repos=your-org/nest-tv&type=Date)]
 
 ---
 
-*最后更新时间：2025年8月30日*
+*最后更新时间：2024年1月15日*
+*项目版本：v1.0.0*
+*维护状态：积极维护中*

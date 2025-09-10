@@ -26,7 +26,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3335',
+        target: 'http://localhost:3333',
         changeOrigin: true,
         secure: false,
         ws: true,
@@ -39,15 +39,14 @@ export default defineConfig({
           });
         },
       },
-        rewrite: (path) => path.replace(/^\/api/, ''),
-      },
+      rewrite: (path) => path.replace(/^\/api/, ''),
     },
   },
   build: {
     outDir: 'dist',
     sourcemap: true,
     target: 'es2018',
-    minify: 'terser',
+    minify: 'esbuild',
     cssCodeSplit: true,
     rollupOptions: {
       external: ['vue', 'vue-router', 'pinia'],
@@ -59,6 +58,5 @@ export default defineConfig({
         }
       }
     }
-  },
   },
 })

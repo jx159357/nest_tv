@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PlaySourceService = void 0;
 const common_1 = require("@nestjs/common");
@@ -372,8 +373,6 @@ exports.PlaySourceService = PlaySourceService;
 exports.PlaySourceService = PlaySourceService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(play_source_entity_1.PlaySource)),
-    __metadata("design:paramtypes", [typeorm_2.Repository,
-        torrent_service_1.TorrentService,
-        app_logger_service_1.AppLoggerService])
+    __metadata("design:paramtypes", [typeorm_2.Repository, typeof (_a = typeof torrent_service_1.TorrentService !== "undefined" && torrent_service_1.TorrentService) === "function" ? _a : Object, typeof (_b = typeof app_logger_service_1.AppLoggerService !== "undefined" && app_logger_service_1.AppLoggerService) === "function" ? _b : Object])
 ], PlaySourceService);
 //# sourceMappingURL=play-source.service.js.map

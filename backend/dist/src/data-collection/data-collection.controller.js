@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DataCollectionController = void 0;
 const common_1 = require("@nestjs/common");
@@ -312,7 +313,6 @@ exports.DataCollectionController = DataCollectionController = __decorate([
     (0, swagger_1.ApiTags)('数据采集管理'),
     (0, common_1.Controller)('data-collection'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    __metadata("design:paramtypes", [data_collection_service_1.DataCollectionService,
-        app_logger_service_1.AppLoggerService])
+    __metadata("design:paramtypes", [data_collection_service_1.DataCollectionService, typeof (_a = typeof app_logger_service_1.AppLoggerService !== "undefined" && app_logger_service_1.AppLoggerService) === "function" ? _a : Object])
 ], DataCollectionController);
 //# sourceMappingURL=data-collection.controller.js.map
