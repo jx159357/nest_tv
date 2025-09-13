@@ -23,7 +23,12 @@ export const useMediaStore = defineStore('media', () => {
     try {
       const response = await mediaApi.getMediaList(params)
       mediaList.value = response.data
-      pagination.value = response.pagination
+      pagination.value = {
+        page: params.page || 1,
+        limit: params.limit || 10,
+        total: response.total || 0,
+        totalPages: Math.ceil((response.total || 0) / (params.limit || 10))
+      }
       return response
     } catch (error) {
       console.error('获取媒体列表失败:', error)

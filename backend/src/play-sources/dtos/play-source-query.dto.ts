@@ -7,6 +7,9 @@ export class PlaySourceQueryDto {
   @ApiProperty({ description: '每页数量', default: 10 })
   limit?: number = 10;
 
+  @ApiProperty({ description: '每页数量', default: 10 })
+  pageSize?: number = 10;
+
   @ApiProperty({ description: '影视资源ID', required: false })
   mediaResourceId?: number;
 

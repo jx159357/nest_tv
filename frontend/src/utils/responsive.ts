@@ -37,7 +37,7 @@ export const getDeviceType = () => {
 export const onResize = (callback: () => void) => {
   if (typeof window === 'undefined') return
   
-  let timeoutId: NodeJS.Timeout
+  let timeoutId: number
   const handleResize = () => {
     clearTimeout(timeoutId)
     timeoutId = setTimeout(callback, 100)

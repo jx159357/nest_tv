@@ -14,6 +14,7 @@ const recommendation_service_1 = require("./recommendation.service");
 const recommendation_controller_1 = require("./recommendation.controller");
 const user_entity_1 = require("../entities/user.entity");
 const media_resource_entity_1 = require("../entities/media-resource.entity");
+const watch_history_entity_1 = require("../entities/watch-history.entity");
 const media_module_1 = require("../media/media.module");
 let RecommendationModule = class RecommendationModule {
 };
@@ -21,7 +22,7 @@ exports.RecommendationModule = RecommendationModule;
 exports.RecommendationModule = RecommendationModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([recommendation_entity_1.Recommendation, user_entity_1.User, media_resource_entity_1.MediaResource]),
+            typeorm_1.TypeOrmModule.forFeature([recommendation_entity_1.Recommendation, user_entity_1.User, media_resource_entity_1.MediaResource, watch_history_entity_1.WatchHistory]),
             media_module_1.MediaResourceModule,
         ],
         providers: [recommendation_service_1.RecommendationService],

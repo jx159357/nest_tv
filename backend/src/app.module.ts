@@ -15,6 +15,9 @@ import { IPTVModule } from './iptv/iptv.module';
 import { ParseProvidersModule } from './parse-providers/parse-providers.module';
 import { TorrentModule } from './torrent/torrent.module';
 import { DataCollectionModule } from './data-collection/data-collection.module';
+import { CommonModule } from './common/common.module';
+import { CacheModule } from './common/cache/cache.module';
+import { RateLimitModule } from './common/rate-limit/rate-limit.module';
 import { User } from './entities/user.entity';
 import { MediaResource } from './entities/media-resource.entity';
 import { PlaySource } from './entities/play-source.entity';
@@ -25,6 +28,7 @@ import { ParseProvider } from './entities/parse-provider.entity';
 import { AdminRole } from './entities/admin-role.entity';
 import { AdminPermission } from './entities/admin-permission.entity';
 import { AdminLog } from './entities/admin-log.entity';
+import { SearchHistory } from './entities/search-history.entity';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -47,7 +51,7 @@ import { AppService } from './app.service';
         username: configService.get<string>('DB_USERNAME'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_DATABASE'),
-        entities: [User, MediaResource, PlaySource, WatchHistory, Recommendation, AdminRole, AdminPermission, AdminLog, IPTVChannel, ParseProvider], // 所有实体类
+        entities: [User, MediaResource, PlaySource, WatchHistory, Recommendation, SearchHistory, AdminRole, AdminPermission, AdminLog, IPTVChannel, ParseProvider], // 所有实体类
         synchronize: true, // 开发环境下同步数据库结构
         logging: true, // 开启SQL日志
       }),
@@ -56,6 +60,12 @@ import { AppService } from './app.service';
     
     // Redis模块 - 用于缓存和会话管理
     RedisModule,
+    
+    // 缓存模块 - 用于性能优化
+    CacheModule,
+    
+    // 限流模块 - 用于API访问频率控制
+    RateLimitModule,
     
     // 用户模块 - 用户注册、登录等功能
     UserModule,
@@ -92,6 +102,9 @@ import { AppService } from './app.service';
     
     // 数据采集模块 - 扩展数据采集功能
     DataCollectionModule,
+    
+    // 通用模块 - 企业级服务和组件
+    CommonModule,
   ],
   controllers: [AppController],
   providers: [AppService],

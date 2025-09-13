@@ -11,12 +11,17 @@ import { WatchHistory } from './watch-history.entity';
 import { MediaResource } from './media-resource.entity';
 import { PlaySource } from './play-source.entity';
 import { Recommendation } from './recommendation.entity';
+import { SearchHistory } from './search-history.entity';
 
 /**
  * 用户实体类
  * 用于存储用户信息，包括用户名、密码、邮箱等
  */
 @Entity('users')
+// 复合索引暂时注释，后续根据数据库查询模式优化
+// @Index(['username'], { unique: true, name: 'idx_user_username' }) // 用户名唯一索引
+// @Index(['email'], { unique: true, name: 'idx_user_email' }) // 邮箱唯一索引
+// @Index(['isActive', 'createdAt'], { name: 'idx_user_status' }) // 状态+时间索引
 export class User {
   @PrimaryGeneratedColumn()
   id: number; // 用户ID，自增主键
@@ -71,4 +76,8 @@ export class User {
   // 关联推荐记录（一对多）
   @OneToMany(() => Recommendation, recommendation => recommendation.user)
   recommendations: Recommendation[];
+
+  // 关联搜索历史（一对多）
+  @OneToMany(() => SearchHistory, searchHistory => searchHistory.user)
+  searchHistory: SearchHistory[];
 }

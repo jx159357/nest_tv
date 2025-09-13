@@ -1,393 +1,339 @@
 <template>
-  <div class="lazy-image-container" :class="containerClasses">
+  <div class="lazy-image-container" :style="containerStyle">
+    <div v-if="loading" class="lazy-image-skeleton" :style="skeletonStyle">
+      <div class="skeleton-content"></div>
+    </div>
+    
     <img
-      v-if="isLoaded || !lazyLoad"
-      :src="currentSrc"
+      v-else-if="isVisible && !error"
+      :src="optimizedSrc"
       :alt="alt"
+      :style="imageStyle"
       :class="imageClasses"
-      :style="imageStyles"
       @load="handleLoad"
       @error="handleError"
+      @click="handleClick"
     />
-    <div 
-      v-else-if="showPlaceholder" 
-      class="lazy-image-placeholder"
-      :class="placeholderClasses"
-    >
-      <slot name="placeholder">
-        <div class="default-placeholder">
-          <svg class="placeholder-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12" />
-          </svg>
-          <span class="placeholder-text">加载中...</span>
-        </div>
-      </slot>
-    </div>
-    <div v-if="showError" class="lazy-image-error" :class="errorClasses">
-      <slot name="error">
-        <div class="error-content">
-          <svg class="error-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5" />
-          </svg>
-          <span class="error-text">加载失败</span>
-        </div>
-      </slot>
+    
+    <div v-else-if="error" class="lazy-image-error" :style="errorStyle">
+      <div class="error-content">
+        <i v-if="showErrorIcon" class="error-icon">❌</i>
+        <span v-if="errorMessage" class="error-message">{{ errorMessage }}</span>
+      </div>
+      <button v-if="showRetryButton" @click="retryLoad" class="retry-button">
+        重试
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { usePerformanceMonitor } from '@/utils/performance'
 
 interface Props {
   src: string
   alt?: string
-  lazyLoad?: boolean
+  width?: string
+  height?: string
   placeholder?: string
   errorPlaceholder?: string
-  width?: number | string
-  height?: number | string
-  aspectRatio?: string
-  fit?: 'contain' | 'cover' | 'fill' | 'none' | 'scale-down'
-  quality?: 'low' | 'medium' | 'high'
-  fadeIn?: boolean
+  threshold?: number
+  loading?: 'lazy' | 'eager'
+  format?: 'webp' | 'auto'
+  quality?: 'high' | 'medium' | 'low'
+  showSkeleton?: boolean
+  showErrorIcon?: boolean
+  errorMessage?: string
+  showRetryButton?: boolean
   retryCount?: number
-  retryDelay?: number
   className?: string
-  placeholderClassName?: string
-  errorClassName?: string
+  style?: Record<string, any>
+  onClick?: () => void
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  lazyLoad: true,
-  fadeIn: true,
+  alt: '',
+  width: '100%',
+  height: 'auto',
+  placeholder: '/placeholder.jpg',
+  errorPlaceholder: '/error-placeholder.jpg',
+  threshold: 100,
+  loading: 'lazy',
+  format: 'auto',
+  quality: 'medium',
+  showSkeleton: true,
+  showErrorIcon: true,
+  errorMessage: '图片加载失败',
+  showRetryButton: true,
   retryCount: 3,
-  retryDelay: 1000,
-  fit: 'cover',
-  quality: 'medium'
+  className: '',
+  style: () => ({}),
+  onClick: () => {}
 })
 
-const emit = defineEmits<{
-  load: [event: Event]
-  error: [event: Event]
-  retry: [attempt: number]
-}>()
+// 响应式数据
+const isVisible = ref(false)
+const loading = ref(props.loading === 'eager')
+const loaded = ref(false)
+const error = ref(false)
+const currentRetryCount = ref(0)
+const imageElement = ref<HTMLImageElement>()
 
-const isLoaded = ref(false)
-const hasError = ref(false)
-const isLoading = ref(false)
-const retryAttempt = ref(0)
-const observer = ref<IntersectionObserver | null>(null)
-const imageRef = ref<HTMLImageElement>()
-
-const { trackApiCall } = useApiPerformance()
-
-// 计算类名
-const containerClasses = computed(() => [
-  'lazy-image-container',
-  props.className,
-  {
-    'lazy-image-loaded': isLoaded.value,
-    'lazy-image-error': hasError.value,
-    'lazy-image-loading': isLoading.value,
-    'lazy-image-fade-in': props.fadeIn && isLoaded.value
+// 计算属性
+const optimizedSrc = computed(() => {
+  if (!props.src) return props.placeholder
+  
+  // 图片URL优化
+  const url = new URL(props.src, window.location.origin)
+  
+  // 根据质量参数添加URL参数
+  if (props.quality !== 'medium') {
+    url.searchParams.set('quality', props.quality)
   }
-])
+  
+  // WebP格式支持
+  if (props.format === 'webp') {
+    url.searchParams.set('format', 'webp')
+  }
+  
+  return url.toString()
+})
+
+const containerStyle = computed(() => ({
+  width: props.width,
+  height: props.height,
+  position: 'relative',
+  overflow: 'hidden',
+  borderRadius: '8px',
+  backgroundColor: '#f5f5f5',
+  ...props.style
+}))
+
+const skeletonStyle = computed(() => ({
+  width: '100%',
+  height: props.height === 'auto' ? '200px' : props.height,
+  backgroundColor: '#e0e0e0',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center'
+}))
+
+const imageStyle = computed(() => ({
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+  transition: 'opacity 0.3s ease-in-out',
+  opacity: loaded.value ? 1 : 0
+}))
+
+const errorStyle = computed(() => ({
+  width: '100%',
+  height: props.height === 'auto' ? '200px' : props.height,
+  backgroundColor: '#ffebee',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '16px',
+  textAlign: 'center'
+}))
 
 const imageClasses = computed(() => [
   'lazy-image',
+  props.className,
   {
-    'lazy-image-fade-in': props.fadeIn && isLoaded.value
+    'lazy-image-loaded': loaded.value,
+    'lazy-image-loading': !loaded.value && !error.value,
+    'lazy-image-error': error.value
   }
 ])
 
-const placeholderClasses = computed(() => [
-  'lazy-image-placeholder',
-  props.placeholderClassName
-])
+// 事件处理
+const handleLoad = () => {
+  loaded.value = true
+  loading.value = false
+  error.value = false
+  currentRetryCount.value = 0
+}
 
-const errorClasses = computed(() => [
-  'lazy-image-error',
-  props.errorClassName
-])
-
-// 计算样式
-const imageStyles = computed(() => {
-  const styles: Record<string, string> = {}
+const handleError = (event: Event) => {
+  console.error('图片加载失败:', props.src, event)
   
-  if (props.width) {
-    styles.width = typeof props.width === 'number' ? `${props.width}px` : props.width
+  if (currentRetryCount.value < props.retryCount) {
+    currentRetryCount.value++
+    setTimeout(() => {
+      if (imageElement.value) {
+        imageElement.value.src = optimizedSrc.value
+      }
+    }, 1000 * currentRetryCount.value)
+  } else {
+    loaded.value = false
+    loading.value = false
+    error.value = true
   }
-  
-  if (props.height) {
-    styles.height = typeof props.height === 'number' ? `${props.height}px` : props.height
+}
+
+const retryLoad = () => {
+  error.value = false
+  currentRetryCount.value = 0
+  if (imageElement.value) {
+    imageElement.value.src = optimizedSrc.value
   }
-  
-  if (props.aspectRatio) {
-    styles.aspectRatio = props.aspectRatio
+}
+
+const handleClick = () => {
+  if (props.onClick) {
+    props.onClick()
   }
-  
-  if (props.fit) {
-    styles.objectFit = props.fit
+}
+
+// Intersection Observer
+let observer: IntersectionObserver | null = null
+
+const setupIntersectionObserver = () => {
+  if (!('IntersectionObserver' in window)) {
+    // 浏览器不支持IntersectionObserver，直接显示
+    isVisible.value = true
+    return
   }
-  
-  return styles
-})
 
-// 计算当前源（支持不同质量）
-const currentSrc = computed(() => {
-  if (!props.src) return ''
-  
-  // 这里可以根据quality参数生成不同质量的图片URL
-  // 例如：添加质量参数、调整尺寸等
-  let src = props.src
-  
-  if (props.quality === 'low') {
-    // 可以添加低质量参数，如：&q=50
-    src += (src.includes('?') ? '&q=50' : '?q=50')
-  } else if (props.quality === 'high') {
-    // 可以添加高质量参数，如：&q=90
-    src += (src.includes('?') ? '&q=90' : '?q=90')
-  }
-  
-  return src
-})
-
-// 计算显示状态
-const showPlaceholder = computed(() => {
-  return props.lazyLoad ? !isLoaded.value && !hasError.value : false
-})
-
-const showError = computed(() => {
-  return hasError.value && !props.errorPlaceholder
-})
-
-// 创建Intersection Observer
-const createObserver = () => {
-  if (!props.lazyLoad || typeof window === 'undefined') return
-
-  observer.value = new IntersectionObserver(
+  observer = new IntersectionObserver(
     (entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
-          loadImage()
-          observer.value?.unobserve(entry.target)
+          isVisible.value = true
+          observer?.unobserve(entry.target)
         }
       })
     },
     {
-      rootMargin: '50px', // 提前50px开始加载
-      threshold: 0.1 // 10%可见时开始加载
+      root: null,
+      rootMargin: `${props.threshold}px`,
+      threshold: 0.1
     }
   )
-}
 
-// 加载图片
-const loadImage = async () => {
-  if (isLoaded.value || isLoading.value) return
-
-  isLoading.value = true
-  hasError.value = false
-
-  try {
-    await trackApiCall(
-      new Promise<void>((resolve, reject) => {
-        const img = new Image()
-        
-        const handleLoad = (event: Event) => {
-          img.onload = null
-          img.onerror = null
-          isLoaded.value = true
-          isLoading.value = false
-          retryAttempt.value = 0
-          emit('load', event)
-          resolve()
-        }
-
-        const handleError = (event: Event) => {
-          img.onload = null
-          img.onerror = null
-          handleImageError(event)
-          reject(event)
-        }
-
-        img.onload = handleLoad
-        img.onerror = handleError
-        img.src = currentSrc.value
-      }),
-      'image-load',
-      false // 不使用缓存
-    )
-  } catch (error) {
-    handleImageError(error as Event)
-  }
-}
-
-// 处理加载错误
-const handleImageError = (event: Event) => {
-  isLoading.value = false
-  
-  // 重试机制
-  if (retryAttempt.value < props.retryCount) {
-    retryAttempt.value++
-    emit('retry', retryAttempt.value)
-    
-    setTimeout(() => {
-      loadImage()
-    }, props.retryDelay)
-  } else {
-    hasError.value = true
-    emit('error', event)
-  }
-}
-
-// 处理加载完成
-const handleLoad = (event: Event) => {
-  isLoaded.value = true
-  isLoading.value = false
-  hasError.value = false
-  retryAttempt.value = 0
-  emit('load', event)
-}
-
-// 手动触发加载
-const triggerLoad = () => {
-  if (props.lazyLoad && !isLoaded.value && !hasError.value) {
-    loadImage()
-  }
-}
-
-// 重置状态
-const reset = () => {
-  isLoaded.value = false
-  hasError.value = false
-  isLoading.value = false
-  retryAttempt.value = 0
-}
-
-// 获取图片信息
-const getImageInfo = () => {
-  return {
-    loaded: isLoaded.value,
-    error: hasError.value,
-    loading: isLoading.value,
-    retryAttempt: retryAttempt.value,
-    naturalWidth: imageRef.value?.naturalWidth || 0,
-    naturalHeight: imageRef.value?.naturalHeight || 0
-  }
-}
-
-onMounted(() => {
-  if (props.lazyLoad) {
-    createObserver()
-    
-    if (imageRef.value && observer.value) {
-      observer.value.observe(imageRef.value)
+  nextTick(() => {
+    const element = document.querySelector('.lazy-image-container')
+    if (element) {
+      observer.observe(element)
     }
+  })
+}
+
+// 生命周期钩子
+onMounted(() => {
+  if (props.loading === 'eager') {
+    isVisible.value = true
   } else {
-    loadImage()
+    setupIntersectionObserver()
   }
 })
 
 onUnmounted(() => {
-  if (observer.value) {
-    observer.value.disconnect()
-    observer.value = null
+  if (observer) {
+    observer.disconnect()
   }
 })
 
-// 监听src变化
+// 监听props.src变化
 watch(() => props.src, () => {
-  reset()
-  if (props.lazyLoad) {
-    if (imageRef.value && observer.value) {
-      observer.value.observe(imageRef.value)
-    }
-  } else {
-    loadImage()
+  if (isVisible.value) {
+    loaded.value = false
+    loading.value = true
+    error.value = false
+    currentRetryCount.value = 0
   }
-})
-
-defineExpose({
-  triggerLoad,
-  reset,
-  getImageInfo
-})
+}, { immediate: true })
 </script>
 
 <style scoped>
 .lazy-image-container {
-  @apply relative overflow-hidden bg-gray-100;
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background-color: #f5f5f5;
 }
 
 .lazy-image {
-  @apply block w-full h-full transition-opacity duration-300;
-}
-
-.lazy-image-placeholder {
-  @apply absolute inset-0 flex items-center justify-center bg-gray-100;
-}
-
-.lazy-image-error {
-  @apply absolute inset-0 flex items-center justify-center bg-gray-200;
+  transition: opacity 0.3s ease-in-out;
+  cursor: pointer;
 }
 
 .lazy-image-loading {
-  @apply animate-pulse;
-}
-
-.lazy-image-fade-in {
-  animation: fadeIn 0.3s ease-in-out;
+  opacity: 0;
 }
 
 .lazy-image-loaded {
-  @apply bg-transparent;
+  opacity: 1;
 }
 
 .lazy-image-error {
-  @apply bg-gray-200;
+  opacity: 0;
 }
 
-/* 默认占位符样式 */
-.default-placeholder {
-  @apply flex flex-col items-center justify-center text-gray-400;
+.lazy-image-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%, #e0e0e0);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
 }
 
-.placeholder-icon {
-  @apply w-12 h-12 mb-2;
+.skeleton-content {
+  width: 60%;
+  height: 20px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  animation: skeleton-pulse 1.5s infinite;
 }
 
-.placeholder-text {
-  @apply text-sm;
+.lazy-image-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffebee;
+  color: #dc3545;
+  font-size: 14px;
 }
 
-/* 错误内容样式 */
 .error-content {
-  @apply flex flex-col items-center justify-center text-red-400;
+  text-align: center;
 }
 
 .error-icon {
-  @apply w-12 h-12 mb-2;
+  font-size: 24px;
+  margin-bottom: 8px;
 }
 
-.error-text {
-  @apply text-sm;
+.error-message {
+  margin-bottom: 12px;
 }
 
-/* 淡入动画 */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
+.retry-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.retry-button:hover {
+  background-color: #c82333;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
   }
-  to {
-    opacity: 1;
+  100% {
+    background-position: -200% 0;
   }
 }
 
-/* 脉冲动画 */
-@keyframes pulse {
+@keyframes skeleton-pulse {
   0%, 100% {
     opacity: 1;
   }
@@ -396,7 +342,44 @@ defineExpose({
   }
 }
 
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .lazy-image-container {
+    border-radius: 4px;
+  }
+  
+  .error-message {
+    font-size: 12px;
+    padding: 0 8px;
+  }
+  
+  .retry-button {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .lazy-image-skeleton {
+    background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%, #3a3a3a);
+  }
+  
+  .skeleton-content {
+    background: #4a4a4a;
+  }
+  
+  .lazy-image-error {
+    background-color: #5a1a1a;
+    color: #ff6b6b;
+  }
+  
+  .retry-button {
+    background-color: #dc3545;
+  }
+  
+  .retry-button:hover {
+    background-color: #c82333;
+  }
 }
 </style>

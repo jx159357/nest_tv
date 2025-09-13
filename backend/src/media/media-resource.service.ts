@@ -6,120 +6,133 @@ import { User } from '../entities/user.entity';
 import { CreateMediaResourceDto } from './dtos/create-media-resource.dto';
 import { UpdateMediaResourceDto } from './dtos/update-media-resource.dto';
 import { MediaResourceQueryDto } from './dtos/media-resource-query.dto';
-import { PerformanceMonitorService } from '../common/services/performance-monitor.service';
-import { MediaCacheService } from '../common/services/media-cache.service';
+import { CacheService } from '../common/cache/cache.service';
+import { Cacheable, CacheEvict } from '../common/decorators/cache.decorator';
 
 @Injectable()
 export class MediaResourceService {
   constructor(
     @InjectRepository(MediaResource)
     private mediaResourceRepository: Repository<MediaResource>,
-    private performanceMonitorService: PerformanceMonitorService,
-    private mediaCacheService: MediaCacheService,
+    private readonly cacheService: CacheService,
   ) {}
 
   /**
    * 创建影视资源
    */
+  @CacheEvict({
+    all: true, // 清除所有媒体相关的缓存
+    key: 'media:list:*' // 清除媒体列表缓存
+  })
   async create(createMediaResourceDto: CreateMediaResourceDto): Promise<MediaResource> {
     const mediaResource = this.mediaResourceRepository.create(createMediaResourceDto);
-    return await this.mediaResourceRepository.save(mediaResource);
+    return this.mediaResourceRepository.save(mediaResource);
   }
 
   /**
-   * 分页查询影视资源（优化版）
+   * 获取影视资源列表（支持筛选和分页）
    */
+  @Cacheable({
+    ttl: 600, // 10分钟缓存
+    key: 'media:list:default' // 简化缓存键
+  })
   async findAll(queryDto: MediaResourceQueryDto): Promise<{
     data: MediaResource[];
     total: number;
     page: number;
-    limit: number;
+    pageSize: number;
     totalPages: number;
   }> {
-    const { page = 1, limit = 10, search, type, genre, minRating, maxRating, sortBy = 'createdAt', sortOrder = 'DESC' } = queryDto;
-    
-    const startTime = Date.now();
-    const queryBuilder = this.mediaResourceRepository.createQueryBuilder('media');
+    const { 
+      page = 1, 
+      pageSize = 10, 
+      search, 
+      type, 
+      quality, 
+      minRating, 
+      maxRating,
+      tags,
+      startDate,
+      endDate
+    } = queryDto;
 
-    // 搜索条件 - 优化为全文搜索
+    const queryBuilder = this.mediaResourceRepository.createQueryBuilder('mediaResource')
+      .leftJoinAndSelect('mediaResource.poster', 'poster');
+
+    // 搜索条件
     if (search) {
       queryBuilder.andWhere(
-        '(media.title LIKE :search OR media.description LIKE :search OR media.director LIKE :search OR media.actors LIKE :search)',
+        '(mediaResource.title LIKE :search OR mediaResource.description LIKE :search OR mediaResource.originalTitle LIKE :search)',
         { search: `%${search}%` }
       );
     }
 
-    // 类型过滤
-    if (type && Object.values(MediaType).includes(type as MediaType)) {
-      queryBuilder.andWhere('media.type = :type', { type });
+    // 类型筛选
+    if (type) {
+      queryBuilder.andWhere('mediaResource.type IN (:...type)', { type });
     }
 
-    // 类型标签过滤 - 优化JSON查询
-    if (genre) {
-      queryBuilder.andWhere('JSON_CONTAINS(media.genres, :genre)', { genre: `["${genre}"]` });
+    // 质量筛选
+    if (quality) {
+      queryBuilder.andWhere('mediaResource.quality IN (:...quality)', { quality });
     }
 
-    // 评分范围过滤
-    if (minRating !== undefined || maxRating !== undefined) {
-      const min = minRating ?? 0;
-      const max = maxRating ?? 10;
-      queryBuilder.andWhere('media.rating BETWEEN :min AND :max', { min, max });
+    // 评分筛选
+    if (minRating !== undefined) {
+      queryBuilder.andWhere('mediaResource.rating >= :minRating', { minRating });
+    }
+    if (maxRating !== undefined) {
+      queryBuilder.andWhere('mediaResource.rating <= :maxRating', { maxRating });
     }
 
-    // 只查询激活的资源
-    queryBuilder.andWhere('media.isActive = :isActive', { isActive: true });
+    // 标签筛选
+    if (tags && tags.length > 0) {
+      queryBuilder.andWhere('mediaResource.tags && JSON_CONTAINS(mediaResource.tags, :tags)', { tags });
+    }
 
-    // 排序 - 优化只允许索引字段排序
-    const validSortFields = ['id', 'title', 'rating', 'viewCount', 'createdAt', 'releaseDate'];
-    const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
-    queryBuilder.orderBy(`media.${sortField}`, sortOrder);
+    // 日期范围筛选
+    if (startDate && endDate) {
+      queryBuilder.andWhere('mediaResource.releaseDate BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate
+      });
+    }
 
-    // 分页 - 添加限制避免过大查询
-    const validatedLimit = Math.min(Math.max(limit, 1), 100); // 限制每页最多100条
-    const offset = (page - 1) * validatedLimit;
-    queryBuilder.skip(offset).take(validatedLimit);
+    // 获取总数
+    const total = await queryBuilder.getCount();
 
-    const [data, total] = await queryBuilder.getManyAndCount();
-    
-    // 记录查询性能
-    const duration = Date.now() - startTime;
-    this.performanceMonitorService.recordDatabaseQuery(
-      `MediaResource.findAll - ${JSON.stringify(queryDto)}`, 
-      duration
-    );
+    // 分页查询
+    const skip = (page - 1) * pageSize;
+    const data = await queryBuilder
+      .orderBy('mediaResource.rating', 'DESC')
+      .addOrderBy('mediaResource.releaseDate', 'DESC')
+      .addOrderBy('mediaResource.createdAt', 'DESC')
+      .skip(skip)
+      .take(pageSize)
+      .getMany();
+
+    const totalPages = Math.ceil(total / pageSize);
 
     return {
       data,
       total,
-      page: Number(page),
-      limit: validatedLimit,
-      totalPages: Math.ceil(total / validatedLimit),
+      page,
+      pageSize,
+      totalPages,
     };
   }
 
   /**
-   * 根据ID查找影视资源（优化版，避免N+1查询）
+   * 根据ID获取影视资源
    */
   async findById(id: number): Promise<MediaResource> {
-    const startTime = Date.now();
-    
-    const mediaResource = await this.mediaResourceRepository
-      .createQueryBuilder('media')
-      .leftJoinAndSelect('media.playSources', 'playSources')
-      .leftJoinAndSelect('media.watchHistory', 'watchHistory')
-      .leftJoinAndSelect('media.recommendations', 'recommendations')
-      .leftJoinAndSelect('media.iptvChannels', 'iptvChannels')
-      .where('media.id = :id', { id })
-      .getOne();
-
-    const duration = Date.now() - startTime;
-    this.performanceMonitorService.recordDatabaseQuery(
-      `MediaResource.findById - ${id}`, 
-      duration
-    );
+    const mediaResource = await this.mediaResourceRepository.findOne({
+      where: { id },
+      relations: ['poster', 'watchHistory', 'playSources'],
+    });
 
     if (!mediaResource) {
-      throw new NotFoundException('影视资源不存在');
+      throw new NotFoundException(`影视资源ID ${id} 不存在`);
     }
 
     return mediaResource;
@@ -128,350 +141,159 @@ export class MediaResourceService {
   /**
    * 更新影视资源
    */
+  @CacheEvict({
+    all: true, // 清除所有媒体相关的缓存
+    key: 'media:list:*' // 清除媒体列表缓存
+  })
   async update(id: number, updateMediaResourceDto: UpdateMediaResourceDto): Promise<MediaResource> {
     const mediaResource = await this.findById(id);
     Object.assign(mediaResource, updateMediaResourceDto);
-    return await this.mediaResourceRepository.save(mediaResource);
+    return this.mediaResourceRepository.save(mediaResource);
   }
 
   /**
    * 删除影视资源
    */
+  @CacheEvict({
+    all: true, // 清除所有媒体相关的缓存
+    key: 'media:list:*' // 清除媒体列表缓存
+  })
   async remove(id: number): Promise<void> {
     const mediaResource = await this.findById(id);
     await this.mediaResourceRepository.remove(mediaResource);
   }
 
   /**
-   * 软删除（标记为不活跃）
+   * 搜索影视资源
    */
-  async softDelete(id: number): Promise<MediaResource> {
+  async search(keyword: string, limit: number = 10): Promise<MediaResource[]> {
+    return this.mediaResourceRepository.find({
+      where: [
+        { title: Like(`%${keyword}%`) },
+      ],
+      take: limit,
+      order: {
+        rating: 'DESC',
+      },
+    });
+  }
+
+  /**
+   * 获取热门影视
+   */
+  async getPopular(limit: number = 10): Promise<MediaResource[]> {
+    return this.mediaResourceRepository.find({
+      where: {
+        rating: Not(0),
+      },
+      order: {
+        rating: 'DESC',
+      },
+      take: limit,
+    });
+  }
+
+  /**
+   * 获取最新影视
+   */
+  async getLatest(limit: number = 10): Promise<MediaResource[]> {
+    return this.mediaResourceRepository.find({
+      order: {
+        createdAt: 'DESC',
+      },
+      take: limit,
+    });
+  }
+
+  /**
+   * 获取相似影视
+   */
+  async getSimilar(id: number, limit: number = 6): Promise<MediaResource[]> {
     const mediaResource = await this.findById(id);
-    mediaResource.isActive = false;
-    return await this.mediaResourceRepository.save(mediaResource);
+    
+    return this.mediaResourceRepository
+      .createQueryBuilder('mediaResource')
+      .where('mediaResource.id != :id', { id })
+      .andWhere('mediaResource.type = :type', {
+        type: mediaResource.type,
+      })
+      .orderBy('mediaResource.rating', 'DESC')
+      .take(limit)
+      .getMany();
   }
 
   /**
    * 增加观看次数
    */
-  async incrementViewCount(id: number): Promise<void> {
-    await this.mediaResourceRepository.increment({ id }, 'viewCount', 1);
+  async incrementViews(id: number): Promise<void> {
+    await this.mediaResourceRepository.increment({ id }, 'views', 1);
   }
 
   /**
-   * 获取热门影视资源（优化版，带缓存）
+   * 增加点赞数
    */
-  async getPopular(limit: number = 10): Promise<MediaResource[]> {
-    const validatedLimit = Math.min(Math.max(limit, 1), 50); // 限制最多50条
-    
-    // 先尝试从缓存获取
-    const cached = await this.mediaCacheService.getCachedPopularMedia(validatedLimit);
-    if (cached) {
-      return cached;
-    }
-    
-    const startTime = Date.now();
-    
-    const mediaResources = await this.mediaResourceRepository
-      .createQueryBuilder('media')
-      .where('media.isActive = :isActive', { isActive: true })
-      .orderBy('media.viewCount', 'DESC')
-      .addOrderBy('media.rating', 'DESC')
-      .take(validatedLimit)
-      .getMany();
-      
-    const duration = Date.now() - startTime;
-    this.performanceMonitorService.recordDatabaseQuery(
-      `MediaResource.getPopular - ${validatedLimit}`, 
-      duration
-    );
-    
-    // 缓存结果
-    await this.mediaCacheService.cachePopularMedia(mediaResources, validatedLimit);
-    
-    return mediaResources;
+  async incrementLikes(id: number): Promise<void> {
+    await this.mediaResourceRepository.increment({ id }, 'likes', 1);
   }
 
   /**
-   * 获取最新影视资源（优化版，带缓存）
+   * 减少点赞数
    */
-  async getLatest(limit: number = 10): Promise<MediaResource[]> {
-    const validatedLimit = Math.min(Math.max(limit, 1), 50); // 限制最多50条
-    
-    // 先尝试从缓存获取
-    const cached = await this.mediaCacheService.getCachedLatestMedia(validatedLimit);
-    if (cached) {
-      return cached;
-    }
-    
-    const startTime = Date.now();
-    
-    const mediaResources = await this.mediaResourceRepository
-      .createQueryBuilder('media')
-      .where('media.isActive = :isActive', { isActive: true })
-      .orderBy('media.createdAt', 'DESC')
-      .take(validatedLimit)
-      .getMany();
-      
-    const duration = Date.now() - startTime;
-    this.performanceMonitorService.recordDatabaseQuery(
-      `MediaResource.getLatest - ${validatedLimit}`, 
-      duration
-    );
-    
-    // 缓存结果
-    await this.mediaCacheService.cacheLatestMedia(mediaResources, validatedLimit);
-    
-    return mediaResources;
+  async decrementLikes(id: number): Promise<void> {
+    await this.mediaResourceRepository.decrement({ id }, 'likes', 1);
   }
 
   /**
-   * 获取高评分影视资源（优化版，带缓存）
+   * 获取影视统计信息
    */
-  async getTopRated(limit: number = 10, minRating: number = 8): Promise<MediaResource[]> {
-    const validatedLimit = Math.min(Math.max(limit, 1), 50); // 限制最多50条
-    
-    // 先尝试从缓存获取
-    const cached = await this.mediaCacheService.getCachedTopRatedMedia(validatedLimit, minRating);
-    if (cached) {
-      return cached;
-    }
-    
-    const startTime = Date.now();
-    
-    const mediaResources = await this.mediaResourceRepository
-      .createQueryBuilder('media')
-      .where('media.isActive = :isActive', { isActive: true })
-      .andWhere('media.rating BETWEEN :minRating AND :maxRating', { 
-        minRating, 
-        maxRating: 10 
-      })
-      .orderBy('media.rating', 'DESC')
-      .addOrderBy('media.viewCount', 'DESC')
-      .take(validatedLimit)
-      .getMany();
-      
-    const duration = Date.now() - startTime;
-    this.performanceMonitorService.recordDatabaseQuery(
-      `MediaResource.getTopRated - ${validatedLimit}`, 
-      duration
-    );
-    
-    // 缓存结果
-    await this.mediaCacheService.cacheTopRatedMedia(mediaResources, validatedLimit, minRating);
-    
-    return mediaResources;
-  }
-
-  /**
-   * 根据类型获取影视资源
-   */
-  async getByType(type: MediaType, limit: number = 20): Promise<MediaResource[]> {
-    return await this.mediaResourceRepository.find({
-      where: { type, isActive: true },
-      order: { createdAt: 'DESC' },
-      take: limit,
-    });
-  }
-
-  /**
-   * 获取相关推荐
-   */
-  async getRecommendations(id: number, limit: number = 6): Promise<MediaResource[]> {
-    const mediaResource = await this.findById(id);
-    
-    return await this.mediaResourceRepository.find({
-      where: { 
-        type: mediaResource.type,
-        isActive: true,
-        id: Not(id),
-      },
-      order: { rating: 'DESC', viewCount: 'DESC' },
-      take: limit,
-    });
-  }
-
-  /**
-   * 添加用户收藏（带缓存清除）
-   */
-  async addToFavorites(userId: number, mediaResourceId: number): Promise<void> {
-    const mediaResource = await this.mediaResourceRepository.findOne({
-      where: { id: mediaResourceId },
-      relations: ['favorites'],
-    });
-
-    if (!mediaResource) {
-      throw new NotFoundException('影视资源不存在');
-    }
-
-    const user = await this.mediaResourceRepository.manager
-      .createQueryBuilder(User, 'user')
-      .leftJoinAndSelect('user.favorites', 'favorites')
-      .where('user.id = :userId', { userId })
-      .getOne();
-
-    if (!user) {
-      throw new NotFoundException('用户不存在');
-    }
-
-    // 检查是否已经收藏
-    const isAlreadyFavorited = user.favorites.some(fav => fav.id === mediaResourceId);
-    if (isAlreadyFavorited) {
-      throw new HttpException('已经收藏该资源', HttpStatus.BAD_REQUEST);
-    }
-
-    user.favorites.push(mediaResource);
-    await this.mediaResourceRepository.manager.save(user);
-    
-    // 清除相关缓存
-    await this.mediaCacheService.clearUserCache(userId);
-    await this.mediaCacheService.clearMediaCache(mediaResourceId);
-  }
-
-  /**
-   * 取消用户收藏（带缓存清除）
-   */
-  async removeFromFavorites(userId: number, mediaResourceId: number): Promise<void> {
-    const mediaResource = await this.mediaResourceRepository.findOne({
-      where: { id: mediaResourceId },
-    });
-
-    if (!mediaResource) {
-      throw new NotFoundException('影视资源不存在');
-    }
-
-    const user = await this.mediaResourceRepository.manager
-      .createQueryBuilder(User, 'user')
-      .leftJoinAndSelect('user.favorites', 'favorites')
-      .where('user.id = :userId', { userId })
-      .getOne();
-
-    if (!user) {
-      throw new NotFoundException('用户不存在');
-    }
-
-    user.favorites = user.favorites.filter(fav => fav.id !== mediaResourceId);
-    await this.mediaResourceRepository.manager.save(user);
-    
-    // 清除相关缓存
-    await this.mediaCacheService.clearUserCache(userId);
-    await this.mediaCacheService.clearMediaCache(mediaResourceId);
-  }
-
-  /**
-   * 检查用户是否收藏了该资源
-   */
-  async isFavoritedByUser(userId: number, mediaResourceId: number): Promise<boolean> {
-    const user = await this.mediaResourceRepository.manager
-      .createQueryBuilder(User, 'user')
-      .leftJoinAndSelect('user.favorites', 'favorites')
-      .where('user.id = :userId', { userId })
-      .andWhere('favorites.id = :mediaResourceId', { mediaResourceId })
-      .getOne();
-
-    return !!user;
-  }
-
-  /**
-   * 获取用户的收藏列表（优化版，避免N+1查询，带缓存）
-   */
-  async getUserFavorites(userId: number, page: number = 1, limit: number = 10): Promise<{
-    data: MediaResource[];
+  async getStatistics(): Promise<{
     total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  }> {
-    const validatedLimit = Math.min(Math.max(limit, 1), 100);
-    
-    // 先尝试从缓存获取
-    const cached = await this.mediaCacheService.getCachedUserFavorites(userId, page, validatedLimit);
-    if (cached) {
-      return cached;
-    }
-    
-    const startTime = Date.now();
-    const offset = (page - 1) * validatedLimit;
-    
-    // 优化查询：直接查询关联表，避免先查询用户
-    const [favorites, totalCount] = await this.mediaResourceRepository.manager
-      .createQueryBuilder()
-      .select('media')
-      .from(MediaResource, 'media')
-      .innerJoin('media.favorites', 'user', 'user.id = :userId', { userId })
-      .leftJoinAndSelect('media.playSources', 'playSources')
-      .leftJoinAndSelect('media.watchHistory', 'watchHistory')
-      .orderBy('media.createdAt', 'DESC')
-      .skip(offset)
-      .take(validatedLimit)
-      .getManyAndCount();
-
-    const duration = Date.now() - startTime;
-    this.performanceMonitorService.recordDatabaseQuery(
-      `MediaResource.getUserFavorites - ${userId}, page: ${page}`, 
-      duration
-    );
-
-    const result = {
-      data: favorites,
-      total: totalCount,
-      page,
-      limit: validatedLimit,
-      totalPages: Math.ceil(totalCount / validatedLimit),
-    };
-    
-    // 缓存结果
-    await this.mediaCacheService.cacheUserFavorites(userId, result, page, validatedLimit);
-
-    return result;
-  }
-
-  /**
-   * 用户评分影视资源
-   */
-  async rateResource(userId: number, mediaResourceId: number, rating: number): Promise<MediaResource> {
-    if (rating < 0 || rating > 10) {
-      throw new HttpException('评分必须在0-10之间', HttpStatus.BAD_REQUEST);
-    }
-
-    const mediaResource = await this.mediaResourceRepository.findOne({
-      where: { id: mediaResourceId },
-      relations: ['watchHistory'],
-    });
-
-    if (!mediaResource) {
-      throw new NotFoundException('影视资源不存在');
-    }
-
-    // TODO: 这里可以添加用户评分记录到单独的评分表
-    // 现在简单更新平均评分
-    mediaResource.rating = rating;
-    return await this.mediaResourceRepository.save(mediaResource);
-  }
-
-  /**
-   * 获取资源评分统计
-   */
-  async getRatingStats(mediaResourceId: number): Promise<{
+    byType: Record<string, number>;
+    byQuality: Record<string, number>;
     averageRating: number;
-    totalRatings: number;
-    ratingDistribution: { [key: string]: number };
   }> {
-    const mediaResource = await this.findById(mediaResourceId);
+    const total = await this.mediaResourceRepository.count();
 
-    // TODO: 实现真实的评分统计
-    // 现在返回模拟数据
+    // 按类型统计
+    const byTypeQuery = await this.mediaResourceRepository
+      .createQueryBuilder('mediaResource')
+      .select('mediaResource.type')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('mediaResource.type')
+      .getRawMany();
+
+    const byType = byTypeQuery.reduce((acc, item) => {
+      acc[item.type] = parseInt(item.count as string);
+      return acc;
+    }, {} as Record<string, number>);
+
+    // 按质量统计
+    const byQualityQuery = await this.mediaResourceRepository
+      .createQueryBuilder('mediaResource')
+      .select('mediaResource.quality')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('mediaResource.quality')
+      .getRawMany();
+
+    const byQuality = byQualityQuery.reduce((acc, item) => {
+      acc[item.quality] = parseInt(item.count as string);
+      return acc;
+    }, {} as Record<string, number>);
+
+    // 平均评分
+    const averageRatingQuery = await this.mediaResourceRepository
+      .createQueryBuilder('mediaResource')
+      .select('AVG(mediaResource.rating)', 'avgRating')
+      .where('mediaResource.rating != 0')
+      .getRawOne();
+
+    const averageRating = parseFloat(averageRatingQuery.avgRating as string) || 0;
+
     return {
-      averageRating: mediaResource.rating,
-      totalRatings: 1, // 模拟数据
-      ratingDistribution: {
-        '5': 0,
-        '6': 0,
-        '7': 0,
-        '8': 0,
-        '9': 0,
-        '10': 1,
-      },
+      total,
+      byType,
+      byQuality,
+      averageRating,
     };
   }
 }

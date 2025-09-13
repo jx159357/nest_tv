@@ -15,6 +15,7 @@ const watch_history_entity_1 = require("./watch-history.entity");
 const media_resource_entity_1 = require("./media-resource.entity");
 const play_source_entity_1 = require("./play-source.entity");
 const recommendation_entity_1 = require("./recommendation.entity");
+const search_history_entity_1 = require("./search-history.entity");
 let User = class User {
     id;
     username;
@@ -32,6 +33,7 @@ let User = class User {
     favorites;
     configuredPlaySources;
     recommendations;
+    searchHistory;
 };
 exports.User = User;
 __decorate([
@@ -100,6 +102,10 @@ __decorate([
     (0, typeorm_1.OneToMany)(() => recommendation_entity_1.Recommendation, recommendation => recommendation.user),
     __metadata("design:type", Array)
 ], User.prototype, "recommendations", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => search_history_entity_1.SearchHistory, searchHistory => searchHistory.user),
+    __metadata("design:type", Array)
+], User.prototype, "searchHistory", void 0);
 exports.User = User = __decorate([
     (0, typeorm_1.Entity)('users')
 ], User);

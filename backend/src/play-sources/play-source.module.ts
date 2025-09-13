@@ -9,7 +9,7 @@ import { CommonModule } from '../common/common.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([PlaySource, MediaResource]),
-    CommonModule.forFeature(),
+    CommonModule,
   ],
   controllers: [PlaySourceController],
   providers: [PlaySourceService],

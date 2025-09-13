@@ -10,14 +10,13 @@ exports.DataCollectionModule = void 0;
 const common_1 = require("@nestjs/common");
 const data_collection_controller_1 = require("./data-collection.controller");
 const data_collection_service_1 = require("./data-collection.service");
-const app_logger_service_1 = require("../common/services/app-logger.service");
 let DataCollectionModule = class DataCollectionModule {
 };
 exports.DataCollectionModule = DataCollectionModule;
 exports.DataCollectionModule = DataCollectionModule = __decorate([
     (0, common_1.Module)({
         controllers: [data_collection_controller_1.DataCollectionController],
-        providers: [data_collection_service_1.DataCollectionService, app_logger_service_1.AppLoggerService],
+        providers: [data_collection_service_1.DataCollectionService],
         exports: [data_collection_service_1.DataCollectionService],
     })
 ], DataCollectionModule);

@@ -14,6 +14,7 @@ const swagger_1 = require("@nestjs/swagger");
 class PlaySourceQueryDto {
     page = 1;
     limit = 10;
+    pageSize = 10;
     mediaResourceId;
     type;
     status;
@@ -31,6 +32,10 @@ __decorate([
     (0, swagger_1.ApiProperty)({ description: '每页数量', default: 10 }),
     __metadata("design:type", Number)
 ], PlaySourceQueryDto.prototype, "limit", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: '每页数量', default: 10 }),
+    __metadata("design:type", Number)
+], PlaySourceQueryDto.prototype, "pageSize", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ description: '影视资源ID', required: false }),
     __metadata("design:type", Number)

@@ -2,6 +2,7 @@ import { WatchHistory } from './watch-history.entity';
 import { MediaResource } from './media-resource.entity';
 import { PlaySource } from './play-source.entity';
 import { Recommendation } from './recommendation.entity';
+import { SearchHistory } from './search-history.entity';
 export declare class User {
     id: number;
     username: string;
@@ -19,4 +20,5 @@ export declare class User {
     favorites: MediaResource[];
     configuredPlaySources: PlaySource[];
     recommendations: Recommendation[];
+    searchHistory: SearchHistory[];
 }

@@ -1,47 +1,41 @@
 import { MediaResourceService } from './media-resource.service';
 import { CreateMediaResourceDto } from './dtos/create-media-resource.dto';
 import { UpdateMediaResourceDto } from './dtos/update-media-resource.dto';
-import { MediaResourceQueryDto } from './dtos/media-resource-query.dto';
-import { MediaResource } from '../entities/media-resource.entity';
 export declare class MediaResourceController {
     private readonly mediaResourceService;
     constructor(mediaResourceService: MediaResourceService);
-    create(createMediaResourceDto: CreateMediaResourceDto): Promise<MediaResource>;
-    findAll(queryDto: MediaResourceQueryDto): Promise<{
-        data: MediaResource[];
+    findAll(page?: number, pageSize?: number, search?: string, type?: string, quality?: string, minRating?: number, maxRating?: number, tags?: string, startDate?: string, endDate?: string): Promise<{
+        data: import("../entities/media-resource.entity").MediaResource[];
         total: number;
         page: number;
-        limit: number;
+        pageSize: number;
         totalPages: number;
     }>;
-    getPopular(limit?: number): Promise<MediaResource[]>;
-    getLatest(limit?: number): Promise<MediaResource[]>;
-    getTopRated(limit?: number, minRating?: number): Promise<MediaResource[]>;
-    getByType(type: string, limit?: number): Promise<MediaResource[]>;
-    findById(id: number): Promise<MediaResource>;
-    getRecommendations(id: number, limit?: number): Promise<MediaResource[]>;
-    incrementViewCount(id: number): Promise<void>;
-    update(id: number, updateMediaResourceDto: UpdateMediaResourceDto): Promise<MediaResource>;
-    remove(id: number): Promise<void>;
-    softDelete(id: number): Promise<MediaResource>;
-    addToFavorites(mediaResourceId: number, req: any): Promise<void>;
-    removeFromFavorites(mediaResourceId: number, req: any): Promise<void>;
-    checkFavoriteStatus(mediaResourceId: number, req: any): Promise<{
-        isFavorited: boolean;
+    findById(id: number): Promise<import("../entities/media-resource.entity").MediaResource>;
+    create(createMediaResourceDto: CreateMediaResourceDto): Promise<import("../entities/media-resource.entity").MediaResource>;
+    update(id: number, updateMediaResourceDto: UpdateMediaResourceDto): Promise<import("../entities/media-resource.entity").MediaResource>;
+    remove(id: number): Promise<{
+        statusCode: number;
+        message: string;
+        timestamp: string;
     }>;
-    getUserFavorites(req: any, page?: number, limit?: number): Promise<{
-        data: MediaResource[];
+    search(keyword: string, limit?: number): Promise<import("../entities/media-resource.entity").MediaResource[]>;
+    getPopular(limit?: number): Promise<import("../entities/media-resource.entity").MediaResource[]>;
+    getLatest(limit?: number): Promise<import("../entities/media-resource.entity").MediaResource[]>;
+    getSimilar(id: number, limit?: number): Promise<import("../entities/media-resource.entity").MediaResource[]>;
+    incrementViews(id: number): Promise<{
+        message: string;
+    }>;
+    incrementLikes(id: number): Promise<{
+        message: string;
+    }>;
+    decrementLikes(id: number): Promise<{
+        message: string;
+    }>;
+    getStatistics(): Promise<{
         total: number;
-        page: number;
-        limit: number;
-        totalPages: number;
-    }>;
-    rateResource(mediaResourceId: number, rating: number, req: any): Promise<MediaResource>;
-    getRatingStats(mediaResourceId: number): Promise<{
+        byType: Record<string, number>;
+        byQuality: Record<string, number>;
         averageRating: number;
-        totalRatings: number;
-        ratingDistribution: {
-            [key: string]: number;
-        };
     }>;
 }

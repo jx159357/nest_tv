@@ -21,7 +21,7 @@ exports.PlaySourceModule = PlaySourceModule = __decorate([
     (0, common_1.Module)({
         imports: [
             typeorm_1.TypeOrmModule.forFeature([play_source_entity_1.PlaySource, media_resource_entity_1.MediaResource]),
-            common_module_1.CommonModule.forFeature(),
+            common_module_1.CommonModule,
         ],
         controllers: [play_source_controller_1.PlaySourceController],
         providers: [play_source_service_1.PlaySourceService],

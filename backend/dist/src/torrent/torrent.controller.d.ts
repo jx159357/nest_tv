@@ -1,17 +1,55 @@
-import { TorrentService } from '../common/services/torrent.service';
-import { AppLoggerService } from '../common/services/app-logger.service';
-import type { Response } from 'express';
 export declare class TorrentController {
-    private readonly torrentService;
-    private readonly logger;
-    constructor(torrentService: TorrentService, appLoggerService: AppLoggerService);
-    addMagnet(magnetUri: string, userId?: number): Promise<any>;
-    getTorrentInfo(infoHash: string, userId?: number): Promise<any>;
-    findLargestVideoFile(infoHash: string, userId?: number): Promise<any>;
-    getFileStream(infoHash: string, fileIndex: number, userId?: number, res?: Response, req?: any): Promise<void>;
-    checkMagnetHealth(magnetUri: string, userId?: number): Promise<any>;
-    removeTorrent(infoHash: string, userId?: number): Promise<any>;
-    getAllTorrents(userId?: number): Promise<any>;
-    parseMagnet(magnetUri: string, userId?: number): Promise<any>;
-    destroyAll(userId?: number): Promise<any>;
+    getTorrentInfo(hash: string): Promise<{
+        infoHash: string;
+        name: string;
+        size: string;
+        files: never[];
+        announce: never[];
+    }>;
+    checkTorrentHealth(hash: string): Promise<{
+        infoHash: string;
+        isHealthy: boolean;
+        seeders: number;
+        leechers: number;
+        lastChecked: string;
+    }>;
+    parseMagnetUri(body: {
+        magnetUri: string;
+    }): Promise<{
+        infoHash: string;
+        name: string;
+        announce: string[];
+    }>;
+    searchTorrents(keyword: string, page?: number, pageSize?: number): Promise<{
+        data: {
+            infoHash: string;
+            name: string;
+            size: string;
+            seeders: number;
+            leechers: number;
+            added: string;
+        }[];
+        total: number;
+        page: number;
+        pageSize: number;
+        totalPages: number;
+    }>;
+    getPopularTorrents(limit?: number, category?: string): Promise<{
+        infoHash: string;
+        name: string;
+        size: string;
+        seeders: number;
+        leechers: number;
+        category: string;
+        added: string;
+    }[]>;
+    getLatestTorrents(limit?: number, category?: string): Promise<{
+        infoHash: string;
+        name: string;
+        size: string;
+        seeders: number;
+        leechers: number;
+        category: string;
+        added: string;
+    }[]>;
 }

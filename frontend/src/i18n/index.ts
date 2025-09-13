@@ -1,3 +1,11 @@
+/*
+ * @Descripttion:
+ * @version:
+ * @Author: jxwd
+ * @Date: 2025-09-10 12:17:19
+ * @LastEditors: jxwd
+ * @LastEditTime: 2025-09-10 14:51:08
+ */
 import { createI18n } from 'vue-i18n'
 import { nextLocalStorage } from '@/utils/storage'
 import { zhCN } from './locales/zh-CN'
@@ -30,14 +38,14 @@ export const isLocaleSupported = (locale: string): boolean => {
 }
 
 // 获取浏览器语言
-export const getBrowserLocale = (): string => {
+export const getBrowserLocale = (): 'zh-CN' | 'en' => {
   if (typeof navigator === 'undefined') return 'zh-CN'
   
   const browserLang = navigator.language || navigator.languages?.[0] || 'zh-CN'
   
   // 检测是否支持该语言
   if (isLocaleSupported(browserLang)) {
-    return browserLang
+    return browserLang as 'zh-CN' | 'en'
   }
   
   // 尝试匹配基础语言
@@ -49,38 +57,21 @@ export const getBrowserLocale = (): string => {
 }
 
 // 设置语言
-export const setLocale = (locale: string) => {
+export const setLocale = (locale: 'zh-CN' | 'en') => {
   if (!isLocaleSupported(locale)) {
     console.warn(`Unsupported locale: ${locale}`)
     return
   }
-  
+
   i18n.global.locale.value = locale
   nextLocalStorage.setItem('app-locale', locale)
-  
+
   // 设置HTML的lang属性
   document.documentElement.lang = locale
-  
-  // 发送语言变更事件
-  window.dispatchEvent(new CustomEvent('locale-changed', { detail: { locale }))
 }
 
 // 获取当前语言
-export const getCurrentLocale = (): string => {
-  return i18n.global.locale.value
+export const getCurrentLocale = (): 'zh-CN' | 'en' => {
+  const locale = i18n.global.locale.value as 'zh-CN' | 'en' || 'zh-CN'
+  return locale
 }
-
-// 初始化语言（优先级：存储的 > 浏览器 > 默认）
-export const initializeLocale = (): void => {
-  const saved = nextLocalStorage.getItem('app-locale')
-  
-  if (saved && isLocaleSupported(saved)) {
-    setLocale(saved)
-    return
-  }
-  
-  const browserLocale = getBrowserLocale()
-  setLocale(browserLocale)
-}
-
-export default i18n

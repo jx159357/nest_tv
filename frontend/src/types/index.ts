@@ -450,6 +450,8 @@ export interface HotSearchItem {
 }
 
 export interface SearchSuggestion {
+  id: number | string
+  title: string
   text: string
   type: 'keyword' | 'media' | 'person' | 'tag'
   category?: string

@@ -16,247 +16,140 @@ exports.PlaySourceController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const play_source_service_1 = require("./play-source.service");
-const create_play_source_dto_1 = require("./dtos/create-play-source.dto");
-const update_play_source_dto_1 = require("./dtos/update-play-source.dto");
-const play_source_query_dto_1 = require("./dtos/play-source-query.dto");
-const play_source_entity_1 = require("../entities/play-source.entity");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 let PlaySourceController = class PlaySourceController {
     playSourceService;
     constructor(playSourceService) {
         this.playSourceService = playSourceService;
     }
-    async create(createPlaySourceDto) {
-        return await this.playSourceService.create(createPlaySourceDto);
-    }
-    async createBulk(createPlaySourceDtos) {
-        return await this.playSourceService.createBulk(createPlaySourceDtos);
-    }
-    async findAll(queryDto) {
-        return await this.playSourceService.findAll(queryDto);
-    }
-    async findByMediaResourceId(mediaResourceId) {
-        return await this.playSourceService.findByMediaResourceId(mediaResourceId);
-    }
-    async getBestPlaySource(mediaResourceId) {
-        return await this.playSourceService.getBestPlaySource(mediaResourceId);
+    async findAll(page = 1, pageSize = 10, mediaResourceId, type, status) {
+        const queryDto = {
+            page,
+            pageSize,
+            mediaResourceId,
+            type,
+            status,
+        };
+        return this.playSourceService.findAll(queryDto);
     }
     async findById(id) {
-        return await this.playSourceService.findById(id);
+        return this.playSourceService.findById(id);
+    }
+    async create(createPlaySourceDto) {
+        return this.playSourceService.create(createPlaySourceDto);
     }
     async update(id, updatePlaySourceDto) {
-        return await this.playSourceService.update(id, updatePlaySourceDto);
-    }
-    async updateStatus(id, status) {
-        return await this.playSourceService.updateStatus(id, status);
-    }
-    async incrementPlayCount(id) {
-        await this.playSourceService.incrementPlayCount(id);
-    }
-    async validatePlaySource(id) {
-        const isValid = await this.playSourceService.validatePlaySource(id);
-        return { isValid };
-    }
-    async updateBulkStatus(ids, status) {
-        await this.playSourceService.updateBulkStatus(ids, status);
+        return this.playSourceService.update(id, updatePlaySourceDto);
     }
     async remove(id) {
         await this.playSourceService.remove(id);
+        return { message: '删除成功' };
     }
-    async softDelete(id) {
-        return await this.playSourceService.softDelete(id);
+    async validate(id) {
+        return this.playSourceService.validate(id);
     }
-    async getMagnetPlayInfo(id, userId) {
-        return await this.playSourceService.getMagnetPlayInfo(id, userId);
+    async getBestPlaySource(mediaId) {
+        return this.playSourceService.getBestPlaySource(mediaId);
     }
-    async validateMagnetPlaySource(id, userId) {
-        const isValid = await this.playSourceService.validateMagnetPlaySource(id, userId);
-        return { isValid };
-    }
-    async getMagnetStats(mediaResourceId, userId) {
-        return await this.playSourceService.getMagnetStats(mediaResourceId, userId);
+    async getByMediaResource(mediaId) {
+        return this.playSourceService.getByMediaResource(mediaId);
     }
 };
 exports.PlaySourceController = PlaySourceController;
 __decorate([
-    (0, common_1.Post)(),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    (0, swagger_1.ApiOperation)({ summary: '创建播放源' }),
-    (0, swagger_1.ApiResponse)({ status: 201, description: '播放源创建成功', type: play_source_entity_1.PlaySource }),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_play_source_dto_1.CreatePlaySourceDto]),
-    __metadata("design:returntype", Promise)
-], PlaySourceController.prototype, "create", null);
-__decorate([
-    (0, common_1.Post)('bulk'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    (0, swagger_1.ApiOperation)({ summary: '批量创建播放源' }),
-    (0, swagger_1.ApiResponse)({ status: 201, description: '播放源批量创建成功', type: [play_source_entity_1.PlaySource] }),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Array]),
-    __metadata("design:returntype", Promise)
-], PlaySourceController.prototype, "createBulk", null);
-__decorate([
     (0, common_1.Get)(),
-    (0, swagger_1.ApiOperation)({ summary: '分页查询播放源' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: '成功获取播放源列表' }),
-    __param(0, (0, common_1.Query)()),
+    (0, swagger_1.ApiOperation)({ summary: '获取播放源列表' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '获取成功' }),
+    __param(0, (0, common_1.Query)('page')),
+    __param(1, (0, common_1.Query)('pageSize')),
+    __param(2, (0, common_1.Query)('mediaResourceId')),
+    __param(3, (0, common_1.Query)('type')),
+    __param(4, (0, common_1.Query)('status')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [play_source_query_dto_1.PlaySourceQueryDto]),
+    __metadata("design:paramtypes", [Number, Number, Number, String, String]),
     __metadata("design:returntype", Promise)
 ], PlaySourceController.prototype, "findAll", null);
 __decorate([
-    (0, common_1.Get)('media/:mediaResourceId'),
-    (0, swagger_1.ApiOperation)({ summary: '根据影视资源ID获取播放源' }),
-    (0, swagger_1.ApiParam)({ name: 'mediaResourceId', description: '影视资源ID' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: '成功获取播放源列表', type: [play_source_entity_1.PlaySource] }),
-    __param(0, (0, common_1.Param)('mediaResourceId')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
-    __metadata("design:returntype", Promise)
-], PlaySourceController.prototype, "findByMediaResourceId", null);
-__decorate([
-    (0, common_1.Get)('media/:mediaResourceId/best'),
-    (0, swagger_1.ApiOperation)({ summary: '获取影视资源的最佳播放源' }),
-    (0, swagger_1.ApiParam)({ name: 'mediaResourceId', description: '影视资源ID' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: '成功获取最佳播放源', type: play_source_entity_1.PlaySource }),
-    __param(0, (0, common_1.Param)('mediaResourceId')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
-    __metadata("design:returntype", Promise)
-], PlaySourceController.prototype, "getBestPlaySource", null);
-__decorate([
     (0, common_1.Get)(':id'),
-    (0, swagger_1.ApiOperation)({ summary: '根据ID获取播放源详情' }),
+    (0, swagger_1.ApiOperation)({ summary: '根据ID获取播放源' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '获取成功' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: '播放源不存在' }),
     (0, swagger_1.ApiParam)({ name: 'id', description: '播放源ID' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: '成功获取播放源详情', type: play_source_entity_1.PlaySource }),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], PlaySourceController.prototype, "findById", null);
 __decorate([
-    (0, common_1.Patch)(':id'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Post)(),
+    (0, swagger_1.ApiOperation)({ summary: '创建播放源' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: '创建成功' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: '参数错误' }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], PlaySourceController.prototype, "create", null);
+__decorate([
+    (0, common_1.Put)(':id'),
     (0, swagger_1.ApiOperation)({ summary: '更新播放源' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '更新成功' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: '播放源不存在' }),
     (0, swagger_1.ApiParam)({ name: 'id', description: '播放源ID' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: '播放源更新成功', type: play_source_entity_1.PlaySource }),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, update_play_source_dto_1.UpdatePlaySourceDto]),
+    __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", Promise)
 ], PlaySourceController.prototype, "update", null);
 __decorate([
-    (0, common_1.Patch)(':id/status'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    (0, swagger_1.ApiOperation)({ summary: '更新播放源状态' }),
-    (0, swagger_1.ApiParam)({ name: 'id', description: '播放源ID' }),
-    (0, swagger_1.ApiQuery)({ name: 'status', description: '播放源状态' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: '播放源状态更新成功', type: play_source_entity_1.PlaySource }),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Query)('status')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, String]),
-    __metadata("design:returntype", Promise)
-], PlaySourceController.prototype, "updateStatus", null);
-__decorate([
-    (0, common_1.Patch)(':id/play'),
-    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    (0, swagger_1.ApiOperation)({ summary: '增加播放次数' }),
-    (0, swagger_1.ApiParam)({ name: 'id', description: '播放源ID' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: '播放次数增加成功' }),
-    __param(0, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
-    __metadata("design:returntype", Promise)
-], PlaySourceController.prototype, "incrementPlayCount", null);
-__decorate([
-    (0, common_1.Patch)(':id/validate'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    (0, swagger_1.ApiOperation)({ summary: '验证播放源链接有效性' }),
-    (0, swagger_1.ApiParam)({ name: 'id', description: '播放源ID' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: '播放源验证结果' }),
-    __param(0, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
-    __metadata("design:returntype", Promise)
-], PlaySourceController.prototype, "validatePlaySource", null);
-__decorate([
-    (0, common_1.Patch)('bulk/status'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    (0, swagger_1.ApiOperation)({ summary: '批量更新播放源状态' }),
-    (0, swagger_1.ApiQuery)({ name: 'status', description: '播放源状态' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: '播放源状态批量更新成功' }),
-    __param(0, (0, common_1.Body)()),
-    __param(1, (0, common_1.Query)('status')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Array, String]),
-    __metadata("design:returntype", Promise)
-], PlaySourceController.prototype, "updateBulkStatus", null);
-__decorate([
     (0, common_1.Delete)(':id'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, swagger_1.ApiOperation)({ summary: '删除播放源' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '删除成功' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: '播放源不存在' }),
     (0, swagger_1.ApiParam)({ name: 'id', description: '播放源ID' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: '播放源删除成功' }),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], PlaySourceController.prototype, "remove", null);
 __decorate([
-    (0, common_1.Patch)(':id/soft-delete'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    (0, swagger_1.ApiOperation)({ summary: '软删除播放源' }),
+    (0, common_1.Put)(':id/validate'),
+    (0, swagger_1.ApiOperation)({ summary: '验证播放源有效性' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '验证成功' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: '播放源不存在' }),
     (0, swagger_1.ApiParam)({ name: 'id', description: '播放源ID' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: '播放源软删除成功', type: play_source_entity_1.PlaySource }),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
-], PlaySourceController.prototype, "softDelete", null);
+], PlaySourceController.prototype, "validate", null);
 __decorate([
-    (0, common_1.Get)(':id/magnet/play-info'),
-    (0, swagger_1.ApiOperation)({ summary: '获取磁力链接播放信息' }),
-    (0, swagger_1.ApiParam)({ name: 'id', description: '播放源ID' }),
-    (0, swagger_1.ApiQuery)({ name: 'userId', description: '用户ID', required: false }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: '获取磁力链接播放信息成功' }),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Query)('userId')),
+    (0, common_1.Get)('media/:mediaId/best'),
+    (0, swagger_1.ApiOperation)({ summary: '获取媒体资源的最佳播放源' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '获取成功' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: '播放源不存在' }),
+    (0, swagger_1.ApiParam)({ name: 'mediaId', description: '媒体资源ID' }),
+    __param(0, (0, common_1.Param)('mediaId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, Number]),
+    __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
-], PlaySourceController.prototype, "getMagnetPlayInfo", null);
+], PlaySourceController.prototype, "getBestPlaySource", null);
 __decorate([
-    (0, common_1.Get)(':id/magnet/validate'),
-    (0, swagger_1.ApiOperation)({ summary: '验证磁力链接播放源' }),
-    (0, swagger_1.ApiParam)({ name: 'id', description: '播放源ID' }),
-    (0, swagger_1.ApiQuery)({ name: 'userId', description: '用户ID', required: false }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: '验证磁力链接播放源成功' }),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Query)('userId')),
+    (0, common_1.Get)('media/:mediaId'),
+    (0, swagger_1.ApiOperation)({ summary: '获取媒体资源的播放源列表' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '获取成功' }),
+    (0, swagger_1.ApiParam)({ name: 'mediaId', description: '媒体资源ID' }),
+    __param(0, (0, common_1.Param)('mediaId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, Number]),
+    __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
-], PlaySourceController.prototype, "validateMagnetPlaySource", null);
-__decorate([
-    (0, common_1.Get)('media/:mediaResourceId/magnet/stats'),
-    (0, swagger_1.ApiOperation)({ summary: '获取影视资源的磁力链接统计信息' }),
-    (0, swagger_1.ApiParam)({ name: 'mediaResourceId', description: '影视资源ID' }),
-    (0, swagger_1.ApiQuery)({ name: 'userId', description: '用户ID', required: false }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: '获取磁力链接统计信息成功' }),
-    __param(0, (0, common_1.Param)('mediaResourceId')),
-    __param(1, (0, common_1.Query)('userId')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, Number]),
-    __metadata("design:returntype", Promise)
-], PlaySourceController.prototype, "getMagnetStats", null);
+], PlaySourceController.prototype, "getByMediaResource", null);
 exports.PlaySourceController = PlaySourceController = __decorate([
-    (0, swagger_1.ApiTags)('播放源'),
+    (0, swagger_1.ApiTags)('播放源管理'),
     (0, common_1.Controller)('play-sources'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, swagger_1.ApiBearerAuth)(),
     __metadata("design:paramtypes", [play_source_service_1.PlaySourceService])
 ], PlaySourceController);
 //# sourceMappingURL=play-source.controller.js.map

@@ -27,8 +27,18 @@
       <div v-else-if="media" class="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-8">
         <!-- 视频播放器 -->
         <div class="lg:col-span-2">
-          <div class="bg-black rounded-lg overflow-hidden">
-            <div v-if="currentPlaySource" class="aspect-w-16 aspect-h-9">
+          <div class="bg-black rounded-lg overflow-hidden relative">
+            <!-- 弹幕层 -->
+            <DanmakuPlayer
+              v-if="currentPlaySource"
+              :video-id="media.id.toString()"
+              :width="1280"
+              :height="720"
+              :show-controls="true"
+              :max-danmaku-count="150"
+            />
+            
+            <div v-if="currentPlaySource" class="aspect-w-16 aspect-h-9 relative z-10">
               <video
                 ref="videoPlayer"
                 class="w-full h-auto"
@@ -182,9 +192,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMediaStore } from '@/stores/media'
+import DanmakuPlayer from '@/components/DanmakuPlayer.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -195,6 +206,7 @@ const currentPlaySource = ref(null)
 const currentEpisode = ref(1)
 const loading = ref(true)
 const videoPlayer = ref(null)
+const isPlaying = ref(false)
 
 const loadMedia = async () => {
   const mediaId = parseInt(route.params.id)

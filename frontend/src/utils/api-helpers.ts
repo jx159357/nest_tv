@@ -14,8 +14,8 @@ export class ApiResponseWrapper {
   static error(message: string, status?: number, data?: any): ApiError {
     return {
       message,
-      status,
-      data
+      status: status || 500,
+      data: data || {}
     }
   }
 }
@@ -26,17 +26,17 @@ export class ApiErrorHandler {
     const apiError: ApiError = {
       message: error.response?.data?.message || error.message || '请求失败',
       status: error.response?.status || 500,
-      data: error.response?.data
+      data: error.response?.data || {}
     }
 
     // 处理特定错误状态码
-    if (error.response?.status === 401) {
+    if (error.response && error.response.status === 401) {
       // 未授权，清除本地存储并重定向到登录页
       localStorage.removeItem('token')
       window.location.href = '/login'
     }
 
-    if (error.response?.status === 403) {
+    if (error.response && error.response.status === 403) {
       // 禁止访问
       apiError.message = '权限不足，无法访问该资源'
     }
@@ -190,8 +190,7 @@ export class RetryHelper {
       }
     }
     
-    throw lastError
-  }
+    }
 }
 
 // 数据验证工具

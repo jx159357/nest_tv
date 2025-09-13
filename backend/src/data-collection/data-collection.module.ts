@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
 import { DataCollectionController } from './data-collection.controller';
 import { DataCollectionService } from './data-collection.service';
-import { AppLoggerService } from '../common/services/app-logger.service';
 
 @Module({
   controllers: [DataCollectionController],
-  providers: [DataCollectionService, AppLoggerService],
+  providers: [DataCollectionService],
   exports: [DataCollectionService],
 })
 export class DataCollectionModule {}

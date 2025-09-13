@@ -158,6 +158,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useI18n } from 'vue-i18n'
 import { availableLocales, setLocale, getCurrentLocale } from '@/i18n'
+import type { SearchSuggestion, User } from '@/types'
 
 // 国际化
 const { t } = useI18n()
@@ -172,7 +173,7 @@ const sidebarOpen = ref(false)
 const showUserMenu = ref(false)
 const searchQuery = ref('')
 const showSearchSuggestions = ref(false)
-const searchSuggestions = ref([])
+const searchSuggestions = ref<SearchSuggestion[]>([])
 const currentLocale = ref(getCurrentLocale())
 
 // 计算属性
@@ -195,7 +196,7 @@ const toggleUserMenu = () => {
   showUserMenu.value = !showUserMenu.value
 }
 
-const switchLanguage = (locale: string) => {
+const switchLanguage = (locale: 'zh-CN' | 'en') => {
   setLocale(locale)
   currentLocale.value = locale
 }
@@ -220,7 +221,7 @@ const handleSearchBlur = () => {
   }, 200)
 }
 
-const handleSuggestionClick = (suggestion: any) => {
+const handleSuggestionClick = (suggestion: SearchSuggestion) => {
   searchQuery.value = suggestion.title
   handleSearch()
 }

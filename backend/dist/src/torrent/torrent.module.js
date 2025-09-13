@@ -9,16 +9,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TorrentModule = void 0;
 const common_1 = require("@nestjs/common");
 const torrent_controller_1 = require("./torrent.controller");
-const torrent_service_1 = require("../common/services/torrent.service");
-const app_logger_service_1 = require("../common/services/app-logger.service");
 let TorrentModule = class TorrentModule {
 };
 exports.TorrentModule = TorrentModule;
 exports.TorrentModule = TorrentModule = __decorate([
     (0, common_1.Module)({
         controllers: [torrent_controller_1.TorrentController],
-        providers: [torrent_service_1.TorrentService, app_logger_service_1.AppLoggerService],
-        exports: [torrent_service_1.TorrentService],
     })
 ], TorrentModule);
 //# sourceMappingURL=torrent.module.js.map

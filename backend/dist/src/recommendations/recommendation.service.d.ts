@@ -1,15 +1,17 @@
 import { Repository } from 'typeorm';
 import { Recommendation } from '../entities/recommendation.entity';
-import { User } from '../entities/user.entity';
 import { MediaResource } from '../entities/media-resource.entity';
+import { User } from '../entities/user.entity';
+import { WatchHistory } from '../entities/watch-history.entity';
 import { MediaResourceService } from '../media/media-resource.service';
 export declare class RecommendationService {
-    private recommendationRepository;
-    private userRepository;
-    private mediaResourceRepository;
-    private mediaResourceService;
-    constructor(recommendationRepository: Repository<Recommendation>, userRepository: Repository<User>, mediaResourceRepository: Repository<MediaResource>, mediaResourceService: MediaResourceService);
-    generatePersonalizedRecommendations(userId: number, limit?: number): Promise<Recommendation[]>;
+    private readonly recommendationRepository;
+    private readonly mediaResourceRepository;
+    private readonly userRepository;
+    private readonly watchHistoryRepository;
+    private readonly mediaResourceService;
+    private readonly logger;
+    constructor(recommendationRepository: Repository<Recommendation>, mediaResourceRepository: Repository<MediaResource>, userRepository: Repository<User>, watchHistoryRepository: Repository<WatchHistory>, mediaResourceService: MediaResourceService);
     getTrendingRecommendations(limit?: number): Promise<Recommendation[]>;
     getEditorialRecommendations(limit?: number): Promise<Recommendation[]>;
     getUserRecommendations(userId: number, limit?: number): Promise<Recommendation[]>;
@@ -17,5 +19,17 @@ export declare class RecommendationService {
     private calculateTypePreferences;
     private findSimilarMediaByType;
     private calculateRecommendationScore;
+    generatePersonalizedRecommendations(userId: number, limit?: number): Promise<Recommendation[]>;
+    generateContentBasedRecommendations(userId: number, limit?: number): Promise<MediaResource[]>;
+    generateCollaborativeRecommendations(userId: number, limit?: number): Promise<MediaResource[]>;
+    recordRecommendationFeedback(userId: number, mediaResourceId: number, feedback: 'click' | 'like' | 'dislike'): Promise<void>;
+    private cleanupExpiredRecommendations;
+    private generateNewRecommendations;
+    private createRecommendation;
+    private extractUserPreferences;
+    private findSimilarMedia;
+    private findSimilarUsers;
+    private getSimilarUserMedia;
+    private getRecommendationReason;
     private getTypeDisplayName;
 }

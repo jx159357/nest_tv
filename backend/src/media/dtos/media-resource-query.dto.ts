@@ -5,7 +5,7 @@ export class MediaResourceQueryDto {
   page?: number = 1;
 
   @ApiProperty({ description: '每页数量', default: 10 })
-  limit?: number = 10;
+  pageSize?: number = 10;
 
   @ApiProperty({ description: '搜索关键词', required: false })
   search?: string;
@@ -21,6 +21,18 @@ export class MediaResourceQueryDto {
 
   @ApiProperty({ description: '最高评分', required: false })
   maxRating?: number;
+
+  @ApiProperty({ description: '视频质量', required: false })
+  quality?: string;
+
+  @ApiProperty({ description: '标签', required: false })
+  tags?: string;
+
+  @ApiProperty({ description: '开始日期', required: false })
+  startDate?: Date;
+
+  @ApiProperty({ description: '结束日期', required: false })
+  endDate?: Date;
 
   @ApiProperty({ description: '排序字段', default: 'createdAt' })
   sortBy?: string = 'createdAt';

@@ -236,7 +236,7 @@ export function useApiPerformance() {
 
 // 内存监控Hook
 export function useMemoryMonitor(interval = 5000) {
-  let timer: NodeJS.Timeout | null = null
+  let timer: number | null = null
 
   onMounted(() => {
     timer = setInterval(() => {

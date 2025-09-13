@@ -1,6 +1,7 @@
 export declare class PlaySourceQueryDto {
     page?: number;
     limit?: number;
+    pageSize?: number;
     mediaResourceId?: number;
     type?: string;
     status?: string;

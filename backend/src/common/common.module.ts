@@ -1,8 +1,12 @@
-import { Module } from '@nestjs/common'
+import { Module, forwardRef } from '@nestjs/common'
+import { AppLoggerService } from './services/app-logger.service'
 
 /**
  * 通用模块
  * 提供全局可用的服务和组件
  */
-@Module({})
+@Module({
+  providers: [AppLoggerService],
+  exports: [AppLoggerService],
+})
 export class CommonModule {}

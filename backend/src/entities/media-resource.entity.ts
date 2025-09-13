@@ -31,6 +31,10 @@ export enum MediaQuality {
  * 用于存储电影、电视剧等影视资源信息
  */
 @Entity('media_resources')
+// 复合索引暂时注释，后续根据数据库查询模式优化
+// @Index(['title', 'type', 'createdAt'], { name: 'idx_media_search' }) // 搜索索引：标题+类型+创建时间
+// @Index(['type', 'isActive', 'rating'], { name: 'idx_media_filter' }) // 筛选索引：类型+状态+评分
+// @Index(['rating', 'viewCount'], { name: 'idx_media_popular' }) // 热门索引：评分+观看次数
 export class MediaResource {
   @PrimaryGeneratedColumn()
   id: number; // 资源ID，自增主键

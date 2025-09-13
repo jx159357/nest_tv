@@ -1,15 +1,65 @@
 import { DataCollectionService } from './data-collection.service';
-import { AppLoggerService } from '../common/services/app-logger.service';
 export declare class DataCollectionController {
     private readonly dataCollectionService;
-    private readonly logger;
-    constructor(dataCollectionService: DataCollectionService, appLoggerService: AppLoggerService);
-    collectFromUrl(query: any): Promise<any>;
-    batchCollect(sourceName: string, urls: string[], userId?: number): Promise<any>;
-    collectPopular(sourceName: string, count?: number, userId?: number): Promise<any>;
-    getAvailableSources(): Promise<any>;
-    toggleSource(sourceName: string, enabled: boolean, userId?: number): Promise<any>;
-    getSourceStats(): Promise<any>;
-    processAndSave(mediaData: any, createPlaySources?: boolean, userId?: number): Promise<any>;
-    getTemplates(sourceName?: string): Promise<any>;
+    constructor(dataCollectionService: DataCollectionService);
+    getSources(): import("./data-collection.service").CrawlerSource[];
+    getSource(name: string): import("./data-collection.service").CrawlerSource;
+    crawlUrl(body: {
+        sourceName: string;
+        url: string;
+        userId?: number;
+    }): Promise<{
+        success: boolean;
+        data: {
+            success: boolean;
+            data: import("./data-collection.service").MediaData;
+            message: string;
+        };
+        message: string;
+    } | {
+        success: boolean;
+        message: any;
+        data?: undefined;
+    }>;
+    batchCrawl(body: {
+        sourceName: string;
+        urls: string[];
+        userId?: number;
+    }): Promise<{
+        success: boolean;
+        data: import("./data-collection.service").MediaData[];
+        message: string;
+    } | {
+        success: boolean;
+        message: any;
+        data?: undefined;
+    }>;
+    getPopularUrls(sourceName: string, limit?: number): Promise<{
+        success: boolean;
+        data: string[];
+        message: string;
+    } | {
+        success: boolean;
+        message: any;
+        data?: undefined;
+    }>;
+    testConnection(sourceName: string): Promise<{
+        success: boolean;
+        message: string;
+        responseTime: number | undefined;
+    }>;
+    getStatistics(): Promise<{
+        success: boolean;
+        data: {
+            totalSources: number;
+            enabledSources: number;
+            sources: Array<{
+                name: string;
+                enabled: boolean;
+                lastCrawled?: Date;
+                totalCrawled?: number;
+            }>;
+        };
+        message: string;
+    }>;
 }

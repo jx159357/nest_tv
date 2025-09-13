@@ -13,12 +13,16 @@ exports.MediaResourceQueryDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 class MediaResourceQueryDto {
     page = 1;
-    limit = 10;
+    pageSize = 10;
     search;
     type;
     genre;
     minRating;
     maxRating;
+    quality;
+    tags;
+    startDate;
+    endDate;
     sortBy = 'createdAt';
     sortOrder = 'DESC';
 }
@@ -30,7 +34,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({ description: '每页数量', default: 10 }),
     __metadata("design:type", Number)
-], MediaResourceQueryDto.prototype, "limit", void 0);
+], MediaResourceQueryDto.prototype, "pageSize", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ description: '搜索关键词', required: false }),
     __metadata("design:type", String)
@@ -51,6 +55,22 @@ __decorate([
     (0, swagger_1.ApiProperty)({ description: '最高评分', required: false }),
     __metadata("design:type", Number)
 ], MediaResourceQueryDto.prototype, "maxRating", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: '视频质量', required: false }),
+    __metadata("design:type", String)
+], MediaResourceQueryDto.prototype, "quality", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: '标签', required: false }),
+    __metadata("design:type", String)
+], MediaResourceQueryDto.prototype, "tags", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: '开始日期', required: false }),
+    __metadata("design:type", Date)
+], MediaResourceQueryDto.prototype, "startDate", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: '结束日期', required: false }),
+    __metadata("design:type", Date)
+], MediaResourceQueryDto.prototype, "endDate", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ description: '排序字段', default: 'createdAt' }),
     __metadata("design:type", String)
