@@ -21,7 +21,7 @@ exports.LoginUserDto = LoginUserDto;
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '用户名或邮箱地址',
-        example: 'testuser'
+        example: 'testuser',
     }),
     (0, class_validator_1.IsNotEmpty)({ message: '用户名或邮箱不能为空' }),
     (0, class_validator_1.IsString)({ message: '用户名或邮箱必须是字符串' }),
@@ -31,7 +31,7 @@ __decorate([
     (0, swagger_1.ApiProperty)({
         description: '密码',
         example: 'password123',
-        minLength: 6
+        minLength: 6,
     }),
     (0, class_validator_1.IsNotEmpty)({ message: '密码不能为空' }),
     (0, class_transformer_1.Transform)(({ value }) => String(value).trim()),

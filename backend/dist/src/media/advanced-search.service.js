@@ -33,7 +33,8 @@ let AdvancedSearchService = class AdvancedSearchService {
         if (keyword && userId) {
             await this.recordSearchHistory(userId, keyword);
         }
-        const queryBuilder = this.mediaResourceRepository.createQueryBuilder('mediaResource')
+        const queryBuilder = this.mediaResourceRepository
+            .createQueryBuilder('mediaResource')
             .leftJoinAndSelect('mediaResource.poster', 'poster');
         if (!includeInactive) {
             queryBuilder.andWhere('mediaResource.isActive = :isActive', { isActive: true });
@@ -59,12 +60,12 @@ let AdvancedSearchService = class AdvancedSearchService {
         }
         if (director.trim()) {
             queryBuilder.andWhere('mediaResource.director LIKE :director', {
-                director: `%${director.trim()}%`
+                director: `%${director.trim()}%`,
             });
         }
         if (actors.trim()) {
             queryBuilder.andWhere('mediaResource.actors LIKE :actors', {
-                actors: `%${actors.trim()}%`
+                actors: `%${actors.trim()}%`,
             });
         }
         if (minRating !== undefined) {
@@ -84,10 +85,7 @@ let AdvancedSearchService = class AdvancedSearchService {
         this.applySorting(queryBuilder, sortBy, sortOrder, keyword);
         const total = await queryBuilder.getCount();
         const skip = (page - 1) * pageSize;
-        const data = await queryBuilder
-            .skip(skip)
-            .take(pageSize)
-            .getMany();
+        const data = await queryBuilder.skip(skip).take(pageSize).getMany();
         const searchTime = Date.now() - startTime;
         const suggestions = await this.generateSearchSuggestions(keyword);
         return {
@@ -160,7 +158,10 @@ let AdvancedSearchService = class AdvancedSearchService {
             .getRawMany();
         actorSuggestions.forEach(item => {
             if (item.actors) {
-                const actorList = item.actors.split(',').map(actor => actor.trim()).slice(0, 2);
+                const actorList = item.actors
+                    .split(',')
+                    .map(actor => actor.trim())
+                    .slice(0, 2);
                 actorList.forEach(actor => {
                     if (actor.includes(keyword.trim())) {
                         suggestions.push({
@@ -216,7 +217,7 @@ let AdvancedSearchService = class AdvancedSearchService {
             .select('searchHistory.keyword')
             .addSelect('COUNT(*)', 'count')
             .where('searchHistory.createdAt > :since', {
-            since: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+            since: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
         })
             .groupBy('searchHistory.keyword')
             .orderBy('count', 'DESC')

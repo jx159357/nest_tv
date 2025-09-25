@@ -15,7 +15,7 @@ import { UserModule } from '../users/user.module';
   imports: [
     // 导入用户模块，使用forwardRef解决循环依赖
     forwardRef(() => UserModule),
-    
+
     // 导入JWT模块，用于JWT令牌生成和验证
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -26,11 +26,7 @@ import { UserModule } from '../users/user.module';
       inject: [ConfigService],
     }),
   ],
-  providers: [
-    AuthService,
-    JwtStrategy,
-    LocalStrategy,
-  ],
+  providers: [AuthService, JwtStrategy, LocalStrategy],
   controllers: [AuthController],
   exports: [AuthService], // 导出AuthService供其他模块使用
 })

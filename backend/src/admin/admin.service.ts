@@ -31,13 +31,13 @@ export class AdminService {
   async logAction(
     action: string,
     resource: string,
-    metadata: any = {},
+    metadata: Record<string, unknown> = {},
     roleId: number,
     userId?: number,
     status: 'success' | 'error' | 'warning' = 'success',
     description?: string,
     errorMessage?: string,
-    requestInfo?: any,
+    requestInfo?: Record<string, unknown>,
   ): Promise<AdminLog> {
     try {
       const adminLog = this.adminLogRepository.create({
@@ -180,16 +180,17 @@ export class AdminService {
     recentActivity: AdminLog[];
   }> {
     try {
-      const [userCount, mediaCount, playSourceCount, watchHistoryCount, recentActivity] = await Promise.all([
-        this.userRepository.count(),
-        this.userRepository.manager.count('media_resource', {}),
-        this.userRepository.manager.count('play_source', {}),
-        this.userRepository.manager.count('watch_history', {}),
-        this.adminLogRepository.find({
-          order: { createdAt: 'DESC' },
-          take: 10,
-        }),
-      ]);
+      const [userCount, mediaCount, playSourceCount, watchHistoryCount, recentActivity] =
+        await Promise.all([
+          this.userRepository.count(),
+          this.userRepository.manager.count('media_resource', {}),
+          this.userRepository.manager.count('play_source', {}),
+          this.userRepository.manager.count('watch_history', {}),
+          this.adminLogRepository.find({
+            order: { createdAt: 'DESC' },
+            take: 10,
+          }),
+        ]);
 
       return {
         userCount,
@@ -226,7 +227,8 @@ export class AdminService {
     totalPages: number;
   }> {
     try {
-      const queryBuilder = this.adminLogRepository.createQueryBuilder('adminLog')
+      const queryBuilder = this.adminLogRepository
+        .createQueryBuilder('adminLog')
         .leftJoinAndSelect('adminLog.role', 'role')
         .leftJoinAndSelect('adminLog.user', 'user');
 
@@ -245,7 +247,9 @@ export class AdminService {
           queryBuilder.andWhere('adminLog.roleId = :roleId', { roleId: filters.roleId });
         }
         if (filters.startDate) {
-          queryBuilder.andWhere('adminLog.createdAt >= :startDate', { startDate: filters.startDate });
+          queryBuilder.andWhere('adminLog.createdAt >= :startDate', {
+            startDate: filters.startDate,
+          });
         }
         if (filters.endDate) {
           queryBuilder.andWhere('adminLog.createdAt <= :endDate', { endDate: filters.endDate });

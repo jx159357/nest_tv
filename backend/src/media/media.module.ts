@@ -1,3 +1,11 @@
+/*
+ * @Descripttion:
+ * @version:
+ * @Author: jxwd
+ * @Date: 2025-09-11 10:15:11
+ * @LastEditors: jxwd
+ * @LastEditTime: 2025-09-17 14:21:43
+ */
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MediaResourceService } from './media-resource.service';

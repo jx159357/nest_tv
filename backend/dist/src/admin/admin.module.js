@@ -33,7 +33,7 @@ exports.AdminModule = AdminModule = __decorate([
                 media_resource_entity_1.MediaResource,
                 play_source_entity_1.PlaySource,
                 watch_history_entity_1.WatchHistory,
-                recommendation_entity_1.Recommendation
+                recommendation_entity_1.Recommendation,
             ]),
         ],
         controllers: [admin_controller_1.AdminController],

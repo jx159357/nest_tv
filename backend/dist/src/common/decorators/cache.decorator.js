@@ -45,9 +45,12 @@ const CacheRefresh = (options = {}) => {
             const cacheKey = options.key || `${target.constructor.name}.${propertyKey}`;
             const cached = await cacheService.get(cacheKey, options);
             if (cached !== null) {
-                originalMethod.apply(this, args).then(async (newResult) => {
+                originalMethod
+                    .apply(this, args)
+                    .then(async (newResult) => {
                     await cacheService.set(cacheKey, newResult, options);
-                }).catch(error => {
+                })
+                    .catch(error => {
                     console.error(`缓存刷新失败: ${cacheKey}`, error);
                 });
                 return cached;

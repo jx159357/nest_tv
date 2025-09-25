@@ -131,7 +131,7 @@ let RecommendationController = class RecommendationController {
             });
             if (recommendations.length > 0) {
                 const totalScore = recommendations.reduce((sum, rec) => sum + rec.score, 0);
-                stats.averageScore = Math.round(totalScore / recommendations.length * 100) / 100;
+                stats.averageScore = Math.round((totalScore / recommendations.length) * 100) / 100;
             }
             return stats;
         }
@@ -174,7 +174,11 @@ __decorate([
     (0, common_1.Get)('user'),
     (0, swagger_1.ApiOperation)({ summary: '获取用户推荐列表' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: '成功获取用户推荐列表' }),
-    (0, swagger_1.ApiQuery)({ name: 'type', required: false, description: '推荐类型：personalized, content, collaborative, trending' }),
+    (0, swagger_1.ApiQuery)({
+        name: 'type',
+        required: false,
+        description: '推荐类型：personalized, content, collaborative, trending',
+    }),
     (0, swagger_1.ApiQuery)({ name: 'limit', required: false, description: '返回数量限制，默认10' }),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Query)('type')),

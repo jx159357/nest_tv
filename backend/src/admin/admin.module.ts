@@ -20,13 +20,13 @@ import { Recommendation } from '../entities/recommendation.entity';
     // 导入TypeORM模块，用于数据库操作
     TypeOrmModule.forFeature([
       AdminRole,
-      AdminPermission, 
+      AdminPermission,
       AdminLog,
       User,
       MediaResource,
       PlaySource,
       WatchHistory,
-      Recommendation
+      Recommendation,
     ]),
   ],
   controllers: [AdminController],

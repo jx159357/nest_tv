@@ -67,7 +67,7 @@ let IPTVService = IPTVService_1 = class IPTVService {
         return await this.iptvChannelRepository.save(iptvChannel);
     }
     async findAll(queryDto) {
-        const { page = 1, limit = 10, group, language, country, region, resolution, streamFormat, activeOnly = true, isLive, sortBy = 'createdAt', sortOrder = 'DESC', search } = queryDto;
+        const { page = 1, limit = 10, group, language, country, region, resolution, streamFormat, activeOnly = true, isLive, sortBy = 'createdAt', sortOrder = 'DESC', search, } = queryDto;
         const queryBuilder = this.iptvChannelRepository.createQueryBuilder('iptv');
         if (search) {
             queryBuilder.andWhere('(iptv.name LIKE :search OR iptv.description LIKE :search OR iptv.group LIKE :search)', { search: `%${search}%` });
@@ -162,7 +162,7 @@ let IPTVService = IPTVService_1 = class IPTVService {
     async updateBulkStatus(ids, isActive) {
         await this.iptvChannelRepository.update(ids, {
             isActive,
-            lastCheckedAt: new Date()
+            lastCheckedAt: new Date(),
         });
     }
     async importFromM3U(m3uUrl) {
@@ -184,7 +184,9 @@ let IPTVService = IPTVService_1 = class IPTVService {
                 for (const playlist of manifest.playlists) {
                     if (playlist.uri && playlist.attributes) {
                         const channelData = {
-                            name: playlist.attributes['tvg-name'] || playlist.attributes.channelName || `频道${Date.now()}`,
+                            name: playlist.attributes['tvg-name'] ||
+                                playlist.attributes.channelName ||
+                                `频道${Date.now()}`,
                             url: playlist.uri,
                             group: playlist.attributes['group-title'] || '默认分组',
                             logo: playlist.attributes['tvg-logo'],

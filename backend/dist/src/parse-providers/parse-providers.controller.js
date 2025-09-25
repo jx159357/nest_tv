@@ -201,7 +201,12 @@ __decorate([
     (0, common_1.Get)('best'),
     (0, swagger_1.ApiOperation)({ summary: '获取最佳解析提供商' }),
     (0, swagger_1.ApiQuery)({ name: 'category', description: '分类', required: false }),
-    (0, swagger_1.ApiQuery)({ name: 'supportOnlinePlay', description: '支持在线播放', required: false, type: Boolean }),
+    (0, swagger_1.ApiQuery)({
+        name: 'supportOnlinePlay',
+        description: '支持在线播放',
+        required: false,
+        type: Boolean,
+    }),
     (0, swagger_1.ApiResponse)({ status: 200, description: '查询成功' }),
     __param(0, (0, common_1.Query)('category')),
     __param(1, (0, common_1.Query)('supportOnlinePlay')),

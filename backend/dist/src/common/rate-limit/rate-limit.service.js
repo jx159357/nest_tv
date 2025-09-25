@@ -115,7 +115,7 @@ let RateLimitService = RateLimitService_1 = class RateLimitService {
             if (ttl === -1 || ttl === -2) {
                 return Date.now() + 15 * 60 * 1000;
             }
-            return Date.now() + (ttl * 1000);
+            return Date.now() + ttl * 1000;
         }
         catch (error) {
             this.logger.error(`获取过期时间失败: ${key}`, error);

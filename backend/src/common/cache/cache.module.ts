@@ -9,11 +9,7 @@ import { CacheService } from './cache.service';
     ConfigModule,
     RedisModule, // 导入Redis模块
   ],
-  providers: [
-    CacheService,
-  ],
-  exports: [
-    CacheService,
-  ],
+  providers: [CacheService],
+  exports: [CacheService],
 })
 export class CacheModule {}

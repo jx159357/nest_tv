@@ -1,4 +1,12 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, Index } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  Index,
+} from 'typeorm';
 import { User } from './user.entity';
 
 /**
@@ -22,7 +30,8 @@ export class SearchHistory {
   resultCount: number; // 搜索结果数量
 
   @Column({ type: 'json', nullable: true })
-  filters?: { // 搜索过滤器
+  filters?: {
+    // 搜索过滤器
     types?: string[];
     genres?: string[];
     quality?: string[];

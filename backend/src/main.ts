@@ -1,6 +1,12 @@
 import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { RequestLoggingMiddleware } from './middleware/request-logging.middleware';
+import { PerformanceMonitoringMiddleware } from './middleware/performance-monitoring.middleware';
+import { SecurityHeadersMiddleware } from './middleware/security-headers.middleware';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import { AppLoggerService } from './common/services/app-logger.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -27,10 +33,32 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
+  // 应用全局中间件
+  const appLogger = app.get(AppLoggerService);
+  const requestLoggingMiddleware = new RequestLoggingMiddleware(appLogger);
+  const performanceMonitoringMiddleware = new PerformanceMonitoringMiddleware(appLogger);
+  
+  app.use(new SecurityHeadersMiddleware().use);
+  app.use(requestLoggingMiddleware.use.bind(requestLoggingMiddleware));
+  app.use(performanceMonitoringMiddleware.use.bind(performanceMonitoringMiddleware));
+
+  // 应用全局异常过滤器
+  app.useGlobalFilters(new GlobalExceptionFilter(appLogger));
+
+  // 应用全局验证管道
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      disableErrorMessages: false,
+    })
+  );
+
   // 端口检测和动态端口选择
   const getAvailablePort = async (startPort: number, maxAttempts = 10): Promise<number> => {
     const net = await import('net');
-    
+
     return new Promise((resolve, reject) => {
       const tryPort = (attempt: number) => {
         if (attempt >= maxAttempts) {
@@ -71,7 +99,7 @@ async function bootstrap() {
   }
 
   await app.listen(port);
-  
+
   console.log('🚀 Nest TV Backend is running on port', port);
   console.log('📚 API Documentation: http://localhost:' + port + '/api');
 }

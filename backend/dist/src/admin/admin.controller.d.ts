@@ -1,7 +1,6 @@
 import { AdminService } from './admin.service';
 import { AdminRole } from '../entities/admin-role.entity';
 import { AdminPermission } from '../entities/admin-permission.entity';
-import { AdminLog } from '../entities/admin-log.entity';
 export declare class AdminController {
     private readonly adminService;
     constructor(adminService: AdminService);
@@ -10,7 +9,7 @@ export declare class AdminController {
         mediaCount: number;
         playSourceCount: number;
         watchHistoryCount: number;
-        recentActivity: AdminLog[];
+        recentActivity: import("../entities/admin-log.entity").AdminLog[];
     }>;
     createRole(createRoleDto: {
         name: string;
@@ -27,40 +26,40 @@ export declare class AdminController {
     }): Promise<AdminPermission>;
     findAllPermissions(): Promise<AdminPermission[]>;
     getAdminLogs(page?: number, limit?: number, action?: string, resource?: string, status?: 'success' | 'error' | 'warning', roleId?: number): Promise<{
-        data: AdminLog[];
+        data: import("../entities/admin-log.entity").AdminLog[];
         total: number;
         page: number;
         limit: number;
         totalPages: number;
     }>;
-    getUsers(page?: number, limit?: number, search?: string): Promise<{
+    getUsers(page?: number, limit?: number, search?: string): {
         message: string;
         page: number;
         limit: number;
         search: string | undefined;
-    }>;
-    getMedia(page?: number, limit?: number, type?: string): Promise<{
+    };
+    getMedia(page?: number, limit?: number, type?: string): {
         message: string;
         page: number;
         limit: number;
         type: string | undefined;
-    }>;
-    getPlaySources(page?: number, limit?: number, type?: string): Promise<{
+    };
+    getPlaySources(page?: number, limit?: number, type?: string): {
         message: string;
         page: number;
         limit: number;
         type: string | undefined;
-    }>;
-    getWatchHistory(page?: number, limit?: number, userId?: number): Promise<{
+    };
+    getWatchHistory(page?: number, limit?: number, userId?: number): {
         message: string;
         page: number;
         limit: number;
         userId: number | undefined;
-    }>;
-    healthCheck(): Promise<{
+    };
+    healthCheck(): {
         status: string;
         timestamp: string;
         uptime: number;
         memory: NodeJS.MemoryUsage;
-    }>;
+    };
 }

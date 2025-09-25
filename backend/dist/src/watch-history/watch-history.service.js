@@ -37,8 +37,9 @@ let WatchHistoryService = class WatchHistoryService {
         return await this.watchHistoryRepository.save(watchHistory);
     }
     async findAll(queryDto) {
-        const { page = 1, limit = 10, userId, mediaResourceId, isCompleted, sortBy = 'updatedAt', sortOrder = 'DESC' } = queryDto;
-        const queryBuilder = this.watchHistoryRepository.createQueryBuilder('watchHistory')
+        const { page = 1, limit = 10, userId, mediaResourceId, isCompleted, sortBy = 'updatedAt', sortOrder = 'DESC', } = queryDto;
+        const queryBuilder = this.watchHistoryRepository
+            .createQueryBuilder('watchHistory')
             .leftJoinAndSelect('watchHistory.user', 'user')
             .leftJoinAndSelect('watchHistory.mediaResource', 'mediaResource');
         if (userId) {
@@ -50,7 +51,14 @@ let WatchHistoryService = class WatchHistoryService {
         if (isCompleted !== undefined) {
             queryBuilder.andWhere('watchHistory.isCompleted = :isCompleted', { isCompleted });
         }
-        const validSortFields = ['id', 'currentTime', 'duration', 'isCompleted', 'createdAt', 'updatedAt'];
+        const validSortFields = [
+            'id',
+            'currentTime',
+            'duration',
+            'isCompleted',
+            'createdAt',
+            'updatedAt',
+        ];
         const sortField = validSortFields.includes(sortBy) ? sortBy : 'updatedAt';
         queryBuilder.orderBy(`watchHistory.${sortField}`, sortOrder);
         const offset = (page - 1) * limit;

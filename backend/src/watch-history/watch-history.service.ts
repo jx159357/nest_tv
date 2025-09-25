@@ -1,4 +1,4 @@
-import { Injectable, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { WatchHistory } from '../entities/watch-history.entity';
@@ -46,17 +46,18 @@ export class WatchHistoryService {
     limit: number;
     totalPages: number;
   }> {
-    const { 
-      page = 1, 
-      limit = 10, 
-      userId, 
-      mediaResourceId, 
+    const {
+      page = 1,
+      limit = 10,
+      userId,
+      mediaResourceId,
       isCompleted,
       sortBy = 'updatedAt',
-      sortOrder = 'DESC' 
+      sortOrder = 'DESC',
     } = queryDto;
-    
-    const queryBuilder = this.watchHistoryRepository.createQueryBuilder('watchHistory')
+
+    const queryBuilder = this.watchHistoryRepository
+      .createQueryBuilder('watchHistory')
       .leftJoinAndSelect('watchHistory.user', 'user')
       .leftJoinAndSelect('watchHistory.mediaResource', 'mediaResource');
 
@@ -76,7 +77,14 @@ export class WatchHistoryService {
     }
 
     // 排序
-    const validSortFields = ['id', 'currentTime', 'duration', 'isCompleted', 'createdAt', 'updatedAt'];
+    const validSortFields = [
+      'id',
+      'currentTime',
+      'duration',
+      'isCompleted',
+      'createdAt',
+      'updatedAt',
+    ];
     const sortField = validSortFields.includes(sortBy) ? sortBy : 'updatedAt';
     queryBuilder.orderBy(`watchHistory.${sortField}`, sortOrder);
 
@@ -127,7 +135,11 @@ export class WatchHistoryService {
   /**
    * 获取用户的观看历史
    */
-  async findByUserId(userId: number, page: number = 1, limit: number = 10): Promise<{
+  async findByUserId(
+    userId: number,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<{
     data: WatchHistory[];
     total: number;
     page: number;
@@ -150,10 +162,10 @@ export class WatchHistoryService {
    * 更新观看进度
    */
   async updateProgress(
-    userId: number, 
-    mediaResourceId: number, 
-    currentTime: number, 
-    duration?: number
+    userId: number,
+    mediaResourceId: number,
+    currentTime: number,
+    duration?: number,
   ): Promise<WatchHistory> {
     let watchHistory = await this.findByUserAndMedia(userId, mediaResourceId);
 
@@ -233,7 +245,7 @@ export class WatchHistoryService {
    */
   async getContinueWatching(userId: number, limit: number = 10): Promise<WatchHistory[]> {
     return await this.watchHistoryRepository.find({
-      where: { 
+      where: {
         userId,
         isCompleted: false,
       },
@@ -246,7 +258,11 @@ export class WatchHistoryService {
   /**
    * 获取已看完的影视
    */
-  async getCompleted(userId: number, page: number = 1, limit: number = 10): Promise<{
+  async getCompleted(
+    userId: number,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<{
     data: WatchHistory[];
     total: number;
     page: number;

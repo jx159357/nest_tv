@@ -30,11 +30,7 @@ export class CacheService {
   /**
    * 设置缓存
    */
-  async set<T>(
-    key: string,
-    value: T,
-    options: CacheOptions = {}
-  ): Promise<void> {
+  async set<T>(key: string, value: T, options: CacheOptions = {}): Promise<void> {
     const { ttl = this.defaultTtl, prefix = this.defaultPrefix } = options;
     const fullKey = `${prefix}${key}`;
 
@@ -62,7 +58,7 @@ export class CacheService {
         return null;
       }
 
-      const parsedValue = JSON.parse(value as string);
+      const parsedValue = JSON.parse(value);
       this.logger.debug(`缓存命中: ${fullKey}`);
       return parsedValue;
     } catch (error) {
@@ -192,8 +188,8 @@ export class CacheService {
 
     try {
       const values = await this.redis.mget(fullKeys);
-      return values.map(value => 
-        value === null || value === undefined ? null : JSON.parse(value as string)
+      return values.map(value =>
+        value === null || value === undefined ? null : JSON.parse(value),
       );
     } catch (error) {
       this.logger.error(`批量获取缓存失败`, error);

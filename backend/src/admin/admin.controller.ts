@@ -1,22 +1,8 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  Query,
-  UseGuards,
-  Request,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { AdminRole } from '../entities/admin-role.entity';
 import { AdminPermission } from '../entities/admin-permission.entity';
-import { AdminLog } from '../entities/admin-log.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 /**
@@ -50,20 +36,18 @@ export class AdminController {
       properties: {
         name: { type: 'string', example: 'content_admin' },
         description: { type: 'string', example: '内容管理员' },
-        permissions: { 
-          type: 'array', 
+        permissions: {
+          type: 'array',
           items: { type: 'string' },
-          example: ['user_read', 'media_create', 'media_update']
+          example: ['user_read', 'media_create', 'media_update'],
         },
       },
     },
   })
   @ApiResponse({ status: 201, description: '角色创建成功', type: AdminRole })
-  async createRole(@Body() createRoleDto: {
-    name: string;
-    description?: string;
-    permissions?: string[];
-  }) {
+  async createRole(
+    @Body() createRoleDto: { name: string; description?: string; permissions?: string[] },
+  ) {
     return await this.adminService.createRole(createRoleDto);
   }
 
@@ -95,13 +79,16 @@ export class AdminController {
     },
   })
   @ApiResponse({ status: 201, description: '权限创建成功', type: AdminPermission })
-  async createPermission(@Body() createPermissionDto: {
-    code: string;
-    name: string;
-    description?: string;
-    resource?: string;
-    action?: string;
-  }) {
+  async createPermission(
+    @Body()
+    createPermissionDto: {
+      code: string;
+      name: string;
+      description?: string;
+      resource?: string;
+      action?: string;
+    },
+  ) {
     return await this.adminService.createPermission(createPermissionDto);
   }
 
@@ -148,7 +135,7 @@ export class AdminController {
   @ApiQuery({ name: 'limit', required: false, type: Number, description: '每页数量' })
   @ApiQuery({ name: 'search', required: false, type: String, description: '搜索关键词' })
   @ApiResponse({ status: 200, description: '成功获取用户列表' })
-  async getUsers(
+  getUsers(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 20,
     @Query('search') search?: string,
@@ -166,7 +153,7 @@ export class AdminController {
   @ApiQuery({ name: 'limit', required: false, type: Number, description: '每页数量' })
   @ApiQuery({ name: 'type', required: false, type: String, description: '类型筛选' })
   @ApiResponse({ status: 200, description: '成功获取媒体资源列表' })
-  async getMedia(
+  getMedia(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 20,
     @Query('type') type?: string,
@@ -184,7 +171,7 @@ export class AdminController {
   @ApiQuery({ name: 'limit', required: false, type: Number, description: '每页数量' })
   @ApiQuery({ name: 'type', required: false, type: String, description: '类型筛选' })
   @ApiResponse({ status: 200, description: '成功获取播放源列表' })
-  async getPlaySources(
+  getPlaySources(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 20,
     @Query('type') type?: string,
@@ -202,7 +189,7 @@ export class AdminController {
   @ApiQuery({ name: 'limit', required: false, type: Number, description: '每页数量' })
   @ApiQuery({ name: 'userId', required: false, type: Number, description: '用户ID筛选' })
   @ApiResponse({ status: 200, description: '成功获取观看历史列表' })
-  async getWatchHistory(
+  getWatchHistory(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 20,
     @Query('userId') userId?: number,
@@ -217,7 +204,7 @@ export class AdminController {
   @Get('health')
   @ApiOperation({ summary: '系统健康检查' })
   @ApiResponse({ status: 200, description: '系统状态正常' })
-  async healthCheck() {
+  healthCheck() {
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),

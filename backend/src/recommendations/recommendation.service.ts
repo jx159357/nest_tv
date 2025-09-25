@@ -24,7 +24,6 @@ export class RecommendationService {
     private readonly mediaResourceService: MediaResourceService,
   ) {}
 
-  
   /**
    * 获取热门推荐
    * @param limit 推荐数量
@@ -133,7 +132,7 @@ export class RecommendationService {
    */
   private calculateTypePreferences(watchedMedia: MediaResource[]): Record<string, number> {
     const typeCount: Record<string, number> = {};
-    
+
     watchedMedia.forEach(media => {
       if (typeCount[media.type]) {
         typeCount[media.type]++;
@@ -164,7 +163,7 @@ export class RecommendationService {
 
     // 查找这些类型的高评分影视资源
     const queryBuilder = this.mediaResourceRepository.createQueryBuilder('media');
-    
+
     queryBuilder
       .where('media.type IN (:...types)', { types: preferredTypes })
       .andWhere('media.isActive = :isActive', { isActive: true })
@@ -183,25 +182,31 @@ export class RecommendationService {
    * @param typePreferences 类型偏好
    * @returns 推荐得分
    */
-  private calculateRecommendationScore(media: MediaResource, typePreferences: Record<string, number>): number {
+  private calculateRecommendationScore(
+    media: MediaResource,
+    typePreferences: Record<string, number>,
+  ): number {
     // 基础得分：评分 * 10
     let score = media.rating * 10;
-    
+
     // 类型偏好加成
     if (typePreferences[media.type]) {
       score += typePreferences[media.type] * 5;
     }
-    
+
     // 观看次数加成
     score += Math.log(media.viewCount + 1) * 2;
-    
+
     return Math.min(score, 100); // 最高100分
   }
 
   /**
    * 为用户生成个性化推荐
    */
-  async generatePersonalizedRecommendations(userId: number, limit: number = 10): Promise<Recommendation[]> {
+  async generatePersonalizedRecommendations(
+    userId: number,
+    limit: number = 10,
+  ): Promise<Recommendation[]> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['watchHistory', 'favorites'],
@@ -236,7 +241,10 @@ export class RecommendationService {
   /**
    * 基于内容的推荐
    */
-  async generateContentBasedRecommendations(userId: number, limit: number = 5): Promise<MediaResource[]> {
+  async generateContentBasedRecommendations(
+    userId: number,
+    limit: number = 5,
+  ): Promise<MediaResource[]> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['watchHistory', 'favorites'],
@@ -263,7 +271,10 @@ export class RecommendationService {
   /**
    * 协同过滤推荐
    */
-  async generateCollaborativeRecommendations(userId: number, limit: number = 5): Promise<MediaResource[]> {
+  async generateCollaborativeRecommendations(
+    userId: number,
+    limit: number = 5,
+  ): Promise<MediaResource[]> {
     // 找到相似用户
     const similarUsers = await this.findSimilarUsers(userId);
 
@@ -281,7 +292,11 @@ export class RecommendationService {
   /**
    * 记录用户对推荐的反馈
    */
-  async recordRecommendationFeedback(userId: number, mediaResourceId: number, feedback: 'click' | 'like' | 'dislike'): Promise<void> {
+  async recordRecommendationFeedback(
+    userId: number,
+    mediaResourceId: number,
+    feedback: 'click' | 'like' | 'dislike',
+  ): Promise<void> {
     const recommendation = await this.recommendationRepository.findOne({
       where: { userId, mediaResourceId },
     });
@@ -300,7 +315,7 @@ export class RecommendationService {
           recommendation.isActive = false;
           break;
       }
-      
+
       await this.recommendationRepository.save(recommendation);
     }
   }
@@ -323,22 +338,34 @@ export class RecommendationService {
     const recommendations: Recommendation[] = [];
 
     // 生成内容推荐
-    const contentRecs = await this.generateContentBasedRecommendations(user.id, Math.ceil(count / 2));
+    const contentRecs = await this.generateContentBasedRecommendations(
+      user.id,
+      Math.ceil(count / 2),
+    );
     contentRecs.forEach((media, index) => {
-      recommendations.push(this.createRecommendation(user, media, 'content', 80 - index, 1 + index));
+      recommendations.push(
+        this.createRecommendation(user, media, 'content', 80 - index, 1 + index),
+      );
     });
 
     // 生成协同过滤推荐
-    const collabRecs = await this.generateCollaborativeRecommendations(user.id, Math.ceil(count / 2));
+    const collabRecs = await this.generateCollaborativeRecommendations(
+      user.id,
+      Math.ceil(count / 2),
+    );
     collabRecs.forEach((media, index) => {
-      recommendations.push(this.createRecommendation(user, media, 'collaborative', 70 - index, 10 + index));
+      recommendations.push(
+        this.createRecommendation(user, media, 'collaborative', 70 - index, 10 + index),
+      );
     });
 
     // 生成热门推荐
     if (recommendations.length < count) {
       const trendingRecs = await this.getTrendingRecommendations(count - recommendations.length);
       trendingRecs.forEach((rec, index) => {
-        recommendations.push(this.createRecommendation(user, rec.mediaResource, 'trending', 60 - index, 20 + index));
+        recommendations.push(
+          this.createRecommendation(user, rec.mediaResource, 'trending', 60 - index, 20 + index),
+        );
       });
     }
 
@@ -349,7 +376,13 @@ export class RecommendationService {
   /**
    * 创建推荐记录
    */
-  private createRecommendation(user: User, media: MediaResource, type: string, score: number, priority: number): Recommendation {
+  private createRecommendation(
+    user: User,
+    media: MediaResource,
+    type: string,
+    score: number,
+    priority: number,
+  ): Recommendation {
     const recommendation = new Recommendation();
     recommendation.user = user;
     recommendation.mediaResource = media;
@@ -386,7 +419,10 @@ export class RecommendationService {
 
       // 统计导演偏好
       if (media.director) {
-        preferences.directors.set(media.director, (preferences.directors.get(media.director) || 0) + 1);
+        preferences.directors.set(
+          media.director,
+          (preferences.directors.get(media.director) || 0) + 1,
+        );
       }
 
       // 统计演员偏好
@@ -410,11 +446,16 @@ export class RecommendationService {
   /**
    * 找到相似影视资源
    */
-  private async findSimilarMedia(preferences: any, excludeMedia: MediaResource[], limit: number): Promise<MediaResource[]> {
+  private async findSimilarMedia(
+    preferences: any,
+    excludeMedia: MediaResource[],
+    limit: number,
+  ): Promise<MediaResource[]> {
     const excludeIds = excludeMedia.map(m => m.id);
-    
+
     // 构建查询条件
-    const queryBuilder = this.mediaResourceRepository.createQueryBuilder('media')
+    const queryBuilder = this.mediaResourceRepository
+      .createQueryBuilder('media')
       .where('media.isActive = :isActive', { isActive: true })
       .andWhere('media.id NOT IN (:...excludeIds)', { excludeIds });
 
@@ -429,9 +470,7 @@ export class RecommendationService {
     }
 
     // 按评分和观看次数排序
-    queryBuilder.orderBy('media.rating', 'DESC')
-      .addOrderBy('media.viewCount', 'DESC')
-      .take(limit);
+    queryBuilder.orderBy('media.rating', 'DESC').addOrderBy('media.viewCount', 'DESC').take(limit);
 
     return queryBuilder.getMany();
   }
@@ -477,7 +516,10 @@ export class RecommendationService {
   /**
    * 获取相似用户的媒体资源
    */
-  private async getSimilarUserMedia(similarUsers: User[], excludeUserId: number): Promise<MediaResource[]> {
+  private async getSimilarUserMedia(
+    similarUsers: User[],
+    excludeUserId: number,
+  ): Promise<MediaResource[]> {
     const userIds = similarUsers.map(u => u.id);
 
     // 获取相似用户观看过但目标用户未观看的影视资源
@@ -485,7 +527,10 @@ export class RecommendationService {
       .createQueryBuilder('history')
       .select('DISTINCT history.mediaResourceId', 'mediaResourceId')
       .where('history.userId IN (:...userIds)', { userIds })
-      .andWhere('history.mediaResourceId NOT IN (SELECT h.mediaResourceId FROM watch_history h WHERE h.userId = :excludeUserId)', { excludeUserId })
+      .andWhere(
+        'history.mediaResourceId NOT IN (SELECT h.mediaResourceId FROM watch_history h WHERE h.userId = :excludeUserId)',
+        { excludeUserId },
+      )
       .getRawMany();
 
     if (similarUserMedia.length === 0) {
@@ -521,13 +566,13 @@ export class RecommendationService {
    */
   private getTypeDisplayName(type: string): string {
     const typeMap: Record<string, string> = {
-      'movie': '电影',
-      'tv_series': '电视剧',
-      'variety': '综艺',
-      'anime': '动漫',
-      'documentary': '纪录片',
+      movie: '电影',
+      tv_series: '电视剧',
+      variety: '综艺',
+      anime: '动漫',
+      documentary: '纪录片',
     };
-    
+
     return typeMap[type] || type;
   }
 }

@@ -41,7 +41,7 @@ export class RateLimitService {
    */
   async checkLimit(
     key: string,
-    options: Partial<RateLimitOptions> = {}
+    options: Partial<RateLimitOptions> = {},
   ): Promise<{ success: boolean; info?: RateLimitInfo }> {
     const config = { ...this.defaultOptions, ...options };
     const fullKey = `${config.keyPrefix}${key}`;
@@ -49,10 +49,10 @@ export class RateLimitService {
     try {
       // 获取当前计数
       const current = await this.getCurrentCount(fullKey, config.windowMs);
-      
+
       // 计算剩余请求数
       const remaining = Math.max(0, config.maxRequests - current);
-      
+
       // 如果超过限制
       if (current >= config.maxRequests) {
         const expiresAt = await this.getExpirationTime(fullKey);
@@ -65,7 +65,7 @@ export class RateLimitService {
         };
 
         this.logger.warn(`请求被限流: ${key}, 请求数: ${current}, 限制: ${config.maxRequests}`);
-        
+
         // 调用自定义处理器
         if (config.handler) {
           config.handler(key, info);
@@ -76,13 +76,13 @@ export class RateLimitService {
 
       // 增加计数
       const newCount = await this.incrementCount(fullKey, config.windowMs);
-      
+
       // 设置过期时间
       await this.setExpiration(fullKey, config.windowMs);
 
       const expiresAt = await this.getExpirationTime(fullKey);
       const isFirstRequest = newCount === 1;
-      
+
       const info: RateLimitInfo = {
         key: fullKey,
         points: newCount,
@@ -121,10 +121,10 @@ export class RateLimitService {
   private async incrementCount(key: string, windowMs: number): Promise<number> {
     try {
       const pipeline = this.redis.pipeline();
-      
+
       // 使用INCR命令增加计数
       pipeline.incr(key);
-      
+
       // 如果是第一个请求，设置过期时间
       pipeline.expire(key, Math.ceil(windowMs / 1000));
 
@@ -159,7 +159,7 @@ export class RateLimitService {
       if (ttl === -1 || ttl === -2) {
         return Date.now() + 15 * 60 * 1000; // 默认15分钟
       }
-      return Date.now() + (ttl * 1000);
+      return Date.now() + ttl * 1000;
     } catch (error) {
       this.logger.error(`获取过期时间失败: ${key}`, error);
       return Date.now() + 15 * 60 * 1000;
@@ -171,7 +171,7 @@ export class RateLimitService {
    */
   async resetLimit(key: string): Promise<void> {
     const fullKey = `${this.defaultOptions.keyPrefix}${key}`;
-    
+
     try {
       await this.redis.del(fullKey);
       this.logger.log(`限流重置成功: ${key}`);
@@ -186,11 +186,11 @@ export class RateLimitService {
    */
   async getLimitInfo(key: string): Promise<RateLimitInfo | null> {
     const fullKey = `${this.defaultOptions.keyPrefix}${key}`;
-    
+
     try {
       const current = await this.getCurrentCount(fullKey, this.defaultOptions.windowMs);
       const expiresAt = await this.getExpirationTime(fullKey);
-      
+
       return {
         key: fullKey,
         points: current,
@@ -209,10 +209,10 @@ export class RateLimitService {
    */
   async cleanup(): Promise<number> {
     const pattern = `${this.defaultOptions.keyPrefix}*`;
-    
+
     try {
       const keys = await this.redis.keys(pattern);
-      
+
       let cleaned = 0;
       for (const key of keys) {
         const ttl = await this.redis.ttl(key);

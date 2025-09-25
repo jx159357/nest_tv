@@ -762,38 +762,11 @@ export const zhCN = {
     recommendations: '推荐管理',
     crawler: '爬虫管理',
     system: '系统管理',
-    logs: '日志管理',
     roles: '角色管理',
     permissions: '权限管理',
     settings: '系统设置',
     statistics: '数据统计',
     monitoring: '系统监控',
-    
-    // 用户管理
-    users: {
-      title: '用户管理',
-      addUser: '添加用户',
-      editUser: '编辑用户',
-      deleteUser: '删除用户',
-      searchUser: '搜索用户',
-      filterByRole: '按角色筛选',
-      filterByStatus: '按状态筛选',
-      sortBy: '排序',
-      totalUsers: '总用户数',
-      activeUsers: '活跃用户',
-      newUsers: '新增用户',
-      onlineUsers: '在线用户',
-      userDetails: '用户详情',
-      userStats: '用户统计',
-      userActivity: '用户活动',
-      loginHistory: '登录历史',
-      banUser: '封禁用户',
-      unbanUser: '解封用户',
-      resetPassword: '重置密码',
-      sendNotification: '发送通知',
-      exportUsers: '导出用户',
-      importUsers: '导入用户'
-    },
     
     // 系统统计
     statistics: {

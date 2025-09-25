@@ -1,4 +1,11 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+} from 'typeorm';
 import { User } from './user.entity';
 import { MediaResource } from './media-resource.entity';
 
@@ -15,13 +22,14 @@ export class WatchHistory {
   currentTime: number; // 当前播放时间（秒）
 
   @Column({ nullable: true })
-  duration?: number;    // 总时长（秒）
+  duration?: number; // 总时长（秒）
 
   @Column({ type: 'json', nullable: true })
-  progress?: { // 观看进度
+  progress?: {
+    // 观看进度
     currentTime: number; // 当前播放时间（秒）
-    duration: number;    // 总时长（秒）
-    percentage: number;  // 完成百分比
+    duration: number; // 总时长（秒）
+    percentage: number; // 完成百分比
   };
 
   @Column({ default: 0 })
@@ -40,10 +48,11 @@ export class WatchHistory {
   lastPlayedAt?: Date; // 最后播放时间
 
   @Column({ type: 'json', nullable: true })
-  playSettings?: { // 播放设置
-    volume: number;         // 音量
-    playbackRate: number;   // 播放速度
-    quality: string;        // 画质
+  playSettings?: {
+    // 播放设置
+    volume: number; // 音量
+    playbackRate: number; // 播放速度
+    quality: string; // 画质
     subtitleLanguage: string; // 字幕语言
   };
 

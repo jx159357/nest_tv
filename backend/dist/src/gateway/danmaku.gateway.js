@@ -30,14 +30,14 @@ let DanmakuGateway = DanmakuGateway_1 = class DanmakuGateway {
         return {
             videoId,
             onlineCount: Math.floor(Math.random() * 100) + 1,
-            isActive: true
+            isActive: true,
         };
     }
     getRoomStats() {
         return {
             totalRooms: 1,
             totalUsers: Math.floor(Math.random() * 50) + 1,
-            roomDetails: []
+            roomDetails: [],
         };
     }
     async disconnect() {

@@ -10,13 +10,7 @@ import { RateLimitGuard } from '../guards/rate-limit.guard';
     ConfigModule,
     RedisModule, // 导入Redis模块
   ],
-  providers: [
-    RateLimitService,
-    RateLimitGuard,
-  ],
-  exports: [
-    RateLimitService,
-    RateLimitGuard,
-  ],
+  providers: [RateLimitService, RateLimitGuard],
+  exports: [RateLimitService, RateLimitGuard],
 })
 export class RateLimitModule {}

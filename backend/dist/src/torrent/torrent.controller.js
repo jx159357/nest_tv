@@ -17,7 +17,7 @@ const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 let TorrentController = class TorrentController {
-    async getTorrentInfo(hash) {
+    getTorrentInfo(hash) {
         return {
             infoHash: hash,
             name: `Torrent ${hash}`,
@@ -26,7 +26,7 @@ let TorrentController = class TorrentController {
             announce: [],
         };
     }
-    async checkTorrentHealth(hash) {
+    checkTorrentHealth(hash) {
         return {
             infoHash: hash,
             isHealthy: true,
@@ -35,7 +35,7 @@ let TorrentController = class TorrentController {
             lastChecked: new Date().toISOString(),
         };
     }
-    async parseMagnetUri(body) {
+    parseMagnetUri(body) {
         const { magnetUri } = body;
         if (!magnetUri || !magnetUri.startsWith('magnet:')) {
             throw new Error('无效的磁力链接URI');
@@ -50,7 +50,7 @@ let TorrentController = class TorrentController {
             announce: tr || [],
         };
     }
-    async searchTorrents(keyword, page = 1, pageSize = 10) {
+    searchTorrents(keyword, page = 1, pageSize = 10) {
         return {
             data: Array.from({ length: pageSize }, (_, index) => ({
                 infoHash: `hash_${(page - 1) * pageSize + index}`,
@@ -66,7 +66,7 @@ let TorrentController = class TorrentController {
             totalPages: Math.ceil(100 / pageSize),
         };
     }
-    async getPopularTorrents(limit = 20, category) {
+    getPopularTorrents(limit = 20, category) {
         return Array.from({ length: limit }, (_, index) => ({
             infoHash: `popular_${index}`,
             name: `热门资源 ${index + 1}`,
@@ -77,7 +77,7 @@ let TorrentController = class TorrentController {
             added: new Date().toISOString(),
         }));
     }
-    async getLatestTorrents(limit = 20, category) {
+    getLatestTorrents(limit = 20, category) {
         return Array.from({ length: limit }, (_, index) => ({
             infoHash: `latest_${index}`,
             name: `最新资源 ${index + 1}`,
@@ -98,7 +98,7 @@ __decorate([
     __param(0, (0, common_1.Param)('hash')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], TorrentController.prototype, "getTorrentInfo", null);
 __decorate([
     (0, common_1.Get)('health/:hash'),
@@ -108,7 +108,7 @@ __decorate([
     __param(0, (0, common_1.Param)('hash')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], TorrentController.prototype, "checkTorrentHealth", null);
 __decorate([
     (0, common_1.Post)('parse'),
@@ -118,7 +118,7 @@ __decorate([
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], TorrentController.prototype, "parseMagnetUri", null);
 __decorate([
     (0, common_1.Get)('search'),
@@ -129,7 +129,7 @@ __decorate([
     __param(2, (0, common_1.Query)('pageSize')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Number, Number]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], TorrentController.prototype, "searchTorrents", null);
 __decorate([
     (0, common_1.Get)('popular'),
@@ -139,7 +139,7 @@ __decorate([
     __param(1, (0, common_1.Query)('category')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, String]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], TorrentController.prototype, "getPopularTorrents", null);
 __decorate([
     (0, common_1.Get)('latest'),
@@ -149,7 +149,7 @@ __decorate([
     __param(1, (0, common_1.Query)('category')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, String]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], TorrentController.prototype, "getLatestTorrents", null);
 exports.TorrentController = TorrentController = __decorate([
     (0, swagger_1.ApiTags)('磁力链接播放'),

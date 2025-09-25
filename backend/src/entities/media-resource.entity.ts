@@ -1,4 +1,14 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, ManyToMany, JoinTable, OneToMany } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  ManyToMany,
+  JoinTable,
+  OneToMany,
+} from 'typeorm';
 import { User } from './user.entity';
 import { WatchHistory } from './watch-history.entity';
 import { PlaySource } from './play-source.entity';
@@ -9,21 +19,21 @@ import { IPTVChannel } from './iptv-channel.entity';
  * 影视分类枚举
  */
 export enum MediaType {
-  MOVIE = 'movie',     // 电影
-  TV_SERIES = 'tv_series',  // 电视剧
-  VARIETY = 'variety',      // 综艺
-  ANIME = 'anime',          // 动漫
-  DOCUMENTARY = 'documentary' // 纪录片
+  MOVIE = 'movie', // 电影
+  TV_SERIES = 'tv_series', // 电视剧
+  VARIETY = 'variety', // 综艺
+  ANIME = 'anime', // 动漫
+  DOCUMENTARY = 'documentary', // 纪录片
 }
 
 /**
  * 影视质量枚举
  */
 export enum MediaQuality {
-  HD = 'hd',           // 高清
+  HD = 'hd', // 高清
   FULL_HD = 'full_hd', // 全高清
   BLUE_RAY = 'blue_ray', // 蓝光
-  SD = 'sd'            // 标清
+  SD = 'sd', // 标清
 }
 
 /**
@@ -108,7 +118,7 @@ export class MediaResource {
   // 关联播放源（一对多）
   @OneToMany(() => PlaySource, playSource => playSource.mediaResource)
   playSources: PlaySource[];
-  
+
   // 关联推荐记录（一对多）
   @OneToMany(() => Recommendation, recommendation => recommendation.mediaResource)
   recommendations: Recommendation[];

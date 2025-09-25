@@ -1,4 +1,12 @@
-import { IsString, IsNotEmpty, IsEnum, IsOptional, IsNumber, IsBoolean, IsUrl } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsEnum,
+  IsOptional,
+  IsNumber,
+  IsBoolean,
+  IsUrl,
+} from 'class-validator';
 import { PlaySourceType, PlaySourceStatus } from '../../entities/play-source.entity';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -13,7 +21,11 @@ export class CreatePlaySourceDto {
   @IsEnum(PlaySourceType)
   type: PlaySourceType;
 
-  @ApiProperty({ description: '播放源状态', enum: PlaySourceStatus, default: PlaySourceStatus.CHECKING })
+  @ApiProperty({
+    description: '播放源状态',
+    enum: PlaySourceStatus,
+    default: PlaySourceStatus.CHECKING,
+  })
   @IsOptional()
   @IsEnum(PlaySourceStatus)
   status?: PlaySourceStatus = PlaySourceStatus.CHECKING;

@@ -21,12 +21,8 @@ exports.CacheModule = CacheModule = __decorate([
             config_1.ConfigModule,
             redis_module_1.RedisModule,
         ],
-        providers: [
-            cache_service_1.CacheService,
-        ],
-        exports: [
-            cache_service_1.CacheService,
-        ],
+        providers: [cache_service_1.CacheService],
+        exports: [cache_service_1.CacheService],
     })
 ], CacheModule);
 //# sourceMappingURL=cache.module.js.map

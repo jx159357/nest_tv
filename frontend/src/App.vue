@@ -2,16 +2,21 @@
 import { RouterView } from 'vue-router'
 import { onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useThemeStore } from '@/stores/theme'
 import { useI18n } from 'vue-i18n'
 import AppErrorBoundary from '@/components/AppErrorBoundary.vue'
 import AppLayout from '@/components/AppLayout.vue'
 
 const authStore = useAuthStore()
+const themeStore = useThemeStore()
 const { locale } = useI18n()
 
-// 初始化语言设置
+// 初始化应用
 const initializeApp = async () => {
   try {
+    // 初始化主题
+    themeStore.initTheme()
+    
     // 加载保存的语言设置
     const savedLocale = localStorage.getItem('app-locale')
     if (savedLocale && savedLocale !== locale.value) {

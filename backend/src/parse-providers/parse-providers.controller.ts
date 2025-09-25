@@ -84,7 +84,9 @@ export class ParseProvidersController {
   @Post('bulk')
   @ApiOperation({ summary: '批量创建解析提供商' })
   @ApiResponse({ status: 201, description: '批量创建成功' })
-  async createBulk(@Body() createParseProviderDtos: CreateParseProviderDto[]): Promise<ParseProvider[]> {
+  async createBulk(
+    @Body() createParseProviderDtos: CreateParseProviderDto[],
+  ): Promise<ParseProvider[]> {
     return await this.parseProvidersService.createBulk(createParseProviderDtos);
   }
 
@@ -103,10 +105,7 @@ export class ParseProvidersController {
   @ApiParam({ name: 'id', description: '解析提供商ID' })
   @ApiQuery({ name: 'testUrl', description: '测试URL', required: false })
   @ApiResponse({ status: 200, description: '测试成功' })
-  async testProvider(
-    @Param('id') id: number,
-    @Query('testUrl') testUrl?: string,
-  ): Promise<any> {
+  async testProvider(@Param('id') id: number, @Query('testUrl') testUrl?: string): Promise<any> {
     return await this.parseProvidersService.testProvider(id, testUrl);
   }
 
@@ -114,17 +113,19 @@ export class ParseProvidersController {
   @ApiOperation({ summary: '解析视频链接' })
   @ApiParam({ name: 'id', description: '解析提供商ID' })
   @ApiResponse({ status: 200, description: '解析成功' })
-  async parseVideoUrl(
-    @Param('id') id: number,
-    @Body('videoUrl') videoUrl: string,
-  ): Promise<any> {
+  async parseVideoUrl(@Param('id') id: number, @Body('videoUrl') videoUrl: string): Promise<any> {
     return await this.parseProvidersService.parseVideoUrl(id, videoUrl);
   }
 
   @Get('best')
   @ApiOperation({ summary: '获取最佳解析提供商' })
   @ApiQuery({ name: 'category', description: '分类', required: false })
-  @ApiQuery({ name: 'supportOnlinePlay', description: '支持在线播放', required: false, type: Boolean })
+  @ApiQuery({
+    name: 'supportOnlinePlay',
+    description: '支持在线播放',
+    required: false,
+    type: Boolean,
+  })
   @ApiResponse({ status: 200, description: '查询成功' })
   async getBestProvider(
     @Query('category') category?: string,

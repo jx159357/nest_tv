@@ -142,7 +142,8 @@ let AdminService = AdminService_1 = class AdminService {
     }
     async getAdminLogs(page = 1, limit = 20, filters) {
         try {
-            const queryBuilder = this.adminLogRepository.createQueryBuilder('adminLog')
+            const queryBuilder = this.adminLogRepository
+                .createQueryBuilder('adminLog')
                 .leftJoinAndSelect('adminLog.role', 'role')
                 .leftJoinAndSelect('adminLog.user', 'user');
             if (filters) {
@@ -159,7 +160,9 @@ let AdminService = AdminService_1 = class AdminService {
                     queryBuilder.andWhere('adminLog.roleId = :roleId', { roleId: filters.roleId });
                 }
                 if (filters.startDate) {
-                    queryBuilder.andWhere('adminLog.createdAt >= :startDate', { startDate: filters.startDate });
+                    queryBuilder.andWhere('adminLog.createdAt >= :startDate', {
+                        startDate: filters.startDate,
+                    });
                 }
                 if (filters.endDate) {
                     queryBuilder.andWhere('adminLog.createdAt <= :endDate', { endDate: filters.endDate });

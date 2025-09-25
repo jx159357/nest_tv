@@ -1,15 +1,13 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
-  Delete, 
-  Query, 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
   UseGuards,
-  HttpCode,
-  HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { WatchHistoryService } from './watch-history.service';
@@ -48,7 +46,7 @@ export class WatchHistoryController {
   async findByUserId(
     @Param('userId') userId: number,
     @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10
+    @Query('limit') limit: number = 10,
   ) {
     return await this.watchHistoryService.findByUserId(userId, page, limit);
   }
@@ -60,7 +58,7 @@ export class WatchHistoryController {
   @ApiResponse({ status: 200, description: '成功获取继续观看列表', type: [WatchHistory] })
   async getContinueWatching(
     @Param('userId') userId: number,
-    @Query('limit') limit: number = 10
+    @Query('limit') limit: number = 10,
   ): Promise<WatchHistory[]> {
     return await this.watchHistoryService.getContinueWatching(userId, limit);
   }
@@ -74,7 +72,7 @@ export class WatchHistoryController {
   async getCompleted(
     @Param('userId') userId: number,
     @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10
+    @Query('limit') limit: number = 10,
   ) {
     return await this.watchHistoryService.getCompleted(userId, page, limit);
   }
@@ -102,7 +100,7 @@ export class WatchHistoryController {
   @ApiResponse({ status: 200, description: '成功获取观看历史', type: WatchHistory })
   async findByUserAndMedia(
     @Param('userId') userId: number,
-    @Param('mediaResourceId') mediaResourceId: number
+    @Param('mediaResourceId') mediaResourceId: number,
   ): Promise<WatchHistory | null> {
     return await this.watchHistoryService.findByUserAndMedia(userId, mediaResourceId);
   }
@@ -119,9 +117,14 @@ export class WatchHistoryController {
     @Query('userId') userId: number,
     @Query('mediaResourceId') mediaResourceId: number,
     @Query('currentTime') currentTime: number,
-    @Query('duration') duration?: number
+    @Query('duration') duration?: number,
   ): Promise<WatchHistory> {
-    return await this.watchHistoryService.updateProgress(userId, mediaResourceId, currentTime, duration);
+    return await this.watchHistoryService.updateProgress(
+      userId,
+      mediaResourceId,
+      currentTime,
+      duration,
+    );
   }
 
   @Patch(':id')
@@ -131,7 +134,7 @@ export class WatchHistoryController {
   @ApiResponse({ status: 200, description: '观看历史更新成功', type: WatchHistory })
   async update(
     @Param('id') id: number,
-    @Body() updateWatchHistoryDto: UpdateWatchHistoryDto
+    @Body() updateWatchHistoryDto: UpdateWatchHistoryDto,
   ): Promise<WatchHistory> {
     return await this.watchHistoryService.update(id, updateWatchHistoryDto);
   }

@@ -1,7 +1,5 @@
-import { NestMiddleware, ExecutionContext } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
+import { NestMiddleware } from '@nestjs/common';
+import { Request, Response, NextFunction } from 'express';
 export declare class SecurityHeadersMiddleware implements NestMiddleware {
-    private reflector;
-    constructor(reflector: Reflector);
-    use(context: ExecutionContext, next: () => Promise<void>): Promise<void>;
+    use(req: Request, res: Response, next: NextFunction): void;
 }

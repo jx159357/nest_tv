@@ -1,64 +1,77 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Index, ManyToOne } from 'typeorm'
-import { User } from '../../entities/user.entity'
-import { MediaResource } from '../../entities/media-resource.entity'
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+} from 'typeorm';
+import { User } from '../../entities/user.entity';
+import { MediaResource } from '../../entities/media-resource.entity';
 
 @Entity('danmaku')
 export class Danmaku {
   @PrimaryGeneratedColumn()
-  id: number
+  id: number;
 
   @Column({ type: 'varchar', length: 255, name: 'danmaku_id' })
-  danmakuId: string
+  danmakuId: string;
 
   @Column({ type: 'text' })
-  text: string
+  text: string;
 
   @Column({ type: 'varchar', length: 255, name: 'video_id' })
-  videoId: string
+  videoId: string;
 
   @Column({ type: 'int', name: 'media_resource_id' })
-  mediaResourceId: number
+  mediaResourceId: number;
 
   @Column({ type: 'varchar', length: 7, default: '#FFFFFF' })
-  color: string
+  color: string;
 
   @Column({ type: 'varchar', length: 20, default: 'scroll' })
-  type: 'scroll' | 'top' | 'bottom'
+  type: 'scroll' | 'top' | 'bottom';
 
   @Column({ type: 'int', default: 1 })
-  priority: number
+  priority: number;
 
   @Column({ type: 'boolean', default: false })
-  isHighlighted: boolean
+  isHighlighted: boolean;
 
   @Column({ type: 'boolean', default: true })
-  isActive: boolean
+  isActive: boolean;
 
   @Column({ type: 'json', nullable: true })
   metadata: {
-    userAgent?: string
-    timestamp?: number
-    location?: string
-    platform?: string
-  }
+    userAgent?: string;
+    timestamp?: number;
+    location?: string;
+    platform?: string;
+  };
 
   @Column({ type: 'json', nullable: true })
   filters: {
-    containsSensitive?: boolean
-    containsSpam?: boolean
-    containsEmojis?: boolean
-  keywords?: string[]
-  }
+    containsSensitive?: boolean;
+    containsSpam?: boolean;
+    containsEmojis?: boolean;
+    keywords?: string[];
+  };
 
   @Column({ type: 'timestamp', name: 'created_at', default: () => 'CURRENT_TIMESTAMP' })
-  createdAt: Date
+  createdAt: Date;
 
-  @Column({ type: 'timestamp', name: 'updated_at', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
-  updatedAt: Date
+  @Column({
+    type: 'timestamp',
+    name: 'updated_at',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
+  updatedAt: Date;
 
   // 关系字段
   @Column({ type: 'int', name: 'user_id' })
-  userId: number
+  userId: number;
 
   // 复合索引暂时注释掉，TypeORM在最新版本中的语法有所不同
   // @Index(['mediaResourceId', 'createdAt'], { name: 'idx_danmaku_media_created' })
@@ -68,8 +81,8 @@ export class Danmaku {
 
   // 关系
   @ManyToOne(() => User, { onDelete: 'SET NULL' })
-  user: User
+  user: User;
 
   @ManyToOne(() => MediaResource, { onDelete: 'CASCADE' })
-  mediaResource: MediaResource
+  mediaResource: MediaResource;
 }

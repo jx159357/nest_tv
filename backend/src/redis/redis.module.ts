@@ -13,14 +13,14 @@ export const RedisClientProvider = {
     });
 
     // 错误处理
-    client.on('error', (err) => {
+    client.on('error', err => {
       console.error('Redis客户端错误:', err);
     });
 
     // 连接Redis
     await client.connect();
     console.log('Redis连接成功');
-    
+
     return client;
   },
   inject: [ConfigService],

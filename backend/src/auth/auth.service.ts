@@ -25,7 +25,7 @@ export class AuthService {
       // 调用UserService的登录方法来验证用户
       const result = await this.userService.login({ identifier, password: pass });
       return result.user;
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -36,11 +36,11 @@ export class AuthService {
    * @returns JWT令牌信息
    */
   async login(user: any): Promise<JwtResponseDto> {
-    const payload = { 
-      username: user.username, 
-      sub: user.id,
-      email: user.email,
-      role: user.role,
+    const payload = {
+      username: (user as any).username,
+      sub: (user as any).id,
+      email: (user as any).email,
+      role: (user as any).role,
     };
 
     return {
@@ -48,10 +48,10 @@ export class AuthService {
       refreshToken: this.jwtService.sign(payload, { expiresIn: '7d' }),
       expiresIn: 3600, // 1小时
       user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
+        id: (user as any).id,
+        username: (user as any).username,
+        email: (user as any).email,
+        role: (user as any).role,
       },
     };
   }

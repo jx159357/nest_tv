@@ -35,29 +35,29 @@ export class IPTVService {
     limit: number;
     totalPages: number;
   }> {
-    const { 
-      page = 1, 
-      limit = 10, 
-      group, 
-      language, 
-      country, 
-      region, 
-      resolution, 
-      streamFormat, 
+    const {
+      page = 1,
+      limit = 10,
+      group,
+      language,
+      country,
+      region,
+      resolution,
+      streamFormat,
       activeOnly = true,
       isLive,
-      sortBy = 'createdAt', 
+      sortBy = 'createdAt',
       sortOrder = 'DESC',
-      search 
+      search,
     } = queryDto;
-    
+
     const queryBuilder = this.iptvChannelRepository.createQueryBuilder('iptv');
 
     // 搜索条件
     if (search) {
       queryBuilder.andWhere(
         '(iptv.name LIKE :search OR iptv.description LIKE :search OR iptv.group LIKE :search)',
-        { search: `%${search}%` }
+        { search: `%${search}%` },
       );
     }
 
@@ -210,9 +210,9 @@ export class IPTVService {
    * 批量更新频道状态
    */
   async updateBulkStatus(ids: number[], isActive: boolean): Promise<void> {
-    await this.iptvChannelRepository.update(ids, { 
+    await this.iptvChannelRepository.update(ids, {
       isActive,
-      lastCheckedAt: new Date()
+      lastCheckedAt: new Date(),
     });
   }
 
@@ -243,7 +243,10 @@ export class IPTVService {
         for (const playlist of manifest.playlists) {
           if (playlist.uri && playlist.attributes) {
             const channelData: CreateIPTVChannelDto = {
-              name: playlist.attributes['tvg-name'] || playlist.attributes.channelName || `频道${Date.now()}`,
+              name:
+                playlist.attributes['tvg-name'] ||
+                playlist.attributes.channelName ||
+                `频道${Date.now()}`,
               url: playlist.uri,
               group: playlist.attributes['group-title'] || '默认分组',
               logo: playlist.attributes['tvg-logo'],
@@ -268,7 +271,6 @@ export class IPTVService {
 
       this.logger.log(`成功导入 ${channels.length} 个频道`);
       return channels;
-
     } catch (error) {
       this.logger.error(`导入M3U播放列表失败: ${m3uUrl}`, error.stack);
       throw new HttpException('导入M3U播放列表失败', HttpStatus.INTERNAL_SERVER_ERROR);
@@ -280,22 +282,22 @@ export class IPTVService {
    */
   async validateChannel(id: number): Promise<boolean> {
     const channel = await this.findById(id);
-    
+
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
-      
+
       const response = await fetch(channel.url, {
         method: 'HEAD',
         signal: controller.signal,
       });
-      
+
       clearTimeout(timeoutId);
-      
+
       const isValid = response.ok;
       channel.lastCheckedAt = new Date();
       channel.isActive = isValid;
-      
+
       await this.iptvChannelRepository.save(channel);
       return isValid;
     } catch (error) {
@@ -320,7 +322,7 @@ export class IPTVService {
     const activeChannels = await this.iptvChannelRepository.count({
       where: { isActive: true },
     });
-    
+
     const groups = await this.getAllGroups();
     const totalGroups = groups.length;
 

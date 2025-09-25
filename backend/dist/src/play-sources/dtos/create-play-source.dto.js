@@ -43,7 +43,11 @@ __decorate([
     __metadata("design:type", String)
 ], CreatePlaySourceDto.prototype, "type", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: '播放源状态', enum: play_source_entity_1.PlaySourceStatus, default: play_source_entity_1.PlaySourceStatus.CHECKING }),
+    (0, swagger_1.ApiProperty)({
+        description: '播放源状态',
+        enum: play_source_entity_1.PlaySourceStatus,
+        default: play_source_entity_1.PlaySourceStatus.CHECKING,
+    }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(play_source_entity_1.PlaySourceStatus),
     __metadata("design:type", String)

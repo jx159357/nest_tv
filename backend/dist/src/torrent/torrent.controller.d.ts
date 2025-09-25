@@ -1,26 +1,26 @@
 export declare class TorrentController {
-    getTorrentInfo(hash: string): Promise<{
+    getTorrentInfo(hash: string): {
         infoHash: string;
         name: string;
         size: string;
         files: never[];
         announce: never[];
-    }>;
-    checkTorrentHealth(hash: string): Promise<{
+    };
+    checkTorrentHealth(hash: string): {
         infoHash: string;
         isHealthy: boolean;
         seeders: number;
         leechers: number;
         lastChecked: string;
-    }>;
+    };
     parseMagnetUri(body: {
         magnetUri: string;
-    }): Promise<{
+    }): {
         infoHash: string;
         name: string;
         announce: string[];
-    }>;
-    searchTorrents(keyword: string, page?: number, pageSize?: number): Promise<{
+    };
+    searchTorrents(keyword: string, page?: number, pageSize?: number): {
         data: {
             infoHash: string;
             name: string;
@@ -33,8 +33,8 @@ export declare class TorrentController {
         page: number;
         pageSize: number;
         totalPages: number;
-    }>;
-    getPopularTorrents(limit?: number, category?: string): Promise<{
+    };
+    getPopularTorrents(limit?: number, category?: string): {
         infoHash: string;
         name: string;
         size: string;
@@ -42,8 +42,8 @@ export declare class TorrentController {
         leechers: number;
         category: string;
         added: string;
-    }[]>;
-    getLatestTorrents(limit?: number, category?: string): Promise<{
+    }[];
+    getLatestTorrents(limit?: number, category?: string): {
         infoHash: string;
         name: string;
         size: string;
@@ -51,5 +51,5 @@ export declare class TorrentController {
         leechers: number;
         category: string;
         added: string;
-    }[]>;
+    }[];
 }

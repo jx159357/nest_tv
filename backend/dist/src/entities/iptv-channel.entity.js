@@ -62,7 +62,7 @@ let IPTVChannel = class IPTVChannel {
             streamFormat: this.streamFormat,
             viewCount: this.viewCount,
             urls: this.getAllStreamUrls(),
-            metadata: this.metadata
+            metadata: this.metadata,
         };
     }
 };

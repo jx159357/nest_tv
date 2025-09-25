@@ -1,6 +1,16 @@
-import { CanActivate, ExecutionContext, Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { RateLimitService, RateLimitInfo, RateLimitOptions } from '../rate-limit/rate-limit.service';
+import {
+  RateLimitService,
+  RateLimitInfo,
+  RateLimitOptions,
+} from '../rate-limit/rate-limit.service';
 
 export const RATE_LIMIT_KEY = 'rate_limit';
 export const RATE_LIMIT_OPTIONS = 'rate_limit_options';
@@ -27,10 +37,7 @@ export class RateLimitGuard implements CanActivate {
     const response = context.switchToHttp().getResponse();
 
     // 获取限流配置
-    const options = this.reflector.get<RateLimitOptions>(
-      RATE_LIMIT_OPTIONS,
-      context.getHandler(),
-    );
+    const options = this.reflector.get<RateLimitOptions>(RATE_LIMIT_OPTIONS, context.getHandler());
 
     // 如果没有限流配置，直接通过
     if (!options) {
@@ -39,7 +46,7 @@ export class RateLimitGuard implements CanActivate {
 
     // 获取限流键（IP + 路径）
     const key = this.getLimitKey(request, context);
-    
+
     // 检查限流
     const result = await this.rateLimitService.checkLimit(key, options);
 
@@ -107,7 +114,7 @@ export class RateLimitGuard implements CanActivate {
   private getRoutePath(context: ExecutionContext): string {
     const request = context.switchToHttp().getRequest();
     const routePath = request.route?.path || request.path || '/';
-    
+
     // 清理路径中的参数
     return routePath
       .replace(/\/\d+/g, '/{id}') // 将数字ID替换为占位符

@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Post,
-  UseGuards,
-  Request,
-  HttpCode,
-  HttpStatus,
-  Body,
-  HttpException,
-} from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+import { Controller, Post, UseGuards, Request, Body, HttpException, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './local-auth.guard';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -30,7 +20,7 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Request() req) {
+  async login(@Request() req: any) {
     return this.authService.login(req.user);
   }
 
@@ -42,7 +32,7 @@ export class AuthController {
    */
   @UseGuards(JwtAuthGuard)
   @Post('profile')
-  getProfile(@Request() req) {
+  getProfile(@Request() req: any) {
     return req.user;
   }
 
@@ -57,7 +47,7 @@ export class AuthController {
     // 这里直接调用UserService来验证用户
     // 为了简化，我们暂时使用AuthService中的validateUser方法
     const user = await this.authService.validateUser(loginData.identifier, loginData.password);
-    
+
     if (!user) {
       throw new HttpException('用户名或密码错误', HttpStatus.UNAUTHORIZED);
     }

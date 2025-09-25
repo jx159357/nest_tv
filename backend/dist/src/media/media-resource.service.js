@@ -34,8 +34,9 @@ let MediaResourceService = class MediaResourceService {
         return this.mediaResourceRepository.save(mediaResource);
     }
     async findAll(queryDto) {
-        const { page = 1, pageSize = 10, search, type, quality, minRating, maxRating, tags, startDate, endDate } = queryDto;
-        const queryBuilder = this.mediaResourceRepository.createQueryBuilder('mediaResource')
+        const { page = 1, pageSize = 10, search, type, quality, minRating, maxRating, tags, startDate, endDate, } = queryDto;
+        const queryBuilder = this.mediaResourceRepository
+            .createQueryBuilder('mediaResource')
             .leftJoinAndSelect('mediaResource.poster', 'poster');
         if (search) {
             queryBuilder.andWhere('(mediaResource.title LIKE :search OR mediaResource.description LIKE :search OR mediaResource.originalTitle LIKE :search)', { search: `%${search}%` });
@@ -53,12 +54,14 @@ let MediaResourceService = class MediaResourceService {
             queryBuilder.andWhere('mediaResource.rating <= :maxRating', { maxRating });
         }
         if (tags && tags.length > 0) {
-            queryBuilder.andWhere('mediaResource.tags && JSON_CONTAINS(mediaResource.tags, :tags)', { tags });
+            queryBuilder.andWhere('mediaResource.tags && JSON_CONTAINS(mediaResource.tags, :tags)', {
+                tags,
+            });
         }
         if (startDate && endDate) {
             queryBuilder.andWhere('mediaResource.releaseDate BETWEEN :startDate AND :endDate', {
                 startDate,
-                endDate
+                endDate,
             });
         }
         const total = await queryBuilder.getCount();
@@ -100,9 +103,7 @@ let MediaResourceService = class MediaResourceService {
     }
     async search(keyword, limit = 10) {
         return this.mediaResourceRepository.find({
-            where: [
-                { title: (0, typeorm_2.Like)(`%${keyword}%`) },
-            ],
+            where: [{ title: (0, typeorm_2.Like)(`%${keyword}%`) }],
             take: limit,
             order: {
                 rating: 'DESC',
@@ -189,7 +190,7 @@ exports.MediaResourceService = MediaResourceService;
 __decorate([
     (0, cache_decorator_1.CacheEvict)({
         all: true,
-        key: 'media:list:*'
+        key: 'media:list:*',
     }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_media_resource_dto_1.CreateMediaResourceDto]),
@@ -198,7 +199,7 @@ __decorate([
 __decorate([
     (0, cache_decorator_1.Cacheable)({
         ttl: 600,
-        key: 'media:list:default'
+        key: 'media:list:default',
     }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [media_resource_query_dto_1.MediaResourceQueryDto]),
@@ -207,7 +208,7 @@ __decorate([
 __decorate([
     (0, cache_decorator_1.CacheEvict)({
         all: true,
-        key: 'media:list:*'
+        key: 'media:list:*',
     }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, update_media_resource_dto_1.UpdateMediaResourceDto]),
@@ -216,7 +217,7 @@ __decorate([
 __decorate([
     (0, cache_decorator_1.CacheEvict)({
         all: true,
-        key: 'media:list:*'
+        key: 'media:list:*',
     }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),

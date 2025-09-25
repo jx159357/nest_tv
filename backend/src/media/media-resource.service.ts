@@ -22,7 +22,7 @@ export class MediaResourceService {
    */
   @CacheEvict({
     all: true, // 清除所有媒体相关的缓存
-    key: 'media:list:*' // 清除媒体列表缓存
+    key: 'media:list:*', // 清除媒体列表缓存
   })
   async create(createMediaResourceDto: CreateMediaResourceDto): Promise<MediaResource> {
     const mediaResource = this.mediaResourceRepository.create(createMediaResourceDto);
@@ -34,7 +34,7 @@ export class MediaResourceService {
    */
   @Cacheable({
     ttl: 600, // 10分钟缓存
-    key: 'media:list:default' // 简化缓存键
+    key: 'media:list:default', // 简化缓存键
   })
   async findAll(queryDto: MediaResourceQueryDto): Promise<{
     data: MediaResource[];
@@ -43,27 +43,28 @@ export class MediaResourceService {
     pageSize: number;
     totalPages: number;
   }> {
-    const { 
-      page = 1, 
-      pageSize = 10, 
-      search, 
-      type, 
-      quality, 
-      minRating, 
+    const {
+      page = 1,
+      pageSize = 10,
+      search,
+      type,
+      quality,
+      minRating,
       maxRating,
       tags,
       startDate,
-      endDate
+      endDate,
     } = queryDto;
 
-    const queryBuilder = this.mediaResourceRepository.createQueryBuilder('mediaResource')
+    const queryBuilder = this.mediaResourceRepository
+      .createQueryBuilder('mediaResource')
       .leftJoinAndSelect('mediaResource.poster', 'poster');
 
     // 搜索条件
     if (search) {
       queryBuilder.andWhere(
         '(mediaResource.title LIKE :search OR mediaResource.description LIKE :search OR mediaResource.originalTitle LIKE :search)',
-        { search: `%${search}%` }
+        { search: `%${search}%` },
       );
     }
 
@@ -87,14 +88,16 @@ export class MediaResourceService {
 
     // 标签筛选
     if (tags && tags.length > 0) {
-      queryBuilder.andWhere('mediaResource.tags && JSON_CONTAINS(mediaResource.tags, :tags)', { tags });
+      queryBuilder.andWhere('mediaResource.tags && JSON_CONTAINS(mediaResource.tags, :tags)', {
+        tags,
+      });
     }
 
     // 日期范围筛选
     if (startDate && endDate) {
       queryBuilder.andWhere('mediaResource.releaseDate BETWEEN :startDate AND :endDate', {
         startDate,
-        endDate
+        endDate,
       });
     }
 
@@ -143,7 +146,7 @@ export class MediaResourceService {
    */
   @CacheEvict({
     all: true, // 清除所有媒体相关的缓存
-    key: 'media:list:*' // 清除媒体列表缓存
+    key: 'media:list:*', // 清除媒体列表缓存
   })
   async update(id: number, updateMediaResourceDto: UpdateMediaResourceDto): Promise<MediaResource> {
     const mediaResource = await this.findById(id);
@@ -156,7 +159,7 @@ export class MediaResourceService {
    */
   @CacheEvict({
     all: true, // 清除所有媒体相关的缓存
-    key: 'media:list:*' // 清除媒体列表缓存
+    key: 'media:list:*', // 清除媒体列表缓存
   })
   async remove(id: number): Promise<void> {
     const mediaResource = await this.findById(id);
@@ -168,9 +171,7 @@ export class MediaResourceService {
    */
   async search(keyword: string, limit: number = 10): Promise<MediaResource[]> {
     return this.mediaResourceRepository.find({
-      where: [
-        { title: Like(`%${keyword}%`) },
-      ],
+      where: [{ title: Like(`%${keyword}%`) }],
       take: limit,
       order: {
         rating: 'DESC',
@@ -210,7 +211,7 @@ export class MediaResourceService {
    */
   async getSimilar(id: number, limit: number = 6): Promise<MediaResource[]> {
     const mediaResource = await this.findById(id);
-    
+
     return this.mediaResourceRepository
       .createQueryBuilder('mediaResource')
       .where('mediaResource.id != :id', { id })
@@ -262,10 +263,13 @@ export class MediaResourceService {
       .groupBy('mediaResource.type')
       .getRawMany();
 
-    const byType = byTypeQuery.reduce((acc, item) => {
-      acc[item.type] = parseInt(item.count as string);
-      return acc;
-    }, {} as Record<string, number>);
+    const byType = byTypeQuery.reduce(
+      (acc, item) => {
+        acc[item.type] = parseInt(item.count as string);
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     // 按质量统计
     const byQualityQuery = await this.mediaResourceRepository
@@ -275,10 +279,13 @@ export class MediaResourceService {
       .groupBy('mediaResource.quality')
       .getRawMany();
 
-    const byQuality = byQualityQuery.reduce((acc, item) => {
-      acc[item.quality] = parseInt(item.count as string);
-      return acc;
-    }, {} as Record<string, number>);
+    const byQuality = byQualityQuery.reduce(
+      (acc, item) => {
+        acc[item.quality] = parseInt(item.count as string);
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     // 平均评分
     const averageRatingQuery = await this.mediaResourceRepository

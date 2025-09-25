@@ -65,7 +65,7 @@ const routes = [
     component: WatchView,
     meta: {
       title: '观看影视 - Nest TV',
-      requiresAuth: true, // 观看页面需要登录
+      requiresAuth: false, // 观看页面允许未登录访问
       preload: true, // 观看页面预加载
       keepAlive: true // 保持播放状态
     }

@@ -7,9 +7,7 @@ import { User } from '../entities/user.entity';
 import { MediaResource } from '../entities/media-resource.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([WatchHistory, User, MediaResource]),
-  ],
+  imports: [TypeOrmModule.forFeature([WatchHistory, User, MediaResource])],
   controllers: [WatchHistoryController],
   providers: [WatchHistoryService],
   exports: [WatchHistoryService],

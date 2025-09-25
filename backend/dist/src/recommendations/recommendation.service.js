@@ -268,7 +268,8 @@ let RecommendationService = RecommendationService_1 = class RecommendationServic
     }
     async findSimilarMedia(preferences, excludeMedia, limit) {
         const excludeIds = excludeMedia.map(m => m.id);
-        const queryBuilder = this.mediaResourceRepository.createQueryBuilder('media')
+        const queryBuilder = this.mediaResourceRepository
+            .createQueryBuilder('media')
             .where('media.isActive = :isActive', { isActive: true })
             .andWhere('media.id NOT IN (:...excludeIds)', { excludeIds });
         const topGenres = Array.from(preferences.genres.entries())
@@ -278,9 +279,7 @@ let RecommendationService = RecommendationService_1 = class RecommendationServic
         if (topGenres.length > 0) {
             queryBuilder.andWhere('media.genres && :genres', { genres: topGenres });
         }
-        queryBuilder.orderBy('media.rating', 'DESC')
-            .addOrderBy('media.viewCount', 'DESC')
-            .take(limit);
+        queryBuilder.orderBy('media.rating', 'DESC').addOrderBy('media.viewCount', 'DESC').take(limit);
         return queryBuilder.getMany();
     }
     async findSimilarUsers(userId) {
@@ -339,11 +338,11 @@ let RecommendationService = RecommendationService_1 = class RecommendationServic
     }
     getTypeDisplayName(type) {
         const typeMap = {
-            'movie': '电影',
-            'tv_series': '电视剧',
-            'variety': '综艺',
-            'anime': '动漫',
-            'documentary': '纪录片',
+            movie: '电影',
+            tv_series: '电视剧',
+            variety: '综艺',
+            anime: '动漫',
+            documentary: '纪录片',
         };
         return typeMap[type] || type;
     }

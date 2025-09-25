@@ -33,7 +33,7 @@ let ParseProvidersService = ParseProvidersService_1 = class ParseProvidersServic
         return await this.parseProviderRepository.save(parseProvider);
     }
     async findAll(queryDto) {
-        const { page = 1, limit = 10, category, priority, activeOnly = true, supportOnlinePlay, supportDownload, minSuccessRate, sortBy = 'createdAt', sortOrder = 'DESC', search } = queryDto;
+        const { page = 1, limit = 10, category, priority, activeOnly = true, supportOnlinePlay, supportDownload, minSuccessRate, sortBy = 'createdAt', sortOrder = 'DESC', search, } = queryDto;
         const queryBuilder = this.parseProviderRepository.createQueryBuilder('provider');
         if (search) {
             queryBuilder.andWhere('(provider.name LIKE :search OR provider.description LIKE :search OR provider.baseUrl LIKE :search)', { search: `%${search}%` });
@@ -45,7 +45,9 @@ let ParseProvidersService = ParseProvidersService_1 = class ParseProvidersServic
             queryBuilder.andWhere('provider.priority = :priority', { priority });
         }
         if (supportOnlinePlay !== undefined) {
-            queryBuilder.andWhere('provider.supportOnlinePlay = :supportOnlinePlay', { supportOnlinePlay });
+            queryBuilder.andWhere('provider.supportOnlinePlay = :supportOnlinePlay', {
+                supportOnlinePlay,
+            });
         }
         if (supportDownload !== undefined) {
             queryBuilder.andWhere('provider.supportDownload = :supportDownload', { supportDownload });
@@ -56,8 +58,18 @@ let ParseProvidersService = ParseProvidersService_1 = class ParseProvidersServic
         if (activeOnly) {
             queryBuilder.andWhere('provider.isActive = :isActive', { isActive: true });
         }
-        queryBuilder.andWhere('(provider.expireDate IS NULL OR provider.expireDate > :now)', { now: new Date() });
-        const validSortFields = ['id', 'name', 'successRate', 'requestCount', 'createdAt', 'updatedAt', 'priority'];
+        queryBuilder.andWhere('(provider.expireDate IS NULL OR provider.expireDate > :now)', {
+            now: new Date(),
+        });
+        const validSortFields = [
+            'id',
+            'name',
+            'successRate',
+            'requestCount',
+            'createdAt',
+            'updatedAt',
+            'priority',
+        ];
         const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
         queryBuilder.orderBy(`provider.${sortField}`, sortOrder);
         const offset = (page - 1) * limit;
@@ -120,7 +132,7 @@ let ParseProvidersService = ParseProvidersService_1 = class ParseProvidersServic
     async updateBulkStatus(ids, isActive) {
         await this.parseProviderRepository.update(ids, {
             isActive,
-            lastCheckedAt: new Date()
+            lastCheckedAt: new Date(),
         });
     }
     async testProvider(id, testUrl) {
@@ -250,7 +262,7 @@ let ParseProvidersService = ParseProvidersService_1 = class ParseProvidersServic
             order: {
                 priority: 'DESC',
                 successRate: 'DESC',
-                requestCount: 'ASC'
+                requestCount: 'ASC',
             },
         });
     }
@@ -283,7 +295,7 @@ let ParseProvidersService = ParseProvidersService_1 = class ParseProvidersServic
             order: {
                 successRate: 'DESC',
                 requestCount: 'DESC',
-                priority: 'DESC'
+                priority: 'DESC',
             },
             take: 10,
         });
@@ -305,7 +317,7 @@ let ParseProvidersService = ParseProvidersService_1 = class ParseProvidersServic
             order: {
                 successRate: 'DESC',
                 priority: 'DESC',
-                name: 'ASC'
+                name: 'ASC',
             },
             take: limit,
         });

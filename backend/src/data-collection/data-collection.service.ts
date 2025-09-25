@@ -110,7 +110,7 @@ export class DataCollectionService {
       const description = $(selectors.description).text().trim();
       const poster = $(selectors.poster).attr('src');
       const ratingText = $(selectors.rating).text().trim();
-      
+
       // 解析评分
       const rating = ratingText ? parseFloat(ratingText) || 0 : 0;
 
@@ -134,13 +134,9 @@ export class DataCollectionService {
 
       this.logger.log(`爬取成功: ${title}`);
       return mediaData;
-
     } catch (error) {
       this.logger.error(`爬取失败: ${error.message}`, error.stack);
-      throw new HttpException(
-        `爬取失败: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw new HttpException(`爬取失败: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -182,9 +178,7 @@ export class DataCollectionService {
       }
     });
 
-    this.logger.log(
-      `批量爬取完成: ${results.length} 成功, ${errors.length} 失败`
-    );
+    this.logger.log(`批量爬取完成: ${results.length} 成功, ${errors.length} 失败`);
 
     if (errors.length > 0) {
       this.logger.warn(`失败的URL: ${errors.join(', ')}`);
@@ -198,7 +192,7 @@ export class DataCollectionService {
    */
   async crawlAndSave(sourceName: string, url: string) {
     const mediaData = await this.crawlUrl(sourceName, url);
-    
+
     // 这里可以添加保存到数据库的逻辑
     // 暂时只返回爬取的数据
     return {
@@ -221,13 +215,13 @@ export class DataCollectionService {
 
     try {
       // 简化实现：返回占位URL
-      const urls = Array.from({ length: limit }, (_, index) => 
-        `${source.baseUrl}/popular/${index + 1}`
+      const urls = Array.from(
+        { length: limit },
+        (_, index) => `${source.baseUrl}/popular/${index + 1}`,
       );
 
       this.logger.log(`获取到 ${urls.length} 个热门URL`);
       return urls;
-
     } catch (error) {
       this.logger.error(`获取热门URL失败: ${error.message}`, error.stack);
       throw new HttpException(
@@ -272,7 +266,6 @@ export class DataCollectionService {
         message: '连接测试成功',
         responseTime,
       };
-
     } catch (error) {
       this.logger.error(`连接测试失败: ${error.message}`, error.stack);
 
@@ -319,7 +312,7 @@ export class DataCollectionService {
    */
   private extractDownloadUrls($: any): string[] {
     const urls: string[] = [];
-    
+
     // 查找常见的下载链接模式
     $('a[href*="download"], a[href*="magnet"], a[href*="torrent"]').each((_, element) => {
       const href = $(element).attr('href');

@@ -19,9 +19,7 @@ let WatchHistoryModule = class WatchHistoryModule {
 exports.WatchHistoryModule = WatchHistoryModule;
 exports.WatchHistoryModule = WatchHistoryModule = __decorate([
     (0, common_1.Module)({
-        imports: [
-            typeorm_1.TypeOrmModule.forFeature([watch_history_entity_1.WatchHistory, user_entity_1.User, media_resource_entity_1.MediaResource]),
-        ],
+        imports: [typeorm_1.TypeOrmModule.forFeature([watch_history_entity_1.WatchHistory, user_entity_1.User, media_resource_entity_1.MediaResource])],
         controllers: [watch_history_controller_1.WatchHistoryController],
         providers: [watch_history_service_1.WatchHistoryService],
         exports: [watch_history_service_1.WatchHistoryService],

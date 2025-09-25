@@ -1,4 +1,12 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, Index } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  Index,
+} from 'typeorm';
 import { User } from './user.entity';
 import { MediaResource } from './media-resource.entity';
 
@@ -11,7 +19,11 @@ export class Recommendation {
   @PrimaryGeneratedColumn()
   id: number; // 推荐记录ID，自增主键
 
-  @Column({ type: 'enum', enum: ['collaborative', 'content', 'trending', 'editorial', 'personalized'], default: 'personalized' })
+  @Column({
+    type: 'enum',
+    enum: ['collaborative', 'content', 'trending', 'editorial', 'personalized'],
+    default: 'personalized',
+  })
   @Index()
   type: 'collaborative' | 'content' | 'trending' | 'editorial' | 'personalized'; // 推荐类型
 
@@ -35,13 +47,14 @@ export class Recommendation {
   isActive: boolean; // 是否启用
 
   @Column({ type: 'json', nullable: true })
-  metadata?: { // 推荐元数据
-    reason?: string;         // 推荐理由
-    algorithm?: string;      // 使用的算法
+  metadata?: {
+    // 推荐元数据
+    reason?: string; // 推荐理由
+    algorithm?: string; // 使用的算法
     similarUsers?: number[]; // 相似用户ID列表（用于协同过滤）
     similarMedia?: number[]; // 相似影视资源ID列表（用于内容推荐）
-    tags?: string[];        // 相关标签
-    category?: string;      // 分类
+    tags?: string[]; // 相关标签
+    category?: string; // 分类
   };
 
   @Column({ type: 'timestamp', nullable: true })

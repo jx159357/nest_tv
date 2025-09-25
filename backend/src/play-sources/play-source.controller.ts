@@ -1,5 +1,12 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { PlaySourceService } from './play-source.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -30,7 +37,7 @@ export class PlaySourceController {
       type,
       status,
     };
-    
+
     return this.playSourceService.findAll(queryDto);
   }
 

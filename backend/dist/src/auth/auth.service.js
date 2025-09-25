@@ -25,7 +25,7 @@ let AuthService = class AuthService {
             const result = await this.userService.login({ identifier, password: pass });
             return result.user;
         }
-        catch (error) {
+        catch {
             return null;
         }
     }

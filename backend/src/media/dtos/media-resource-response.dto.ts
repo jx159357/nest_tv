@@ -11,10 +11,18 @@ export class MediaResourceDto {
   @ApiProperty({ description: '影视描述', example: '经典的超级英雄电影' })
   description?: string;
 
-  @ApiProperty({ description: '影视类型', example: 'movie', enum: ['movie', 'tv', 'variety', 'documentary'] })
+  @ApiProperty({
+    description: '影视类型',
+    example: 'movie',
+    enum: ['movie', 'tv', 'variety', 'documentary'],
+  })
   type: string;
 
-  @ApiProperty({ description: '视频质量', example: '1080p', enum: ['1080p', '720p', '480p', '360p'] })
+  @ApiProperty({
+    description: '视频质量',
+    example: '1080p',
+    enum: ['1080p', '720p', '480p', '360p'],
+  })
   quality?: string;
 
   @ApiProperty({ description: '影视标签', example: ['动作', '科幻'], isArray: true })
@@ -89,7 +97,12 @@ export class ErrorResponse {
   @ApiProperty({ description: '错误消息', example: '请求参数错误' })
   message: string;
 
-  @ApiProperty({ description: '错误详情', example: ['title is required', 'type must be valid'], isArray: true, required: false })
+  @ApiProperty({
+    description: '错误详情',
+    example: ['title is required', 'type must be valid'],
+    isArray: true,
+    required: false,
+  })
   errors?: string[];
 
   @ApiProperty({ description: '时间戳', example: '2024-01-01T00:00:00.000Z' })

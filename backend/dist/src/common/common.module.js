@@ -9,12 +9,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CommonModule = void 0;
 const common_1 = require("@nestjs/common");
 const app_logger_service_1 = require("./services/app-logger.service");
+const global_exception_filter_1 = require("./filters/global-exception.filter");
 let CommonModule = class CommonModule {
 };
 exports.CommonModule = CommonModule;
 exports.CommonModule = CommonModule = __decorate([
     (0, common_1.Module)({
-        providers: [app_logger_service_1.AppLoggerService],
+        providers: [app_logger_service_1.AppLoggerService, global_exception_filter_1.GlobalExceptionFilter],
         exports: [app_logger_service_1.AppLoggerService],
     })
 ], CommonModule);

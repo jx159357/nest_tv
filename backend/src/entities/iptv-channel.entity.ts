@@ -1,4 +1,12 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToMany, JoinTable } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToMany,
+  JoinTable,
+} from 'typeorm';
 import { MediaResource } from './media-resource.entity';
 
 /**
@@ -117,7 +125,7 @@ export class IPTVChannel {
       streamFormat: this.streamFormat,
       viewCount: this.viewCount,
       urls: this.getAllStreamUrls(),
-      metadata: this.metadata
+      metadata: this.metadata,
     };
   }
 }

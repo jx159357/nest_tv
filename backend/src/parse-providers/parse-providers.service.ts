@@ -34,27 +34,27 @@ export class ParseProvidersService {
     limit: number;
     totalPages: number;
   }> {
-    const { 
-      page = 1, 
-      limit = 10, 
-      category, 
-      priority, 
+    const {
+      page = 1,
+      limit = 10,
+      category,
+      priority,
       activeOnly = true,
       supportOnlinePlay,
       supportDownload,
       minSuccessRate,
-      sortBy = 'createdAt', 
+      sortBy = 'createdAt',
       sortOrder = 'DESC',
-      search 
+      search,
     } = queryDto;
-    
+
     const queryBuilder = this.parseProviderRepository.createQueryBuilder('provider');
 
     // 搜索条件
     if (search) {
       queryBuilder.andWhere(
         '(provider.name LIKE :search OR provider.description LIKE :search OR provider.baseUrl LIKE :search)',
-        { search: `%${search}%` }
+        { search: `%${search}%` },
       );
     }
 
@@ -70,7 +70,9 @@ export class ParseProvidersService {
 
     // 在线播放支持过滤
     if (supportOnlinePlay !== undefined) {
-      queryBuilder.andWhere('provider.supportOnlinePlay = :supportOnlinePlay', { supportOnlinePlay });
+      queryBuilder.andWhere('provider.supportOnlinePlay = :supportOnlinePlay', {
+        supportOnlinePlay,
+      });
     }
 
     // 下载链接支持过滤
@@ -89,10 +91,20 @@ export class ParseProvidersService {
     }
 
     // 排除过期的提供商
-    queryBuilder.andWhere('(provider.expireDate IS NULL OR provider.expireDate > :now)', { now: new Date() });
+    queryBuilder.andWhere('(provider.expireDate IS NULL OR provider.expireDate > :now)', {
+      now: new Date(),
+    });
 
     // 排序
-    const validSortFields = ['id', 'name', 'successRate', 'requestCount', 'createdAt', 'updatedAt', 'priority'];
+    const validSortFields = [
+      'id',
+      'name',
+      'successRate',
+      'requestCount',
+      'createdAt',
+      'updatedAt',
+      'priority',
+    ];
     const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
     queryBuilder.orderBy(`provider.${sortField}`, sortOrder);
 
@@ -193,23 +205,26 @@ export class ParseProvidersService {
    * 批量更新提供商状态
    */
   async updateBulkStatus(ids: number[], isActive: boolean): Promise<void> {
-    await this.parseProviderRepository.update(ids, { 
+    await this.parseProviderRepository.update(ids, {
       isActive,
-      lastCheckedAt: new Date()
+      lastCheckedAt: new Date(),
     });
   }
 
   /**
    * 测试解析提供商
    */
-  async testProvider(id: number, testUrl?: string): Promise<{
+  async testProvider(
+    id: number,
+    testUrl?: string,
+  ): Promise<{
     success: boolean;
     message: string;
     responseTime: number;
     data?: any;
   }> {
     const provider = await this.findById(id);
-    
+
     if (!provider.canMakeRequest()) {
       return {
         success: false,
@@ -219,11 +234,11 @@ export class ParseProvidersService {
     }
 
     const startTime = Date.now();
-    
+
     try {
       const testUrlToUse = testUrl || provider.baseUrl;
       const headers = provider.getApiHeaders();
-      
+
       const response = await axios({
         method: provider.apiMethod || 'GET',
         url: provider.apiUrl || testUrlToUse,
@@ -244,10 +259,9 @@ export class ParseProvidersService {
         responseTime,
         data: response.data,
       };
-
     } catch (error) {
       const responseTime = Date.now() - startTime;
-      
+
       // 更新统计信息
       provider.updateRequestStats(false);
       await this.parseProviderRepository.save(provider);
@@ -263,7 +277,10 @@ export class ParseProvidersService {
   /**
    * 解析视频链接
    */
-  async parseVideoUrl(id: number, videoUrl: string): Promise<{
+  async parseVideoUrl(
+    id: number,
+    videoUrl: string,
+  ): Promise<{
     success: boolean;
     message: string;
     playUrls?: string[];
@@ -272,7 +289,7 @@ export class ParseProvidersService {
     metadata?: any;
   }> {
     const provider = await this.findById(id);
-    
+
     if (!provider.canMakeRequest()) {
       return {
         success: false,
@@ -283,7 +300,7 @@ export class ParseProvidersService {
     try {
       const config = provider.getParseConfig();
       const headers = provider.getApiHeaders();
-      
+
       // 构建解析请求
       const requestData = {
         url: videoUrl,
@@ -310,7 +327,6 @@ export class ParseProvidersService {
         message: '解析成功',
         ...result,
       };
-
     } catch (error) {
       // 更新统计信息
       provider.updateRequestStats(false);
@@ -327,7 +343,10 @@ export class ParseProvidersService {
   /**
    * 解析提供商响应数据
    */
-  private parseProviderResponse(responseData: any, config: any): {
+  private parseProviderResponse(
+    responseData: any,
+    config: any,
+  ): {
     playUrls?: string[];
     downloadUrls?: string[];
     subtitleUrls?: string[];
@@ -381,7 +400,10 @@ export class ParseProvidersService {
   /**
    * 获取最佳解析提供商
    */
-  async getBestProvider(category?: string, supportOnlinePlay: boolean = true): Promise<ParseProvider | null> {
+  async getBestProvider(
+    category?: string,
+    supportOnlinePlay: boolean = true,
+  ): Promise<ParseProvider | null> {
     const where: any = { isActive: true, supportOnlinePlay };
     if (category) {
       where.category = category;
@@ -389,10 +411,10 @@ export class ParseProvidersService {
 
     return await this.parseProviderRepository.findOne({
       where,
-      order: { 
-        priority: 'DESC', 
-        successRate: 'DESC', 
-        requestCount: 'ASC' 
+      order: {
+        priority: 'DESC',
+        successRate: 'DESC',
+        requestCount: 'ASC',
       },
     });
   }
@@ -426,7 +448,7 @@ export class ParseProvidersService {
     const activeProviders = await this.parseProviderRepository.count({
       where: { isActive: true },
     });
-    
+
     const categories = await this.getAllCategories();
     const totalCategories = categories.length;
 
@@ -440,10 +462,10 @@ export class ParseProvidersService {
 
     const topProviders = await this.parseProviderRepository.find({
       where: { isActive: true },
-      order: { 
-        successRate: 'DESC', 
+      order: {
+        successRate: 'DESC',
         requestCount: 'DESC',
-        priority: 'DESC' 
+        priority: 'DESC',
       },
       take: 10,
     });
@@ -467,10 +489,10 @@ export class ParseProvidersService {
         { description: Like(`%${keyword}%`), isActive: true },
         { category: Like(`%${keyword}%`), isActive: true },
       ],
-      order: { 
-        successRate: 'DESC', 
+      order: {
+        successRate: 'DESC',
         priority: 'DESC',
-        name: 'ASC' 
+        name: 'ASC',
       },
       take: limit,
     });

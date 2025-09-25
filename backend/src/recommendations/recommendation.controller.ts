@@ -1,4 +1,18 @@
-import { Controller, Get, Post, Put, Delete, Param, Query, Body, UseGuards, Request, ParseIntPipe, HttpStatus, HttpException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Query,
+  Body,
+  UseGuards,
+  Request,
+  ParseIntPipe,
+  HttpStatus,
+  HttpException,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RecommendationService } from './recommendation.service';
@@ -19,7 +33,9 @@ export class RecommendationController {
   @ApiOperation({ summary: '获取热门推荐' })
   @ApiResponse({ status: 200, description: '成功获取热门推荐' })
   @ApiQuery({ name: 'limit', required: false, description: '返回数量限制，默认10' })
-  async getTrendingRecommendations(@Query('limit', ParseIntPipe) limit = 10): Promise<Recommendation[]> {
+  async getTrendingRecommendations(
+    @Query('limit', ParseIntPipe) limit = 10,
+  ): Promise<Recommendation[]> {
     try {
       return await this.recommendationService.getTrendingRecommendations(limit);
     } catch (error) {
@@ -39,7 +55,9 @@ export class RecommendationController {
   @ApiOperation({ summary: '获取编辑推荐' })
   @ApiResponse({ status: 200, description: '成功获取编辑推荐' })
   @ApiQuery({ name: 'limit', required: false, description: '返回数量限制，默认10' })
-  async getEditorialRecommendations(@Query('limit', ParseIntPipe) limit = 10): Promise<Recommendation[]> {
+  async getEditorialRecommendations(
+    @Query('limit', ParseIntPipe) limit = 10,
+  ): Promise<Recommendation[]> {
     try {
       return await this.recommendationService.getEditorialRecommendations(limit);
     } catch (error) {
@@ -56,7 +74,11 @@ export class RecommendationController {
   @Get('user')
   @ApiOperation({ summary: '获取用户推荐列表' })
   @ApiResponse({ status: 200, description: '成功获取用户推荐列表' })
-  @ApiQuery({ name: 'type', required: false, description: '推荐类型：personalized, content, collaborative, trending' })
+  @ApiQuery({
+    name: 'type',
+    required: false,
+    description: '推荐类型：personalized, content, collaborative, trending',
+  })
   @ApiQuery({ name: 'limit', required: false, description: '返回数量限制，默认10' })
   async getUserRecommendations(
     @Request() req,
@@ -148,7 +170,8 @@ export class RecommendationController {
   @ApiResponse({ status: 200, description: '成功记录推荐反馈' })
   async recordRecommendationFeedback(
     @Request() req,
-    @Body() feedbackData: {
+    @Body()
+    feedbackData: {
       mediaResourceId: number;
       feedback: 'click' | 'like' | 'dislike';
     },
@@ -157,7 +180,11 @@ export class RecommendationController {
       const userId = req.user.userId;
       const { mediaResourceId, feedback } = feedbackData;
 
-      await this.recommendationService.recordRecommendationFeedback(userId, mediaResourceId, feedback);
+      await this.recommendationService.recordRecommendationFeedback(
+        userId,
+        mediaResourceId,
+        feedback,
+      );
 
       return { message: '推荐反馈记录成功' };
     } catch (error) {
@@ -281,7 +308,7 @@ export class RecommendationController {
       // 计算平均分数
       if (recommendations.length > 0) {
         const totalScore = recommendations.reduce((sum, rec) => sum + rec.score, 0);
-        stats.averageScore = Math.round(totalScore / recommendations.length * 100) / 100;
+        stats.averageScore = Math.round((totalScore / recommendations.length) * 100) / 100;
       }
 
       return stats;

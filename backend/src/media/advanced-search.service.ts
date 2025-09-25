@@ -62,7 +62,7 @@ export class AdvancedSearchService {
    */
   async advancedSearch(params: AdvancedSearchParams, userId?: number): Promise<SearchResult> {
     const startTime = Date.now();
-    
+
     const {
       keyword = '',
       type = [],
@@ -87,7 +87,8 @@ export class AdvancedSearchService {
     }
 
     // 构建查询
-    const queryBuilder = this.mediaResourceRepository.createQueryBuilder('mediaResource')
+    const queryBuilder = this.mediaResourceRepository
+      .createQueryBuilder('mediaResource')
       .leftJoinAndSelect('mediaResource.poster', 'poster');
 
     // 基础条件：只搜索活跃的资源
@@ -104,7 +105,7 @@ export class AdvancedSearchService {
           mediaResource.originalTitle LIKE :keyword OR 
           mediaResource.director LIKE :keyword OR 
           mediaResource.actors LIKE :keyword)`,
-        { keyword: keywordPattern }
+        { keyword: keywordPattern },
       );
     }
 
@@ -127,15 +128,15 @@ export class AdvancedSearchService {
 
     // 导演筛选
     if (director.trim()) {
-      queryBuilder.andWhere('mediaResource.director LIKE :director', { 
-        director: `%${director.trim()}%` 
+      queryBuilder.andWhere('mediaResource.director LIKE :director', {
+        director: `%${director.trim()}%`,
       });
     }
 
     // 演员筛选
     if (actors.trim()) {
-      queryBuilder.andWhere('mediaResource.actors LIKE :actors', { 
-        actors: `%${actors.trim()}%` 
+      queryBuilder.andWhere('mediaResource.actors LIKE :actors', {
+        actors: `%${actors.trim()}%`,
       });
     }
 
@@ -165,10 +166,7 @@ export class AdvancedSearchService {
 
     // 分页查询
     const skip = (page - 1) * pageSize;
-    const data = await queryBuilder
-      .skip(skip)
-      .take(pageSize)
-      .getMany();
+    const data = await queryBuilder.skip(skip).take(pageSize).getMany();
 
     const searchTime = Date.now() - startTime;
 
@@ -260,7 +258,10 @@ export class AdvancedSearchService {
     actorSuggestions.forEach(item => {
       if (item.actors) {
         // 分割演员字符串并添加前几个
-        const actorList = item.actors.split(',').map(actor => actor.trim()).slice(0, 2);
+        const actorList = item.actors
+          .split(',')
+          .map(actor => actor.trim())
+          .slice(0, 2);
         actorList.forEach(actor => {
           if (actor.includes(keyword.trim())) {
             suggestions.push({
@@ -308,10 +309,10 @@ export class AdvancedSearchService {
         const bExact = b.text.toLowerCase() === keyword.toLowerCase();
         const aStartsWith = a.text.toLowerCase().startsWith(keyword.toLowerCase());
         const bStartsWith = b.text.toLowerCase().startsWith(keyword.toLowerCase());
-        
+
         if (aExact !== bExact) return aExact ? -1 : 1;
         if (aStartsWith !== bStartsWith) return aStartsWith ? -1 : 1;
-        
+
         // 最后按数量排序
         return b.count - a.count;
       })
@@ -326,8 +327,8 @@ export class AdvancedSearchService {
       .createQueryBuilder('searchHistory')
       .select('searchHistory.keyword')
       .addSelect('COUNT(*)', 'count')
-      .where('searchHistory.createdAt > :since', { 
-        since: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // 30天内
+      .where('searchHistory.createdAt > :since', {
+        since: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30天内
       })
       .groupBy('searchHistory.keyword')
       .orderBy('count', 'DESC')
@@ -411,7 +412,12 @@ export class AdvancedSearchService {
   /**
    * 应用排序逻辑
    */
-  private applySorting(queryBuilder: any, sortBy: string, sortOrder: string, keyword: string): void {
+  private applySorting(
+    queryBuilder: any,
+    sortBy: string,
+    sortOrder: string,
+    keyword: string,
+  ): void {
     const order = sortOrder === 'ASC' ? 'ASC' : 'DESC';
 
     switch (sortBy) {
@@ -425,23 +431,23 @@ export class AdvancedSearchService {
           queryBuilder.addOrderBy('mediaResource.rating', order);
         }
         break;
-      
+
       case 'rating':
         queryBuilder.addOrderBy('mediaResource.rating', order);
         break;
-      
+
       case 'views':
         queryBuilder.addOrderBy('mediaResource.views', order);
         break;
-      
+
       case 'date':
         queryBuilder.addOrderBy('mediaResource.releaseDate', order);
         break;
-      
+
       case 'title':
         queryBuilder.addOrderBy('mediaResource.title', order);
         break;
-      
+
       default:
         queryBuilder
           .addOrderBy('mediaResource.rating', order)
@@ -480,7 +486,7 @@ export class AdvancedSearchService {
       .getMany();
 
     const relatedKeywords = new Set<string>();
-    
+
     mediaWithKeyword.forEach(media => {
       // 添加类型标签
       if (media.genres && Array.isArray(media.genres)) {
@@ -490,12 +496,12 @@ export class AdvancedSearchService {
           }
         });
       }
-      
+
       // 添加导演
       if (media.director && !media.director.toLowerCase().includes(keyword.toLowerCase())) {
         relatedKeywords.add(media.director);
       }
-      
+
       // 添加演员
       if (media.actors) {
         const actors = media.actors.split(',').map(actor => actor.trim());

@@ -1,8 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const core_1 = require("@nestjs/core");
+const common_1 = require("@nestjs/common");
 const app_module_1 = require("./app.module");
 const swagger_1 = require("@nestjs/swagger");
+const request_logging_middleware_1 = require("./middleware/request-logging.middleware");
+const performance_monitoring_middleware_1 = require("./middleware/performance-monitoring.middleware");
+const security_headers_middleware_1 = require("./middleware/security-headers.middleware");
+const global_exception_filter_1 = require("./common/filters/global-exception.filter");
+const app_logger_service_1 = require("./common/services/app-logger.service");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule, {
         logger: ['log', 'error', 'warn'],
@@ -22,6 +28,19 @@ async function bootstrap() {
         .build();
     const document = swagger_1.SwaggerModule.createDocument(app, config);
     swagger_1.SwaggerModule.setup('api', app, document);
+    const appLogger = app.get(app_logger_service_1.AppLoggerService);
+    const requestLoggingMiddleware = new request_logging_middleware_1.RequestLoggingMiddleware(appLogger);
+    const performanceMonitoringMiddleware = new performance_monitoring_middleware_1.PerformanceMonitoringMiddleware(appLogger);
+    app.use(new security_headers_middleware_1.SecurityHeadersMiddleware().use);
+    app.use(requestLoggingMiddleware.use.bind(requestLoggingMiddleware));
+    app.use(performanceMonitoringMiddleware.use.bind(performanceMonitoringMiddleware));
+    app.useGlobalFilters(new global_exception_filter_1.GlobalExceptionFilter(appLogger));
+    app.useGlobalPipes(new common_1.ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+        disableErrorMessages: false,
+    }));
     const getAvailablePort = async (startPort, maxAttempts = 10) => {
         const net = await import('net');
         return new Promise((resolve, reject) => {

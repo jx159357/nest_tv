@@ -26,7 +26,7 @@ __decorate([
         description: '用户名',
         example: 'testuser',
         minLength: 3,
-        maxLength: 20
+        maxLength: 20,
     }),
     (0, class_validator_1.IsNotEmpty)({ message: '用户名不能为空' }),
     (0, class_validator_1.IsString)({ message: '用户名必须是字符串' }),
@@ -37,7 +37,7 @@ __decorate([
     (0, swagger_1.ApiProperty)({
         description: '密码',
         example: 'password123',
-        minLength: 6
+        minLength: 6,
     }),
     (0, class_validator_1.IsNotEmpty)({ message: '密码不能为空' }),
     (0, class_transformer_1.Transform)(({ value }) => String(value).trim()),
@@ -47,7 +47,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '邮箱地址',
-        example: 'user@example.com'
+        example: 'user@example.com',
     }),
     (0, class_validator_1.IsNotEmpty)({ message: '邮箱不能为空' }),
     (0, class_validator_1.IsEmail)({}, { message: '邮箱格式不正确' }),
@@ -57,7 +57,7 @@ __decorate([
     (0, swagger_1.ApiProperty)({
         description: '手机号',
         example: '13800138000',
-        required: false
+        required: false,
     }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)({ message: '手机号必须是字符串' }),
@@ -69,7 +69,7 @@ __decorate([
         description: '昵称',
         example: '测试用户',
         required: false,
-        maxLength: 50
+        maxLength: 50,
     }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)({ message: '昵称必须是字符串' }),

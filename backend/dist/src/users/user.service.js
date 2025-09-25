@@ -81,10 +81,7 @@ let UserService = class UserService {
     }
     async login(loginUserDto) {
         const user = await this.userRepository.findOne({
-            where: [
-                { username: loginUserDto.identifier },
-                { email: loginUserDto.identifier },
-            ],
+            where: [{ username: loginUserDto.identifier }, { email: loginUserDto.identifier }],
             select: [
                 'id',
                 'username',
@@ -97,8 +94,8 @@ let UserService = class UserService {
                 'lastLoginAt',
                 'createdAt',
                 'updatedAt',
-                'password'
-            ]
+                'password',
+            ],
         });
         if (!user) {
             throw new common_1.UnauthorizedException('用户名或密码错误');
@@ -142,7 +139,7 @@ let UserService = class UserService {
         return this.toUserResponseDto(user);
     }
     toUserResponseDto(user) {
-        const { password, ...userWithoutPassword } = user;
+        const { password: _, ...userWithoutPassword } = user;
         return userWithoutPassword;
     }
 };

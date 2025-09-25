@@ -1,5 +1,12 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { DataCollectionService } from './data-collection.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -45,7 +52,7 @@ export class DataCollectionController {
   @ApiResponse({ status: 400, description: '参数错误' })
   async crawlUrl(@Body() body: { sourceName: string; url: string; userId?: number }) {
     const { sourceName, url, userId } = body;
-    
+
     try {
       const result = await this.dataCollectionService.crawlAndSave(sourceName, url);
       return {
@@ -70,7 +77,7 @@ export class DataCollectionController {
   @ApiResponse({ status: 400, description: '参数错误' })
   async batchCrawl(@Body() body: { sourceName: string; urls: string[]; userId?: number }) {
     const { sourceName, urls, userId } = body;
-    
+
     try {
       const results = await this.dataCollectionService.crawlBatch(sourceName, urls);
       return {
@@ -95,7 +102,10 @@ export class DataCollectionController {
   @ApiResponse({ status: 404, description: '爬虫源不存在' })
   @ApiParam({ name: 'sourceName', description: '爬虫源名称' })
   @ApiQuery({ name: 'limit', description: '限制数量', required: false })
-  async getPopularUrls(@Param('sourceName') sourceName: string, @Query('limit') limit: number = 20) {
+  async getPopularUrls(
+    @Param('sourceName') sourceName: string,
+    @Query('limit') limit: number = 20,
+  ) {
     try {
       const urls = await this.dataCollectionService.getPopularUrls(sourceName, limit);
       return {

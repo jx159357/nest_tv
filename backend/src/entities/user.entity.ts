@@ -6,7 +6,16 @@
  * @LastEditors: jxwd
  * @LastEditTime: 2025-08-28 17:40:09
  */
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToMany, JoinTable } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+  ManyToMany,
+  JoinTable,
+} from 'typeorm';
 import { WatchHistory } from './watch-history.entity';
 import { MediaResource } from './media-resource.entity';
 import { PlaySource } from './play-source.entity';
@@ -72,7 +81,7 @@ export class User {
   @ManyToMany(() => PlaySource, playSource => playSource.configuredBy)
   @JoinTable()
   configuredPlaySources: PlaySource[];
-  
+
   // 关联推荐记录（一对多）
   @OneToMany(() => Recommendation, recommendation => recommendation.user)
   recommendations: Recommendation[];

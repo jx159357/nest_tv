@@ -18,12 +18,12 @@ export class PlaySourceService {
    */
   async create(createPlaySourceDto: CreatePlaySourceDto): Promise<PlaySource> {
     const playSource = this.playSourceRepository.create(createPlaySourceDto);
-    
+
     // 简化处理：直接设置为活跃状态
     playSource.status = PlaySourceStatus.ACTIVE;
-    
+
     const result = await this.playSourceRepository.save(playSource);
-    
+
     return result;
   }
 
@@ -38,27 +38,28 @@ export class PlaySourceService {
     totalPages: number;
   }> {
     const { page = 1, pageSize = 10, mediaResourceId, type, status } = queryDto;
-    
-    const queryBuilder = this.playSourceRepository.createQueryBuilder('playSource')
+
+    const queryBuilder = this.playSourceRepository
+      .createQueryBuilder('playSource')
       .leftJoinAndSelect('playSource.mediaResource', 'mediaResource')
       .leftJoinAndSelect('mediaResource.poster', 'poster');
-    
+
     // 筛选条件
     if (mediaResourceId) {
       queryBuilder.andWhere('playSource.mediaResourceId = :mediaResourceId', { mediaResourceId });
     }
-    
+
     if (type) {
       queryBuilder.andWhere('playSource.type = :type', { type });
     }
-    
+
     if (status) {
       queryBuilder.andWhere('playSource.status = :status', { status });
     }
-    
+
     // 获取总数
     const total = await queryBuilder.getCount();
-    
+
     // 分页查询
     const skip = (page - 1) * pageSize;
     const data = await queryBuilder
@@ -67,9 +68,9 @@ export class PlaySourceService {
       .skip(skip)
       .take(pageSize)
       .getMany();
-    
+
     const totalPages = Math.ceil(total / pageSize);
-    
+
     return {
       data,
       total,
@@ -87,11 +88,11 @@ export class PlaySourceService {
       where: { id },
       relations: ['mediaResource'],
     });
-    
+
     if (!playSource) {
       throw new NotFoundException(`播放源ID ${id} 不存在`);
     }
-    
+
     return playSource;
   }
 
@@ -100,9 +101,9 @@ export class PlaySourceService {
    */
   async update(id: number, updatePlaySourceDto: UpdatePlaySourceDto): Promise<PlaySource> {
     const playSource = await this.findById(id);
-    
+
     Object.assign(playSource, updatePlaySourceDto);
-    
+
     return this.playSourceRepository.save(playSource);
   }
 
@@ -111,7 +112,7 @@ export class PlaySourceService {
    */
   async remove(id: number): Promise<void> {
     const playSource = await this.findById(id);
-    
+
     await this.playSourceRepository.remove(playSource);
   }
 
@@ -123,10 +124,10 @@ export class PlaySourceService {
     message?: string;
   }> {
     const playSource = await this.findById(id);
-    
+
     // 简化验证逻辑
     const isValid = playSource.status === PlaySourceStatus.ACTIVE;
-    
+
     return {
       isValid,
       message: isValid ? '播放源有效' : '播放源不可用',
@@ -146,7 +147,7 @@ export class PlaySourceService {
         priority: 'ASC',
       },
     });
-    
+
     return playSource || null;
   }
 

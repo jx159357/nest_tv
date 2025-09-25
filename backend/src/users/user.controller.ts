@@ -10,12 +10,7 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { AuthService } from '../auth/auth.service';
 import { RegisterUserDto } from './dtos/register-user.dto';
@@ -53,9 +48,7 @@ export class UserController {
     description: '用户数据验证失败',
   })
   @UsePipes(new ValidationPipe({ transform: true }))
-  async register(
-    @Body() registerUserDto: RegisterUserDto,
-  ): Promise<UserResponseDto> {
+  async register(@Body() registerUserDto: RegisterUserDto): Promise<UserResponseDto> {
     return this.userService.register(registerUserDto);
   }
 
@@ -99,7 +92,7 @@ export class UserController {
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  getProfile(@Request() req) {
+  getProfile(@Request() req: any) {
     return req.user;
   }
 }

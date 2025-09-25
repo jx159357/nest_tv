@@ -15,7 +15,6 @@ import { CrawlerService } from './crawler.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CrawlRequestDto, BatchCrawlRequestDto, CrawlAndSaveDto } from './dtos/crawl-request.dto';
 
-
 export interface CrawlerStatsResponse {
   totalCrawled: number;
   successCount: number;
@@ -75,10 +74,7 @@ export class CrawlerController {
   @Post('batch-crawl')
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ValidationPipe({ transform: true }))
-  async batchCrawl(
-    @Request() req,
-    @Body() batchCrawlRequest: BatchCrawlRequestDto,
-  ) {
+  async batchCrawl(@Request() req, @Body() batchCrawlRequest: BatchCrawlRequestDto) {
     const results = await this.crawlerService.batchCrawl(
       batchCrawlRequest.targetName,
       batchCrawlRequest.urls,
@@ -124,10 +120,7 @@ export class CrawlerController {
   @Post('crawl-and-save')
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ValidationPipe({ transform: true }))
-  async crawlAndSave(
-    @Request() req,
-    @Body() body: CrawlAndSaveDto,
-  ) {
+  async crawlAndSave(@Request() req, @Body() body: CrawlAndSaveDto) {
     const targetName = body.targetName || '电影天堂'; // 默认目标
     const result = await this.crawlerService.crawlWebsite(targetName, body.url);
 
@@ -171,9 +164,7 @@ export class CrawlerController {
    */
   @Get('test-connection')
   async testConnection(@Query('targetName') targetName: string) {
-    const target = this.crawlerService
-      .getAvailableTargets()
-      .find(t => t.name === targetName);
+    const target = this.crawlerService.getAvailableTargets().find(t => t.name === targetName);
 
     if (!target) {
       return {
@@ -185,12 +176,12 @@ export class CrawlerController {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
+
       const response = await fetch(target.baseUrl, {
         method: 'HEAD',
         signal: controller.signal,
       });
-      
+
       clearTimeout(timeoutId);
 
       return {

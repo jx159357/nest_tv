@@ -40,7 +40,7 @@ import { AppService } from './app.service';
       isGlobal: true, // 全局可用
       envFilePath: '.env', // 环境变量文件路径
     }),
-    
+
     // TypeORM模块 - 用于数据库连接
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -51,58 +51,70 @@ import { AppService } from './app.service';
         username: configService.get<string>('DB_USERNAME'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_DATABASE'),
-        entities: [User, MediaResource, PlaySource, WatchHistory, Recommendation, SearchHistory, AdminRole, AdminPermission, AdminLog, IPTVChannel, ParseProvider], // 所有实体类
+        entities: [
+          User,
+          MediaResource,
+          PlaySource,
+          WatchHistory,
+          Recommendation,
+          SearchHistory,
+          AdminRole,
+          AdminPermission,
+          AdminLog,
+          IPTVChannel,
+          ParseProvider,
+        ], // 所有实体类
         synchronize: true, // 开发环境下同步数据库结构
         logging: true, // 开启SQL日志
       }),
       inject: [ConfigService],
     }),
-    
+
     // Redis模块 - 用于缓存和会话管理
     RedisModule,
-    
+
     // 缓存模块 - 用于性能优化
     CacheModule,
-    
+
     // 限流模块 - 用于API访问频率控制
     RateLimitModule,
-    
+
     // 用户模块 - 用户注册、登录等功能
     UserModule,
-    
+
     // 认证模块 - JWT令牌认证
     forwardRef(() => AuthModule),
-    
+
     // 影视资源模块 - 影视资源管理
     MediaResourceModule,
-    
+
     // 播放源模块 - 播放源管理
     PlaySourceModule,
-    
+
     // 观看历史模块 - 观看历史管理
     WatchHistoryModule,
-    
+
     // 爬虫模块 - 资源爬取功能
     CrawlerModule,
-    
+
     // 推荐模块 - 个性化推荐功能
     RecommendationModule,
-    
+
     // 后台管理模块 - 系统管理功能
     AdminModule,
-    
+
     // IPTV模块 - 直播频道管理
     IPTVModule,
-    
+
     // 解析提供商模块 - 解析站资源管理
     ParseProvidersModule,
-    
+
     // 磁力链接模块 - 磁力链接播放功能
     TorrentModule,
-    
+
     // 数据采集模块 - 扩展数据采集功能
     DataCollectionModule,
-    
+
     // 通用模块 - 企业级服务和组件
     CommonModule,
   ],

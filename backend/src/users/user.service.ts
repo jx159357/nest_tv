@@ -1,4 +1,10 @@
-import { Injectable, HttpException, HttpStatus, ConflictException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  HttpException,
+  HttpStatus,
+  ConflictException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
@@ -65,10 +71,7 @@ export class UserService {
   async login(loginUserDto: LoginUserDto): Promise<any> {
     // 根据用户名或邮箱查找用户，并显式选择password字段
     const user = await this.userRepository.findOne({
-      where: [
-        { username: loginUserDto.identifier },
-        { email: loginUserDto.identifier },
-      ],
+      where: [{ username: loginUserDto.identifier }, { email: loginUserDto.identifier }],
       select: [
         'id',
         'username',
@@ -81,8 +84,8 @@ export class UserService {
         'lastLoginAt',
         'createdAt',
         'updatedAt',
-        'password'
-      ]
+        'password',
+      ],
     });
 
     // 如果用户不存在或密码错误，抛出异常
@@ -159,7 +162,7 @@ export class UserService {
    * @returns UserResponseDto对象
    */
   private toUserResponseDto(user: User): UserResponseDto {
-    const { password, ...userWithoutPassword } = user;
+    const { password: _, ...userWithoutPassword } = user;
     return userWithoutPassword as UserResponseDto;
   }
 }

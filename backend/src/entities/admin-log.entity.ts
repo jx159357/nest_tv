@@ -1,4 +1,11 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { AdminRole } from './admin-role.entity';
 import { User } from './user.entity';
 
@@ -18,7 +25,8 @@ export class AdminLog {
   resource: string; // 操作资源（user, media, play-source, role等）
 
   @Column({ type: 'json', nullable: true })
-  metadata?: { // 操作元数据
+  metadata?: {
+    // 操作元数据
     targetId?: number; // 目标ID
     changes?: any; // 变更内容
     request?: any; // 请求信息
@@ -35,7 +43,8 @@ export class AdminLog {
   errorMessage?: string; // 错误信息（如果有）
 
   @Column({ type: 'json', nullable: true })
-  requestInfo?: { // 请求信息
+  requestInfo?: {
+    // 请求信息
     ip: string;
     userAgent: string;
     method: string;

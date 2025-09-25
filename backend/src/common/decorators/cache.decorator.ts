@@ -10,10 +10,10 @@ export const Cacheable = (options: CacheableOptions = {}) => {
 
     descriptor.value = async function (...args: any[]) {
       const cacheService: CacheService = this.cacheService;
-      
+
       // 简化的缓存键生成
       const cacheKey = options.key || `${target.constructor.name}.${propertyKey}`;
-      
+
       // 尝试从缓存获取
       const cached = await cacheService.get(cacheKey, options);
       if (cached !== null) {
@@ -40,7 +40,7 @@ export const CacheEvict = (options: CacheEvictOptions = {}) => {
 
     descriptor.value = async function (...args: any[]) {
       const cacheService: CacheService = this.cacheService;
-      
+
       // 执行原方法
       const result = await originalMethod.apply(this, args);
 
@@ -69,7 +69,7 @@ export const CacheRefresh = (options: CacheableOptions = {}) => {
 
     descriptor.value = async function (...args: any[]) {
       const cacheService: CacheService = this.cacheService;
-      
+
       // 简化的缓存键生成
       const cacheKey = options.key || `${target.constructor.name}.${propertyKey}`;
 
@@ -77,11 +77,14 @@ export const CacheRefresh = (options: CacheableOptions = {}) => {
       const cached = await cacheService.get(cacheKey, options);
       if (cached !== null) {
         // 异步刷新缓存（不阻塞请求）
-        originalMethod.apply(this, args).then(async (newResult) => {
-          await cacheService.set(cacheKey, newResult, options);
-        }).catch(error => {
-          console.error(`缓存刷新失败: ${cacheKey}`, error);
-        });
+        originalMethod
+          .apply(this, args)
+          .then(async newResult => {
+            await cacheService.set(cacheKey, newResult, options);
+          })
+          .catch(error => {
+            console.error(`缓存刷新失败: ${cacheKey}`, error);
+          });
         return cached;
       }
 

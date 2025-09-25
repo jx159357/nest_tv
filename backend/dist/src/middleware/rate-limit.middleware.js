@@ -29,7 +29,7 @@ let RateLimitMiddleware = class RateLimitMiddleware {
         if (!userRequests || now > userRequests.resetTime) {
             this.requestCounts.set(clientId, {
                 count: 1,
-                resetTime: now + windowMs
+                resetTime: now + windowMs,
             });
         }
         else {
@@ -43,7 +43,7 @@ let RateLimitMiddleware = class RateLimitMiddleware {
                     statusCode: common_1.HttpStatus.TOO_MANY_REQUESTS,
                     message: 'Too many requests, please try again later',
                     error: 'RATE_LIMIT_EXCEEDED',
-                    retryAfter: Math.ceil((userRequests.resetTime - now) / 1000)
+                    retryAfter: Math.ceil((userRequests.resetTime - now) / 1000),
                 });
                 return;
             }
@@ -65,7 +65,9 @@ let RateLimitMiddleware = class RateLimitMiddleware {
             request.headers['x-real-ip'] ||
             request.connection.remoteAddress ||
             request.socket.remoteAddress;
-        const clientIp = ip ? (Array.isArray(ip) ? ip[0] : ip.toString()).split(',')[0].trim() : 'unknown';
+        const clientIp = ip
+            ? (Array.isArray(ip) ? ip[0] : ip.toString()).split(',')[0].trim()
+            : 'unknown';
         return `ip_${clientIp}`;
     }
     cleanupExpiredCounters() {

@@ -74,9 +74,9 @@ describe('AuthService', () => {
         username: 'testuser',
         password: 'hashedpassword',
       };
-      
+
       mockUserService.validateUser.mockResolvedValue(user);
-      
+
       const result = await service.validateUser('testuser', 'password');
       expect(result).toEqual(user);
       expect(mockUserService.validateUser).toHaveBeenCalledWith('testuser', 'password');
@@ -84,7 +84,7 @@ describe('AuthService', () => {
 
     it('should return null when credentials are invalid', async () => {
       mockUserService.validateUser.mockResolvedValue(null);
-      
+
       const result = await service.validateUser('testuser', 'wrongpassword');
       expect(result).toBeNull();
     });
@@ -97,13 +97,13 @@ describe('AuthService', () => {
         username: 'testuser',
         email: 'test@example.com',
       };
-      
+
       const token = 'jwt-token';
-      
+
       mockJwtService.sign.mockReturnValue(token);
-      
+
       const result = await service.login(user);
-      
+
       expect(result).toEqual({
         accessToken: token,
         user,

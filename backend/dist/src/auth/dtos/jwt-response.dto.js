@@ -21,21 +21,21 @@ exports.JwtResponseDto = JwtResponseDto;
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '访问令牌',
-        example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+        example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
     }),
     __metadata("design:type", String)
 ], JwtResponseDto.prototype, "accessToken", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '刷新令牌',
-        example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+        example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
     }),
     __metadata("design:type", String)
 ], JwtResponseDto.prototype, "refreshToken", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '访问令牌过期时间（秒）',
-        example: 3600
+        example: 3600,
     }),
     __metadata("design:type", Number)
 ], JwtResponseDto.prototype, "expiresIn", void 0);
@@ -47,24 +47,24 @@ __decorate([
             id: {
                 type: 'number',
                 example: 1,
-                description: '用户ID'
+                description: '用户ID',
             },
             username: {
                 type: 'string',
                 example: 'testuser',
-                description: '用户名'
+                description: '用户名',
             },
             email: {
                 type: 'string',
                 example: 'user@example.com',
-                description: '邮箱'
+                description: '邮箱',
             },
             role: {
                 type: 'string',
                 example: 'user',
-                description: '用户角色'
-            }
-        }
+                description: '用户角色',
+            },
+        },
     }),
     __metadata("design:type", Object)
 ], JwtResponseDto.prototype, "user", void 0);

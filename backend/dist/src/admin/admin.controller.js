@@ -43,19 +43,19 @@ let AdminController = class AdminController {
         const filters = { action, resource, status, roleId };
         return await this.adminService.getAdminLogs(page, limit, filters);
     }
-    async getUsers(page = 1, limit = 20, search) {
+    getUsers(page = 1, limit = 20, search) {
         return { message: '用户管理功能待实现', page, limit, search };
     }
-    async getMedia(page = 1, limit = 20, type) {
+    getMedia(page = 1, limit = 20, type) {
         return { message: '媒体资源管理功能待实现', page, limit, type };
     }
-    async getPlaySources(page = 1, limit = 20, type) {
+    getPlaySources(page = 1, limit = 20, type) {
         return { message: '播放源管理功能待实现', page, limit, type };
     }
-    async getWatchHistory(page = 1, limit = 20, userId) {
+    getWatchHistory(page = 1, limit = 20, userId) {
         return { message: '观看历史管理功能待实现', page, limit, userId };
     }
-    async healthCheck() {
+    healthCheck() {
         return {
             status: 'ok',
             timestamp: new Date().toISOString(),
@@ -85,7 +85,7 @@ __decorate([
                 permissions: {
                     type: 'array',
                     items: { type: 'string' },
-                    example: ['user_read', 'media_create', 'media_update']
+                    example: ['user_read', 'media_create', 'media_update'],
                 },
             },
         },
@@ -165,7 +165,7 @@ __decorate([
     __param(2, (0, common_1.Query)('search')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, Number, String]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], AdminController.prototype, "getUsers", null);
 __decorate([
     (0, common_1.Get)('media'),
@@ -179,7 +179,7 @@ __decorate([
     __param(2, (0, common_1.Query)('type')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, Number, String]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], AdminController.prototype, "getMedia", null);
 __decorate([
     (0, common_1.Get)('play-sources'),
@@ -193,7 +193,7 @@ __decorate([
     __param(2, (0, common_1.Query)('type')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, Number, String]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], AdminController.prototype, "getPlaySources", null);
 __decorate([
     (0, common_1.Get)('watch-history'),
@@ -207,7 +207,7 @@ __decorate([
     __param(2, (0, common_1.Query)('userId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, Number, Number]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], AdminController.prototype, "getWatchHistory", null);
 __decorate([
     (0, common_1.Get)('health'),
@@ -215,7 +215,7 @@ __decorate([
     (0, swagger_1.ApiResponse)({ status: 200, description: '系统状态正常' }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], AdminController.prototype, "healthCheck", null);
 exports.AdminController = AdminController = __decorate([
     (0, swagger_1.ApiTags)('后台管理'),

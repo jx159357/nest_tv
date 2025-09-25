@@ -1,4 +1,10 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 /**
  * 解析提供商实体类
@@ -122,14 +128,14 @@ export class ParseProvider {
     if (this.dailyRequestLimit > 0) {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      
+
       // 如果是新的日期，重置计数器
       if (!this.dailyResetDate || this.dailyResetDate < today) {
         this.dailyRequestCount = 0;
         this.dailyResetDate = today;
         return true;
       }
-      
+
       return this.dailyRequestCount < this.dailyRequestLimit;
     }
 
@@ -144,14 +150,14 @@ export class ParseProvider {
     if (success) {
       this.successCount++;
     }
-    
+
     // 重新计算成功率
     if (this.requestCount > 0) {
       this.successRate = Math.round((this.successCount / this.requestCount) * 100);
     }
-    
+
     this.lastUsedAt = new Date();
-    
+
     // 增加今日请求计数
     if (this.dailyRequestLimit > 0) {
       this.dailyRequestCount++;

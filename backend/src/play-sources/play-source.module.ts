@@ -7,10 +7,7 @@ import { MediaResource } from '../entities/media-resource.entity';
 import { CommonModule } from '../common/common.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([PlaySource, MediaResource]),
-    CommonModule,
-  ],
+  imports: [TypeOrmModule.forFeature([PlaySource, MediaResource]), CommonModule],
   controllers: [PlaySourceController],
   providers: [PlaySourceService],
   exports: [PlaySourceService],

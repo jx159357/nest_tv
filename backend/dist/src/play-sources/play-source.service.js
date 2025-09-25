@@ -30,7 +30,8 @@ let PlaySourceService = class PlaySourceService {
     }
     async findAll(queryDto) {
         const { page = 1, pageSize = 10, mediaResourceId, type, status } = queryDto;
-        const queryBuilder = this.playSourceRepository.createQueryBuilder('playSource')
+        const queryBuilder = this.playSourceRepository
+            .createQueryBuilder('playSource')
             .leftJoinAndSelect('playSource.mediaResource', 'mediaResource')
             .leftJoinAndSelect('mediaResource.poster', 'poster');
         if (mediaResourceId) {

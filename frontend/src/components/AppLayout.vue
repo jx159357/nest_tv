@@ -67,6 +67,9 @@
           </button>
         </div>
         
+        <!-- 主题切换按钮 -->
+        <ThemeToggle />
+        
         <div v-if="!authStore.isAuthenticated" class="app-layout__auth">
           <RouterLink to="/login" class="app-layout__login-btn">
             {{ t('common.login') }}
@@ -158,7 +161,8 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useI18n } from 'vue-i18n'
 import { availableLocales, setLocale, getCurrentLocale } from '@/i18n'
-import type { SearchSuggestion, User } from '@/types'
+import type { SearchSuggestion } from '@/types'
+import ThemeToggle from '@/components/ui/ThemeToggle.vue'
 
 // 国际化
 const { t } = useI18n()

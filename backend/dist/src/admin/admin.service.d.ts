@@ -10,7 +10,7 @@ export declare class AdminService {
     private userRepository;
     private readonly logger;
     constructor(adminRoleRepository: Repository<AdminRole>, adminPermissionRepository: Repository<AdminPermission>, adminLogRepository: Repository<AdminLog>, userRepository: Repository<User>);
-    logAction(action: string, resource: string, metadata: any | undefined, roleId: number, userId?: number, status?: 'success' | 'error' | 'warning', description?: string, errorMessage?: string, requestInfo?: any): Promise<AdminLog>;
+    logAction(action: string, resource: string, metadata: Record<string, unknown> | undefined, roleId: number, userId?: number, status?: 'success' | 'error' | 'warning', description?: string, errorMessage?: string, requestInfo?: Record<string, unknown>): Promise<AdminLog>;
     createRole(createRoleDto: {
         name: string;
         description?: string;

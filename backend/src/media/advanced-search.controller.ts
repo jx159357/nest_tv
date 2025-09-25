@@ -1,5 +1,26 @@
-import { Controller, Get, Post, Put, Delete, Param, Query, Body, UseGuards, Request, ParseIntPipe, HttpStatus, HttpException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Query,
+  Body,
+  UseGuards,
+  Request,
+  ParseIntPipe,
+  HttpStatus,
+  HttpException,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdvancedSearchService, SearchResult } from './advanced-search.service';
 import type { AdvancedSearchParams } from './advanced-search.service';
@@ -62,9 +83,7 @@ export class AdvancedSearchController {
   @ApiOperation({ summary: '获取热门搜索关键词' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiQuery({ name: 'limit', description: '返回数量限制，默认20', required: false })
-  async getPopularKeywords(
-    @Query('limit', ParseIntPipe) limit = 20,
-  ): Promise<string[]> {
+  async getPopularKeywords(@Query('limit', ParseIntPipe) limit = 20): Promise<string[]> {
     try {
       return await this.advancedSearchService.getPopularSearchKeywords(limit);
     } catch (error) {
@@ -145,9 +164,7 @@ export class AdvancedSearchController {
   @ApiOperation({ summary: '获取搜索趋势统计' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiQuery({ name: 'days', description: '统计天数，默认7', required: false })
-  async getSearchTrends(
-    @Query('days', ParseIntPipe) days = 7,
-  ): Promise<{
+  async getSearchTrends(@Query('days', ParseIntPipe) days = 7): Promise<{
     totalSearches: number;
     dailyTrends: Array<{
       date: string;
@@ -199,10 +216,10 @@ export class AdvancedSearchController {
   ): Promise<SearchResult> {
     try {
       const userId = body?.userId || req.user?.userId;
-      
+
       // 智能解析搜索查询
       const searchParams = this.parseSmartSearchQuery(query);
-      
+
       return await this.advancedSearchService.advancedSearch(searchParams, userId);
     } catch (error) {
       throw new HttpException(
@@ -218,12 +235,14 @@ export class AdvancedSearchController {
   @Get('filters/presets')
   @ApiOperation({ summary: '获取搜索过滤器预设' })
   @ApiResponse({ status: 200, description: '获取成功' })
-  async getFilterPresets(): Promise<Array<{
-    id: string;
-    name: string;
-    description: string;
-    filters: AdvancedSearchParams;
-  }>> {
+  async getFilterPresets(): Promise<
+    Array<{
+      id: string;
+      name: string;
+      description: string;
+      filters: AdvancedSearchParams;
+    }>
+  > {
     try {
       return [
         {

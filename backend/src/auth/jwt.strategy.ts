@@ -17,7 +17,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_SECRET') || 'default_secret_key_change_in_production',
+      secretOrKey:
+        configService.get<string>('JWT_SECRET') || 'default_secret_key_change_in_production',
     });
   }
 
@@ -29,11 +30,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: any) {
     // 根据用户ID查找用户
     const user = await this.userService.findById(payload.sub);
-    
+
     if (!user) {
       throw new UnauthorizedException('用户不存在');
     }
-    
+
     return user;
   }
 }

@@ -32,7 +32,7 @@ let DanmakuController = class DanmakuController {
             text: dto.text,
             color: dto.color,
             type: dto.type,
-            priority: dto.priority
+            priority: dto.priority,
         }));
         return await this.danmakuService.createBulk(processedDtos, user.id);
     }
@@ -52,21 +52,21 @@ let DanmakuController = class DanmakuController {
         const success = await this.danmakuService.delete(id, user.id);
         return {
             success,
-            message: success ? '弹幕删除成功' : '删除失败或无权限'
+            message: success ? '弹幕删除成功' : '删除失败或无权限',
         };
     }
     async hardDeleteDanmaku(id) {
         const success = await this.danmakuService.hardDelete(id);
         return {
             success,
-            message: success ? '弹幕永久删除成功' : '弹幕不存在'
+            message: success ? '弹幕永久删除成功' : '弹幕不存在',
         };
     }
     async cleanExpiredDanmaku(days = 90) {
         const deletedCount = await this.danmakuService.cleanExpired(days);
         return {
             deletedCount,
-            message: `成功清理 ${deletedCount} 条过期弹幕`
+            message: `成功清理 ${deletedCount} 条过期弹幕`,
         };
     }
     async getPopularDanmaku(limit = 50) {
@@ -88,14 +88,14 @@ let DanmakuController = class DanmakuController {
         const importedCount = await this.danmakuService.importData(data);
         return {
             importedCount,
-            message: `成功导入 ${importedCount} 条弹幕数据`
+            message: `成功导入 ${importedCount} 条弹幕数据`,
         };
     }
     async advancedSearch(searchDto) {
         const { query, filters, pagination } = searchDto;
         const searchFilters = {
             text: query,
-            ...filters
+            ...filters,
         };
         const result = await this.danmakuService.search(searchFilters, pagination || {});
         return {
@@ -103,8 +103,8 @@ let DanmakuController = class DanmakuController {
             queryInfo: {
                 searchQuery: query,
                 appliedFilters: searchFilters,
-                pagination: pagination || {}
-            }
+                pagination: pagination || {},
+            },
         };
     }
     async getDanmakuTrends(query) {
@@ -116,7 +116,7 @@ let DanmakuController = class DanmakuController {
             startDate,
             endDate,
             message: '弹幕趋势分析功能开发中',
-            stats: await this.danmakuService.getDanmakuStats(videoId)
+            stats: await this.danmakuService.getDanmakuStats(videoId),
         };
     }
     async getDanmakuUserLeaderboard(query) {
@@ -127,7 +127,7 @@ let DanmakuController = class DanmakuController {
             limit,
             period,
             message: '弹幕用户排行榜功能开发中',
-            leaderboard: []
+            leaderboard: [],
         };
     }
     async getDanmakuKeywordCloud(query) {
@@ -138,7 +138,7 @@ let DanmakuController = class DanmakuController {
             minFrequency,
             limit,
             message: '弹幕关键词云功能开发中',
-            keywords: []
+            keywords: [],
         };
     }
     async getRealtimeRoomInfo(videoId) {
@@ -148,7 +148,7 @@ let DanmakuController = class DanmakuController {
             messageCount: 0,
             isActive: false,
             lastActivity: null,
-            message: '实时房间信息需要WebSocket网关集成'
+            message: '实时房间信息需要WebSocket网关集成',
         };
     }
     async getDanmakuSuggestions(query) {
@@ -164,13 +164,13 @@ let DanmakuController = class DanmakuController {
                 color: d.color,
                 type: d.type,
                 priority: d.priority,
-                score: 1 - (d.priority / 10)
-            }))
+                score: 1 - d.priority / 10,
+            })),
         };
     }
     async setDanmakuHighlight(id, body, user) {
         const danmaku = await this.danmakuService.update(id, {
-            isHighlighted: body.isHighlighted
+            isHighlighted: body.isHighlighted,
         });
         return danmaku;
     }
@@ -180,13 +180,13 @@ let DanmakuController = class DanmakuController {
             reports: [],
             reportCount: 0,
             status: 'active',
-            message: '弹幕举报系统功能开发中'
+            message: '弹幕举报系统功能开发中',
         };
     }
     async reportDanmaku(id, body, user) {
         return {
             success: true,
-            message: `弹幕 ${id} 举报已提交，感谢您的反馈`
+            message: `弹幕 ${id} 举报已提交，感谢您的反馈`,
         };
     }
     async getFilterRules() {
@@ -198,18 +198,18 @@ let DanmakuController = class DanmakuController {
                 '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}',
                 '【.*?】.*?【.*?】',
                 '关注.*?公众号.*?',
-                '加.*?群.*?'
+                '加.*?群.*?',
             ],
             level: 'medium',
             autoBlock: false,
-            message: '弹幕过滤规则管理功能开发中'
+            message: '弹幕过滤规则管理功能开发中',
         };
     }
     async updateFilterRules(body) {
         return {
             success: true,
             message: '过滤规则已更新',
-            updatedRules: body
+            updatedRules: body,
         };
     }
     async getHealthStatus() {
@@ -220,11 +220,11 @@ let DanmakuController = class DanmakuController {
             performance: {
                 responseTime: 'normal',
                 memoryUsage: 'normal',
-                activeConnections: 0
+                activeConnections: 0,
             },
             lastUpdate: new Date(),
             uptime: process.uptime(),
-            message: '弹幕系统运行正常'
+            message: '弹幕系统运行正常',
         };
     }
 };
@@ -365,7 +365,7 @@ __decorate([
     (0, common_1.Post)('advanced-search'),
     (0, swagger_1.ApiOperation)({
         summary: '高级弹幕搜索',
-        description: '支持全文搜索和多条件组合的高级弹幕搜索'
+        description: '支持全文搜索和多条件组合的高级弹幕搜索',
     }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),

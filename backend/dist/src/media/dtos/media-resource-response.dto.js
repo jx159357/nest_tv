@@ -42,11 +42,19 @@ __decorate([
     __metadata("design:type", String)
 ], MediaResourceDto.prototype, "description", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: '影视类型', example: 'movie', enum: ['movie', 'tv', 'variety', 'documentary'] }),
+    (0, swagger_1.ApiProperty)({
+        description: '影视类型',
+        example: 'movie',
+        enum: ['movie', 'tv', 'variety', 'documentary'],
+    }),
     __metadata("design:type", String)
 ], MediaResourceDto.prototype, "type", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: '视频质量', example: '1080p', enum: ['1080p', '720p', '480p', '360p'] }),
+    (0, swagger_1.ApiProperty)({
+        description: '视频质量',
+        example: '1080p',
+        enum: ['1080p', '720p', '480p', '360p'],
+    }),
     __metadata("design:type", String)
 ], MediaResourceDto.prototype, "quality", void 0);
 __decorate([
@@ -161,7 +169,12 @@ __decorate([
     __metadata("design:type", String)
 ], ErrorResponse.prototype, "message", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: '错误详情', example: ['title is required', 'type must be valid'], isArray: true, required: false }),
+    (0, swagger_1.ApiProperty)({
+        description: '错误详情',
+        example: ['title is required', 'type must be valid'],
+        isArray: true,
+        required: false,
+    }),
     __metadata("design:type", Array)
 ], ErrorResponse.prototype, "errors", void 0);
 __decorate([

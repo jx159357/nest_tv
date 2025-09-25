@@ -1,4 +1,13 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, ManyToMany, JoinTable } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  ManyToMany,
+  JoinTable,
+} from 'typeorm';
 import { User } from './user.entity';
 import { MediaResource } from './media-resource.entity';
 
@@ -6,24 +15,24 @@ import { MediaResource } from './media-resource.entity';
  * 播放源类型枚举
  */
 export enum PlaySourceType {
-  ONLINE = 'online',       // 在线播放
-  DOWNLOAD = 'download',   // 下载链接
-  STREAM = 'stream',       // 流媒体
+  ONLINE = 'online', // 在线播放
+  DOWNLOAD = 'download', // 下载链接
+  STREAM = 'stream', // 流媒体
   THIRD_PARTY = 'third_party', // 第三方播放器
-  MAGNET = 'magnet',       // 磁力链接
-  IPTV = 'iptv',           // IPTV资源
-  WEBDISK = 'webdisk',     // 网盘资源
-  PARSER = 'parser'        // 解析站资源
+  MAGNET = 'magnet', // 磁力链接
+  IPTV = 'iptv', // IPTV资源
+  WEBDISK = 'webdisk', // 网盘资源
+  PARSER = 'parser', // 解析站资源
 }
 
 /**
  * 播放源状态枚举
  */
 export enum PlaySourceStatus {
-  ACTIVE = 'active',       // 可用
-  INACTIVE = 'inactive',   // 不可用
-  ERROR = 'error',         // 错误
-  CHECKING = 'checking'    // 检查中
+  ACTIVE = 'active', // 可用
+  INACTIVE = 'inactive', // 不可用
+  ERROR = 'error', // 错误
+  CHECKING = 'checking', // 检查中
 }
 
 /**

@@ -180,7 +180,6 @@ export class CrawlerService {
 
       this.logger.log(`成功爬取数据: ${crawledData.title}`);
       return crawledData;
-
     } catch (error) {
       this.logger.error(`爬取失败 ${targetName}: ${url}`, error.stack);
       return null;
@@ -195,14 +194,14 @@ export class CrawlerService {
    */
   async batchCrawl(targetName: string, urls: string[]): Promise<CrawledData[]> {
     const results: CrawledData[] = [];
-    
+
     // 并发控制，每次最多同时处理5个
     const batchSize = 5;
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize);
       const promises = batch.map(url => this.crawlWebsite(targetName, url));
       const batchResults = await Promise.allSettled(promises);
-      
+
       batchResults.forEach(result => {
         if (result.status === 'fulfilled' && result.value) {
           results.push(result.value);
@@ -229,7 +228,7 @@ export class CrawlerService {
    */
   private inferMediaType(url: string): 'movie' | 'tv_series' | 'variety' | 'anime' | 'documentary' {
     const lowerUrl = url.toLowerCase();
-    
+
     if (lowerUrl.includes('tv') || lowerUrl.includes('series') || lowerUrl.includes('剧集')) {
       return 'tv_series';
     }
@@ -251,7 +250,7 @@ export class CrawlerService {
   private extractGenres($: cheerio.CheerioAPI, selector: string): string[] {
     const genresText = $(selector).first().text().trim();
     if (!genresText) return [];
-    
+
     return genresText
       .split(/[,，、\s]+/)
       .map(genre => genre.trim())
@@ -302,7 +301,7 @@ export class CrawlerService {
    */
   private extractDownloadUrls($: cheerio.CheerioAPI, selector: string): string[] {
     const urls: string[] = [];
-    
+
     $(selector).each((index, element) => {
       const href = $(element).attr('href');
       if (href) {
@@ -318,19 +317,19 @@ export class CrawlerService {
    */
   private resolveUrl(url: string | undefined, baseUrl: string): string | undefined {
     if (!url) return undefined;
-    
+
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
     }
-    
+
     if (url.startsWith('//')) {
       return `https:${url}`;
     }
-    
+
     if (url.startsWith('/')) {
       return `${baseUrl}${url}`;
     }
-    
+
     return `${baseUrl}/${url}`;
   }
 

@@ -1,4 +1,14 @@
-import { IsString, IsNotEmpty, IsEnum, IsOptional, IsArray, IsNumber, IsDate, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsEnum,
+  IsOptional,
+  IsArray,
+  IsNumber,
+  IsDate,
+  Min,
+  Max,
+} from 'class-validator';
 import { MediaType, MediaQuality } from '../../entities/media-resource.entity';
 import { ApiProperty } from '@nestjs/swagger';
 

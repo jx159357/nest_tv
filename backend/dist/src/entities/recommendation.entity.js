@@ -34,7 +34,11 @@ __decorate([
     __metadata("design:type", Number)
 ], Recommendation.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'enum', enum: ['collaborative', 'content', 'trending', 'editorial', 'personalized'], default: 'personalized' }),
+    (0, typeorm_1.Column)({
+        type: 'enum',
+        enum: ['collaborative', 'content', 'trending', 'editorial', 'personalized'],
+        default: 'personalized',
+    }),
     (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], Recommendation.prototype, "type", void 0);

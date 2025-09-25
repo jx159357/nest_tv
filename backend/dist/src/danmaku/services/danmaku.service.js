@@ -38,7 +38,7 @@ let DanmakuService = DanmakuService_1 = class DanmakuService {
             filters: this.analyzeContent(createDto.text),
             metadata: {
                 timestamp: Date.now(),
-                userAgent: 'server-generated'
+                userAgent: 'server-generated',
             },
             userId,
             mediaResourceId,
@@ -58,7 +58,7 @@ let DanmakuService = DanmakuService_1 = class DanmakuService {
             filters: this.analyzeContent(dto.text),
             metadata: {
                 timestamp: Date.now(),
-                userAgent: 'bulk-import'
+                userAgent: 'bulk-import',
             },
             userId,
             mediaResourceId: 0,
@@ -67,8 +67,9 @@ let DanmakuService = DanmakuService_1 = class DanmakuService {
         return await this.danmakuRepository.save(danmakuEntities);
     }
     async findAll(queryDto = {}) {
-        const { videoId, mediaResourceId, userId, limit = 50, offset = 0, startDate, endDate, isActive = true, sort = 'DESC', sortBy = 'createdAt' } = queryDto;
-        const queryBuilder = this.danmakuRepository.createQueryBuilder('danmaku')
+        const { videoId, mediaResourceId, userId, limit = 50, offset = 0, startDate, endDate, isActive = true, sort = 'DESC', sortBy = 'createdAt', } = queryDto;
+        const queryBuilder = this.danmakuRepository
+            .createQueryBuilder('danmaku')
             .leftJoinAndSelect('danmaku.user', 'user')
             .leftJoinAndSelect('danmaku.mediaResource', 'mediaResource');
         if (videoId) {
@@ -86,7 +87,7 @@ let DanmakuService = DanmakuService_1 = class DanmakuService {
         if (startDate && endDate) {
             queryBuilder.andWhere('danmaku.createdAt BETWEEN :startDate AND :endDate', {
                 startDate,
-                endDate
+                endDate,
             });
         }
         else if (startDate) {
@@ -95,15 +96,13 @@ let DanmakuService = DanmakuService_1 = class DanmakuService {
         else if (endDate) {
             queryBuilder.andWhere('danmaku.createdAt <= :endDate', { endDate });
         }
-        queryBuilder
-            .orderBy(`danmaku.${sortBy}`, sort)
-            .skip(offset)
-            .take(limit);
+        queryBuilder.orderBy(`danmaku.${sortBy}`, sort).skip(offset).take(limit);
         const [data, total] = await queryBuilder.getManyAndCount();
         return { data, total };
     }
     async search(filters, queryDto = {}) {
-        const queryBuilder = this.danmakuRepository.createQueryBuilder('danmaku')
+        const queryBuilder = this.danmakuRepository
+            .createQueryBuilder('danmaku')
             .leftJoinAndSelect('danmaku.user', 'user')
             .leftJoinAndSelect('danmaku.mediaResource', 'mediaResource');
         this.applyFilters(queryBuilder, filters);
@@ -114,7 +113,7 @@ let DanmakuService = DanmakuService_1 = class DanmakuService {
     async findById(id) {
         return await this.danmakuRepository.findOne({
             where: { id },
-            relations: ['user', 'mediaResource']
+            relations: ['user', 'mediaResource'],
         });
     }
     async update(id, updateDto) {
@@ -163,32 +162,32 @@ let DanmakuService = DanmakuService_1 = class DanmakuService {
         return await this.danmakuRepository.find({
             where: { isActive: true },
             order: {
-                createdAt: 'DESC'
+                createdAt: 'DESC',
             },
             take: limit,
-            relations: ['user', 'mediaResource']
+            relations: ['user', 'mediaResource'],
         });
     }
     async getUserDanmaku(userId, limit = 50, offset = 0) {
         return await this.danmakuRepository.find({
             where: { userId, isActive: true },
             order: {
-                createdAt: 'DESC'
+                createdAt: 'DESC',
             },
             skip: offset,
             take: limit,
-            relations: ['mediaResource']
+            relations: ['mediaResource'],
         });
     }
     async getMediaDanmaku(mediaResourceId, limit = 100, offset = 0) {
         return await this.danmakuRepository.find({
             where: { mediaResourceId, isActive: true },
             order: {
-                createdAt: 'ASC'
+                createdAt: 'ASC',
             },
             skip: offset,
             take: limit,
-            relations: ['user']
+            relations: ['user'],
         });
     }
     async getDanmakuStats(videoId) {
@@ -201,7 +200,7 @@ let DanmakuService = DanmakuService_1 = class DanmakuService {
             'COUNT(CASE WHEN type = :top THEN 1 END) as topDanmaku',
             'COUNT(CASE WHEN type = :bottom THEN 1 END) as bottomDanmaku',
             'COUNT(CASE WHEN isHighlighted = true THEN 1 END) as highlightedDanmaku',
-            'COUNT(CASE WHEN isHighlighted = false THEN 1 END) as normalDanmaku'
+            'COUNT(CASE WHEN isHighlighted = false THEN 1 END) as normalDanmaku',
         ])
             .where('isActive = true', { isActive: true });
         if (videoId) {
@@ -218,7 +217,7 @@ let DanmakuService = DanmakuService_1 = class DanmakuService {
         }
         if (filters.mediaResourceId) {
             queryBuilder.andWhere('danmaku.mediaResourceId = :mediaResourceId', {
-                mediaResourceId: filters.mediaResourceId
+                mediaResourceId: filters.mediaResourceId,
             });
         }
         if (filters.userId) {
@@ -235,7 +234,7 @@ let DanmakuService = DanmakuService_1 = class DanmakuService {
         }
         if (filters.isHighlighted !== undefined) {
             queryBuilder.andWhere('danmaku.isHighlighted = :isHighlighted', {
-                isHighlighted: filters.isHighlighted
+                isHighlighted: filters.isHighlighted,
             });
         }
         if (filters.isActive !== undefined) {
@@ -244,41 +243,38 @@ let DanmakuService = DanmakuService_1 = class DanmakuService {
         if (filters.dateRange?.start && filters.dateRange?.end) {
             queryBuilder.andWhere('danmaku.createdAt BETWEEN :start AND :end', {
                 start: filters.dateRange.start,
-                end: filters.dateRange.end
+                end: filters.dateRange.end,
             });
         }
         else if (filters.dateRange?.start) {
             queryBuilder.andWhere('danmaku.createdAt >= :start', {
-                start: filters.dateRange.start
+                start: filters.dateRange.start,
             });
         }
         else if (filters.dateRange?.end) {
             queryBuilder.andWhere('danmaku.createdAt <= :end', {
-                end: filters.dateRange.end
+                end: filters.dateRange.end,
             });
         }
         if (filters.customFilters?.containsSensitive) {
             queryBuilder.andWhere('danmaku.filters.containsSensitive = :containsSensitive', {
-                containsSensitive: true
+                containsSensitive: true,
             });
         }
         if (filters.customFilters?.containsSpam) {
             queryBuilder.andWhere('danmaku.filters.containsSpam = :containsSpam', {
-                containsSpam: true
+                containsSpam: true,
             });
         }
         if (filters.customFilters?.containsEmojis) {
             queryBuilder.andWhere('danmaku.filters.containsEmojis = :containsEmojis', {
-                containsEmojis: true
+                containsEmojis: true,
             });
         }
     }
     applyQueryParams(queryBuilder, queryDto) {
         const { limit = 50, offset = 0, sort = 'DESC', sortBy = 'createdAt' } = queryDto;
-        queryBuilder
-            .orderBy(`danmaku.${sortBy}`, sort)
-            .skip(offset)
-            .take(limit);
+        queryBuilder.orderBy(`danmaku.${sortBy}`, sort).skip(offset).take(limit);
     }
     filterText(text) {
         let filtered = text.trim();
@@ -294,7 +290,7 @@ let DanmakuService = DanmakuService_1 = class DanmakuService {
             containsSensitive: false,
             containsSpam: false,
             containsEmojis: false,
-            keywords: []
+            keywords: [],
         };
         const sensitiveWords = ['傻逼', '草泥马', '妈的', '操你', '傻叉'];
         filters.containsSensitive = sensitiveWords.some(word => text.toLowerCase().includes(word.toLowerCase()));
@@ -304,7 +300,7 @@ let DanmakuService = DanmakuService_1 = class DanmakuService {
             /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}/gi,
             /【.*?】.*?【.*?】/g,
             /关注.*?公众号.*?/gi,
-            /加.*?群.*?/gi
+            /加.*?群.*?/gi,
         ];
         filters.containsSpam = spamPatterns.some(pattern => pattern.test(text));
         const emojiRegex = /[\p{Emoji_Presentation}\p{Emoji}\u200D\uFE0F]|[\p{Emoji}\uFE0F\u200D\uFE0F]/gu;
@@ -329,7 +325,7 @@ let DanmakuService = DanmakuService_1 = class DanmakuService {
                 filters: this.analyzeContent(item.text || ''),
                 metadata: {
                     timestamp: item.timestamp || Date.now(),
-                    userAgent: item.userAgent || 'imported'
+                    userAgent: item.userAgent || 'imported',
                 },
                 userId: item.userId || 1,
                 mediaResourceId: item.mediaResourceId || 0,

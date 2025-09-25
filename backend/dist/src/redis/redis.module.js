@@ -18,7 +18,7 @@ exports.RedisClientProvider = {
             url: `redis://${configService.get('REDIS_HOST')}:${configService.get('REDIS_PORT')}`,
             password: configService.get('REDIS_PASSWORD') || undefined,
         });
-        client.on('error', (err) => {
+        client.on('error', err => {
             console.error('Redis客户端错误:', err);
         });
         await client.connect();

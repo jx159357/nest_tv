@@ -84,9 +84,7 @@ let CrawlerController = class CrawlerController {
         };
     }
     async testConnection(targetName) {
-        const target = this.crawlerService
-            .getAvailableTargets()
-            .find(t => t.name === targetName);
+        const target = this.crawlerService.getAvailableTargets().find(t => t.name === targetName);
         if (!target) {
             return {
                 success: false,

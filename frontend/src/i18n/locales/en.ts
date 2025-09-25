@@ -762,38 +762,11 @@ export const en = {
     recommendations: 'Recommendation Management',
     crawler: 'Crawler Management',
     system: 'System Management',
-    logs: 'Log Management',
     roles: 'Role Management',
     permissions: 'Permission Management',
     settings: 'System Settings',
     statistics: 'Statistics',
     monitoring: 'System Monitoring',
-    
-    // User management
-    users: {
-      title: 'User Management',
-      addUser: 'Add User',
-      editUser: 'Edit User',
-      deleteUser: 'Delete User',
-      searchUser: 'Search User',
-      filterByRole: 'Filter by Role',
-      filterByStatus: 'Filter by Status',
-      sortBy: 'Sort By',
-      totalUsers: 'Total Users',
-      activeUsers: 'Active Users',
-      newUsers: 'New Users',
-      onlineUsers: 'Online Users',
-      userDetails: 'User Details',
-      userStats: 'User Statistics',
-      userActivity: 'User Activity',
-      loginHistory: 'Login History',
-      banUser: 'Ban User',
-      unbanUser: 'Unban User',
-      resetPassword: 'Reset Password',
-      sendNotification: 'Send Notification',
-      exportUsers: 'Export Users',
-      importUsers: 'Import Users'
-    },
     
     // System statistics
     statistics: {

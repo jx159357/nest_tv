@@ -22,14 +22,8 @@ exports.RateLimitModule = RateLimitModule = __decorate([
             config_1.ConfigModule,
             redis_module_1.RedisModule,
         ],
-        providers: [
-            rate_limit_service_1.RateLimitService,
-            rate_limit_guard_1.RateLimitGuard,
-        ],
-        exports: [
-            rate_limit_service_1.RateLimitService,
-            rate_limit_guard_1.RateLimitGuard,
-        ],
+        providers: [rate_limit_service_1.RateLimitService, rate_limit_guard_1.RateLimitGuard],
+        exports: [rate_limit_service_1.RateLimitService, rate_limit_guard_1.RateLimitGuard],
     })
 ], RateLimitModule);
 //# sourceMappingURL=rate-limit.module.js.map
