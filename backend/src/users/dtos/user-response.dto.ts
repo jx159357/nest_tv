@@ -69,4 +69,10 @@ export class UserResponseDto {
     required: false,
   })
   lastLoginAt?: Date;
+
+  @ApiProperty({
+    description: '用户状态',
+    example: true,
+  })
+  isActive: boolean;
 }

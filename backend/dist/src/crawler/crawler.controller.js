@@ -14,13 +14,19 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CrawlerController = void 0;
 const common_1 = require("@nestjs/common");
+const swagger_1 = require("@nestjs/swagger");
 const crawler_service_1 = require("./crawler.service");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const media_resource_service_1 = require("../media/media-resource.service");
+const media_resource_entity_1 = require("../entities/media-resource.entity");
 const crawl_request_dto_1 = require("./dtos/crawl-request.dto");
+const crawler_config_1 = require("./crawler.config");
 let CrawlerController = class CrawlerController {
     crawlerService;
-    constructor(crawlerService) {
+    mediaResourceService;
+    constructor(crawlerService, mediaResourceService) {
         this.crawlerService = crawlerService;
+        this.mediaResourceService = mediaResourceService;
     }
     async crawlSingle(req, crawlRequest) {
         const result = await this.crawlerService.crawlWebsite(crawlRequest.targetName, crawlRequest.url);
@@ -30,6 +36,12 @@ let CrawlerController = class CrawlerController {
                 message: '爬取失败',
                 data: null,
             };
+        }
+        try {
+            await this.saveToDatabase(result, crawlRequest.targetName);
+        }
+        catch (error) {
+            console.warn('保存数据失败:', error.message);
         }
         return {
             success: true,
@@ -41,13 +53,29 @@ let CrawlerController = class CrawlerController {
         const results = await this.crawlerService.batchCrawl(batchCrawlRequest.targetName, batchCrawlRequest.urls);
         const successCount = results.length;
         const failureCount = batchCrawlRequest.urls.length - successCount;
+        let savedCount = 0;
+        try {
+            for (const result of results) {
+                try {
+                    await this.saveToDatabase(result, batchCrawlRequest.targetName);
+                    savedCount++;
+                }
+                catch (error) {
+                    console.warn(`保存数据失败 (${result.title}):`, error.message);
+                }
+            }
+        }
+        catch (error) {
+            console.warn('批量保存过程中出现错误:', error.message);
+        }
         return {
             success: true,
-            message: `批量爬取完成，成功 ${successCount} 条，失败 ${failureCount} 条`,
+            message: `批量爬取完成，成功 ${successCount} 条，失败 ${failureCount} 条，保存成功 ${savedCount} 条`,
             data: {
                 crawledData: results,
                 successCount,
                 failureCount,
+                savedCount,
                 totalRequested: batchCrawlRequest.urls.length,
             },
         };
@@ -60,7 +88,7 @@ let CrawlerController = class CrawlerController {
         };
     }
     async crawlAndSave(req, body) {
-        const targetName = body.targetName || '电影天堂';
+        const targetName = body.targetName || crawler_config_1.CRAWLER_TARGETS[0]?.name;
         const result = await this.crawlerService.crawlWebsite(targetName, body.url);
         if (!result) {
             return {
@@ -69,19 +97,48 @@ let CrawlerController = class CrawlerController {
                 data: null,
             };
         }
-        return {
-            success: true,
-            message: '爬取并保存成功',
-            data: result,
-        };
+        try {
+            await this.saveToDatabase(result, targetName);
+            return {
+                success: true,
+                message: '爬取并保存成功',
+                data: result,
+            };
+        }
+        catch (error) {
+            console.warn('保存数据失败:', error.message);
+            return {
+                success: false,
+                message: '爬取成功但保存失败',
+                data: {
+                    crawledData: result,
+                    error: error.message,
+                },
+            };
+        }
     }
     async getStats() {
-        return {
-            totalCrawled: 0,
-            successCount: 0,
-            failureCount: 0,
-            targetsAvailable: this.crawlerService.getAvailableTargets().map(t => t.name),
-        };
+        try {
+            const totalMedia = await this.mediaResourceService.getTotalCount();
+            const activeMedia = await this.mediaResourceService.getActiveCount();
+            const targetsAvailable = this.crawlerService.getAvailableTargets().map(t => t.name);
+            return {
+                totalCrawled: totalMedia,
+                successCount: activeMedia,
+                failureCount: totalMedia - activeMedia,
+                lastCrawlTime: await this.mediaResourceService.getLastCrawlTime(),
+                targetsAvailable,
+            };
+        }
+        catch (error) {
+            console.warn('获取统计信息失败:', error.message);
+            return {
+                totalCrawled: 0,
+                successCount: 0,
+                failureCount: 0,
+                targetsAvailable: this.crawlerService.getAvailableTargets().map(t => t.name),
+            };
+        }
     }
     async testConnection(targetName) {
         const target = this.crawlerService.getAvailableTargets().find(t => t.name === targetName);
@@ -119,12 +176,113 @@ let CrawlerController = class CrawlerController {
             };
         }
     }
+    async saveToDatabase(data, source) {
+        if (!data || !data.title) {
+            throw new Error('无效的爬取数据：缺少标题');
+        }
+        const existingMedia = await this.mediaResourceService.findByTitle(data.title);
+        if (existingMedia) {
+            console.log(`资源已存在，跳过: ${data.title}`);
+            return;
+        }
+        const mediaData = {
+            title: data.title,
+            description: data.description || '',
+            type: this.mapMediaType(data.type),
+            director: data.director || '',
+            actors: data.actors || '',
+            genres: this.arrayFromString(data.genres),
+            releaseDate: data.releaseDate ? new Date(data.releaseDate) : undefined,
+            quality: this.mapQuality(data.quality),
+            poster: data.poster || '',
+            backdrop: data.backdrop || '',
+            rating: data.rating || 0,
+            viewCount: data.viewCount || 0,
+            isActive: true,
+            source: source,
+            metadata: data.metadata || {},
+            duration: data.duration ? parseInt(data.duration) : undefined,
+            episodeCount: data.episodeCount ? parseInt(data.episodeCount) : undefined,
+            downloadUrls: Array.isArray(data.downloadUrls) ? data.downloadUrls : [],
+        };
+        await this.mediaResourceService.create(mediaData);
+        console.log(`成功保存资源: ${data.title}`);
+    }
+    mapMediaType(type) {
+        const typeMap = {
+            '电影': media_resource_entity_1.MediaType.MOVIE,
+            '电视剧': media_resource_entity_1.MediaType.TV_SERIES,
+            '综艺': media_resource_entity_1.MediaType.VARIETY,
+            '动漫': media_resource_entity_1.MediaType.ANIME,
+            '纪录片': media_resource_entity_1.MediaType.DOCUMENTARY,
+        };
+        return typeMap[type] || media_resource_entity_1.MediaType.MOVIE;
+    }
+    mapQuality(quality) {
+        const qualityMap = {
+            '高清': media_resource_entity_1.MediaQuality.HD,
+            '超清': media_resource_entity_1.MediaQuality.FULL_HD,
+            '蓝光': media_resource_entity_1.MediaQuality.BLUE_RAY,
+            '标清': media_resource_entity_1.MediaQuality.SD,
+        };
+        return qualityMap[quality] || media_resource_entity_1.MediaQuality.HD;
+    }
+    arrayFromString(str) {
+        if (!str || typeof str !== 'string') {
+            return [];
+        }
+        return str.split(/[,，、]/).map(item => item.trim()).filter(item => item.length > 0);
+    }
 };
 exports.CrawlerController = CrawlerController;
 __decorate([
     (0, common_1.Post)('crawl'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, common_1.UsePipes)(new common_1.ValidationPipe({ transform: true })),
+    (0, swagger_1.ApiOperation)({
+        summary: '爬取单个资源',
+        description: '根据指定的目标网站和URL爬取影视资源信息并保存到数据库'
+    }),
+    (0, swagger_1.ApiBody)({
+        description: '爬取请求参数',
+        type: crawl_request_dto_1.CrawlRequestDto,
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: '爬取成功',
+        schema: {
+            type: 'object',
+            properties: {
+                success: { type: 'boolean', example: true },
+                message: { type: 'string', example: '爬取成功' },
+                data: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'number', example: 1 },
+                        title: { type: 'string', example: '电影标题' },
+                        description: { type: 'string', example: '电影描述' },
+                        type: { type: 'string', example: 'movie' },
+                        quality: { type: 'string', example: '1080p' },
+                    }
+                }
+            }
+        }
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 400,
+        description: '请求参数错误',
+        schema: {
+            type: 'object',
+            properties: {
+                success: { type: 'boolean', example: false },
+                message: { type: 'string', example: '参数验证失败' }
+            }
+        }
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 401,
+        description: '未授权访问'
+    }),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -135,6 +293,37 @@ __decorate([
     (0, common_1.Post)('batch-crawl'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, common_1.UsePipes)(new common_1.ValidationPipe({ transform: true })),
+    (0, swagger_1.ApiOperation)({
+        summary: '批量爬取资源',
+        description: '批量爬取多个URL的影视资源信息，提高爬取效率'
+    }),
+    (0, swagger_1.ApiBody)({
+        description: '批量爬取请求参数',
+        type: crawl_request_dto_1.BatchCrawlRequestDto,
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: '批量爬取成功',
+        schema: {
+            type: 'object',
+            properties: {
+                success: { type: 'boolean', example: true },
+                message: { type: 'string', example: '批量爬取完成' },
+                results: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            url: { type: 'string' },
+                            success: { type: 'boolean' },
+                            data: { type: 'object' },
+                            error: { type: 'string' }
+                        }
+                    }
+                }
+            }
+        }
+    }),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -143,6 +332,33 @@ __decorate([
 ], CrawlerController.prototype, "batchCrawl", null);
 __decorate([
     (0, common_1.Get)('targets'),
+    (0, swagger_1.ApiOperation)({
+        summary: '获取爬虫目标列表',
+        description: '获取所有可用的爬虫目标网站及其配置信息'
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: '获取成功',
+        schema: {
+            type: 'object',
+            properties: {
+                success: { type: 'boolean', example: true },
+                message: { type: 'string', example: '获取爬虫目标列表成功' },
+                data: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            name: { type: 'string', example: 'example-site' },
+                            baseUrl: { type: 'string', example: 'https://example.com' },
+                            description: { type: 'string', example: '示例网站' },
+                            enabled: { type: 'boolean', example: true }
+                        }
+                    }
+                }
+            }
+        }
+    }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
@@ -171,8 +387,11 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], CrawlerController.prototype, "testConnection", null);
 exports.CrawlerController = CrawlerController = __decorate([
+    (0, swagger_1.ApiTags)('资源爬虫'),
+    (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.Controller)('crawler'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    __metadata("design:paramtypes", [crawler_service_1.CrawlerService])
+    __metadata("design:paramtypes", [crawler_service_1.CrawlerService,
+        media_resource_service_1.MediaResourceService])
 ], CrawlerController);
 //# sourceMappingURL=crawler.controller.js.map

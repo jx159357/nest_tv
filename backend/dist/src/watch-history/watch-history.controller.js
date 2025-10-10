@@ -21,27 +21,32 @@ const update_watch_history_dto_1 = require("./dtos/update-watch-history.dto");
 const watch_history_query_dto_1 = require("./dtos/watch-history-query.dto");
 const watch_history_entity_1 = require("../entities/watch-history.entity");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const current_user_decorator_1 = require("../decorators/current-user.decorator");
 let WatchHistoryController = class WatchHistoryController {
     watchHistoryService;
     constructor(watchHistoryService) {
         this.watchHistoryService = watchHistoryService;
     }
-    async create(createWatchHistoryDto) {
-        return await this.watchHistoryService.create(createWatchHistoryDto);
+    async create(userId, createWatchHistoryDto) {
+        const dtoWithUserId = {
+            ...createWatchHistoryDto,
+            userId,
+        };
+        return await this.watchHistoryService.create(dtoWithUserId);
     }
     async findAll(queryDto) {
         return await this.watchHistoryService.findAll(queryDto);
     }
-    async findByUserId(userId, page = 1, limit = 10) {
+    async findMyHistory(userId, page = 1, limit = 10) {
         return await this.watchHistoryService.findByUserId(userId, page, limit);
     }
-    async getContinueWatching(userId, limit = 10) {
+    async getMyContinueWatching(userId, limit = 10) {
         return await this.watchHistoryService.getContinueWatching(userId, limit);
     }
-    async getCompleted(userId, page = 1, limit = 10) {
+    async getMyCompleted(userId, page = 1, limit = 10) {
         return await this.watchHistoryService.getCompleted(userId, page, limit);
     }
-    async getUserStats(userId) {
+    async getMyStats(userId) {
         return await this.watchHistoryService.getUserStats(userId);
     }
     async findById(id) {
@@ -62,7 +67,7 @@ let WatchHistoryController = class WatchHistoryController {
     async remove(id) {
         await this.watchHistoryService.remove(id);
     }
-    async clearUserHistory(userId) {
+    async clearMyHistory(userId) {
         await this.watchHistoryService.clearUserHistory(userId);
     }
 };
@@ -72,9 +77,10 @@ __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, swagger_1.ApiOperation)({ summary: '创建或更新观看历史' }),
     (0, swagger_1.ApiResponse)({ status: 201, description: '观看历史创建成功', type: watch_history_entity_1.WatchHistory }),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, current_user_decorator_1.GetCurrentUserId)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_watch_history_dto_1.CreateWatchHistoryDto]),
+    __metadata("design:paramtypes", [Number, create_watch_history_dto_1.CreateWatchHistoryDto]),
     __metadata("design:returntype", Promise)
 ], WatchHistoryController.prototype, "create", null);
 __decorate([
@@ -87,55 +93,55 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], WatchHistoryController.prototype, "findAll", null);
 __decorate([
-    (0, common_1.Get)('user/:userId'),
-    (0, swagger_1.ApiOperation)({ summary: '获取用户观看历史' }),
-    (0, swagger_1.ApiParam)({ name: 'userId', description: '用户ID' }),
+    (0, common_1.Get)('user/me'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, swagger_1.ApiOperation)({ summary: '获取当前用户观看历史' }),
     (0, swagger_1.ApiQuery)({ name: 'page', required: false, type: Number, description: '页码' }),
     (0, swagger_1.ApiQuery)({ name: 'limit', required: false, type: Number, description: '每页数量' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: '成功获取用户观看历史' }),
-    __param(0, (0, common_1.Param)('userId')),
+    __param(0, (0, current_user_decorator_1.GetCurrentUserId)()),
     __param(1, (0, common_1.Query)('page')),
     __param(2, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, Number, Number]),
     __metadata("design:returntype", Promise)
-], WatchHistoryController.prototype, "findByUserId", null);
+], WatchHistoryController.prototype, "findMyHistory", null);
 __decorate([
-    (0, common_1.Get)('user/:userId/continue'),
-    (0, swagger_1.ApiOperation)({ summary: '获取用户继续观看列表' }),
-    (0, swagger_1.ApiParam)({ name: 'userId', description: '用户ID' }),
+    (0, common_1.Get)('user/me/continue'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, swagger_1.ApiOperation)({ summary: '获取当前用户继续观看列表' }),
     (0, swagger_1.ApiQuery)({ name: 'limit', required: false, type: Number, description: '返回数量限制' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: '成功获取继续观看列表', type: [watch_history_entity_1.WatchHistory] }),
-    __param(0, (0, common_1.Param)('userId')),
+    __param(0, (0, current_user_decorator_1.GetCurrentUserId)()),
     __param(1, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, Number]),
     __metadata("design:returntype", Promise)
-], WatchHistoryController.prototype, "getContinueWatching", null);
+], WatchHistoryController.prototype, "getMyContinueWatching", null);
 __decorate([
-    (0, common_1.Get)('user/:userId/completed'),
-    (0, swagger_1.ApiOperation)({ summary: '获取用户已看完的影视' }),
-    (0, swagger_1.ApiParam)({ name: 'userId', description: '用户ID' }),
+    (0, common_1.Get)('user/me/completed'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, swagger_1.ApiOperation)({ summary: '获取当前用户已看完的影视' }),
     (0, swagger_1.ApiQuery)({ name: 'page', required: false, type: Number, description: '页码' }),
     (0, swagger_1.ApiQuery)({ name: 'limit', required: false, type: Number, description: '每页数量' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: '成功获取已看完的影视列表' }),
-    __param(0, (0, common_1.Param)('userId')),
+    __param(0, (0, current_user_decorator_1.GetCurrentUserId)()),
     __param(1, (0, common_1.Query)('page')),
     __param(2, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, Number, Number]),
     __metadata("design:returntype", Promise)
-], WatchHistoryController.prototype, "getCompleted", null);
+], WatchHistoryController.prototype, "getMyCompleted", null);
 __decorate([
-    (0, common_1.Get)('user/:userId/stats'),
-    (0, swagger_1.ApiOperation)({ summary: '获取用户观看统计' }),
-    (0, swagger_1.ApiParam)({ name: 'userId', description: '用户ID' }),
+    (0, common_1.Get)('user/me/stats'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, swagger_1.ApiOperation)({ summary: '获取当前用户观看统计' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: '成功获取用户观看统计' }),
-    __param(0, (0, common_1.Param)('userId')),
+    __param(0, (0, current_user_decorator_1.GetCurrentUserId)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
-], WatchHistoryController.prototype, "getUserStats", null);
+], WatchHistoryController.prototype, "getMyStats", null);
 __decorate([
     (0, common_1.Get)(':id'),
     (0, swagger_1.ApiOperation)({ summary: '根据ID获取观看历史详情' }),
@@ -162,12 +168,11 @@ __decorate([
     (0, common_1.Patch)('progress'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, swagger_1.ApiOperation)({ summary: '更新观看进度' }),
-    (0, swagger_1.ApiQuery)({ name: 'userId', description: '用户ID' }),
     (0, swagger_1.ApiQuery)({ name: 'mediaResourceId', description: '影视资源ID' }),
     (0, swagger_1.ApiQuery)({ name: 'currentTime', description: '当前观看时间（秒）' }),
     (0, swagger_1.ApiQuery)({ name: 'duration', required: false, description: '总时长（秒）' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: '观看进度更新成功', type: watch_history_entity_1.WatchHistory }),
-    __param(0, (0, common_1.Query)('userId')),
+    __param(0, (0, current_user_decorator_1.GetCurrentUserId)()),
     __param(1, (0, common_1.Query)('mediaResourceId')),
     __param(2, (0, common_1.Query)('currentTime')),
     __param(3, (0, common_1.Query)('duration')),
@@ -210,16 +215,15 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], WatchHistoryController.prototype, "remove", null);
 __decorate([
-    (0, common_1.Delete)('user/:userId/all'),
+    (0, common_1.Delete)('user/me/all'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    (0, swagger_1.ApiOperation)({ summary: '清空用户观看历史' }),
-    (0, swagger_1.ApiParam)({ name: 'userId', description: '用户ID' }),
+    (0, swagger_1.ApiOperation)({ summary: '清空当前用户观看历史' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: '用户观看历史清空成功' }),
-    __param(0, (0, common_1.Param)('userId')),
+    __param(0, (0, current_user_decorator_1.GetCurrentUserId)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
-], WatchHistoryController.prototype, "clearUserHistory", null);
+], WatchHistoryController.prototype, "clearMyHistory", null);
 exports.WatchHistoryController = WatchHistoryController = __decorate([
     (0, swagger_1.ApiTags)('观看历史'),
     (0, common_1.Controller)('watch-history'),

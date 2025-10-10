@@ -8,6 +8,8 @@ import {
   ManyToMany,
   JoinTable,
   OneToMany,
+  Index,
+  // UniqueIndex, // 暂时注释
 } from 'typeorm';
 import { User } from './user.entity';
 import { WatchHistory } from './watch-history.entity';
@@ -41,10 +43,28 @@ export enum MediaQuality {
  * 用于存储电影、电视剧等影视资源信息
  */
 @Entity('media_resources')
-// 复合索引暂时注释，后续根据数据库查询模式优化
-// @Index(['title', 'type', 'createdAt'], { name: 'idx_media_search' }) // 搜索索引：标题+类型+创建时间
-// @Index(['type', 'isActive', 'rating'], { name: 'idx_media_filter' }) // 筛选索引：类型+状态+评分
-// @Index(['rating', 'viewCount'], { name: 'idx_media_popular' }) // 热门索引：评分+观看次数
+// 搜索索引：标题+类型+创建时间
+@Index('idx_media_title', ['title'])
+@Index('idx_media_type', ['type'])
+@Index('idx_media_created', ['createdAt'])
+@Index('idx_media_active', ['isActive'])
+
+// 筛选索引：类型+状态+评分
+@Index('idx_media_type_status', ['type', 'isActive'])
+@Index('idx_media_filter', ['type', 'isActive', 'rating'])
+
+// 热门索引：评分+观看次数+状态
+@Index('idx_media_rating', ['rating'])
+@Index('idx_media_viewcount', ['viewCount'])
+@Index('idx_media_popular', ['rating', 'viewCount', 'isActive'])
+
+// 分类和标签相关索引
+// @Index('idx_media_genres', ['genres']) // 注释掉有问题的索引，因为genres是TEXT类型
+@Index('idx_media_release_date', ['releaseDate'])
+@Index('idx_media_duration', ['duration'])
+
+// 唯一性索引（在应用层处理）
+// @Index('idx_media_unique', ['title', 'type', 'releaseDate'])
 export class MediaResource {
   @PrimaryGeneratedColumn()
   id: number; // 资源ID，自增主键
@@ -94,6 +114,9 @@ export class MediaResource {
   @Column({ type: 'json', nullable: true })
   metadata?: any; // 扩展元数据
 
+  @Column({ type: 'int', nullable: true })
+  duration?: number; // 时长（分钟）
+  
   @Column({ nullable: true })
   episodeCount?: number; // 剧集数（如果是电视剧）
 

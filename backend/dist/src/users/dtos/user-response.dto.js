@@ -22,6 +22,7 @@ class UserResponseDto {
     createdAt;
     updatedAt;
     lastLoginAt;
+    isActive;
 }
 exports.UserResponseDto = UserResponseDto;
 __decorate([
@@ -99,4 +100,11 @@ __decorate([
     }),
     __metadata("design:type", Date)
 ], UserResponseDto.prototype, "lastLoginAt", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '用户状态',
+        example: true,
+    }),
+    __metadata("design:type", Boolean)
+], UserResponseDto.prototype, "isActive", void 0);
 //# sourceMappingURL=user-response.dto.js.map

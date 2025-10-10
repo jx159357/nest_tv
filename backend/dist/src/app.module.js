@@ -73,8 +73,45 @@ exports.AppModule = AppModule = __decorate([
                         iptv_channel_entity_1.IPTVChannel,
                         parse_provider_entity_1.ParseProvider,
                     ],
-                    synchronize: true,
-                    logging: true,
+                    extra: {
+                        connectionLimit: Math.max(5, Math.min(50, Math.ceil(process.env.DB_CONNECTION_LIMIT ? parseInt(process.env.DB_CONNECTION_LIMIT) : 20))),
+                        acquireTimeout: 60000,
+                        timeout: 60000,
+                        queueLimit: 0,
+                        ssl: configService.get('DB_SSL', false),
+                        charset: 'utf8mb4',
+                        timezone: '+00:00',
+                        multipleStatements: false,
+                        namedPlaceholders: true,
+                        bigNumberStrings: false,
+                        dateStrings: false,
+                        debug: process.env.NODE_ENV === 'development',
+                        supportBigNumbers: true,
+                        typeCast: function (field, next) {
+                            if (field.type === 'TINY' && field.length === 1) {
+                                return (field.string() === '1');
+                            }
+                            return next();
+                        }
+                    },
+                    autoSaveEntities: false,
+                    retryAttempts: configService.get('DB_RETRY_ATTEMPTS', 3),
+                    retryDelay: configService.get('DB_RETRY_DELAY', 3000),
+                    maxQueryExecutionTime: configService.get('DB_MAX_QUERY_TIME', 1000),
+                    slowQueryLimit: configService.get('DB_SLOW_QUERY_LIMIT', 200),
+                    cache: false,
+                    subscribers: [],
+                    migrationsRun: false,
+                    dropSchema: false,
+                    migrations: ['src/migrations/*.ts'],
+                    logging: configService.get('DB_LOGGING', process.env.NODE_ENV === 'development'),
+                    logger: 'advanced-console',
+                    loggerOptions: {
+                        warnLevel: 'warn',
+                        infoLevel: 'info',
+                        logLevel: process.env.NODE_ENV === 'development' ? 'debug' : 'warn',
+                    },
+                    synchronize: configService.get('DB_SYNCHRONIZE', process.env.NODE_ENV === 'development'),
                 }),
                 inject: [config_1.ConfigService],
             }),

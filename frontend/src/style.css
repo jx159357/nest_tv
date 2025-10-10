@@ -14,3 +14,6 @@ body {
 #app {
   min-height: 100vh;
 }
+
+/* 导入响应式优化样式 */
+@import './styles/responsive.css';

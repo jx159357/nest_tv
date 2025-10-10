@@ -1,9 +1,13 @@
 import { IsString, IsUrl, IsArray, ArrayNotEmpty, IsOptional, IsEnum } from 'class-validator';
+import { CRAWLER_TARGETS } from '../crawler.config';
+
+// 从配置中提取允许的目标名称
+const ALLOWED_TARGETS = CRAWLER_TARGETS.map(target => target.name);
 
 export class CrawlRequestDto {
   @IsString()
-  @IsEnum(['电影天堂', 'BT种子'], {
-    message: '目标网站必须是 电影天堂 或 BT种子',
+  @IsEnum(ALLOWED_TARGETS, {
+    message: `目标网站必须是: ${ALLOWED_TARGETS.join('、')}`,
   })
   targetName: string;
 
@@ -14,8 +18,8 @@ export class CrawlRequestDto {
 
 export class BatchCrawlRequestDto {
   @IsString()
-  @IsEnum(['电影天堂', 'BT种子'], {
-    message: '目标网站必须是 电影天堂 或 BT种子',
+  @IsEnum(ALLOWED_TARGETS, {
+    message: `目标网站必须是: ${ALLOWED_TARGETS.join('、')}`,
   })
   targetName: string;
 
@@ -31,8 +35,8 @@ export class CrawlAndSaveDto {
   url: string;
 
   @IsOptional()
-  @IsEnum(['电影天堂', 'BT种子'], {
-    message: '目标网站必须是 电影天堂 或 BT种子',
+  @IsEnum(ALLOWED_TARGETS, {
+    message: `目标网站必须是: ${ALLOWED_TARGETS.join('、')}`,
   })
   targetName?: string;
 }

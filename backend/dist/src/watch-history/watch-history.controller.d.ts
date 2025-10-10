@@ -6,7 +6,7 @@ import { WatchHistory } from '../entities/watch-history.entity';
 export declare class WatchHistoryController {
     private readonly watchHistoryService;
     constructor(watchHistoryService: WatchHistoryService);
-    create(createWatchHistoryDto: CreateWatchHistoryDto): Promise<WatchHistory>;
+    create(userId: number, createWatchHistoryDto: CreateWatchHistoryDto): Promise<WatchHistory>;
     findAll(queryDto: WatchHistoryQueryDto): Promise<{
         data: WatchHistory[];
         total: number;
@@ -14,22 +14,22 @@ export declare class WatchHistoryController {
         limit: number;
         totalPages: number;
     }>;
-    findByUserId(userId: number, page?: number, limit?: number): Promise<{
+    findMyHistory(userId: number, page?: number, limit?: number): Promise<{
         data: WatchHistory[];
         total: number;
         page: number;
         limit: number;
         totalPages: number;
     }>;
-    getContinueWatching(userId: number, limit?: number): Promise<WatchHistory[]>;
-    getCompleted(userId: number, page?: number, limit?: number): Promise<{
+    getMyContinueWatching(userId: number, limit?: number): Promise<WatchHistory[]>;
+    getMyCompleted(userId: number, page?: number, limit?: number): Promise<{
         data: WatchHistory[];
         total: number;
         page: number;
         limit: number;
         totalPages: number;
     }>;
-    getUserStats(userId: number): Promise<{
+    getMyStats(userId: number): Promise<{
         totalWatched: number;
         completed: number;
         watching: number;
@@ -41,5 +41,5 @@ export declare class WatchHistoryController {
     update(id: number, updateWatchHistoryDto: UpdateWatchHistoryDto): Promise<WatchHistory>;
     markAsCompleted(id: number): Promise<WatchHistory>;
     remove(id: number): Promise<void>;
-    clearUserHistory(userId: number): Promise<void>;
+    clearMyHistory(userId: number): Promise<void>;
 }

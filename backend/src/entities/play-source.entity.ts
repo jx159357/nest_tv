@@ -7,6 +7,8 @@ import {
   ManyToOne,
   ManyToMany,
   JoinTable,
+  Index,
+  // UniqueIndex, // 暂时注释
 } from 'typeorm';
 import { User } from './user.entity';
 import { MediaResource } from './media-resource.entity';
@@ -40,6 +42,31 @@ export enum PlaySourceStatus {
  * 用于存储影视资源的播放链接信息
  */
 @Entity('play_sources')
+// 播放源类型和状态索引
+@Index('idx_play_source_type', ['type'])
+@Index('idx_play_source_status', ['status'])
+@Index('idx_play_source_type_status', ['type', 'status'])
+
+// 优先级和质量索引
+@Index('idx_play_source_priority', ['priority'])
+@Index('idx_play_source_resolution', ['resolution'])
+@Index('idx_play_source_priority_status', ['priority', 'status'])
+
+// 播放次数和排序索引
+@Index('idx_play_source_playcount', ['playCount'])
+@Index('idx_play_source_playcount_status', ['playCount', 'status'])
+
+// 媒体资源和源关联索引
+@Index('idx_play_source_media', ['mediaResourceId'])
+@Index('idx_play_source_media_type_status', ['mediaResourceId', 'type', 'status'])
+
+// 时间相关索引
+@Index('idx_play_source_expire', ['expireDate'])
+@Index('idx_play_source_created', ['createdAt'])
+
+// 唯一性索引
+// @UniqueIndex(['url', 'type'], { name: 'idx_play_source_unique_url' })
+
 export class PlaySource {
   @PrimaryGeneratedColumn()
   id: number; // 播放源ID，自增主键

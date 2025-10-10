@@ -36,8 +36,7 @@ let MediaResourceService = class MediaResourceService {
     async findAll(queryDto) {
         const { page = 1, pageSize = 10, search, type, quality, minRating, maxRating, tags, startDate, endDate, } = queryDto;
         const queryBuilder = this.mediaResourceRepository
-            .createQueryBuilder('mediaResource')
-            .leftJoinAndSelect('mediaResource.poster', 'poster');
+            .createQueryBuilder('mediaResource');
         if (search) {
             queryBuilder.andWhere('(mediaResource.title LIKE :search OR mediaResource.description LIKE :search OR mediaResource.originalTitle LIKE :search)', { search: `%${search}%` });
         }
@@ -85,7 +84,7 @@ let MediaResourceService = class MediaResourceService {
     async findById(id) {
         const mediaResource = await this.mediaResourceRepository.findOne({
             where: { id },
-            relations: ['poster', 'watchHistory', 'playSources'],
+            relations: ['watchHistory', 'playSources'],
         });
         if (!mediaResource) {
             throw new common_1.NotFoundException(`影视资源ID ${id} 不存在`);
@@ -184,6 +183,30 @@ let MediaResourceService = class MediaResourceService {
             byQuality,
             averageRating,
         };
+    }
+    async getTotalCount() {
+        return this.mediaResourceRepository.count();
+    }
+    async getActiveCount() {
+        return this.mediaResourceRepository.count({
+            where: {
+                isActive: true,
+            },
+        });
+    }
+    async getLastCrawlTime() {
+        const result = await this.mediaResourceRepository
+            .createQueryBuilder('mediaResource')
+            .select('MAX(mediaResource.createdAt)', 'lastCrawlTime')
+            .getRawOne();
+        return result?.lastCrawlTime ? new Date(result.lastCrawlTime) : new Date();
+    }
+    async findByTitle(title) {
+        return this.mediaResourceRepository.findOne({
+            where: {
+                title: title,
+            },
+        });
     }
 };
 exports.MediaResourceService = MediaResourceService;

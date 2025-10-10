@@ -9,4 +9,5 @@ export declare class UserResponseDto {
     createdAt: Date;
     updatedAt: Date;
     lastLoginAt?: Date;
+    isActive: boolean;
 }

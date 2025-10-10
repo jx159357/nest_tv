@@ -2,6 +2,42 @@
 
 一个基于 NestJS + Vue3 的现代化影视资源管理系统，已实现完整的企业级架构和核心功能。
 
+## 🚀 项目快速启动
+
+### 环境要求
+- Node.js >= 18.0
+- MySQL >= 8.0
+- Redis >= 6.0
+
+### 快速启动步骤
+
+1. **克隆项目**
+```bash
+git clone <repository-url>
+cd nest_tv
+```
+
+2. **安装依赖**
+```bash
+# 安装后端依赖
+npm install --prefix backend
+
+# 安装前端依赖
+npm install --prefix frontend
+```
+
+3. **启动后端服务**
+```bash
+npm run start:dev --prefix backend
+```
+后端服务将在 http://localhost:3334 启动
+
+4. **启动前端服务**
+```bash
+npm run dev --prefix frontend
+```
+前端服务将在 http://localhost:5173 启动
+
 ## 🚀 核心功能特性
 
 ### ✅ 已实现功能
@@ -13,6 +49,15 @@
 - ✅ 用户信息管理
 - ✅ 基础权限管理
 - ✅ 个性化设置
+
+#### 🕷 数据爬虫系统
+- ✅ 多目标网站爬虫配置（电影天堂、电影蜜蜂等）
+- ✅ 智能网页解析（基于Cheerio）
+- ✅ 批量数据采集
+- ✅ 数据去重和质量控制
+- ✅ 爬虫任务管理和监控
+- ✅ 异常处理和重试机制
+- ✅ 爬虫统计和日志记录
 
 #### 📺 影视资源管理
 - ✅ 影视信息存储和分类
@@ -41,6 +86,8 @@
 
 #### 🌐 前端界面
 - ✅ 现代化 Vue3 + Vite 响应式界面
+- ✅ TypeScript 严格模式支持
+- ✅ 完整的错误处理机制
 - ✅ UnoCSS 原子化 CSS 框架
 - ✅ 完整的国际化支持（中英文）
 - ✅ 首页展示

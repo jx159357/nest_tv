@@ -57,8 +57,7 @@ export class MediaResourceService {
     } = queryDto;
 
     const queryBuilder = this.mediaResourceRepository
-      .createQueryBuilder('mediaResource')
-      .leftJoinAndSelect('mediaResource.poster', 'poster');
+      .createQueryBuilder('mediaResource');
 
     // 搜索条件
     if (search) {
@@ -131,7 +130,7 @@ export class MediaResourceService {
   async findById(id: number): Promise<MediaResource> {
     const mediaResource = await this.mediaResourceRepository.findOne({
       where: { id },
-      relations: ['poster', 'watchHistory', 'playSources'],
+      relations: ['watchHistory', 'playSources'],
     });
 
     if (!mediaResource) {
@@ -302,5 +301,46 @@ export class MediaResourceService {
       byQuality,
       averageRating,
     };
+  }
+
+  /**
+   * 获取媒体资源总数
+   */
+  async getTotalCount(): Promise<number> {
+    return this.mediaResourceRepository.count();
+  }
+
+  /**
+   * 获取活跃媒体资源数量
+   */
+  async getActiveCount(): Promise<number> {
+    return this.mediaResourceRepository.count({
+      where: {
+        isActive: true,
+      },
+    });
+  }
+
+  /**
+   * 获取最后爬取时间
+   */
+  async getLastCrawlTime(): Promise<Date> {
+    const result = await this.mediaResourceRepository
+      .createQueryBuilder('mediaResource')
+      .select('MAX(mediaResource.createdAt)', 'lastCrawlTime')
+      .getRawOne<{ lastCrawlTime: string }>();
+    
+    return result?.lastCrawlTime ? new Date(result.lastCrawlTime) : new Date();
+  }
+
+  /**
+   * 根据标题查找媒体资源
+   */
+  async findByTitle(title: string): Promise<MediaResource | null> {
+    return this.mediaResourceRepository.findOne({
+      where: {
+        title: title,
+      },
+    });
   }
 }

@@ -96,9 +96,6 @@ __decorate([
     (0, rate_limit_guard_1.RateLimit)({
         windowMs: 15 * 60 * 1000,
         maxRequests: 100,
-        handler: (key, info) => {
-            console.log(`媒体列表查询限流: ${key}`, info);
-        },
     }),
     (0, swagger_1.ApiQuery)({ name: 'page', description: '页码，从1开始', example: 1 }),
     (0, swagger_1.ApiQuery)({ name: 'pageSize', description: '每页数量，默认10条，最大100条', example: 10 }),

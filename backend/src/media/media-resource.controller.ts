@@ -38,9 +38,6 @@ export class MediaResourceController {
   @RateLimit({
     windowMs: 15 * 60 * 1000, // 15分钟
     maxRequests: 100, // 最多100次请求
-    handler: (key: string, info: any) => {
-      console.log(`媒体列表查询限流: ${key}`, info);
-    },
   })
   @ApiQuery({ name: 'page', description: '页码，从1开始', example: 1 })
   @ApiQuery({ name: 'pageSize', description: '每页数量，默认10条，最大100条', example: 10 })

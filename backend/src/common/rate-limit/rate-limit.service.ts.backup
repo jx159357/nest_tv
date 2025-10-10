@@ -1,0 +1,456 @@
+import { Injectable, Logger, UnauthorizedException, HttpException, Inject } from '@nestjs/common';
+import Redis from 'ioredis';
+
+export const REDIS_CLIENT = 'REDIS_CLIENT';
+
+export interface RateLimitOptions {
+  windowMs: number; // 时间窗口（毫秒）
+  maxRequests: number; // 最大请求数
+  keyPrefix?: string; // 键前缀
+  skipSuccessfulRequests?: boolean; // 是否跳过成功请求
+  skipFailedRequests?: boolean; // 是否跳过失败请求
+  handler?: (key: string, limit: RateLimitInfo) => any; // 限流处理器
+}
+
+export interface RateLimitInfo {
+  key: string;
+  points: number; // 当前请求数
+  expiresAt: number; // 过期时间
+  remaining: number; // 剩余请求数
+  isFirstRequest?: boolean; // 是否是第一个请求
+  resetTime: number; // 重置时间
+}
+
+@Injectable()
+export class RateLimitService {
+  private readonly logger = new Logger(RateLimitService.name);
+  private readonly defaultOptions: RateLimitOptions = {
+    windowMs: 15 * 60 * 1000, // 15分钟
+    maxRequests: 100,
+    keyPrefix: 'rate_limit:',
+    skipSuccessfulRequests: false,
+    skipFailedRequests: false,
+  };
+
+  constructor(@Inject(REDIS_CLIENT) private readonly redis: Redis) {
+    this.logger.log('限流服务初始化');
+  }
+
+  /**
+   * 获取限流键值
+   */
+  private async getCurrentCount(key: string, windowMs: number): Promise<number> {
+    try {
+      const count = await this.redis.get(key);
+      return count ? parseInt(count, 10) : 0;
+    } catch (error) {
+      this.logger.error(`获取限流计数失败: ${key}`, error);
+      return 0;
+    }
+  }
+
+  /**
+   * 增加限流计数
+   */
+  private async incrementCount(key: string, windowMs: number): Promise<number> {
+    try {
+      const result = await this.redis.multi()
+        .incr(key)
+        .expire(key, Math.ceil(windowMs / 1000))
+        .exec();
+
+      if (result && result[0]) {
+        return result[0] as number;
+      }
+      return 1;
+    } catch (error) {
+      this.logger.error(`增加限流计数失败: ${key}`, error);
+      return 1;
+    }
+  }
+
+  /**
+   * 设置过期时间
+   */
+  private async setExpiration(key: string, windowMs: number): Promise<void> {
+    try {
+      await this.redis.expire(key, Math.ceil(windowMs / 1000));
+    } catch (error) {
+      this.logger.error(`设置限流过期时间失败: ${key}`, error);
+    }
+  }
+
+  /**
+   * 获取过期时间
+   */
+  private async getExpirationTime(key: string): Promise<number> {
+    try {
+      const ttl = await this.redis.ttl(key);
+      if (ttl === -2) { // 键不存在
+        return Date.now();
+      }
+      return Date.now() + (ttl * 1000);
+    } catch (error) {
+      this.logger.error(`获取限流过期时间失败: ${key}`, error);
+      return Date.now();
+    }
+  }
+
+  /**
+   * 获取令牌桶计数
+   */
+  private async getBucketCount(key: string): Promise<number> {
+    try {
+      const count = await this.redis.get(`${key}:bucket`);
+      return count ? parseInt(count, 10) : 0;
+    } catch (error) {
+      this.logger.error(`获取令牌桶计数失败: ${key}`, error);
+      return 0;
+    }
+  }
+
+  /**
+   * 令牌桶算法限流
+   */
+  async tokenBucket(
+    key: string,
+    options: Partial<RateLimitOptions> = {}
+  ): Promise<{ success: boolean; info?: RateLimitInfo }> {
+    const config = { ...this.defaultOptions, ...options };
+    const bucketKey = `${config.keyPrefix}token_bucket:${key}`;
+    
+    try {
+      // 令牌桶配置
+      const bucketSize = config.maxRequests; // 桶大小
+      const refillRate = Math.ceil(bucketSize / (config.windowMs / 1000)); // 每秒补充速率
+      
+      // 使用Lua脚本确保原子性
+      const luaScript = `
+        local bucketKey = KEYS[1]
+        local bucketSize = tonumber(ARGV[1])
+        local refillRate = tonumber(ARGV[2])
+        local now = tonumber(ARGV[3])
+        
+        -- 获取当前令牌数和上次补充时间
+        local currentTokens = tonumber(redis.call('GET', bucketKey)) or 0
+        local lastRefill = tonumber(redis.call('GET', bucketKey .. ':last_refill')) or now
+        
+        -- 计算应该补充的令牌数
+        local timeDiff = now - lastRefill
+        local tokensToAdd = math.floor(timeDiff / 1000 * refillRate)
+        currentTokens = math.min(bucketSize, currentTokens + tokensToAdd)
+        
+        -- 如果有足够的令牌
+        if currentTokens >= 1 then
+          currentTokens = currentTokens - 1
+          redis.call('SET', bucketKey, currentTokens)
+          redis.call('SET', bucketKey .. ':last_refill', now)
+          redis.call('EXPIRE', bucketKey, math.ceil(ARGV[4] / 1000))
+          redis.call('EXPIRE', bucketKey .. ':last_refill', math.ceil(ARGV[4] / 1000))
+          return {success = true, remaining = currentTokens}
+        end
+        
+        return {success = false, remaining = currentTokens}
+      `;
+
+      const now = Date.now();
+      const result = await this.redis.eval(
+        luaScript,
+        [bucketKey],
+        bucketSize,
+        refillRate,
+        now,
+        config.windowMs
+      );
+
+      if (result && result.success) {
+        const info: RateLimitInfo = {
+          key: bucketKey,
+          points: bucketSize - result.remaining,
+          expiresAt: now + config.windowMs,
+          remaining: result.remaining,
+          resetTime: now + 1000, // 1秒后可能补充
+        };
+        return { success: true, info };
+      }
+
+      return { success: false };
+    } catch (error) {
+      this.logger.error(`令牌桶限流检查失败: ${key}`, error);
+      return { success: false };
+    }
+  }
+
+  /**
+   * 滑动窗口限流
+   */
+  async slidingWindow(
+    key: string,
+    options: Partial<RateLimitOptions> = {}
+  ): Promise<{ success: boolean; info?: RateLimitInfo }> {
+    const config = { ...this.defaultOptions, ...options };
+    const windowKey = `${config.keyPrefix}sliding_window:${key}`;
+    
+    try {
+      // 使用Redis的有序集合实现滑动窗口
+      const now = Date.now();
+      const windowStart = now - config.windowMs;
+      
+      // 清理过期的请求记录
+      await this.redis.zremrangebyscore(windowKey, 0, windowStart);
+      
+      // 获取当前窗口内的请求数
+      const currentCount = await this.redis.zcard(windowKey);
+      
+      if (currentCount >= config.maxRequests) {
+        // 获取最早请求的过期时间
+        const oldestRequest = await this.redis.zrange(windowKey, 0, 1, 'WITHSCORES');
+        const expiresAt = oldestRequest[1] ? parseInt(oldestRequest[1], 10) + config.windowMs : now + config.windowMs;
+        
+        const info: RateLimitInfo = {
+          key: windowKey,
+          points: currentCount,
+          expiresAt,
+          remaining: 0,
+          resetTime: expiresAt,
+        };
+        
+        this.logger.warn(`滑动窗口限流触发: ${key}, 当前计数: ${currentCount}`);
+        return { success: false, info };
+      }
+      
+      // 添加当前请求
+      await this.redis.zadd(windowKey, now, now.toString());
+      await this.redis.expire(windowKey, Math.ceil(config.windowMs / 1000));
+      
+      const remaining = config.maxRequests - currentCount - 1;
+      const info: RateLimitInfo = {
+        key: windowKey,
+        points: currentCount + 1,
+        expiresAt: now + config.windowMs,
+        remaining,
+        resetTime: now + config.windowMs,
+      };
+      
+      return { success: true, info };
+    } catch (error) {
+      this.logger.error(`滑动窗口限流检查失败: ${key}`, error);
+      return { success: false };
+    }
+  }
+
+  /**
+   * 检查请求是否被限流（多种算法支持）
+   */
+  async checkLimit(
+    key: string,
+    options: Partial<RateLimitOptions> = {},
+    algorithm: 'fixed' | 'token_bucket' | 'sliding_window' = 'fixed'
+  ): Promise<{ success: boolean; info?: RateLimitInfo }> {
+    switch (algorithm) {
+      case 'token_bucket':
+        return this.tokenBucket(key, options);
+      case 'sliding_window':
+        return this.slidingWindow(key, options);
+      default:
+        return this.checkLimit(key, options);
+    }
+  }
+
+  /**
+   * 检查请求是否被限流
+   */
+  async checkLimit(
+    key: string,
+    options: Partial<RateLimitOptions> = {},
+  ): Promise<{ success: boolean; info?: RateLimitInfo }> {
+    const config = { ...this.defaultOptions, ...options };
+    const fullKey = `${config.keyPrefix}${key}`;
+
+    try {
+      // 获取当前计数
+      const current = await this.getCurrentCount(fullKey, config.windowMs);
+
+      // 计算剩余请求数
+      const remaining = Math.max(0, config.maxRequests - current);
+
+      // 如果超过限制
+      if (current >= config.maxRequests) {
+        const expiresAt = await this.getExpirationTime(fullKey);
+        const info: RateLimitInfo = {
+          key: fullKey,
+          points: current,
+          expiresAt,
+          remaining: 0,
+          resetTime: expiresAt,
+        };
+
+        this.logger.warn(`请求被限流: ${key}, 请求数: ${current}, 限制: ${config.maxRequests}`);
+
+        // 调用自定义处理器
+        if (config.handler) {
+          config.handler(key, info);
+        }
+
+        return { success: false, info };
+      }
+
+      // 增加计数
+      const newCount = await this.incrementCount(fullKey, config.windowMs);
+
+      // 设置过期时间
+      await this.setExpiration(fullKey, config.windowMs);
+
+      const expiresAt = await this.getExpirationTime(fullKey);
+      const isFirstRequest = newCount === 1;
+
+      const info: RateLimitInfo = {
+        key: fullKey,
+        points: newCount,
+        expiresAt,
+        remaining: config.maxRequests - newCount,
+        isFirstRequest,
+        resetTime: expiresAt,
+      };
+
+      this.logger.debug(`限流检查通过: ${key}, 当前计数: ${newCount}, 剩余: ${info.remaining}`);
+
+      return { success: true, info };
+    } catch (error) {
+      this.logger.error(`限流检查失败: ${key}`, error);
+      // 发生错误时，允许请求通过以避免服务不可用
+      return { success: true };
+    }
+  }
+
+  /**
+   * 获取当前计数
+   */
+  private async getCurrentCount(key: string, windowMs: number): Promise<number> {
+    try {
+      const result = await this.redis.get(key);
+      return result ? parseInt(result, 10) : 0;
+    } catch (error) {
+      this.logger.error(`获取当前计数失败: ${key}`, error);
+      return 0;
+    }
+  }
+
+  /**
+   * 增加计数
+   */
+  private async incrementCount(key: string, windowMs: number): Promise<number> {
+    try {
+      const pipeline = this.redis.pipeline();
+
+      // 使用INCR命令增加计数
+      pipeline.incr(key);
+
+      // 如果是第一个请求，设置过期时间
+      pipeline.expire(key, Math.ceil(windowMs / 1000));
+
+      const results = await pipeline.exec();
+      if (results && results[0] && results[0][1]) {
+        return results[0][1] as number;
+      }
+      return 0;
+    } catch (error) {
+      this.logger.error(`增加计数失败: ${key}`, error);
+      return 0;
+    }
+  }
+
+  /**
+   * 设置过期时间
+   */
+  private async setExpiration(key: string, windowMs: number): Promise<void> {
+    try {
+      await this.redis.expire(key, Math.ceil(windowMs / 1000));
+    } catch (error) {
+      this.logger.error(`设置过期时间失败: ${key}`, error);
+    }
+  }
+
+  /**
+   * 获取过期时间
+   */
+  private async getExpirationTime(key: string): Promise<number> {
+    try {
+      const ttl = await this.redis.ttl(key);
+      if (ttl === -1 || ttl === -2) {
+        return Date.now() + 15 * 60 * 1000; // 默认15分钟
+      }
+      return Date.now() + ttl * 1000;
+    } catch (error) {
+      this.logger.error(`获取过期时间失败: ${key}`, error);
+      return Date.now() + 15 * 60 * 1000;
+    }
+  }
+
+  /**
+   * 重置限流计数
+   */
+  async resetLimit(key: string): Promise<void> {
+    const fullKey = `${this.defaultOptions.keyPrefix}${key}`;
+
+    try {
+      await this.redis.del(fullKey);
+      this.logger.log(`限流重置成功: ${key}`);
+    } catch (error) {
+      this.logger.error(`重置限流失败: ${key}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取限流信息
+   */
+  async getLimitInfo(key: string): Promise<RateLimitInfo | null> {
+    const fullKey = `${this.defaultOptions.keyPrefix}${key}`;
+
+    try {
+      const current = await this.getCurrentCount(fullKey, this.defaultOptions.windowMs);
+      const expiresAt = await this.getExpirationTime(fullKey);
+
+      return {
+        key: fullKey,
+        points: current,
+        expiresAt,
+        remaining: Math.max(0, this.defaultOptions.maxRequests - current),
+        resetTime: expiresAt,
+      };
+    } catch (error) {
+      this.logger.error(`获取限流信息失败: ${key}`, error);
+      return null;
+    }
+  }
+
+  /**
+   * 清理过期限流键
+   */
+  async cleanup(): Promise<number> {
+    const pattern = `${this.defaultOptions.keyPrefix}*`;
+
+    try {
+      const keys = await this.redis.keys(pattern);
+
+      let cleaned = 0;
+      for (const key of keys) {
+        const ttl = await this.redis.ttl(key);
+        if (ttl === -1) {
+          await this.redis.del(key);
+          cleaned++;
+        }
+      }
+
+      if (cleaned > 0) {
+        this.logger.log(`清理了 ${cleaned} 个过期的限流键`);
+      }
+
+      return cleaned;
+    } catch (error) {
+      this.logger.error('清理过期限流键失败', error);
+      return 0;
+    }
+  }
+}

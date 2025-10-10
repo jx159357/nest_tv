@@ -11,8 +11,8 @@
           @keyup.enter="handleSearch"
         />
         <button
-          @click="handleSearch"
           class="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          @click="handleSearch"
         >
           搜索
         </button>
@@ -33,12 +33,7 @@
           @click="goToMediaDetail(media.id)"
         />
       </div>
-      <EmptyState
-        v-else
-        title="暂无热门视频"
-        description="敬请期待更多精彩内容"
-        icon="film"
-      />
+      <EmptyState v-else title="暂无热门视频" description="敬请期待更多精彩内容" icon="film" />
     </section>
 
     <!-- 最新视频 -->
@@ -55,12 +50,7 @@
           @click="goToMediaDetail(media.id)"
         />
       </div>
-      <EmptyState
-        v-else
-        title="暂无最新视频"
-        description="敬请期待更多精彩内容"
-        icon="film"
-      />
+      <EmptyState v-else title="暂无最新视频" description="敬请期待更多精彩内容" icon="film" />
     </section>
 
     <!-- 高评分视频 -->
@@ -77,82 +67,72 @@
           @click="goToMediaDetail(media.id)"
         />
       </div>
-      <EmptyState
-        v-else
-        title="暂无高评分视频"
-        description="敬请期待更多精彩内容"
-        icon="film"
-      />
+      <EmptyState v-else title="暂无高评分视频" description="敬请期待更多精彩内容" icon="film" />
     </section>
   </NavigationLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import { useMediaStore } from '@/stores/media'
-import NavigationLayout from '@/components/NavigationLayout.vue'
-import MediaCard from '@/components/MediaCard.vue'
-import LoadingSpinner from '@/components/LoadingSpinner.vue'
-import EmptyState from '@/components/EmptyState.vue'
-import type { MediaResource } from '@/types'
+  import { ref, onMounted } from 'vue';
+  import { useRouter } from 'vue-router';
+  import { useAuthStore } from '@/stores/auth';
+  import { useMediaStore } from '@/stores/media';
+  import NavigationLayout from '@/components/NavigationLayout.vue';
+  import MediaCard from '@/components/MediaCard.vue';
+  import LoadingSpinner from '@/components/LoadingSpinner.vue';
+  import EmptyState from '@/components/EmptyState.vue';
+  import type { MediaResource } from '@/types/media';
 
-const router = useRouter()
-const authStore = useAuthStore()
-const mediaStore = useMediaStore()
+  const router = useRouter();
+  const authStore = useAuthStore();
+  const mediaStore = useMediaStore();
 
-const searchQuery = ref('')
-const popularMedia = ref<MediaResource[]>([])
-const latestMedia = ref<MediaResource[]>([])
-const topRatedMedia = ref<MediaResource[]>([])
-const popularLoading = ref(false)
-const latestLoading = ref(false)
-const topRatedLoading = ref(false)
+  const searchQuery = ref('');
+  const popularMedia = ref<MediaResource[]>([]);
+  const latestMedia = ref<MediaResource[]>([]);
+  const topRatedMedia = ref<MediaResource[]>([]);
+  const popularLoading = ref(false);
+  const latestLoading = ref(false);
+  const topRatedLoading = ref(false);
 
-const loadHomeData = async () => {
-  popularLoading.value = true
-  latestLoading.value = true
-  topRatedLoading.value = true
+  const loadHomeData = async () => {
+    popularLoading.value = true;
+    latestLoading.value = true;
+    topRatedLoading.value = true;
 
-  try {
-    const [popular, latest, topRated] = await Promise.all([
-      mediaStore.fetchPopularMedia(8),
-      mediaStore.fetchLatestMedia(8),
-      mediaStore.fetchTopRatedMedia(8)
-    ])
-    
-    popularMedia.value = popular
-    latestMedia.value = latest
-    topRatedMedia.value = topRated
-  } catch (error) {
-    console.error('加载数据失败:', error)
-  } finally {
-    popularLoading.value = false
-    latestLoading.value = false
-    topRatedLoading.value = false
-  }
-}
+    try {
+      const [popular, latest, topRated] = await Promise.all([
+        mediaStore['fetchPopularMedia'](8),
+        mediaStore['fetchLatestMedia'](8),
+        mediaStore['fetchTopRatedMedia'](8),
+      ]);
 
-const handleSearch = () => {
-  if (searchQuery.value.trim()) {
-    router.push({
-      path: '/search',
-      query: { q: searchQuery.value.trim() }
-    })
-  }
-}
+      popularMedia.value = popular;
+      latestMedia.value = latest;
+      topRatedMedia.value = topRated;
+    } catch (error) {
+      console.error('加载数据失败:', error);
+    } finally {
+      popularLoading.value = false;
+      latestLoading.value = false;
+      topRatedLoading.value = false;
+    }
+  };
 
-const goToMediaDetail = (id: number) => {
-  router.push(`/media/${id}`)
-}
+  const handleSearch = () => {
+    if (searchQuery.value.trim()) {
+      router.push({
+        path: '/search',
+        query: { q: searchQuery.value.trim() },
+      });
+    }
+  };
 
-const handleLogout = () => {
-  authStore.logout()
-  router.push('/login')
-}
+  const goToMediaDetail = (id: number) => {
+    router.push(`/media/${id}`);
+  };
 
-onMounted(() => {
-  loadHomeData()
-})
+  onMounted(() => {
+    loadHomeData();
+  });
 </script>

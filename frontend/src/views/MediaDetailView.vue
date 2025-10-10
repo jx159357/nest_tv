@@ -7,11 +7,9 @@
           <div class="flex items-center">
             <router-link to="/" class="text-xl font-bold text-gray-900">视频平台</router-link>
           </div>
-          
+
           <div class="flex items-center space-x-4">
-            <router-link to="/" class="text-gray-700 hover:text-gray-900">
-              返回首页
-            </router-link>
+            <router-link to="/" class="text-gray-700 hover:text-gray-900"> 返回首页 </router-link>
           </div>
         </div>
       </div>
@@ -43,28 +41,28 @@
                   </div>
                 </div>
               </div>
-              
+
               <div class="space-y-4">
                 <h1 class="text-3xl font-bold text-gray-900">{{ media.title }}</h1>
-                
+
                 <div class="flex items-center space-x-4">
                   <div class="flex items-center">
                     <span class="text-yellow-400 text-lg">★</span>
-                    <span class="ml-1 text-gray-900 font-semibold">{{ media.rating.toFixed(1) }}</span>
+                    <span class="ml-1 text-gray-900 font-semibold">{{
+                      media.rating.toFixed(1)
+                    }}</span>
                     <span class="text-gray-500">/10</span>
                   </div>
-                  
-                  <div class="text-gray-500">
-                    观看 {{ media.viewCount }} 次
-                  </div>
+
+                  <div class="text-gray-500">观看 {{ media.viewCount }} 次</div>
                 </div>
 
                 <div class="flex flex-wrap gap-2">
                   <span class="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
                     {{ media.type }}
                   </span>
-                  <span 
-                    v-for="genre in media.genres" 
+                  <span
+                    v-for="genre in media.genres"
                     :key="genre"
                     class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
                   >
@@ -89,8 +87,8 @@
                 </div>
 
                 <button
-                  @click="goToWatch"
                   class="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                  @click="goToWatch"
                 >
                   立即观看
                 </button>
@@ -107,9 +105,7 @@
           <!-- 相关推荐 -->
           <div class="bg-white rounded-lg shadow-sm p-6">
             <h2 class="text-xl font-bold text-gray-900 mb-6">相关推荐</h2>
-            <div v-if="recommendationsLoading" class="text-center py-4">
-              加载中...
-            </div>
+            <div v-if="recommendationsLoading" class="text-center py-4">加载中...</div>
             <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div
                 v-for="recommendation in recommendations"
@@ -129,7 +125,9 @@
                   </div>
                 </div>
                 <div class="p-3">
-                  <h3 class="font-medium text-gray-900 text-sm line-clamp-2">{{ recommendation.title }}</h3>
+                  <h3 class="font-medium text-gray-900 text-sm line-clamp-2">
+                    {{ recommendation.title }}
+                  </h3>
                   <div class="flex items-center justify-between text-xs text-gray-500 mt-1">
                     <span>评分: {{ recommendation.rating.toFixed(1) }}</span>
                     <span>观看: {{ recommendation.viewCount }}</span>
@@ -160,12 +158,14 @@
                       {{ playSource.resolution }} {{ playSource.format }}
                     </div>
                   </div>
-                  <span 
+                  <span
                     :class="[
                       'px-2 py-1 rounded text-xs',
-                      playSource.status === 'active' ? 'bg-green-100 text-green-800' :
-                      playSource.status === 'error' ? 'bg-red-100 text-red-800' :
-                      'bg-yellow-100 text-yellow-800'
+                      playSource.status === 'active'
+                        ? 'bg-green-100 text-green-800'
+                        : playSource.status === 'error'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-yellow-100 text-yellow-800',
                     ]"
                   >
                     {{ getStatusText(playSource.status) }}
@@ -173,13 +173,14 @@
                 </div>
               </div>
             </div>
-            <div v-else class="text-gray-500 text-sm">
-              暂无可用播放源
-            </div>
+            <div v-else class="text-gray-500 text-sm">暂无可用播放源</div>
           </div>
 
           <!-- 下载链接 -->
-          <div v-if="media.downloadUrls && media.downloadUrls.length > 0" class="bg-white rounded-lg shadow-sm p-6">
+          <div
+            v-if="media.downloadUrls && media.downloadUrls.length > 0"
+            class="bg-white rounded-lg shadow-sm p-6"
+          >
             <h3 class="text-lg font-bold text-gray-900 mb-4">下载链接</h3>
             <div class="space-y-2">
               <a
@@ -197,9 +198,7 @@
           <!-- 来源信息 -->
           <div v-if="media.source" class="bg-white rounded-lg shadow-sm p-6">
             <h3 class="text-lg font-bold text-gray-900 mb-4">来源信息</h3>
-            <div class="text-gray-600">
-              来源平台: {{ media.source }}
-            </div>
+            <div class="text-gray-600">来源平台: {{ media.source }}</div>
           </div>
         </div>
       </div>
@@ -212,74 +211,74 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useMediaStore } from '@/stores/media'
+  import { ref, onMounted } from 'vue';
+  import { useRoute, useRouter } from 'vue-router';
+  import { useMediaStore } from '@/stores/media';
 
-const route = useRoute()
-const router = useRouter()
-const mediaStore = useMediaStore()
+  const route = useRoute();
+  const router = useRouter();
+  const mediaStore = useMediaStore();
 
-const media = ref(null)
-const recommendations = ref([])
-const loading = ref(true)
-const recommendationsLoading = ref(false)
+  const media = ref(null);
+  const recommendations = ref([]);
+  const loading = ref(true);
+  const recommendationsLoading = ref(false);
 
-const loadMedia = async () => {
-  const mediaId = parseInt(route.params.id)
-  loading.value = true
-  
-  try {
-    const mediaData = await mediaStore.fetchMediaDetail(mediaId)
-    media.value = mediaData
-    
-    // 加载推荐内容
-    loadRecommendations(mediaId)
-  } catch (error) {
-    console.error('加载媒体详情失败:', error)
-  } finally {
-    loading.value = false
-  }
-}
+  const loadMedia = async () => {
+    const mediaId = parseInt(route.params.id);
+    loading.value = true;
 
-const loadRecommendations = async (mediaId) => {
-  recommendationsLoading.value = true
-  
-  try {
-    const data = await mediaStore.fetchRecommendations(mediaId, 6)
-    recommendations.value = data
-  } catch (error) {
-    console.error('加载推荐失败:', error)
-  } finally {
-    recommendationsLoading.value = false
-  }
-}
+    try {
+      const mediaData = await mediaStore.fetchMediaDetail(mediaId);
+      media.value = mediaData;
 
-const goToWatch = () => {
-  router.push(`/watch/${media.value.id}`)
-}
+      // 加载推荐内容
+      loadRecommendations(mediaId);
+    } catch (error) {
+      console.error('加载媒体详情失败:', error);
+    } finally {
+      loading.value = false;
+    }
+  };
 
-const goToMediaDetail = (id) => {
-  router.push(`/media/${id}`)
-}
+  const loadRecommendations = async mediaId => {
+    recommendationsLoading.value = true;
 
-const getStatusText = (status) => {
-  const statusMap = {
-    'active': '可用',
-    'inactive': '不可用',
-    'error': '错误',
-    'checking': '检查中'
-  }
-  return statusMap[status] || status
-}
+    try {
+      const data = await mediaStore.fetchRecommendations(mediaId, 6);
+      recommendations.value = data;
+    } catch (error) {
+      console.error('加载推荐失败:', error);
+    } finally {
+      recommendationsLoading.value = false;
+    }
+  };
 
-const formatDate = (dateString) => {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  return date.toLocaleDateString('zh-CN')
-}
+  const goToWatch = () => {
+    router.push(`/watch/${media.value.id}`);
+  };
 
-onMounted(() => {
-  loadMedia()
-})
+  const goToMediaDetail = id => {
+    router.push(`/media/${id}`);
+  };
+
+  const getStatusText = status => {
+    const statusMap = {
+      active: '可用',
+      inactive: '不可用',
+      error: '错误',
+      checking: '检查中',
+    };
+    return statusMap[status] || status;
+  };
+
+  const formatDate = dateString => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('zh-CN');
+  };
+
+  onMounted(() => {
+    loadMedia();
+  });
 </script>

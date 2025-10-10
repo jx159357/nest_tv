@@ -25,9 +25,19 @@ let CacheService = CacheService_1 = class CacheService {
     logger = new common_1.Logger(CacheService_1.name);
     defaultPrefix = 'nest_tv:';
     defaultTtl = 1800;
+    memoryCache = new Map();
+    defaultMemoryTtl = 300;
+    stats = {
+        hits: 0,
+        misses: 0,
+        memoryHits: 0,
+        redisHits: 0,
+        errors: 0,
+    };
     constructor(redis) {
         this.redis = redis;
-        this.logger.log('缓存服务初始化');
+        this.logger.log('多层缓存服务初始化');
+        this.startMemoryCacheCleanup();
     }
     async set(key, value, options = {}) {
         const { ttl = this.defaultTtl, prefix = this.defaultPrefix } = options;
@@ -174,6 +184,149 @@ let CacheService = CacheService_1 = class CacheService {
         catch (error) {
             this.logger.error('获取Redis统计信息失败', error);
             return {};
+        }
+    }
+    async multiSet(key, value, options = {}) {
+        const { ttl = this.defaultTtl, prefix = this.defaultPrefix, useMemoryCache = true, useRedisCache = true, memoryTtl = this.defaultMemoryTtl, priority = 'medium' } = options;
+        const fullKey = `${prefix}${key}`;
+        try {
+            if (useMemoryCache) {
+                this.setMemoryCache(fullKey, value, memoryTtl, priority);
+            }
+            if (useRedisCache) {
+                const serializedValue = JSON.stringify(value);
+                await this.redis.set(fullKey, serializedValue, 'EX', ttl);
+            }
+            this.logger.debug(`多层缓存设置成功: ${fullKey} [内存:${useMemoryCache}, Redis:${useRedisCache}]`);
+        }
+        catch (error) {
+            this.stats.errors++;
+            this.logger.error(`多层缓存设置失败: ${fullKey}`, error);
+            throw error;
+        }
+    }
+    async multiGet(key, options = {}) {
+        const { prefix = this.defaultPrefix, useMemoryCache = true, useRedisCache = true } = options;
+        const fullKey = `${prefix}${key}`;
+        try {
+            if (useMemoryCache) {
+                const memoryResult = this.getMemoryCache(fullKey);
+                if (memoryResult !== null) {
+                    this.stats.hits++;
+                    this.stats.memoryHits++;
+                    this.logger.debug(`内存缓存命中: ${fullKey}`);
+                    return memoryResult;
+                }
+            }
+            if (useRedisCache) {
+                const value = await this.redis.get(fullKey);
+                if (value !== null && value !== undefined) {
+                    const parsedValue = JSON.parse(value);
+                    if (useMemoryCache) {
+                        this.setMemoryCache(fullKey, parsedValue, this.defaultMemoryTtl, 'low');
+                    }
+                    this.stats.hits++;
+                    this.stats.redisHits++;
+                    this.logger.debug(`Redis缓存命中: ${fullKey}`);
+                    return parsedValue;
+                }
+            }
+            this.stats.misses++;
+            this.logger.debug(`多层缓存未命中: ${fullKey}`);
+            return null;
+        }
+        catch (error) {
+            this.stats.errors++;
+            this.logger.error(`多层缓存获取失败: ${fullKey}`, error);
+            return null;
+        }
+    }
+    async multiDelete(key, options = {}) {
+        const { prefix = this.defaultPrefix, useMemoryCache = true, useRedisCache = true } = options;
+        const fullKey = `${prefix}${key}`;
+        try {
+            if (useMemoryCache) {
+                this.deleteMemoryCache(fullKey);
+            }
+            if (useRedisCache) {
+                await this.redis.del(fullKey);
+            }
+            this.logger.debug(`多层缓存删除成功: ${fullKey}`);
+        }
+        catch (error) {
+            this.logger.error(`多层缓存删除失败: ${fullKey}`, error);
+            throw error;
+        }
+    }
+    getCacheStats() {
+        const totalRequests = this.stats.hits + this.stats.misses;
+        const hitRate = totalRequests > 0 ? (this.stats.hits / totalRequests * 100).toFixed(2) : '0';
+        return {
+            ...this.stats,
+            totalRequests,
+            hitRate: `${hitRate}%`,
+            memoryCacheSize: this.memoryCache.size,
+            memoryHitRate: this.stats.hits > 0 ?
+                (this.stats.memoryHits / this.stats.hits * 100).toFixed(2) : '0',
+        };
+    }
+    cleanupMemoryCache() {
+        const now = Date.now();
+        const keysToDelete = [];
+        for (const [key, item] of this.memoryCache.entries()) {
+            if (item.expiresAt <= now) {
+                keysToDelete.push(key);
+            }
+        }
+        keysToDelete.forEach(key => this.memoryCache.delete(key));
+        if (keysToDelete.length > 0) {
+            this.logger.debug(`清理过期内存缓存: ${keysToDelete.length} 个键`);
+        }
+    }
+    startMemoryCacheCleanup() {
+        setInterval(() => {
+            this.cleanupMemoryCache();
+        }, 120000);
+    }
+    setMemoryCache(key, value, ttl, priority) {
+        const expiresAt = Date.now() + (ttl * 1000);
+        this.memoryCache.set(key, {
+            value,
+            expiresAt,
+            metadata: { priority, setAt: Date.now() }
+        });
+        if (this.memoryCache.size > 1000) {
+            this.evictLowPriorityCache();
+        }
+    }
+    getMemoryCache(key) {
+        const item = this.memoryCache.get(key);
+        if (!item) {
+            return null;
+        }
+        if (item.expiresAt <= Date.now()) {
+            this.memoryCache.delete(key);
+            return null;
+        }
+        return item.value;
+    }
+    deleteMemoryCache(key) {
+        this.memoryCache.delete(key);
+    }
+    evictLowPriorityCache() {
+        const keysToDelete = [];
+        const now = Date.now();
+        for (const [key, item] of this.memoryCache.entries()) {
+            if (item.expiresAt <= now || item.metadata?.priority === 'low') {
+                keysToDelete.push(key);
+                if (keysToDelete.length >= 100) {
+                    break;
+                }
+            }
+        }
+        keysToDelete.forEach(key => this.memoryCache.delete(key));
+        if (keysToDelete.length > 0) {
+            this.logger.debug(`淘汰低优先级内存缓存: ${keysToDelete.length} 个键`);
         }
     }
 };

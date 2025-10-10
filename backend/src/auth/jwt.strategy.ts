@@ -1,6 +1,6 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '../users/user.service';
 
@@ -10,15 +10,24 @@ import { UserService } from '../users/user.service';
  */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
+  private readonly logger = new Logger(JwtStrategy.name);
+
   constructor(
     private configService: ConfigService,
     private userService: UserService,
   ) {
+    const jwtSecret = configService.get<string>('JWT_SECRET');
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET环境变量未设置');
+    }
+
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey:
-        configService.get<string>('JWT_SECRET') || 'default_secret_key_change_in_production',
+      secretOrKey: jwtSecret,
+      algorithms: ['HS256'], // 指定算法
+      audience: configService.get<string>('JWT_AUDIENCE', 'nest-tv-client'),
+      issuer: configService.get<string>('JWT_ISSUER', 'nest-tv-server'),
     });
   }
 
@@ -28,13 +37,44 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
    * @returns 用户信息
    */
   async validate(payload: any) {
-    // 根据用户ID查找用户
-    const user = await this.userService.findById(payload.sub);
+    try {
+      // 验证载荷格式
+      if (!payload || !payload.sub || typeof payload.sub !== 'number') {
+        throw new UnauthorizedException('无效的令牌载荷');
+      }
 
-    if (!user) {
-      throw new UnauthorizedException('用户不存在');
+      // 验证令牌签发者和受众
+      const audience = this.configService.get<string>('JWT_AUDIENCE', 'nest-tv-client');
+      const issuer = this.configService.get<string>('JWT_ISSUER', 'nest-tv-server');
+      
+      if (payload.aud && !payload.aud.includes(audience)) {
+        throw new UnauthorizedException('令牌受众不匹配');
+      }
+
+      if (payload.iss && payload.iss !== issuer) {
+        throw new UnauthorizedException('令牌签发者不匹配');
+      }
+
+      // 根据用户ID查找用户
+      const user = await this.userService.findById(payload.sub);
+
+      if (!user) {
+        throw new UnauthorizedException('用户不存在');
+      }
+
+      if (!user.isActive) {
+        throw new UnauthorizedException('用户已被禁用');
+      }
+
+      // 记录认证成功日志（生产环境可关闭）
+      if (process.env.NODE_ENV === 'development') {
+        this.logger.debug(`用户认证成功: ${user.username} (ID: ${user.id})`);
+      }
+
+      return user;
+    } catch (error) {
+      this.logger.warn(`JWT验证失败: ${error.message}`, error.stack);
+      throw new UnauthorizedException('令牌验证失败');
     }
-
-    return user;
   }
 }

@@ -33,6 +33,7 @@ export declare class MediaResource {
     isActive: boolean;
     source?: string;
     metadata?: any;
+    duration?: number;
     episodeCount?: number;
     downloadUrls?: string[];
     createdAt: Date;

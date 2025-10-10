@@ -1,3 +1,4 @@
+import { MediaResourceService } from '../media/media-resource.service';
 export interface CrawlerTarget {
     name: string;
     baseUrl: string;
@@ -30,16 +31,26 @@ export interface CrawledData {
     metadata?: any;
 }
 export declare class CrawlerService {
+    private readonly mediaResourceService;
     private readonly logger;
-    private readonly targets;
+    private readonly httpClient;
+    private readonly cache;
+    constructor(mediaResourceService: MediaResourceService);
+    getAvailableTargets(): CrawlerTarget[];
+    private validateUrl;
+    private getCache;
+    private setCache;
+    private cleanCache;
+    private delay;
     crawlWebsite(targetName: string, url: string): Promise<CrawledData | null>;
     batchCrawl(targetName: string, urls: string[]): Promise<CrawledData[]>;
-    getAvailableTargets(): CrawlerTarget[];
+    private extractText;
     private inferMediaType;
     private extractGenres;
     private parseDate;
     private parseRating;
-    private extractDownloadUrls;
     private resolveUrl;
-    private delay;
+    private extractDownloadUrls;
+    private validateCrawledData;
+    testConnection(targetName: string): Promise<boolean>;
 }

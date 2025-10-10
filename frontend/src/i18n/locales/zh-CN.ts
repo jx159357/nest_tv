@@ -59,7 +59,7 @@ export const zhCN = {
     pending: '待处理',
     completed: '已完成',
     failed: '失败',
-    cancelled: '已取消'
+    cancelled: '已取消',
   },
 
   // 错误信息
@@ -76,7 +76,7 @@ export const zhCN = {
     reloadPage: '重新加载页面',
     tryAgainLater: '请稍后重试',
     contactAdmin: '请联系管理员',
-    
+
     // 认证错误
     invalidCredentials: '用户名或密码错误',
     userNotFound: '用户不存在',
@@ -90,7 +90,7 @@ export const zhCN = {
     accountDisabled: '账号已被禁用，请联系管理员',
     emailNotVerified: '邮箱未验证，请查收验证邮件',
     sessionExpired: '会话已过期，请重新登录',
-    
+
     // 业务错误
     mediaNotFound: '媒体资源不存在',
     mediaNotAvailable: '媒体资源暂不可用',
@@ -109,7 +109,7 @@ export const zhCN = {
     crawlerStopFailed: '停止爬虫失败',
     permissionDenied: '权限不足',
     operationFailed: '操作失败',
-    dataSyncFailed: '数据同步失败'
+    dataSyncFailed: '数据同步失败',
   },
 
   // 状态消息
@@ -138,7 +138,7 @@ export const zhCN = {
     finalizing: '完成中...',
     cancelling: '取消中...',
     pausing: '暂停中...',
-    resuming: '恢复中...'
+    resuming: '恢复中...',
   },
 
   // 导航菜单
@@ -189,7 +189,7 @@ export const zhCN = {
     resetPassword: '重置密码',
     verifyEmail: '验证邮箱',
     completeProfile: '完善资料',
-    upgradeAccount: '升级账号'
+    upgradeAccount: '升级账号',
   },
 
   // 用户相关
@@ -227,30 +227,30 @@ export const zhCN = {
     sessions: '会话',
     activity: '活动记录',
     statistics: '统计数据',
-    
+
     // 性别选项
     genders: {
       male: '男',
       female: '女',
       other: '其他',
-      preferNotToSay: '保密'
+      preferNotToSay: '保密',
     },
-    
+
     // 状态选项
     statusOptions: {
       active: '活跃',
       inactive: '非活跃',
       suspended: '已暂停',
-      banned: '已封禁'
+      banned: '已封禁',
     },
-    
+
     // 角色选项
     roles: {
       user: '普通用户',
       vip: 'VIP用户',
       admin: '管理员',
-      superAdmin: '超级管理员'
-    }
+      superAdmin: '超级管理员',
+    },
   },
 
   // 认证相关
@@ -265,7 +265,7 @@ export const zhCN = {
       loginWithOther: '其他登录方式',
       loading: '登录中...',
       success: '登录成功！',
-      error: '登录失败'
+      error: '登录失败',
     },
     register: {
       title: '注册新账号',
@@ -281,7 +281,7 @@ export const zhCN = {
       privacy: '隐私政策',
       loading: '注册中...',
       success: '注册成功！正在跳转到登录页面...',
-      error: '注册失败'
+      error: '注册失败',
     },
     forgotPassword: {
       title: '重置密码',
@@ -290,8 +290,8 @@ export const zhCN = {
       backButton: '返回登录',
       loading: '发送中...',
       success: '重置邮件已发送，请查收邮箱',
-      error: '发送失败，请重试'
-    }
+      error: '发送失败，请重试',
+    },
   },
 
   // 媒体相关
@@ -315,34 +315,34 @@ export const zhCN = {
     status: '状态',
     source: '来源',
     metadata: '元数据',
-    
+
     // 类型选项
     types: {
       movie: '电影',
       tvSeries: '电视剧',
       anime: '动漫',
       documentary: '纪录片',
-      variety: '综艺'
+      variety: '综艺',
     },
-    
+
     // 画质选项
     qualities: {
       sd: '标清',
       hd: '高清',
       fullHd: '全高清',
       blueRay: '蓝光',
-      '4k': '4K'
+      '4k': '4K',
     },
-    
+
     // 状态选项
     statusOptions: {
       available: '可观看',
       unavailable: '暂不可用',
       comingSoon: '即将上线',
       expired: '已过期',
-      removed: '已下架'
+      removed: '已下架',
     },
-    
+
     // 操作
     actions: {
       play: '播放',
@@ -355,8 +355,8 @@ export const zhCN = {
       viewDetails: '查看详情',
       related: '相关推荐',
       comments: '评论',
-      rate: '评分'
-    }
+      rate: '评分',
+    },
   },
 
   // 播放器相关
@@ -401,7 +401,7 @@ export const zhCN = {
     speedSlower: '减速',
     timeSkip: '跳转',
     timeForward: '前进',
-    timeBackward: '后退'
+    timeBackward: '后退',
   },
 
   // 搜索相关
@@ -422,7 +422,7 @@ export const zhCN = {
     language: '语言',
     region: '地区',
     tags: '标签',
-    
+
     // 排序选项
     sortByOptions: {
       relevance: '相关度',
@@ -430,22 +430,22 @@ export const zhCN = {
       popular: '最受欢迎',
       topRated: '高评分',
       mostViewed: '观看最多',
-      mostFavorited: '收藏最多'
+      mostFavorited: '收藏最多',
     },
-    
+
     // 排序方式
     sortOrderOptions: {
       asc: '升序',
-      desc: '降序'
+      desc: '降序',
     },
-    
+
     // 搜索建议
     suggestions: {
       searchHistory: '搜索历史',
       trendingSearches: '热门搜索',
       recommended: '推荐搜索',
-      recentSearches: '最近搜索'
-    }
+      recentSearches: '最近搜索',
+    },
   },
 
   // 推荐系统
@@ -465,7 +465,7 @@ export const zhCN = {
     refresh: '刷新推荐',
     noRecommendations: '暂无推荐内容',
     enableRecommendations: '开启推荐',
-    recommendationsSettings: '推荐设置'
+    recommendationsSettings: '推荐设置',
   },
 
   // 热搜相关
@@ -488,14 +488,14 @@ export const zhCN = {
       game: '游戏',
       travel: '旅游',
       food: '美食',
-      education: '教育'
+      education: '教育',
     },
     trendTypes: {
       up: '上升',
       down: '下降',
       stable: '稳定',
-      new: '新上榜'
-    }
+      new: '新上榜',
+    },
   },
 
   // 网盘解析
@@ -527,7 +527,7 @@ export const zhCN = {
     fileNotFound: '文件不存在',
     fileExpired: '文件已过期',
     quotaExceeded: '配额已用完',
-    permissionDenied: '权限不足'
+    permissionDenied: '权限不足',
   },
 
   // 磁力链接
@@ -568,7 +568,7 @@ export const zhCN = {
     torrentFile: '种子文件',
     noSeeds: '无做种者',
     slowSpeed: '速度较慢',
-    diskSpace: '磁盘空间不足'
+    diskSpace: '磁盘空间不足',
   },
 
   // IPTV
@@ -607,15 +607,15 @@ export const zhCN = {
       kids: '少儿',
       finance: '财经',
       military: '军事',
-      education: '教育'
+      education: '教育',
     },
     status: {
       online: '在线',
       offline: '离线',
       buffering: '缓冲中',
       error: '错误',
-      maintenance: '维护中'
-    }
+      maintenance: '维护中',
+    },
   },
 
   // 直播平台
@@ -629,7 +629,7 @@ export const zhCN = {
     yy: 'YY直播',
     room: '直播间',
     streamer: '主播',
-    title: '标题',
+    streamTitle: '标题',
     category: '分类',
     tags: '标签',
     viewers: '观众数',
@@ -657,7 +657,7 @@ export const zhCN = {
     filterByPlatform: '按平台筛选',
     filterByCategory: '按分类筛选',
     sortByViewers: '按观众数排序',
-    sortByPopular: '按热度排序'
+    sortByPopular: '按热度排序',
   },
 
   // TVBox协议
@@ -699,7 +699,7 @@ export const zhCN = {
     importData: '导入数据',
     noSubscriptions: '暂无订阅',
     addFirstSubscription: '添加第一个订阅',
-    manageSubscriptions: '管理订阅'
+    manageSubscriptions: '管理订阅',
   },
 
   // 爬虫管理
@@ -748,7 +748,7 @@ export const zhCN = {
     crawlerInfo: '爬虫信息',
     performance: '性能监控',
     resourceUsage: '资源使用',
-    networkStats: '网络统计'
+    networkStats: '网络统计',
   },
 
   // 后台管理
@@ -767,9 +767,9 @@ export const zhCN = {
     settings: '系统设置',
     statistics: '数据统计',
     monitoring: '系统监控',
-    
+
     // 系统统计
-    statistics: {
+    systemStatistics: {
       title: '数据统计',
       overview: '概览',
       userStats: '用户统计',
@@ -791,9 +791,9 @@ export const zhCN = {
       realtime: '实时数据',
       lastUpdated: '最后更新',
       dataRange: '数据范围',
-      customRange: '自定义范围'
+      customRange: '自定义范围',
     },
-    
+
     // 日志管理
     logs: {
       title: '日志管理',
@@ -821,8 +821,8 @@ export const zhCN = {
       noLogs: '暂无日志',
       loadMore: '加载更多',
       autoRefresh: '自动刷新',
-      realTimeMode: '实时模式'
-    }
+      realTimeMode: '实时模式',
+    },
   },
 
   // 表单验证
@@ -848,7 +848,7 @@ export const zhCN = {
     weak: '弱',
     medium: '中等',
     strong: '强',
-    veryStrong: '非常强'
+    veryStrong: '非常强',
   },
 
   // 时间格式
@@ -861,7 +861,7 @@ export const zhCN = {
     weekAgo: '{count}周前',
     monthAgo: '{count}个月前',
     yearAgo: '{count}年前',
-    
+
     // 日期格式
     formats: {
       short: 'MM/DD',
@@ -869,8 +869,8 @@ export const zhCN = {
       long: 'YYYY年MM月DD日',
       full: 'YYYY年MM月DD日 HH:mm',
       time: 'HH:mm',
-      dateTime: 'YYYY-MM-DD HH:mm:ss'
-    }
+      dateTime: 'YYYY-MM-DD HH:mm:ss',
+    },
   },
 
   // 文件大小
@@ -879,6 +879,6 @@ export const zhCN = {
     kb: 'KB',
     mb: 'MB',
     gb: 'GB',
-    tb: 'TB'
-  }
-}
+    tb: 'TB',
+  },
+};

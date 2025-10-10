@@ -5,12 +5,10 @@
         <h2 class="text-3xl font-bold text-gray-900">注册账号</h2>
         <p class="mt-2 text-gray-600">创建您的新账号</p>
       </div>
-      
-      <form @submit.prevent="handleRegister" class="space-y-6">
+
+      <form class="space-y-6" @submit.prevent="handleRegister">
         <div>
-          <label for="username" class="block text-sm font-medium text-gray-700">
-            用户名
-          </label>
+          <label for="username" class="block text-sm font-medium text-gray-700"> 用户名 </label>
           <input
             id="username"
             v-model="form.username"
@@ -22,9 +20,7 @@
         </div>
 
         <div>
-          <label for="email" class="block text-sm font-medium text-gray-700">
-            邮箱
-          </label>
+          <label for="email" class="block text-sm font-medium text-gray-700"> 邮箱 </label>
           <input
             id="email"
             v-model="form.email"
@@ -36,9 +32,7 @@
         </div>
 
         <div>
-          <label for="password" class="block text-sm font-medium text-gray-700">
-            密码
-          </label>
+          <label for="password" class="block text-sm font-medium text-gray-700"> 密码 </label>
           <input
             id="password"
             v-model="form.password"
@@ -68,9 +62,7 @@
           {{ error }}
         </div>
 
-        <div v-if="success" class="text-green-600 text-sm">
-          注册成功！正在跳转到登录页面...
-        </div>
+        <div v-if="success" class="text-green-600 text-sm">注册成功！正在跳转到登录页面...</div>
 
         <div>
           <button
@@ -96,45 +88,45 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+  import { ref } from 'vue';
+  import { useRouter } from 'vue-router';
+  import { useAuthStore } from '@/stores/auth';
 
-const router = useRouter()
-const authStore = useAuthStore()
+  const router = useRouter();
+  const authStore = useAuthStore();
 
-const form = ref({
-  username: '',
-  email: '',
-  password: '',
-  confirmPassword: ''
-})
+  const form = ref({
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
 
-const error = ref('')
-const success = ref(false)
+  const error = ref('');
+  const success = ref(false);
 
-const handleRegister = async () => {
-  error.value = ''
-  
-  // 验证密码确认
-  if (form.value.password !== form.value.confirmPassword) {
-    error.value = '两次输入的密码不一致'
-    return
-  }
+  const handleRegister = async () => {
+    error.value = '';
 
-  const result = await authStore.register({
-    username: form.value.username,
-    email: form.value.email,
-    password: form.value.password
-  })
+    // 验证密码确认
+    if (form.value.password !== form.value.confirmPassword) {
+      error.value = '两次输入的密码不一致';
+      return;
+    }
 
-  if (result.success) {
-    success.value = true
-    setTimeout(() => {
-      router.push('/login')
-    }, 2000)
-  } else {
-    error.value = result.error
-  }
-}
+    const result = await authStore.register({
+      username: form.value.username,
+      email: form.value.email,
+      password: form.value.password,
+    });
+
+    if (result.success) {
+      success.value = true;
+      setTimeout(() => {
+        router.push('/login');
+      }, 2000);
+    } else {
+      error.value = result.error;
+    }
+  };
 </script>

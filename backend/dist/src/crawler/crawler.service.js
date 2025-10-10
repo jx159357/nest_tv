@@ -38,6 +38,9 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -47,132 +50,133 @@ exports.CrawlerService = void 0;
 const common_1 = require("@nestjs/common");
 const axios_1 = __importDefault(require("axios"));
 const cheerio = __importStar(require("cheerio"));
+const crawler_config_1 = require("./crawler.config");
+const media_resource_service_1 = require("../media/media-resource.service");
 let CrawlerService = CrawlerService_1 = class CrawlerService {
+    mediaResourceService;
     logger = new common_1.Logger(CrawlerService_1.name);
-    targets = [
-        {
-            name: '电影天堂',
-            baseUrl: 'https://www.dy2018.com',
-            selectors: {
-                title: '.title a',
-                description: '.description',
-                poster: '.poster img',
-                rating: '.rating',
-                director: '.director',
-                actors: '.actors',
-                genres: ['.genre'],
-                releaseDate: '.release-date',
-                downloadUrls: ['.download-link'],
+    httpClient;
+    cache = new Map();
+    constructor(mediaResourceService) {
+        this.mediaResourceService = mediaResourceService;
+        this.httpClient = axios_1.default.create({
+            timeout: crawler_config_1.CRAWLER_CONFIG.request.timeout,
+            headers: {
+                'User-Agent': crawler_config_1.CRAWLER_CONFIG.request.userAgent,
+                ...crawler_config_1.CRAWLER_CONFIG.request.headers,
             },
-        },
-        {
-            name: 'BT种子',
-            baseUrl: 'https://www.btdigg.com',
-            selectors: {
-                title: '.movie-title',
-                description: '.movie-description',
-                poster: '.movie-poster img',
-                rating: '.movie-rating',
-                director: '.movie-director',
-                actors: '.movie-actors',
-                genres: ['.movie-genres'],
-                releaseDate: '.movie-date',
-                downloadUrls: ['.torrent-link'],
-            },
-        },
-        {
-            name: '豆瓣电影',
-            baseUrl: 'https://movie.douban.com',
-            selectors: {
-                title: 'h1 span[property="v:itemreviewed"]',
-                description: '.related-info .indent .all',
-                poster: '.related-pic img',
-                rating: '.rating_self strong',
-                director: '.info a[rel="v:directedBy"]',
-                actors: '.info a[rel="v:starring"]',
-                genres: ['.info span[property="v:genre"]'],
-                releaseDate: '.info span[property="v:initialReleaseDate"]',
-                downloadUrls: ['#info a[href*="download"]'],
-            },
-        },
-        {
-            name: 'IMDB',
-            baseUrl: 'https://www.imdb.com',
-            selectors: {
-                title: '[data-testid="hero-title-block__title"]',
-                description: '[data-testid="plot"] span',
-                poster: '.ipc-media img',
-                rating: '[data-testid="hero-rating-bar__aggregate-rating__score"] span',
-                director: 'a[href*="tt_ov_dr"]',
-                actors: 'a[href*="tt_ov_st"]',
-                genres: ['.ipc-chip span'],
-                releaseDate: '[data-testid="title-details-releasedate"] div',
-                downloadUrls: ['.ipc-split-button a'],
-            },
-        },
-        {
-            name: 'BT蚂蚁',
-            baseUrl: 'https://www.btant.com',
-            selectors: {
-                title: '.movie-title h1',
-                description: '.movie-desc',
-                poster: '.movie-poster img',
-                rating: '.movie-rating',
-                director: '.movie-director',
-                actors: '.movie-actor',
-                genres: ['.movie-genre'],
-                releaseDate: '.movie-date',
-                downloadUrls: ['.download-link'],
-            },
-        },
-        {
-            name: '电影蜜蜂',
-            baseUrl: 'https://www.dytt8.net',
-            selectors: {
-                title: '.title h1',
-                description: '.content',
-                poster: '.poster img',
-                rating: '.rating',
-                director: '.director',
-                actors: '.actors',
-                genres: ['.genre'],
-                releaseDate: '.date',
-                downloadUrls: ['.download a'],
-            },
-        },
-    ];
+        });
+        this.httpClient.interceptors.request.use((config) => {
+            this.logger.log(`请求URL: ${config.url}`);
+            return config;
+        }, (error) => {
+            this.logger.error('请求拦截器错误:', error);
+            return Promise.reject(error);
+        });
+        this.httpClient.interceptors.response.use((response) => {
+            this.logger.log(`响应状态: ${response.status} - ${response.config.url}`);
+            return response;
+        }, (error) => {
+            this.logger.error('响应拦截器错误:', error.message);
+            return Promise.reject(error);
+        });
+    }
+    getAvailableTargets() {
+        return crawler_config_1.CRAWLER_TARGETS.filter(target => {
+            try {
+                new URL(target.baseUrl);
+                return true;
+            }
+            catch {
+                return false;
+            }
+        });
+    }
+    validateUrl(url) {
+        try {
+            const urlObj = new URL(url);
+            const ext = urlObj.pathname.toLowerCase();
+            const allowedExtensions = crawler_config_1.CRAWLER_RULES.urlFilters.allowedExtensions;
+            if (!allowedExtensions.some(allowedExt => ext.endsWith(allowedExt) || allowedExt === '')) {
+                return false;
+            }
+            const disallowedPaths = crawler_config_1.CRAWLER_RULES.urlFilters.disallowedPaths;
+            if (disallowedPaths.some(disallowed => urlObj.pathname.includes(disallowed))) {
+                return false;
+            }
+            return true;
+        }
+        catch {
+            return false;
+        }
+    }
+    getCache(key) {
+        const cached = this.cache.get(key);
+        if (cached && Date.now() - cached.timestamp < crawler_config_1.CRAWLER_CONFIG.cache.ttl * 1000) {
+            return cached.data;
+        }
+        this.cache.delete(key);
+        return null;
+    }
+    setCache(key, data) {
+        if (crawler_config_1.CRAWLER_CONFIG.cache.enabled && this.cache.size < crawler_config_1.CRAWLER_CONFIG.cache.maxSize) {
+            this.cache.set(key, { data, timestamp: Date.now() });
+        }
+    }
+    cleanCache() {
+        const now = Date.now();
+        for (const [key, value] of this.cache.entries()) {
+            if (now - value.timestamp > crawler_config_1.CRAWLER_CONFIG.cache.ttl * 1000) {
+                this.cache.delete(key);
+            }
+        }
+    }
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
     async crawlWebsite(targetName, url) {
         try {
-            const target = this.targets.find(t => t.name === targetName);
+            if (!this.validateUrl(url)) {
+                throw new Error(`URL不符合爬取规则: ${url}`);
+            }
+            const cacheKey = `crawl:${targetName}:${url}`;
+            const cached = this.getCache(cacheKey);
+            if (cached) {
+                this.logger.log(`使用缓存数据: ${url}`);
+                return cached;
+            }
+            const target = crawler_config_1.CRAWLER_TARGETS.find(t => t.name === targetName);
             if (!target) {
                 throw new Error(`未找到爬虫目标: ${targetName}`);
             }
             this.logger.log(`开始爬取 ${targetName}: ${url}`);
-            const response = await axios_1.default.get(url, {
-                timeout: 10000,
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                },
-            });
+            const response = await this.httpClient.get(url);
+            if (response.status !== 200) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
             const $ = cheerio.load(response.data);
             const crawledData = {
-                title: $(target.selectors.title).first().text().trim() || '未知标题',
-                description: $(target.selectors.description).first().text().trim(),
+                title: this.extractText($, target.selectors.title) || '未知标题',
+                description: this.extractText($, target.selectors.description),
                 type: this.inferMediaType(url),
-                director: $(target.selectors.director).first().text().trim(),
-                actors: $(target.selectors.actors).first().text().trim(),
-                genres: this.extractGenres($, target.selectors.genres[0]),
-                releaseDate: this.parseDate($(target.selectors.releaseDate).first().text().trim()),
+                director: this.extractText($, target.selectors.director),
+                actors: this.extractText($, target.selectors.actors),
+                genres: this.extractGenres($, target.selectors.genres),
+                releaseDate: this.parseDate(this.extractText($, target.selectors.releaseDate)),
                 poster: this.resolveUrl($(target.selectors.poster).first().attr('src'), target.baseUrl),
-                rating: this.parseRating($(target.selectors.rating).first().text().trim()),
+                rating: this.parseRating(this.extractText($, target.selectors.rating)),
                 source: target.name,
-                downloadUrls: this.extractDownloadUrls($, target.selectors.downloadUrls[0]),
+                downloadUrls: this.extractDownloadUrls($, target.selectors.downloadUrls),
                 metadata: {
                     crawledAt: new Date(),
                     crawledUrl: url,
                     website: target.name,
                 },
             };
+            if (!this.validateCrawledData(crawledData)) {
+                throw new Error('爬取的数据验证失败');
+            }
+            this.setCache(cacheKey, crawledData);
             this.logger.log(`成功爬取数据: ${crawledData.title}`);
             return crawledData;
         }
@@ -183,23 +187,28 @@ let CrawlerService = CrawlerService_1 = class CrawlerService {
     }
     async batchCrawl(targetName, urls) {
         const results = [];
-        const batchSize = 5;
+        const batchSize = crawler_config_1.CRAWLER_CONFIG.parsing.maxConcurrentRequests;
         for (let i = 0; i < urls.length; i += batchSize) {
             const batch = urls.slice(i, i + batchSize);
-            const promises = batch.map(url => this.crawlWebsite(targetName, url));
+            const promises = batch.map(async (url) => {
+                const result = await this.crawlWebsite(targetName, url);
+                await this.delay(crawler_config_1.CRAWLER_CONFIG.request.delay);
+                return result;
+            });
             const batchResults = await Promise.allSettled(promises);
             batchResults.forEach(result => {
                 if (result.status === 'fulfilled' && result.value) {
                     results.push(result.value);
                 }
             });
-            await this.delay(2000);
         }
         this.logger.log(`批量爬取完成，成功获取 ${results.length} 条数据`);
         return results;
     }
-    getAvailableTargets() {
-        return this.targets;
+    extractText($, selector) {
+        if (!selector)
+            return '';
+        return $(selector).first().text().trim();
     }
     inferMediaType(url) {
         const lowerUrl = url.toLowerCase();
@@ -217,14 +226,18 @@ let CrawlerService = CrawlerService_1 = class CrawlerService {
         }
         return 'movie';
     }
-    extractGenres($, selector) {
-        const genresText = $(selector).first().text().trim();
-        if (!genresText)
-            return [];
-        return genresText
-            .split(/[,，、\s]+/)
-            .map(genre => genre.trim())
-            .filter(genre => genre.length > 0);
+    extractGenres($, selectors) {
+        const genres = [];
+        for (const selector of selectors) {
+            const elements = $(selector);
+            elements.each((_, element) => {
+                const text = $(element).text().trim();
+                if (text && !genres.includes(text)) {
+                    genres.push(text);
+                }
+            });
+        }
+        return genres;
     }
     parseDate(dateString) {
         if (!dateString)
@@ -253,36 +266,63 @@ let CrawlerService = CrawlerService_1 = class CrawlerService {
         }
         return 0;
     }
-    extractDownloadUrls($, selector) {
-        const urls = [];
-        $(selector).each((index, element) => {
-            const href = $(element).attr('href');
-            if (href) {
-                urls.push(href);
-            }
-        });
-        return urls;
-    }
     resolveUrl(url, baseUrl) {
         if (!url)
             return undefined;
-        if (url.startsWith('http://') || url.startsWith('https://')) {
-            return url;
+        try {
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+                return url;
+            }
+            return new URL(url, baseUrl).href;
         }
-        if (url.startsWith('//')) {
-            return `https:${url}`;
+        catch {
+            return undefined;
         }
-        if (url.startsWith('/')) {
-            return `${baseUrl}${url}`;
-        }
-        return `${baseUrl}/${url}`;
     }
-    delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
+    extractDownloadUrls($, selectors) {
+        const urls = [];
+        for (const selector of selectors) {
+            $(selector).each((_, element) => {
+                const href = $(element).attr('href');
+                if (href && (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('magnet:'))) {
+                    urls.push(href);
+                }
+            });
+        }
+        return [...new Set(urls)];
+    }
+    validateCrawledData(data) {
+        if (!data.title || data.title.trim().length === 0) {
+            return false;
+        }
+        if (data.description && data.description.length > crawler_config_1.CRAWLER_CONFIG.cleaning.maxTextLength) {
+            return false;
+        }
+        if (data.rating < 0 || data.rating > 10) {
+            return false;
+        }
+        return true;
+    }
+    async testConnection(targetName) {
+        try {
+            const target = crawler_config_1.CRAWLER_TARGETS.find(t => t.name === targetName);
+            if (!target) {
+                throw new Error(`未找到爬虫目标: ${targetName}`);
+            }
+            const response = await this.httpClient.get(target.baseUrl, {
+                timeout: 5000,
+            });
+            return response.status === 200;
+        }
+        catch (error) {
+            this.logger.error(`连接测试失败 ${targetName}:`, error.message);
+            return false;
+        }
     }
 };
 exports.CrawlerService = CrawlerService;
 exports.CrawlerService = CrawlerService = CrawlerService_1 = __decorate([
-    (0, common_1.Injectable)()
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [media_resource_service_1.MediaResourceService])
 ], CrawlerService);
 //# sourceMappingURL=crawler.service.js.map

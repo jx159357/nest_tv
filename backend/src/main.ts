@@ -14,12 +14,41 @@ async function bootstrap() {
     bufferLogs: true,
   });
 
-  // 全局设置
+  // 安全的CORS配置
+  const isProduction = process.env.NODE_ENV === 'production';
+  const allowedOrigins = isProduction 
+    ? (process.env.ALLOWED_ORIGINS?.split(',') || ['https://yourdomain.com'])
+    : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:5173'];
+
   app.enableCors({
-    origin: '*',
+    origin: (origin, callback) => {
+      // 允许开发环境和预定义的生产环境域名
+      if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
+        callback(null, true);
+      } else {
+        console.warn(`CORS阻止的请求来源: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept-Language'],
-    credentials: true,
+    allowedHeaders: [
+      'Content-Type', 
+      'Authorization', 
+      'Accept-Language', 
+      'X-Requested-With',
+      'X-Request-ID',
+      'Accept-Charset'
+    ],
+    credentials: true, // 支持凭证（cookies, Authorization headers）
+    optionsSuccessStatus: 200, // 预检请求成功状态
+    maxAge: 86400, // 预检请求结果缓存24小时
+  });
+
+  // 设置响应头以确保字符编码正确
+  app.use((req, res, next) => {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    next();
   });
 
   // 配置Swagger文档

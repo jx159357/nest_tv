@@ -10,14 +10,33 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 var GlobalExceptionFilter_1;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GlobalExceptionFilter = void 0;
+exports.GlobalExceptionFilter = exports.ErrorSeverity = exports.ErrorType = void 0;
 const common_1 = require("@nestjs/common");
-const app_logger_service_1 = require("../../common/services/app-logger.service");
+const common_2 = require("@nestjs/common");
+const app_logger_service_1 = require("../services/app-logger.service");
+var ErrorType;
+(function (ErrorType) {
+    ErrorType["UNKNOWN"] = "UNKNOWN_ERROR";
+    ErrorType["AUTHENTICATION"] = "AUTHENTICATION_ERROR";
+    ErrorType["AUTHORIZATION"] = "AUTHORIZATION_ERROR";
+    ErrorType["VALIDATION"] = "VALIDATION_ERROR";
+    ErrorType["NOT_FOUND"] = "NOT_FOUND_ERROR";
+    ErrorType["CONFLICT"] = "CONFLICT_ERROR";
+    ErrorType["INTERNAL"] = "INTERNAL_ERROR";
+    ErrorType["EXTERNAL"] = "EXTERNAL_ERROR";
+})(ErrorType || (exports.ErrorType = ErrorType = {}));
+var ErrorSeverity;
+(function (ErrorSeverity) {
+    ErrorSeverity["LOW"] = "LOW";
+    ErrorSeverity["MEDIUM"] = "MEDIUM";
+    ErrorSeverity["HIGH"] = "HIGH";
+    ErrorSeverity["CRITICAL"] = "CRITICAL";
+})(ErrorSeverity || (exports.ErrorSeverity = ErrorSeverity = {}));
 let GlobalExceptionFilter = GlobalExceptionFilter_1 = class GlobalExceptionFilter {
     logger;
     appLogger;
     constructor(appLogger) {
-        this.logger = new common_1.Logger(GlobalExceptionFilter_1.name);
+        this.logger = new common_2.Logger(GlobalExceptionFilter_1.name);
         this.appLogger = appLogger;
     }
     catch(exception, host) {
@@ -25,77 +44,132 @@ let GlobalExceptionFilter = GlobalExceptionFilter_1 = class GlobalExceptionFilte
         const response = ctx.getResponse();
         const request = ctx.getRequest();
         this.logError(exception, request);
-        const errorResponse = this.buildErrorResponse(exception);
+        const errorResponse = this.buildErrorResponse(exception, request);
         response
             .status(errorResponse.statusCode)
             .json(errorResponse);
     }
+    classifyError(exception) {
+        if (exception instanceof common_1.HttpException) {
+            const status = exception.getStatus();
+            if (status === 401) {
+                return { type: ErrorType.AUTHENTICATION, severity: ErrorSeverity.MEDIUM };
+            }
+            else if (status === 403) {
+                return { type: ErrorType.AUTHORIZATION, severity: ErrorSeverity.MEDIUM };
+            }
+            else if (status === 404) {
+                return { type: ErrorType.NOT_FOUND, severity: ErrorSeverity.LOW };
+            }
+            else if (status === 409) {
+                return { type: ErrorType.CONFLICT, severity: ErrorSeverity.MEDIUM };
+            }
+            else if (status >= 400 && status < 500) {
+                return { type: ErrorType.VALIDATION, severity: ErrorSeverity.LOW };
+            }
+            else if (status >= 500 && status < 600) {
+                return { type: ErrorType.INTERNAL, severity: ErrorSeverity.HIGH };
+            }
+        }
+        const error = exception;
+        if (error.name === 'TypeError' || error.name === 'ReferenceError') {
+            return { type: ErrorType.INTERNAL, severity: ErrorSeverity.CRITICAL };
+        }
+        else if (error.name === 'ValidationError') {
+            return { type: ErrorType.VALIDATION, severity: ErrorSeverity.LOW };
+        }
+        return { type: ErrorType.UNKNOWN, severity: ErrorSeverity.MEDIUM };
+    }
     logError(exception, request) {
-        const requestId = request.headers['x-request-id'] || 'unknown';
-        const { method, originalUrl, ip, headers } = request;
+        const { type, severity } = this.classifyError(exception);
         const errorInfo = {
-            requestId,
-            method,
-            url: originalUrl,
-            ip: this.getClientIp(request),
-            userAgent: headers['user-agent'],
+            requestId: this.generateRequestId(),
+            method: request.method,
+            url: request.url,
+            ip: request.ip,
+            userAgent: request.get('user-agent'),
             timestamp: new Date().toISOString(),
         };
         if (exception instanceof common_1.HttpException) {
             const status = exception.getStatus();
             const response = exception.getResponse();
-            this.appLogger.error(`HTTP Exception: ${response?.message || exception.message}`, `HTTP_ERROR | Status: ${status}`, JSON.stringify({ ...errorInfo, error: response }));
+            if (severity === ErrorSeverity.CRITICAL || severity === ErrorSeverity.HIGH) {
+                this.appLogger.error(`HTTP Exception: ${response?.message || exception.message}`, `${type} | Status: ${status} | Severity: ${severity}`);
+            }
+            else if (severity === ErrorSeverity.MEDIUM) {
+                this.appLogger.warn(`HTTP Exception: ${response?.message || exception.message}`, `${type} | Status: ${status} | Severity: ${severity}`);
+            }
+            else {
+                this.appLogger.log(`HTTP Exception: ${response?.message || exception.message}`, `${type} | Status: ${status} | Severity: ${severity}`);
+            }
         }
         else {
             const error = exception;
-            this.appLogger.error(`Unhandled Exception: ${error.message}`, 'UNHANDLED_ERROR', JSON.stringify({
+            if (severity === ErrorSeverity.CRITICAL || severity === ErrorSeverity.HIGH) {
+                this.appLogger.error(`Unhandled Exception: ${error.message}`, `${type} | Severity: ${severity}`);
+            }
+            else if (severity === ErrorSeverity.MEDIUM) {
+                this.appLogger.warn(`Unhandled Exception: ${error.message}`, `${type} | Severity: ${severity}`);
+            }
+            else {
+                this.appLogger.log(`Unhandled Exception: ${error.message}`, `${type} | Severity: ${severity}`);
+            }
+        }
+        if (exception instanceof common_1.HttpException) {
+            const status = exception.getStatus();
+            const response = exception.getResponse();
+            this.logger.debug(JSON.stringify({
+                ...errorInfo,
+                error: response,
+                httpStatus: status
+            }));
+        }
+        else {
+            const error = exception;
+            this.logger.debug(JSON.stringify({
                 ...errorInfo,
                 error: {
                     name: error.name,
                     message: error.message,
-                    stack: error.stack,
+                    stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
                 },
             }));
         }
     }
-    buildErrorResponse(exception) {
+    buildErrorResponse(exception, request) {
+        const { type, severity } = this.classifyError(exception);
+        const requestId = this.generateRequestId();
+        let statusCode = 500;
+        let message = '服务器内部错误';
         if (exception instanceof common_1.HttpException) {
-            const status = exception.getStatus();
+            statusCode = exception.getStatus();
             const response = exception.getResponse();
-            const message = response?.message || exception.message;
-            return {
-                success: false,
-                statusCode: status,
-                message,
-                timestamp: new Date().toISOString(),
-                path: exception instanceof common_1.HttpException ? undefined : undefined,
-                data: response?.data || null,
-            };
+            message = response?.message || exception.message;
         }
-        const error = exception;
+        else {
+            const error = exception;
+            message = error.message;
+        }
         return {
             success: false,
-            statusCode: common_1.HttpStatus.INTERNAL_SERVER_ERROR,
-            message: 'Internal Server Error',
+            statusCode,
+            message,
             timestamp: new Date().toISOString(),
-            path: undefined,
+            path: request.url,
+            requestId,
+            type,
+            severity,
             data: process.env.NODE_ENV === 'development' ? {
-                error: error.name,
-                message: error.message,
-                stack: error.stack,
-            } : null,
+                error: exception instanceof Error ? {
+                    name: exception.name,
+                    message: exception.message,
+                    stack: exception.stack,
+                } : exception,
+            } : undefined,
         };
     }
-    getClientIp(request) {
-        const forwarded = request.headers['x-forwarded-for'];
-        const realIp = request.headers['x-real-ip'];
-        if (forwarded) {
-            return forwarded.split(',')[0].trim();
-        }
-        if (realIp) {
-            return realIp;
-        }
-        return request.ip || request.connection.remoteAddress || '';
+    generateRequestId() {
+        return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     }
 };
 exports.GlobalExceptionFilter = GlobalExceptionFilter;

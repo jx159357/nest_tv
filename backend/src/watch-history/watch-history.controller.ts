@@ -8,6 +8,7 @@ import {
   Delete,
   Query,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { WatchHistoryService } from './watch-history.service';
@@ -16,6 +17,7 @@ import { UpdateWatchHistoryDto } from './dtos/update-watch-history.dto';
 import { WatchHistoryQueryDto } from './dtos/watch-history-query.dto';
 import { WatchHistory } from '../entities/watch-history.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { GetCurrentUserId } from '../decorators/current-user.decorator';
 
 @ApiTags('观看历史')
 @Controller('watch-history')
@@ -26,8 +28,16 @@ export class WatchHistoryController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '创建或更新观看历史' })
   @ApiResponse({ status: 201, description: '观看历史创建成功', type: WatchHistory })
-  async create(@Body() createWatchHistoryDto: CreateWatchHistoryDto): Promise<WatchHistory> {
-    return await this.watchHistoryService.create(createWatchHistoryDto);
+  async create(
+    @GetCurrentUserId() userId: number,
+    @Body() createWatchHistoryDto: CreateWatchHistoryDto,
+  ): Promise<WatchHistory> {
+    // 确保使用当前用户的ID
+    const dtoWithUserId = {
+      ...createWatchHistoryDto,
+      userId,
+    };
+    return await this.watchHistoryService.create(dtoWithUserId);
   }
 
   @Get()
@@ -37,51 +47,51 @@ export class WatchHistoryController {
     return await this.watchHistoryService.findAll(queryDto);
   }
 
-  @Get('user/:userId')
-  @ApiOperation({ summary: '获取用户观看历史' })
-  @ApiParam({ name: 'userId', description: '用户ID' })
+  @Get('user/me')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '获取当前用户观看历史' })
   @ApiQuery({ name: 'page', required: false, type: Number, description: '页码' })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: '每页数量' })
   @ApiResponse({ status: 200, description: '成功获取用户观看历史' })
-  async findByUserId(
-    @Param('userId') userId: number,
+  async findMyHistory(
+    @GetCurrentUserId() userId: number,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
   ) {
     return await this.watchHistoryService.findByUserId(userId, page, limit);
   }
 
-  @Get('user/:userId/continue')
-  @ApiOperation({ summary: '获取用户继续观看列表' })
-  @ApiParam({ name: 'userId', description: '用户ID' })
+  @Get('user/me/continue')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '获取当前用户继续观看列表' })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: '返回数量限制' })
   @ApiResponse({ status: 200, description: '成功获取继续观看列表', type: [WatchHistory] })
-  async getContinueWatching(
-    @Param('userId') userId: number,
+  async getMyContinueWatching(
+    @GetCurrentUserId() userId: number,
     @Query('limit') limit: number = 10,
   ): Promise<WatchHistory[]> {
     return await this.watchHistoryService.getContinueWatching(userId, limit);
   }
 
-  @Get('user/:userId/completed')
-  @ApiOperation({ summary: '获取用户已看完的影视' })
-  @ApiParam({ name: 'userId', description: '用户ID' })
+  @Get('user/me/completed')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '获取当前用户已看完的影视' })
   @ApiQuery({ name: 'page', required: false, type: Number, description: '页码' })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: '每页数量' })
   @ApiResponse({ status: 200, description: '成功获取已看完的影视列表' })
-  async getCompleted(
-    @Param('userId') userId: number,
+  async getMyCompleted(
+    @GetCurrentUserId() userId: number,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
   ) {
     return await this.watchHistoryService.getCompleted(userId, page, limit);
   }
 
-  @Get('user/:userId/stats')
-  @ApiOperation({ summary: '获取用户观看统计' })
-  @ApiParam({ name: 'userId', description: '用户ID' })
+  @Get('user/me/stats')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '获取当前用户观看统计' })
   @ApiResponse({ status: 200, description: '成功获取用户观看统计' })
-  async getUserStats(@Param('userId') userId: number) {
+  async getMyStats(@GetCurrentUserId() userId: number) {
     return await this.watchHistoryService.getUserStats(userId);
   }
 
@@ -108,13 +118,12 @@ export class WatchHistoryController {
   @Patch('progress')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '更新观看进度' })
-  @ApiQuery({ name: 'userId', description: '用户ID' })
   @ApiQuery({ name: 'mediaResourceId', description: '影视资源ID' })
   @ApiQuery({ name: 'currentTime', description: '当前观看时间（秒）' })
   @ApiQuery({ name: 'duration', required: false, description: '总时长（秒）' })
   @ApiResponse({ status: 200, description: '观看进度更新成功', type: WatchHistory })
   async updateProgress(
-    @Query('userId') userId: number,
+    @GetCurrentUserId() userId: number,
     @Query('mediaResourceId') mediaResourceId: number,
     @Query('currentTime') currentTime: number,
     @Query('duration') duration?: number,
@@ -157,12 +166,11 @@ export class WatchHistoryController {
     await this.watchHistoryService.remove(id);
   }
 
-  @Delete('user/:userId/all')
+  @Delete('user/me/all')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: '清空用户观看历史' })
-  @ApiParam({ name: 'userId', description: '用户ID' })
+  @ApiOperation({ summary: '清空当前用户观看历史' })
   @ApiResponse({ status: 200, description: '用户观看历史清空成功' })
-  async clearUserHistory(@Param('userId') userId: number): Promise<void> {
+  async clearMyHistory(@GetCurrentUserId() userId: number): Promise<void> {
     await this.watchHistoryService.clearUserHistory(userId);
   }
 }

@@ -32,4 +32,8 @@ export declare class MediaResourceService {
         byQuality: Record<string, number>;
         averageRating: number;
     }>;
+    getTotalCount(): Promise<number>;
+    getActiveCount(): Promise<number>;
+    getLastCrawlTime(): Promise<Date>;
+    findByTitle(title: string): Promise<MediaResource | null>;
 }

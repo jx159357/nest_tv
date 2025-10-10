@@ -59,7 +59,7 @@ export const en = {
     pending: 'Pending',
     completed: 'Completed',
     failed: 'Failed',
-    cancelled: 'Cancelled'
+    cancelled: 'Cancelled',
   },
 
   // Error messages
@@ -76,7 +76,7 @@ export const en = {
     reloadPage: 'Reload page',
     tryAgainLater: 'Please try again later',
     contactAdmin: 'Please contact administrator',
-    
+
     // Authentication errors
     invalidCredentials: 'Invalid username or password',
     userNotFound: 'User does not exist',
@@ -85,12 +85,13 @@ export const en = {
     invalidEmail: 'Invalid email format',
     passwordTooShort: 'Password must be at least 8 characters',
     passwordMismatch: 'Passwords do not match',
-    passwordTooWeak: 'Password is too weak, please include uppercase, lowercase letters and numbers',
+    passwordTooWeak:
+      'Password is too weak, please include uppercase, lowercase letters and numbers',
     accountLocked: 'Account is locked, please try again later',
     accountDisabled: 'Account is disabled, please contact administrator',
     emailNotVerified: 'Email not verified, please check verification email',
     sessionExpired: 'Session expired, please login again',
-    
+
     // Business errors
     mediaNotFound: 'Media resource does not exist',
     mediaNotAvailable: 'Media resource is temporarily unavailable',
@@ -109,7 +110,7 @@ export const en = {
     crawlerStopFailed: 'Failed to stop crawler',
     permissionDenied: 'Permission denied',
     operationFailed: 'Operation failed',
-    dataSyncFailed: 'Data synchronization failed'
+    dataSyncFailed: 'Data synchronization failed',
   },
 
   // Status messages
@@ -138,7 +139,7 @@ export const en = {
     finalizing: 'Finalizing...',
     cancelling: 'Cancelling...',
     pausing: 'Pausing...',
-    resuming: 'Resuming...'
+    resuming: 'Resuming...',
   },
 
   // Navigation menu
@@ -189,7 +190,7 @@ export const en = {
     resetPassword: 'Reset Password',
     verifyEmail: 'Verify Email',
     completeProfile: 'Complete Profile',
-    upgradeAccount: 'Upgrade Account'
+    upgradeAccount: 'Upgrade Account',
   },
 
   // User related
@@ -227,30 +228,30 @@ export const en = {
     sessions: 'Sessions',
     activity: 'Activity',
     statistics: 'Statistics',
-    
+
     // Gender options
     genders: {
       male: 'Male',
       female: 'Female',
       other: 'Other',
-      preferNotToSay: 'Prefer not to say'
+      preferNotToSay: 'Prefer not to say',
     },
-    
+
     // Status options
     statusOptions: {
       active: 'Active',
       inactive: 'Inactive',
       suspended: 'Suspended',
-      banned: 'Banned'
+      banned: 'Banned',
     },
-    
+
     // Role options
     roles: {
       user: 'User',
       vip: 'VIP User',
       admin: 'Admin',
-      superAdmin: 'Super Admin'
-    }
+      superAdmin: 'Super Admin',
+    },
   },
 
   // Authentication related
@@ -265,7 +266,7 @@ export const en = {
       loginWithOther: 'Other login methods',
       loading: 'Logging in...',
       success: 'Login successful!',
-      error: 'Login failed'
+      error: 'Login failed',
     },
     register: {
       title: 'Register New Account',
@@ -281,7 +282,7 @@ export const en = {
       privacy: 'Privacy Policy',
       loading: 'Registering...',
       success: 'Registration successful! Redirecting to login page...',
-      error: 'Registration failed'
+      error: 'Registration failed',
     },
     forgotPassword: {
       title: 'Reset Password',
@@ -290,8 +291,8 @@ export const en = {
       backButton: 'Back to Login',
       loading: 'Sending...',
       success: 'Reset email sent, please check your inbox',
-      error: 'Sending failed, please try again'
-    }
+      error: 'Sending failed, please try again',
+    },
   },
 
   // Media related
@@ -315,34 +316,34 @@ export const en = {
     status: 'Status',
     source: 'Source',
     metadata: 'Metadata',
-    
+
     // Type options
     types: {
       movie: 'Movie',
       tvSeries: 'TV Series',
       anime: 'Anime',
       documentary: 'Documentary',
-      variety: 'Variety Show'
+      variety: 'Variety Show',
     },
-    
+
     // Quality options
     qualities: {
       sd: 'SD',
       hd: 'HD',
       fullHd: 'Full HD',
       blueRay: 'Blu-ray',
-      '4k': '4K'
+      '4k': '4K',
     },
-    
+
     // Status options
     statusOptions: {
       available: 'Available',
       unavailable: 'Unavailable',
       comingSoon: 'Coming Soon',
       expired: 'Expired',
-      removed: 'Removed'
+      removed: 'Removed',
     },
-    
+
     // Actions
     actions: {
       play: 'Play',
@@ -355,8 +356,8 @@ export const en = {
       viewDetails: 'View Details',
       related: 'Related',
       comments: 'Comments',
-      rate: 'Rate'
-    }
+      rate: 'Rate',
+    },
   },
 
   // Player related
@@ -401,7 +402,7 @@ export const en = {
     speedSlower: 'Slower',
     timeSkip: 'Skip',
     timeForward: 'Forward',
-    timeBackward: 'Backward'
+    timeBackward: 'Backward',
   },
 
   // Search related
@@ -422,7 +423,7 @@ export const en = {
     language: 'Language',
     region: 'Region',
     tags: 'Tags',
-    
+
     // Sort by options
     sortByOptions: {
       relevance: 'Relevance',
@@ -430,22 +431,22 @@ export const en = {
       popular: 'Popular',
       topRated: 'Top Rated',
       mostViewed: 'Most Viewed',
-      mostFavorited: 'Most Favorited'
+      mostFavorited: 'Most Favorited',
     },
-    
+
     // Sort order options
     sortOrderOptions: {
       asc: 'Ascending',
-      desc: 'Descending'
+      desc: 'Descending',
     },
-    
+
     // Search suggestions
     suggestions: {
       searchHistory: 'Search History',
       trendingSearches: 'Trending Searches',
       recommended: 'Recommended',
-      recentSearches: 'Recent Searches'
-    }
+      recentSearches: 'Recent Searches',
+    },
   },
 
   // Recommendation system
@@ -465,7 +466,7 @@ export const en = {
     refresh: 'Refresh',
     noRecommendations: 'No recommendations available',
     enableRecommendations: 'Enable Recommendations',
-    recommendationsSettings: 'Recommendation Settings'
+    recommendationsSettings: 'Recommendation Settings',
   },
 
   // Hot search
@@ -488,14 +489,14 @@ export const en = {
       game: 'Games',
       travel: 'Travel',
       food: 'Food',
-      education: 'Education'
+      education: 'Education',
     },
     trendTypes: {
       up: 'Up',
       down: 'Down',
       stable: 'Stable',
-      new: 'New'
-    }
+      new: 'New',
+    },
   },
 
   // Web disk parsing
@@ -527,7 +528,7 @@ export const en = {
     fileNotFound: 'File not found',
     fileExpired: 'File expired',
     quotaExceeded: 'Quota exceeded',
-    permissionDenied: 'Permission denied'
+    permissionDenied: 'Permission denied',
   },
 
   // Magnet links
@@ -568,7 +569,7 @@ export const en = {
     torrentFile: 'Torrent File',
     noSeeds: 'No Seeds',
     slowSpeed: 'Slow Speed',
-    diskSpace: 'Insufficient Disk Space'
+    diskSpace: 'Insufficient Disk Space',
   },
 
   // IPTV
@@ -607,15 +608,15 @@ export const en = {
       kids: 'Kids',
       finance: 'Finance',
       military: 'Military',
-      education: 'Education'
+      education: 'Education',
     },
     status: {
       online: 'Online',
       offline: 'Offline',
       buffering: 'Buffering',
       error: 'Error',
-      maintenance: 'Maintenance'
-    }
+      maintenance: 'Maintenance',
+    },
   },
 
   // Live platforms
@@ -629,7 +630,7 @@ export const en = {
     yy: 'YY Live',
     room: 'Room',
     streamer: 'Streamer',
-    title: 'Title',
+    streamTitle: 'Title',
     category: 'Category',
     tags: 'Tags',
     viewers: 'Viewers',
@@ -657,7 +658,7 @@ export const en = {
     filterByPlatform: 'Filter by Platform',
     filterByCategory: 'Filter by Category',
     sortByViewers: 'Sort by Viewers',
-    sortByPopular: 'Sort by Popularity'
+    sortByPopular: 'Sort by Popularity',
   },
 
   // TVBox protocol
@@ -699,7 +700,7 @@ export const en = {
     importData: 'Import Data',
     noSubscriptions: 'No Subscriptions',
     addFirstSubscription: 'Add First Subscription',
-    manageSubscriptions: 'Manage Subscriptions'
+    manageSubscriptions: 'Manage Subscriptions',
   },
 
   // Crawler management
@@ -748,7 +749,7 @@ export const en = {
     crawlerInfo: 'Crawler Info',
     performance: 'Performance',
     resourceUsage: 'Resource Usage',
-    networkStats: 'Network Stats'
+    networkStats: 'Network Stats',
   },
 
   // Admin panel
@@ -767,9 +768,9 @@ export const en = {
     settings: 'System Settings',
     statistics: 'Statistics',
     monitoring: 'System Monitoring',
-    
+
     // System statistics
-    statistics: {
+    systemStatistics: {
       title: 'Statistics',
       overview: 'Overview',
       userStats: 'User Statistics',
@@ -791,9 +792,9 @@ export const en = {
       realtime: 'Realtime',
       lastUpdated: 'Last Updated',
       dataRange: 'Data Range',
-      customRange: 'Custom Range'
+      customRange: 'Custom Range',
     },
-    
+
     // Log management
     logs: {
       title: 'Log Management',
@@ -821,8 +822,8 @@ export const en = {
       noLogs: 'No Logs',
       loadMore: 'Load More',
       autoRefresh: 'Auto Refresh',
-      realTimeMode: 'Realtime Mode'
-    }
+      realTimeMode: 'Realtime Mode',
+    },
   },
 
   // Form validation
@@ -848,7 +849,7 @@ export const en = {
     weak: 'Weak',
     medium: 'Medium',
     strong: 'Strong',
-    veryStrong: 'Very Strong'
+    veryStrong: 'Very Strong',
   },
 
   // Time formats
@@ -861,7 +862,7 @@ export const en = {
     weekAgo: '{count} week ago',
     monthAgo: '{count} month ago',
     yearAgo: '{count} year ago',
-    
+
     // Date formats
     formats: {
       short: 'MM/DD',
@@ -869,8 +870,8 @@ export const en = {
       long: 'YYYY-MM-DD',
       full: 'YYYY-MM-DD HH:mm',
       time: 'HH:mm',
-      dateTime: 'YYYY-MM-DD HH:mm:ss'
-    }
+      dateTime: 'YYYY-MM-DD HH:mm:ss',
+    },
   },
 
   // File sizes
@@ -879,6 +880,6 @@ export const en = {
     kb: 'KB',
     mb: 'MB',
     gb: 'GB',
-    tb: 'TB'
-  }
-}
+    tb: 'TB',
+  },
+};

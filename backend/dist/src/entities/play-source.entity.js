@@ -171,6 +171,18 @@ __decorate([
     __metadata("design:type", Array)
 ], PlaySource.prototype, "configuredBy", void 0);
 exports.PlaySource = PlaySource = __decorate([
-    (0, typeorm_1.Entity)('play_sources')
+    (0, typeorm_1.Entity)('play_sources'),
+    (0, typeorm_1.Index)('idx_play_source_type', ['type']),
+    (0, typeorm_1.Index)('idx_play_source_status', ['status']),
+    (0, typeorm_1.Index)('idx_play_source_type_status', ['type', 'status']),
+    (0, typeorm_1.Index)('idx_play_source_priority', ['priority']),
+    (0, typeorm_1.Index)('idx_play_source_resolution', ['resolution']),
+    (0, typeorm_1.Index)('idx_play_source_priority_status', ['priority', 'status']),
+    (0, typeorm_1.Index)('idx_play_source_playcount', ['playCount']),
+    (0, typeorm_1.Index)('idx_play_source_playcount_status', ['playCount', 'status']),
+    (0, typeorm_1.Index)('idx_play_source_media', ['mediaResourceId']),
+    (0, typeorm_1.Index)('idx_play_source_media_type_status', ['mediaResourceId', 'type', 'status']),
+    (0, typeorm_1.Index)('idx_play_source_expire', ['expireDate']),
+    (0, typeorm_1.Index)('idx_play_source_created', ['createdAt'])
 ], PlaySource);
 //# sourceMappingURL=play-source.entity.js.map

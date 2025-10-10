@@ -64,8 +64,75 @@ import { AppService } from './app.service';
           IPTVChannel,
           ParseProvider,
         ], // 所有实体类
-        synchronize: true, // 开发环境下同步数据库结构
-        logging: true, // 开启SQL日志
+        
+        // 连接池优化配置
+        extra: {
+          // 基础连接池设置
+          connectionLimit: Math.max(5, Math.min(50, Math.ceil(process.env.DB_CONNECTION_LIMIT ? parseInt(process.env.DB_CONNECTION_LIMIT) : 20))), // 动态最大连接数
+          acquireTimeout: 60000, // 获取连接超时（毫秒）
+          timeout: 60000, // 查询超时（毫秒）
+          
+          // 高级连接池设置
+          queueLimit: 0, // 等待队列大小，0表示无限制
+          
+          // SSL配置（安全连接）
+          ssl: configService.get<boolean>('DB_SSL', false),
+          
+          // 字符集和时区配置
+          charset: 'utf8mb4', // 支持完整Unicode
+          timezone: '+00:00', // 使用UTC时区
+          
+          // 连接复用和安全设置
+          multipleStatements: false, // 防止SQL注入
+          namedPlaceholders: true, // 使用命名占位符
+          
+          // 数据类型和性能配置
+          bigNumberStrings: false, // 大数字保持原始类型
+          dateStrings: false, // 日期转为Date对象
+          debug: process.env.NODE_ENV === 'development', // 仅开发环境调试
+          
+          // 性能优化设置
+          supportBigNumbers: true, // 支持大数字计算
+          typeCast: function (field: any, next: any) {
+            // 布尔值智能转换
+            if (field.type === 'TINY' && field.length === 1) {
+              return (field.string() === '1');
+            }
+            return next();
+          }
+        },
+        
+        // 事务和连接管理
+        autoSaveEntities: false, // 禁用自动保存实体，提升性能
+        retryAttempts: configService.get<number>('DB_RETRY_ATTEMPTS', 3), // 连接失败重试次数
+        retryDelay: configService.get<number>('DB_RETRY_DELAY', 3000), // 重试延迟（毫秒）
+        
+        // 查询性能监控
+        maxQueryExecutionTime: configService.get<number>('DB_MAX_QUERY_TIME', 1000), // 最大查询执行时间
+        slowQueryLimit: configService.get<number>('DB_SLOW_QUERY_LIMIT', 200), // 慢查询阈值
+        
+        // 缓存策略 - 禁用TypeORM默认缓存，使用自定义Redis缓存
+        cache: false,
+        
+        // 监控和订阅者管理
+        subscribers: [], // 禁用默认订阅者，防止内存泄漏
+        
+        // 数据库迁移配置
+        migrationsRun: false, // 禁用自动运行迁移
+        dropSchema: false, // 禁用自动删除数据库
+        migrations: ['src/migrations/*.ts'], // 迁移文件路径
+        
+        // 日志和调试配置
+        logging: configService.get<boolean>('DB_LOGGING', process.env.NODE_ENV === 'development'),
+        logger: 'advanced-console', // 高级控制台日志
+        loggerOptions: {
+          warnLevel: 'warn',
+          infoLevel: 'info',
+          logLevel: process.env.NODE_ENV === 'development' ? 'debug' : 'warn',
+        },
+        
+        // 生产环境配置
+        synchronize: configService.get<boolean>('DB_SYNCHRONIZE', process.env.NODE_ENV === 'development'),
       }),
       inject: [ConfigService],
     }),

@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { UserService } from '../users/user.service';
 import { JwtResponseDto } from './dtos/jwt-response.dto';
 
@@ -9,9 +10,12 @@ import { JwtResponseDto } from './dtos/jwt-response.dto';
  */
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private userService: UserService,
     private jwtService: JwtService,
+    private configService: ConfigService,
   ) {}
 
   /**
@@ -36,23 +40,74 @@ export class AuthService {
    * @returns JWT令牌信息
    */
   async login(user: any): Promise<JwtResponseDto> {
-    const payload = {
-      username: (user as any).username,
-      sub: (user as any).id,
-      email: (user as any).email,
-      role: (user as any).role,
-    };
+    try {
+      // 验证用户状态
+      if (!user || !user.id || !user.username) {
+        throw new UnauthorizedException('无效的用户信息');
+      }
 
-    return {
-      accessToken: this.jwtService.sign(payload),
-      refreshToken: this.jwtService.sign(payload, { expiresIn: '7d' }),
-      expiresIn: 3600, // 1小时
-      user: {
-        id: (user as any).id,
-        username: (user as any).username,
-        email: (user as any).email,
-        role: (user as any).role,
-      },
-    };
+      if (!user.isActive) {
+        throw new UnauthorizedException('用户已被禁用');
+      }
+
+      const now = Date.now();
+      const jwtExpiration = this.configService.get<number>('JWT_EXPIRATION', 3600); // 1小时
+      const refreshExpiration = this.configService.get<number>('JWT_REFRESH_EXPIRATION', 604800); // 7天
+
+      // 构建JWT载荷
+      const payload = {
+        username: user.username,
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        iat: Math.floor(now / 1000), // 签发时间
+        jti: this.generateTokenId(), // 令牌ID
+      };
+
+      // JWT选项
+      const accessTokenOptions = {
+        expiresIn: jwtExpiration,
+        audience: this.configService.get<string>('JWT_AUDIENCE', 'nest-tv-client'),
+        issuer: this.configService.get<string>('JWT_ISSUER', 'nest-tv-server'),
+        algorithm: 'HS256' as const,
+      };
+
+      const refreshTokenOptions = {
+        expiresIn: refreshExpiration,
+        audience: this.configService.get<string>('JWT_AUDIENCE', 'nest-tv-client'),
+        issuer: this.configService.get<string>('JWT_ISSUER', 'nest-tv-server'),
+        algorithm: 'HS256' as const,
+      };
+
+      // 生成令牌
+      const accessToken = this.jwtService.sign(payload, accessTokenOptions);
+      const refreshToken = this.jwtService.sign(payload, refreshTokenOptions);
+
+      // 记录登录日志
+      this.logger.log(`用户登录成功: ${user.username} (ID: ${user.id})`);
+
+      return {
+        accessToken,
+        refreshToken,
+        expiresIn: jwtExpiration,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`登录失败: ${error.message}`, error.stack);
+      throw new UnauthorizedException('登录失败，请重试');
+    }
+  }
+
+  /**
+   * 生成令牌ID
+   */
+  private generateTokenId(): string {
+    return Math.random().toString(36).substring(2, 15) + 
+           Math.random().toString(36).substring(2, 15);
   }
 }

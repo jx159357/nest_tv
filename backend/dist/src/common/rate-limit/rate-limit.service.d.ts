@@ -1,12 +1,10 @@
 import Redis from 'ioredis';
-export declare const REDIS_CLIENT = "REDIS_CLIENT";
 export interface RateLimitOptions {
     windowMs: number;
     maxRequests: number;
     keyPrefix?: string;
     skipSuccessfulRequests?: boolean;
     skipFailedRequests?: boolean;
-    handler?: (key: string, limit: RateLimitInfo) => any;
 }
 export interface RateLimitInfo {
     key: string;
@@ -21,14 +19,17 @@ export declare class RateLimitService {
     private readonly logger;
     private readonly defaultOptions;
     constructor(redis: Redis);
-    checkLimit(key: string, options?: Partial<RateLimitOptions>): Promise<{
-        success: boolean;
-        info?: RateLimitInfo;
-    }>;
     private getCurrentCount;
     private incrementCount;
     private setExpiration;
     private getExpirationTime;
+    checkLimit(key: string, options?: Partial<RateLimitOptions>, algorithm?: 'fixed' | 'token_bucket' | 'sliding_window'): Promise<{
+        success: boolean;
+        info?: RateLimitInfo;
+    }>;
+    private fixedWindow;
+    private tokenBucket;
+    private slidingWindow;
     resetLimit(key: string): Promise<void>;
     getLimitInfo(key: string): Promise<RateLimitInfo | null>;
     cleanup(): Promise<number>;

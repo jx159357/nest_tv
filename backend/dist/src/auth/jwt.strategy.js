@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var JwtStrategy_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.JwtStrategy = void 0;
 const passport_jwt_1 = require("passport-jwt");
@@ -15,28 +16,59 @@ const passport_1 = require("@nestjs/passport");
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const user_service_1 = require("../users/user.service");
-let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(passport_jwt_1.Strategy) {
+let JwtStrategy = JwtStrategy_1 = class JwtStrategy extends (0, passport_1.PassportStrategy)(passport_jwt_1.Strategy) {
     configService;
     userService;
+    logger = new common_1.Logger(JwtStrategy_1.name);
     constructor(configService, userService) {
+        const jwtSecret = configService.get('JWT_SECRET');
+        if (!jwtSecret) {
+            throw new Error('JWT_SECRET环境变量未设置');
+        }
         super({
             jwtFromRequest: passport_jwt_1.ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,
-            secretOrKey: configService.get('JWT_SECRET') || 'default_secret_key_change_in_production',
+            secretOrKey: jwtSecret,
+            algorithms: ['HS256'],
+            audience: configService.get('JWT_AUDIENCE', 'nest-tv-client'),
+            issuer: configService.get('JWT_ISSUER', 'nest-tv-server'),
         });
         this.configService = configService;
         this.userService = userService;
     }
     async validate(payload) {
-        const user = await this.userService.findById(payload.sub);
-        if (!user) {
-            throw new common_1.UnauthorizedException('用户不存在');
+        try {
+            if (!payload || !payload.sub || typeof payload.sub !== 'number') {
+                throw new common_1.UnauthorizedException('无效的令牌载荷');
+            }
+            const audience = this.configService.get('JWT_AUDIENCE', 'nest-tv-client');
+            const issuer = this.configService.get('JWT_ISSUER', 'nest-tv-server');
+            if (payload.aud && !payload.aud.includes(audience)) {
+                throw new common_1.UnauthorizedException('令牌受众不匹配');
+            }
+            if (payload.iss && payload.iss !== issuer) {
+                throw new common_1.UnauthorizedException('令牌签发者不匹配');
+            }
+            const user = await this.userService.findById(payload.sub);
+            if (!user) {
+                throw new common_1.UnauthorizedException('用户不存在');
+            }
+            if (!user.isActive) {
+                throw new common_1.UnauthorizedException('用户已被禁用');
+            }
+            if (process.env.NODE_ENV === 'development') {
+                this.logger.debug(`用户认证成功: ${user.username} (ID: ${user.id})`);
+            }
+            return user;
         }
-        return user;
+        catch (error) {
+            this.logger.warn(`JWT验证失败: ${error.message}`, error.stack);
+            throw new common_1.UnauthorizedException('令牌验证失败');
+        }
     }
 };
 exports.JwtStrategy = JwtStrategy;
-exports.JwtStrategy = JwtStrategy = __decorate([
+exports.JwtStrategy = JwtStrategy = JwtStrategy_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [config_1.ConfigService,
         user_service_1.UserService])

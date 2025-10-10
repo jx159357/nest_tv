@@ -48,6 +48,7 @@ let MediaResource = class MediaResource {
     isActive;
     source;
     metadata;
+    duration;
     episodeCount;
     downloadUrls;
     createdAt;
@@ -124,6 +125,10 @@ __decorate([
     __metadata("design:type", Object)
 ], MediaResource.prototype, "metadata", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'int', nullable: true }),
+    __metadata("design:type", Number)
+], MediaResource.prototype, "duration", void 0);
+__decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", Number)
 ], MediaResource.prototype, "episodeCount", void 0);
@@ -161,6 +166,17 @@ __decorate([
     __metadata("design:type", Array)
 ], MediaResource.prototype, "iptvChannels", void 0);
 exports.MediaResource = MediaResource = __decorate([
-    (0, typeorm_1.Entity)('media_resources')
+    (0, typeorm_1.Entity)('media_resources'),
+    (0, typeorm_1.Index)('idx_media_title', ['title']),
+    (0, typeorm_1.Index)('idx_media_type', ['type']),
+    (0, typeorm_1.Index)('idx_media_created', ['createdAt']),
+    (0, typeorm_1.Index)('idx_media_active', ['isActive']),
+    (0, typeorm_1.Index)('idx_media_type_status', ['type', 'isActive']),
+    (0, typeorm_1.Index)('idx_media_filter', ['type', 'isActive', 'rating']),
+    (0, typeorm_1.Index)('idx_media_rating', ['rating']),
+    (0, typeorm_1.Index)('idx_media_viewcount', ['viewCount']),
+    (0, typeorm_1.Index)('idx_media_popular', ['rating', 'viewCount', 'isActive']),
+    (0, typeorm_1.Index)('idx_media_release_date', ['releaseDate']),
+    (0, typeorm_1.Index)('idx_media_duration', ['duration'])
 ], MediaResource);
 //# sourceMappingURL=media-resource.entity.js.map

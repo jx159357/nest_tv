@@ -1,474 +1,424 @@
-import { ref, reactive, onUnmounted, onMounted } from 'vue'
-import type { Socket } from 'socket.io-client'
-import io from 'socket.io-client'
-import { useAuthStore } from '@/stores/auth'
-import type { Danmaku } from '@/types'
-
-// 弹幕消息类型
-export interface DanmakuMessage {
-  id: string
-  userId: string
-  videoId: string
-  text: string
-  color: string
-  type: 'scroll' | 'top' | 'bottom'
-  priority: number
-  timestamp: number
-  isHighlighted?: boolean
-  filters?: {
-    containsSensitive?: boolean
-    containsSpam?: boolean
-    containsEmojis?: boolean
-    keywords?: string[]
-  }
-  metadata?: {
-    userAgent?: string
-    location?: string
-    platform?: string
-  }
-  position?: {
-    x: number
-    y: number
-    startTime: number
-  }
-}
-
-// 房间信息类型
-export interface RoomInfo {
-  videoId: string
-  onlineCount: number
-  timestamp: number
-}
-
-// 心跳响应类型
-export interface HeartbeatResponse {
-  status: 'ok' | 'error'
-  timestamp: number
-  userId: string
-}
-
-// 弹幕设置类型
-export interface DanmakuSettings {
-  enabled: boolean
-  opacity: number
-  fontSize: number
-  speed: number
-  color: string
-  fontFamily: string
-  filter: {
-    profanity: boolean
-    spam: boolean
-    highlight: boolean
-  }
-  display: {
-    scroll: boolean
-    top: boolean
-    bottom: boolean
-  }
-}
+import { ref, reactive, onUnmounted, onMounted } from 'vue';
+import type { Socket } from 'socket.io-client';
+import io from 'socket.io-client';
+import { useAuthStore } from '@/stores/auth';
+import type {
+  DanmakuMessage,
+  RoomInfo,
+  HeartbeatResponse,
+  DanmakuSettings,
+  DanmakuServiceConfig,
+} from '@/types';
 
 // WebSocket服务类
 export class DanmakuWebSocketService {
-  private socket: Socket | null = null
-  private reconnectAttempts = 0
-  private maxReconnectAttempts = 5
-  private reconnectInterval: number
-  private heartbeatInterval: number | null = null
-  private isConnected = ref(false)
-  private roomId = ref('')
-  private userId = ref('')
-  
+  private socket: Socket | null = null;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private reconnectInterval: number;
+  private heartbeatInterval: number | null = null;
+  private isConnected = ref(false);
+  private roomId = ref('');
+  private userId = ref('');
+
   // 事件监听器
-  private listeners = new Map<string, Set<Function>>()
-  
+  private listeners = new Map<string, Set<Function>>();
+
   // 消息队列（在重连时暂存）
-  private messageQueue: any[] = []
-  
+  private messageQueue: any[] = [];
+
   // 配置选项
   private options = {
     reconnectDelay: 1000,
     heartbeatInterval: 30000,
     maxQueueSize: 100,
-    autoReconnect: true
-  }
+    autoReconnect: true,
+  };
 
   constructor(private authStore: any) {}
 
   // 连接WebSocket
   connect(videoId: string, userId: string) {
     try {
-      // 如果已连接，先断开
-      if (this.socket) {
-        this.disconnect()
-      }
+      this.roomId.value = videoId;
+      this.userId.value = userId;
 
-      this.roomId.value = videoId
-      this.userId.value = userId
+      const config: DanmakuServiceConfig = {
+        serverUrl: (import.meta.env.VITE_WS_URL || 'ws://localhost:3334') + '/danmaku',
+        reconnectDelay: this.options.reconnectDelay,
+        heartbeatInterval: this.options.heartbeatInterval,
+        maxQueueSize: this.options.maxQueueSize,
+        autoReconnect: this.options.autoReconnect,
+        maxReconnectAttempts: this.maxReconnectAttempts,
+      };
 
-      // 创建Socket连接
-      this.socket = io(process.env.VUE_APP_WS_URL || 'http://localhost:3334', {
-        path: '/danmaku',
-        query: {
+      this.socket = io(config.serverUrl, {
+        auth: {
+          token: this.authStore.token,
+          videoId,
           userId,
-          videoId
         },
         transports: ['websocket', 'polling'],
         timeout: 10000,
-        reconnection: false, // 我们自己管理重连
-        forceNew: true
-      })
+        reconnection: true,
+        reconnectionAttempts: config.maxReconnectAttempts,
+        reconnectionDelay: config.reconnectDelay,
+      });
 
-      this.setupEventListeners()
-      this.startHeartbeat()
-      
-      console.log('弹幕WebSocket连接成功')
+      this.setupEventHandlers();
     } catch (error) {
-      console.error('弹幕WebSocket连接失败:', error)
-      this.handleConnectionError()
+      console.error('❌ WebSocket连接失败:', error);
+      this.handleConnectionError(error);
     }
+  }
+
+  // 设置事件处理器
+  private setupEventHandlers() {
+    if (!this.socket) return;
+
+    // 连接成功
+    this.socket.on('connect', () => {
+      console.log('✅ WebSocket连接成功');
+      this.isConnected.value = true;
+      this.reconnectAttempts = 0;
+      
+      // 加入房间
+      this.socket?.emit('join-room', {
+        videoId: this.roomId.value,
+        userId: this.userId.value,
+      });
+
+      // 发送队列中的消息
+      this.flushMessageQueue();
+      
+      // 开始心跳
+      this.startHeartbeat();
+      
+      // 触发连接成功事件
+      this.emit('connected');
+    });
+
+    // 连接断开
+    this.socket.on('disconnect', (reason) => {
+      console.log('❌ WebSocket连接断开:', reason);
+      this.isConnected.value = false;
+      this.stopHeartbeat();
+      this.emit('disconnected', reason);
+      
+      // 自动重连
+      if (this.options.autoReconnect && reason !== 'io client disconnect') {
+        this.handleReconnect();
+      }
+    });
+
+    // 连接错误
+    this.socket.on('connect_error', (error) => {
+      console.error('❌ WebSocket连接错误:', error);
+      this.handleConnectionError(error);
+    });
+
+    // 接收弹幕消息
+    this.socket.on('danmaku-message', (message: DanmakuMessage) => {
+      this.emit('message', message);
+    });
+
+    // 接收房间信息
+    this.socket.on('room-info', (info: RoomInfo) => {
+      this.emit('room-info', info);
+    });
+
+    // 心跳响应
+    this.socket.on('heartbeat-response', (response: HeartbeatResponse) => {
+      this.emit('heartbeat', response);
+    });
+
+    // 错误消息
+    this.socket.on('error', (error) => {
+      console.error('❌ WebSocket错误:', error);
+      this.emit('error', error);
+    });
+  }
+
+  // 发送弹幕消息
+  sendDanmaku(message: Omit<DanmakuMessage, 'id' | 'timestamp'>) {
+    if (!this.isConnected.value || !this.socket) {
+      // 添加到消息队列
+      this.addToMessageQueue({
+        event: 'send-danmaku',
+        data: message,
+      });
+      return;
+    }
+
+    this.socket.emit('send-danmaku', {
+      ...message,
+      videoId: this.roomId.value,
+      userId: this.userId.value,
+      timestamp: Date.now(),
+      id: this.generateMessageId(),
+    });
+  }
+
+  // 获取房间信息
+  getRoomInfo() {
+    if (!this.isConnected.value || !this.socket) return;
+    
+    this.socket.emit('get-room-info', {
+      videoId: this.roomId.value,
+    });
+  }
+
+  // 心跳检测
+  private startHeartbeat() {
+    this.stopHeartbeat();
+    
+    this.heartbeatInterval = window.setInterval(() => {
+      if (this.isConnected.value && this.socket) {
+        this.socket.emit('heartbeat', {
+          userId: this.userId.value,
+          timestamp: Date.now(),
+        });
+      }
+    }, this.options.heartbeatInterval);
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
+
+  // 重连处理
+  private handleReconnect() {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.error('❌ 达到最大重连次数，停止重连');
+      this.emit('reconnect-failed');
+      return;
+    }
+
+    this.reconnectAttempts++;
+    console.log(`🔄 尝试重连 (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+    
+    this.reconnectInterval = window.setTimeout(() => {
+      if (this.roomId.value && this.userId.value) {
+        this.connect(this.roomId.value, this.userId.value);
+      }
+    }, this.options.reconnectDelay * this.reconnectAttempts);
+  }
+
+  // 连接错误处理
+  private handleConnectionError(error: any) {
+    this.isConnected.value = false;
+    this.emit('error', error);
+    
+    // 如果启用了自动重连，尝试重连
+    if (this.options.autoReconnect) {
+      this.handleReconnect();
+    }
+  }
+
+  // 消息队列管理
+  private addToMessageQueue(message: any) {
+    if (this.messageQueue.length >= this.options.maxQueueSize) {
+      // 队列满，移除最旧的消息
+      this.messageQueue.shift();
+    }
+    this.messageQueue.push(message);
+  }
+
+  private flushMessageQueue() {
+    if (!this.isConnected.value || !this.socket) return;
+    
+    const messages = [...this.messageQueue];
+    this.messageQueue = [];
+    
+    messages.forEach(message => {
+      switch (message.event) {
+        case 'send-danmaku':
+          this.sendDanmaku(message.data);
+          break;
+        // 其他消息类型处理
+      }
+    });
+  }
+
+  // 事件管理
+  on(event: string, callback: Function) {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, new Set());
+    }
+    this.listeners.get(event)!.add(callback);
+  }
+
+  off(event: string, callback: Function) {
+    const callbacks = this.listeners.get(event);
+    if (callbacks) {
+      callbacks.delete(callback);
+    }
+  }
+
+  private emit(event: string, ...args: any[]) {
+    const callbacks = this.listeners.get(event);
+    if (callbacks) {
+      callbacks.forEach(callback => {
+        try {
+          callback(...args);
+        } catch (error) {
+          console.error('❌ 事件回调执行错误:', error);
+        }
+      });
+    }
+  }
+
+  // 工具方法
+  private generateMessageId(): string {
+    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  // 状态获取
+  get connected(): boolean {
+    return this.isConnected.value;
+  }
+
+  get currentRoomId(): string {
+    return this.roomId.value;
+  }
+
+  get currentUserId(): string {
+    return this.userId.value;
   }
 
   // 断开连接
   disconnect() {
     if (this.socket) {
-      this.socket.disconnect()
-      this.socket = null
-      this.isConnected.value = false
-      this.stopHeartbeat()
-      this.clearMessageQueue()
-      console.log('弹幕WebSocket连接已断开')
+      this.socket.disconnect();
+      this.socket = null;
     }
-  }
-
-  // 设置事件监听器
-  private setupEventListeners() {
-    if (!this.socket) return
-
-    // 连接成功
-    this.socket.on('connect', () => {
-      this.isConnected.value = true
-      this.reconnectAttempts = 0
-      console.log('弹幕WebSocket连接成功')
-      
-      // 发送队列中的消息
-      this.flushMessageQueue()
-      
-      // 通知监听器
-      this.emit('connected')
-    })
-
-    // 连接失败
-    this.socket.on('connect_error', (error) => {
-      console.error('弹幕WebSocket连接失败:', error)
-      this.handleConnectionError()
-    })
-
-    // 断开连接
-    this.socket.on('disconnect', (reason) => {
-      console.log('弹幕WebSocket断开连接:', reason)
-      this.isConnected.value = false
-      this.handleDisconnection()
-    })
-
-    // 接收弹幕消息
-    this.socket.on('danmaku', (message: DanmakuMessage) => {
-      this.emit('danmaku', message)
-    })
-
-    // 心跳响应
-    this.socket.on('heartbeat', (response: HeartbeatResponse) => {
-      this.emit('heartbeat', response)
-    })
-
-    // 房间信息
-    this.socket.on('room_info', (info: RoomInfo) => {
-      this.emit('room_info', info)
-    })
-
-    // 系统消息
-    this.socket.on('system', (message: DanmakuMessage) => {
-      this.emit('system', message)
-    })
-
-    // 错误消息
-    this.socket.on('error', (error) => {
-      console.error('弹幕WebSocket错误:', error)
-      this.emit('error', error)
-    })
-  }
-
-  // 发送弹幕消息
-  sendDanmaku(message: Omit<DanmakuMessage, 'id' | 'timestamp'>) {
-    if (!this.socket || !this.isConnected.value) {
-      // 添加到队列，等重连后发送
-      this.addToMessageQueue({
-        event: 'danmaku',
-        data: message
-      })
-      return false
-    }
-
-    try {
-      this.socket.emit('danmaku', message)
-      return true
-    } catch (error) {
-      console.error('发送弹幕失败:', error)
-      return false
-    }
-  }
-
-  // 获取房间信息
-  getRoomInfo(videoId: string) {
-    if (!this.socket) return
-
-    this.socket.emit('get_room_info', { videoId })
-  }
-
-  // 发送心跳
-  sendHeartbeat() {
-    if (!this.socket || !this.isConnected.value) return
-
-    try {
-      this.socket.emit('heartbeat')
-    } catch (error) {
-      console.error('发送心跳失败:', error)
-    }
-  }
-
-  // 添加事件监听器
-  on(event: string, callback: Function) {
-    if (!this.listeners.has(event)) {
-      this.listeners.set(event, new Set())
-    }
-    this.listeners.get(event)!.add(callback)
-
-    // 如果Socket存在，添加到Socket
-    if (this.socket) {
-      this.socket.on(event, callback)
-    }
-  }
-
-  // 移除事件监听器
-  off(event: string, callback: Function) {
-    const callbacks = this.listeners.get(event)
-    if (callbacks) {
-      callbacks.delete(callback)
-      
-      // 如果Socket存在，从Socket移除
-      if (this.socket) {
-        this.socket.off(event, callback)
-      }
-    }
-  }
-
-  // 清除所有监听器
-  removeAllListeners() {
-    if (this.socket) {
-      for (const [event, callbacks] of this.listeners) {
-        for (const callback of callbacks) {
-          this.socket.off(event, callback)
-        }
-      }
-    }
-    this.listeners.clear()
-  }
-
-  // 发送事件（内部使用）
-  private emit(event: string, data?: any) {
-    const callbacks = this.listeners.get(event)
-    if (callbacks) {
-      callbacks.forEach(callback => {
-        try {
-          callback(data)
-        } catch (error) {
-          console.error(`弹幕WebSocket事件处理错误 (${event}):`, error)
-        }
-      })
-    }
-  }
-
-  // 开始心跳
-  private startHeartbeat() {
-    this.heartbeatInterval = window.setInterval(() => {
-      this.sendHeartbeat()
-    }, this.options.heartbeatInterval)
-  }
-
-  // 停止心跳
-  private stopHeartbeat() {
-    if (this.heartbeatInterval) {
-      window.clearInterval(this.heartbeatInterval)
-      this.heartbeatInterval = null
-    }
-  }
-
-  // 处理连接错误
-  private handleConnectionError() {
-    this.isConnected.value = false
-    this.emit('connection_error')
     
-    if (this.options.autoReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.scheduleReconnect()
-    } else {
-      this.emit('connection_failed')
-    }
-  }
-
-  // 处理断开连接
-  private handleDisconnection() {
-    this.stopHeartbeat()
-    this.emit('disconnected')
+    this.stopHeartbeat();
+    this.isConnected.value = false;
+    this.reconnectAttempts = 0;
+    this.messageQueue = [];
     
-    if (this.options.autoReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.scheduleReconnect()
-    }
-  }
-
-  // 计划重连
-  private scheduleReconnect() {
-    this.reconnectAttempts++
-    const delay = this.options.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1) // 指数退避
+    // 清理事件监听器
+    this.listeners.clear();
     
-    console.log(`弹幕WebSocket计划在 ${delay}ms 后重连，尝试 ${this.reconnectAttempts}/${this.maxReconnectAttempts}`)
-    
-    this.reconnectInterval = window.setTimeout(() => {
-      if (this.authStore.isAuthenticated && this.roomId.value && this.userId.value) {
-        this.connect(this.roomId.value, this.userId.value)
-      }
-    }, delay)
-  }
-
-  // 添加消息到队列
-  private addToMessageQueue(message: { event: string; data: any }) {
-    if (this.messageQueue.length >= this.options.maxQueueSize) {
-      // 队列已满，移除最旧的消息
-      this.messageQueue.shift()
-    }
-    this.messageQueue.push(message)
-  }
-
-  // 清空消息队列
-  private clearMessageQueue() {
-    this.messageQueue = []
-  }
-
-  // 发送队列中的消息
-  private flushMessageQueue() {
-    const messages = [...this.messageQueue]
-    this.clearMessageQueue()
-    
-    for (const message of messages) {
-      if (message.event === 'danmaku') {
-        this.sendDanmaku(message.data)
-      }
-      // 其他消息类型的处理...
-    }
-  }
-
-  // 获取连接状态
-  getConnectionStatus() {
-    return {
-      isConnected: this.isConnected.value,
-      roomId: this.roomId.value,
-      userId: this.userId.value,
-      reconnectAttempts: this.reconnectAttempts,
-      queueSize: this.messageQueue.length
-    }
-  }
-
-  // 更新配置
-  updateConfig(newConfig: Partial<typeof this.options>) {
-    Object.assign(this.options, newConfig)
-  }
-
-  // 清理资源
-  destroy() {
-    this.disconnect()
-    this.removeAllListeners()
-    this.clearMessageQueue()
+    // 清理重连定时器
     if (this.reconnectInterval) {
-      clearTimeout(this.reconnectInterval)
+      clearTimeout(this.reconnectInterval);
+      this.reconnectInterval = 0;
     }
+  }
+
+  // 销毁服务
+  destroy() {
+    this.disconnect();
   }
 }
 
-// React Hook风格的使用方式
+// 创建全局服务实例
+let danmakuService: DanmakuWebSocketService | null = null;
+
+/**
+ * 初始化弹幕WebSocket服务
+ */
+export function initDanmakuService(authStore: any): DanmakuWebSocketService {
+  if (!danmakuService) {
+    danmakuService = new DanmakuWebSocketService(authStore);
+  }
+  return danmakuService;
+}
+
+/**
+ * 获取弹幕服务实例
+ */
+export function getDanmakuService(): DanmakuWebSocketService | null {
+  return danmakuService;
+}
+
+// Vue组合式API弹幕服务集成
 export function useDanmakuWebSocket(videoId: string) {
-  const authStore = useAuthStore()
-  const service = new DanmakuWebSocketService(authStore)
-  const isConnected = ref(false)
-  const roomInfo = ref<RoomInfo | null>(null)
-  const error = ref<any>(null)
-  
-  // 生命周期管理
-  onMounted(() => {
-    if (authStore.isAuthenticated && videoId) {
-      service.connect(videoId, authStore.user.id.toString())
+  const authStore = useAuthStore();
+  const service = initDanmakuService(authStore);
+  const isConnected = ref(false);
+  const roomInfo = ref<RoomInfo | null>(null);
+
+  // 连接管理
+  const connect = () => {
+    if (authStore.user?.id && videoId) {
+      service.connect(videoId, authStore.user.id.toString());
     }
-  })
+  };
+
+  // 断开连接
+  const disconnect = () => {
+    service.disconnect();
+  };
+
+  // 发送弹幕
+  const sendDanmaku = (message: Omit<DanmakuMessage, 'id' | 'timestamp'>) => {
+    return service.sendDanmaku(message);
+  };
+
+  // 获取房间信息
+  const getRoomInfo = () => {
+    service.getRoomInfo();
+  };
+
+  // 事件监听
+  const onDanmaku = (callback: (message: DanmakuMessage) => void) => {
+    service.on('danmaku-message', callback);
+  };
+
+  const onSystem = (callback: (message: DanmakuMessage) => void) => {
+    service.on('system-message', callback);
+  };
+
+  const onRoomInfo = (callback: (info: RoomInfo) => void) => {
+    service.on('room-info', callback);
+  };
+
+  const onConnected = (callback: () => void) => {
+    service.on('connected', callback);
+  };
+
+  const onDisconnected = (callback: (reason: string) => void) => {
+    service.on('disconnected', callback);
+  };
+
+  const onError = (callback: (error: any) => void) => {
+    service.on('error', callback);
+  };
+
+  const onHeartbeat = (callback: (response: HeartbeatResponse) => void) => {
+    service.on('heartbeat-response', callback);
+  };
+
+  // 设置事件监听器
+  onMounted(() => {
+    connect();
+    service.on('connected', () => isConnected.value = true);
+    service.on('disconnected', () => isConnected.value = false);
+  });
 
   onUnmounted(() => {
-    service.destroy()
-  })
+    disconnect();
+  });
 
-  // 设置事件监听
-  service.on('connected', () => {
-    isConnected.value = true
-    error.value = null
-  })
-
-  service.on('disconnected', () => {
-    isConnected.value = false
-  })
-
-  service.on('connection_error', (err) => {
-    error.value = err
-  })
-
-  service.on('connection_failed', () => {
-    error.value = new Error('连接失败，请重试')
-  })
-
-  service.on('room_info', (info: RoomInfo) => {
-    roomInfo.value = info
-  })
-
-  service.on('error', (err) => {
-    error.value = err
-  })
-
-  // 返回API
   return {
-    isConnected: isConnected,
-    roomInfo: roomInfo,
-    error: error,
-    sendDanmaku: (message: Omit<DanmakuMessage, 'id' | 'timestamp'>) => 
-      service.sendDanmaku(message),
-    getRoomInfo: () => service.getRoomInfo(videoId),
-    connect: () => service.connect(videoId, authStore.user.id.toString()),
-    disconnect: () => service.disconnect(),
-    updateConfig: (config: Partial<typeof service.options>) => 
-      service.updateConfig(config),
-    getStatus: () => service.getConnectionStatus(),
-    
-    // 事件监听
-    onDanmaku: (callback: (message: DanmakuMessage) => void) => 
-      service.on('danmaku', callback),
-    onSystem: (callback: (message: DanmakuMessage) => void) => 
-      service.on('system', callback),
-    onRoomInfo: (callback: (info: RoomInfo) => void) => 
-      service.on('room_info', callback),
-    onHeartbeat: (callback: (response: HeartbeatResponse) => void) => 
-      service.on('heartbeat', callback),
-    onError: (callback: (err: any) => void) => 
-      service.on('error', callback),
-    onConnected: (callback: () => void) => 
-      service.on('connected', callback),
-    onDisconnected: (callback: () => void) => 
-      service.on('disconnected', callback),
-    
-    // 移除监听器
-    off: (event: string, callback: Function) => 
-      service.off(event, callback)
-  }
+    isConnected,
+    roomInfo,
+    connect,
+    disconnect,
+    sendDanmaku,
+    getRoomInfo,
+    onDanmaku,
+    onSystem,
+    onRoomInfo,
+    onConnected,
+    onDisconnected,
+    onError,
+    onHeartbeat,
+  };
 }

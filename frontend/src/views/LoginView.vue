@@ -5,8 +5,8 @@
         <h2 class="text-3xl font-bold text-gray-900">登录到视频平台</h2>
         <p class="mt-2 text-gray-600">请输入您的账号信息</p>
       </div>
-      
-      <form @submit.prevent="handleLogin" class="space-y-6">
+
+      <form class="space-y-6" @submit.prevent="handleLogin">
         <div>
           <label for="identifier" class="block text-sm font-medium text-gray-700">
             用户名或邮箱
@@ -22,9 +22,7 @@
         </div>
 
         <div>
-          <label for="password" class="block text-sm font-medium text-gray-700">
-            密码
-          </label>
+          <label for="password" class="block text-sm font-medium text-gray-700"> 密码 </label>
           <input
             id="password"
             v-model="form.password"
@@ -63,32 +61,32 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+  import { ref } from 'vue';
+  import { useRouter } from 'vue-router';
+  import { useAuthStore } from '@/stores/auth';
 
-const router = useRouter()
-const authStore = useAuthStore()
+  const router = useRouter();
+  const authStore = useAuthStore();
 
-const form = ref({
-  identifier: '',
-  password: ''
-})
+  const form = ref({
+    identifier: '',
+    password: '',
+  });
 
-const error = ref('')
+  const error = ref('');
 
-const handleLogin = async () => {
-  error.value = ''
-  
-  const result = await authStore.login({
-    identifier: form.value.identifier,
-    password: form.value.password
-  })
+  const handleLogin = async () => {
+    error.value = '';
 
-  if (result.success) {
-    router.push('/')
-  } else {
-    error.value = result.error
-  }
-}
+    const result = await authStore.login({
+      identifier: form.value.identifier,
+      password: form.value.password,
+    });
+
+    if (result.success) {
+      router.push('/');
+    } else {
+      error.value = result.error;
+    }
+  };
 </script>

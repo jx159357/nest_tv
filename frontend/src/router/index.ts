@@ -1,22 +1,22 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router';
 
 // 路由懒加载配置
-const HomeView = () => import(/* webpackChunkName: "home" */ '../views/HomeView.vue')
-const LoginView = () => import(/* webpackChunkName: "auth" */ '../views/LoginView.vue')
-const RegisterView = () => import(/* webpackChunkName: "auth" */ '../views/RegisterView.vue')
-const MediaDetailView = () => import(/* webpackChunkName: "media" */ '../views/MediaDetailView.vue')
-const WatchView = () => import(/* webpackChunkName: "media" */ '../views/WatchView.vue')
-const ProfileView = () => import(/* webpackChunkName: "user" */ '../views/ProfileView.vue')
-const CrawlerView = () => import(/* webpackChunkName: "admin" */ '../views/CrawlerView.vue')
-const PlaySourcesView = () => import(/* webpackChunkName: "admin" */ '../views/PlaySourcesView.vue')
-const WatchHistoryView = () => import(/* webpackChunkName: "user" */ '../views/WatchHistoryView.vue')
-const RecommendationsView = () => import(/* webpackChunkName: "user" */ '../views/RecommendationsView.vue')
-const AdminLayout = () => import(/* webpackChunkName: "admin" */ '../layouts/AdminLayout.vue')
-const AdminDashboardView = () => import(/* webpackChunkName: "admin" */ '../views/AdminDashboardView.vue')
-const AdminUsersView = () => import(/* webpackChunkName: "admin" */ '../views/AdminUsersView.vue')
-const AdminMediaView = () => import(/* webpackChunkName: "admin" */ '../views/AdminMediaView.vue')
-const SettingsView = () => import(/* webpackChunkName: "user" */ '../views/SettingsView.vue')
-const NotFoundView = () => import(/* webpackChunkName: "error" */ '../views/NotFoundView.vue')
+const HomeView = () => import('../views/HomeView.vue');
+const LoginView = () => import('../views/LoginView.vue');
+const RegisterView = () => import('../views/RegisterView.vue');
+const MediaDetailView = () => import('../views/MediaDetailView.vue');
+const WatchView = () => import('../views/WatchView.vue');
+const ProfileView = () => import('../views/ProfileView.vue');
+const CrawlerView = () => import('../views/CrawlerView.vue');
+const PlaySourcesView = () => import('../views/PlaySourcesView.vue');
+const WatchHistoryView = () => import('../views/WatchHistoryView.vue');
+const RecommendationsView = () => import('../views/RecommendationsView.vue');
+const AdminLayout = () => import('../layouts/AdminLayout.vue');
+const AdminDashboardView = () => import('../views/AdminDashboardView.vue');
+const AdminUsersView = () => import('../views/AdminUsersView.vue');
+const AdminMediaView = () => import('../views/AdminMediaView.vue');
+// const SettingsView = () => import('../views/SettingsView.vue'); // 暂时注释，文件不存在
+const NotFoundView = () => import('../views/NotFoundView.vue');
 
 const routes = [
   {
@@ -26,8 +26,8 @@ const routes = [
     meta: {
       title: '首页 - Nest TV',
       preload: true, // 首页预加载
-      keepAlive: true // 保持组件状态
-    }
+      keepAlive: true, // 保持组件状态
+    },
   },
   {
     path: '/login',
@@ -36,8 +36,8 @@ const routes = [
     meta: {
       title: '登录 - Nest TV',
       requiresAuth: false,
-      hideAuth: true // 登录页面隐藏已登录状态
-    }
+      hideAuth: true, // 登录页面隐藏已登录状态
+    },
   },
   {
     path: '/register',
@@ -46,8 +46,8 @@ const routes = [
     meta: {
       title: '注册 - Nest TV',
       requiresAuth: false,
-      hideAuth: true
-    }
+      hideAuth: true,
+    },
   },
   {
     path: '/media/:id',
@@ -56,8 +56,8 @@ const routes = [
     meta: {
       title: '影视详情 - Nest TV',
       requiresAuth: false, // 影视详情页无需登录
-      preload: true // 预加载重要页面
-    }
+      preload: true, // 预加载重要页面
+    },
   },
   {
     path: '/watch/:id',
@@ -67,8 +67,8 @@ const routes = [
       title: '观看影视 - Nest TV',
       requiresAuth: false, // 观看页面允许未登录访问
       preload: true, // 观看页面预加载
-      keepAlive: true // 保持播放状态
-    }
+      keepAlive: true, // 保持播放状态
+    },
   },
   {
     path: '/profile',
@@ -77,8 +77,8 @@ const routes = [
     meta: {
       title: '个人中心 - Nest TV',
       requiresAuth: true,
-      preload: false // 个人中心不预加载
-    }
+      preload: false, // 个人中心不预加载
+    },
   },
   {
     path: '/watch-history',
@@ -87,8 +87,8 @@ const routes = [
     meta: {
       title: '观看历史 - Nest TV',
       requiresAuth: true,
-      preload: false // 历史记录按需加载
-    }
+      preload: false, // 历史记录按需加载
+    },
   },
   {
     path: '/recommendations',
@@ -97,19 +97,19 @@ const routes = [
     meta: {
       title: '推荐内容 - Nest TV',
       requiresAuth: false,
-      preload: true // 推荐内容预加载
-    }
+      preload: true, // 推荐内容预加载
+    },
   },
-  {
-    path: '/settings',
-    name: 'settings',
-    component: SettingsView,
-    meta: {
-      title: '系统设置 - Nest TV',
-      requiresAuth: true,
-      preload: false // 设置页面按需加载
-    }
-  },
+  // {
+  //   path: '/settings',
+  //   name: 'settings',
+  //   component: SettingsView, // 暂时注释
+  //   meta: {
+  //     title: '系统设置 - Nest TV',
+  //     requiresAuth: true,
+  //     preload: false, // 设置页面按需加载
+  //   },
+  // },
   {
     path: '/admin',
     name: 'admin',
@@ -118,7 +118,7 @@ const routes = [
       title: '管理后台 - Nest TV',
       requiresAuth: true,
       requiresAdmin: true,
-      preload: false // 管理功能不预加载
+      preload: false, // 管理功能不预加载
     },
     children: [
       {
@@ -128,8 +128,8 @@ const routes = [
         meta: {
           title: '仪表板 - Nest TV',
           requiresAuth: true,
-          requiresAdmin: true
-        }
+          requiresAdmin: true,
+        },
       },
       {
         path: 'users',
@@ -138,8 +138,8 @@ const routes = [
         meta: {
           title: '用户管理 - Nest TV',
           requiresAuth: true,
-          requiresAdmin: true
-        }
+          requiresAdmin: true,
+        },
       },
       {
         path: 'media',
@@ -148,10 +148,10 @@ const routes = [
         meta: {
           title: '媒体管理 - Nest TV',
           requiresAuth: true,
-          requiresAdmin: true
-        }
-      }
-    ]
+          requiresAdmin: true,
+        },
+      },
+    ],
   },
   {
     path: '/crawler',
@@ -160,8 +160,8 @@ const routes = [
     meta: {
       title: '数据采集 - Nest TV',
       requiresAuth: true,
-      preload: false // 管理功能不预加载
-    }
+      preload: false, // 管理功能不预加载
+    },
   },
   {
     path: '/play-sources',
@@ -170,8 +170,8 @@ const routes = [
     meta: {
       title: '播放源管理 - Nest TV',
       requiresAuth: true,
-      preload: false // 管理功能不预加载
-    }
+      preload: false, // 管理功能不预加载
+    },
   },
   {
     path: '/:pathMatch(.*)*',
@@ -179,23 +179,23 @@ const routes = [
     component: NotFoundView,
     meta: {
       title: '页面未找到 - Nest TV',
-      requiresAuth: false
-    }
-  }
-]
+      requiresAuth: false,
+    },
+  },
+];
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {
-      return savedPosition
+      return savedPosition;
     }
     if (to.hash) {
-      return { selector: to.hash }
+      return { selector: to.hash };
     }
-    return { left: 0, top: 0 }
-  }
-})
+    return { left: 0, top: 0 };
+  },
+});
 
-export default router
+export default router;

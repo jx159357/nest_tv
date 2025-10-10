@@ -6,16 +6,13 @@
  * @LastEditors: jxwd
  * @LastEditTime: 2025-08-28 16:44:00
  */
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import UnoCSS from '@unocss/vite'
-import { resolve } from 'path'
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+import UnoCSS from '@unocss/vite';
+import { resolve } from 'path';
 
 export default defineConfig({
-  plugins: [
-    vue(),
-    UnoCSS(),
-  ],
+  plugins: [vue(), UnoCSS()],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
@@ -26,20 +23,22 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3333',
+        target: 'http://localhost:3335',
         changeOrigin: true,
         secure: false,
         ws: true,
+        rewrite: path => path.replace(/^\/api/, ''),
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {
             console.error('❌ Vite Proxy Error:', err);
           });
           proxy.on('proxyReq', (proxyReq, req, _res) => {
             console.log(`🔄 Proxying ${req.method} ${req.url} to backend`);
+            // 确保请求头包含正确的字符集
+            proxyReq.setHeader('Accept-Charset', 'utf-8');
           });
         },
       },
-      rewrite: (path) => path.replace(/^\/api/, ''),
     },
   },
   build: {
@@ -50,9 +49,9 @@ export default defineConfig({
     cssCodeSplit: true,
     cssTarget: 'chrome80', // 现代浏览器CSS优化
     rollupOptions: {
-      external: ['vue', 'vue-router', 'pinia', 'axios', 'element-plus'],
       output: {
-        chunkFileNames: (chunkInfo) => {
+        // 更智能的代码分割策略
+        chunkFileNames: chunkInfo => {
           const facadeModuleId = chunkInfo.facadeModuleId
             ? chunkInfo.facadeModuleId.split('/').pop()
             : 'chunk';
@@ -60,25 +59,23 @@ export default defineConfig({
         },
         entryFileNames: 'assets/js/[name]-[hash].js',
         assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
-        globals: {
-          vue: 'Vue',
-          'vue-router': 'VueRouter',
-          pinia: 'Pinia',
-          axios: 'axios',
-          'element-plus': 'ElementPlus'
-        }
-      }
-    }
+        manualChunks: {
+          // 核心框架库
+          vendor: ['vue', 'vue-router', 'pinia'],
+          // UI组件库
+          ui: ['element-plus'],
+          // 工具库
+          utils: ['axios', '@vueuse/core'],
+          // 通信库
+          communication: ['socket.io-client'],
+          // 国际化
+          i18n: ['vue-i18n'],
+        },
+      },
+    },
   },
   optimizeDeps: {
-    include: [
-      'vue',
-      'vue-router', 
-      'pinia',
-      'axios',
-      'element-plus',
-      '@vueuse/core'
-    ],
-    force: true
+    include: ['vue', 'vue-router', 'pinia', 'axios', 'element-plus', '@vueuse/core'],
+    force: true,
   },
-})
+});

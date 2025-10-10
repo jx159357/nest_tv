@@ -14,11 +14,37 @@ async function bootstrap() {
         logger: ['log', 'error', 'warn'],
         bufferLogs: true,
     });
+    const isProduction = process.env.NODE_ENV === 'production';
+    const allowedOrigins = isProduction
+        ? (process.env.ALLOWED_ORIGINS?.split(',') || ['https://yourdomain.com'])
+        : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:5173'];
     app.enableCors({
-        origin: '*',
+        origin: (origin, callback) => {
+            if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
+                callback(null, true);
+            }
+            else {
+                console.warn(`CORS阻止的请求来源: ${origin}`);
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'Accept-Language'],
+        allowedHeaders: [
+            'Content-Type',
+            'Authorization',
+            'Accept-Language',
+            'X-Requested-With',
+            'X-Request-ID',
+            'Accept-Charset'
+        ],
         credentials: true,
+        optionsSuccessStatus: 200,
+        maxAge: 86400,
+    });
+    app.use((req, res, next) => {
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        next();
     });
     const config = new swagger_1.DocumentBuilder()
         .setTitle('Nest TV API')
