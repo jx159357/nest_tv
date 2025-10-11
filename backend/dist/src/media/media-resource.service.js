@@ -38,7 +38,7 @@ let MediaResourceService = class MediaResourceService {
         const queryBuilder = this.mediaResourceRepository
             .createQueryBuilder('mediaResource');
         if (search) {
-            queryBuilder.andWhere('(mediaResource.title LIKE :search OR mediaResource.description LIKE :search OR mediaResource.originalTitle LIKE :search)', { search: `%${search}%` });
+            queryBuilder.andWhere('(mediaResource.title LIKE :search OR mediaResource.originalTitle LIKE :search)', { search: `%${search}%` });
         }
         if (type) {
             queryBuilder.andWhere('mediaResource.type IN (:...type)', { type });
@@ -101,13 +101,31 @@ let MediaResourceService = class MediaResourceService {
         await this.mediaResourceRepository.remove(mediaResource);
     }
     async search(keyword, limit = 10) {
-        return this.mediaResourceRepository.find({
-            where: [{ title: (0, typeorm_2.Like)(`%${keyword}%`) }],
-            take: limit,
+        const exactMatches = await this.mediaResourceRepository.find({
+            where: [
+                { title: (0, typeorm_2.Like)(`${keyword}%`) },
+            ],
+            take: Math.min(limit, 5),
             order: {
                 rating: 'DESC',
             },
         });
+        if (exactMatches.length < limit) {
+            const remainingLimit = limit - exactMatches.length;
+            const fuzzyMatches = await this.mediaResourceRepository.find({
+                where: [
+                    { title: (0, typeorm_2.Like)(`%${keyword}%`) },
+                ],
+                take: remainingLimit,
+                order: {
+                    rating: 'DESC',
+                },
+            });
+            const allResults = [...exactMatches, ...fuzzyMatches];
+            const uniqueResults = allResults.filter((item, index, self) => index === self.findIndex(t => t.id === item.id));
+            return uniqueResults.slice(0, limit);
+        }
+        return exactMatches;
     }
     async getPopular(limit = 10) {
         return this.mediaResourceRepository.find({
@@ -150,33 +168,30 @@ let MediaResourceService = class MediaResourceService {
         await this.mediaResourceRepository.decrement({ id }, 'likes', 1);
     }
     async getStatistics() {
-        const total = await this.mediaResourceRepository.count();
-        const byTypeQuery = await this.mediaResourceRepository
+        const statisticsQuery = await this.mediaResourceRepository
             .createQueryBuilder('mediaResource')
-            .select('mediaResource.type')
-            .addSelect('COUNT(*)', 'count')
-            .groupBy('mediaResource.type')
+            .select('COUNT(*)', 'total')
+            .addSelect('mediaResource.type', 'type')
+            .addSelect('mediaResource.quality', 'quality')
+            .addSelect('AVG(CASE WHEN mediaResource.rating != 0 THEN mediaResource.rating ELSE NULL END)', 'avgRating')
+            .groupBy('mediaResource.type, mediaResource.quality')
             .getRawMany();
-        const byType = byTypeQuery.reduce((acc, item) => {
-            acc[item.type] = parseInt(item.count);
-            return acc;
-        }, {});
-        const byQualityQuery = await this.mediaResourceRepository
-            .createQueryBuilder('mediaResource')
-            .select('mediaResource.quality')
-            .addSelect('COUNT(*)', 'count')
-            .groupBy('mediaResource.quality')
-            .getRawMany();
-        const byQuality = byQualityQuery.reduce((acc, item) => {
-            acc[item.quality] = parseInt(item.count);
-            return acc;
-        }, {});
-        const averageRatingQuery = await this.mediaResourceRepository
-            .createQueryBuilder('mediaResource')
-            .select('AVG(mediaResource.rating)', 'avgRating')
-            .where('mediaResource.rating != 0')
-            .getRawOne();
-        const averageRating = parseFloat(averageRatingQuery.avgRating) || 0;
+        let total = 0;
+        const byType = {};
+        const byQuality = {};
+        let ratingSum = 0;
+        let ratingCount = 0;
+        statisticsQuery.forEach((stat) => {
+            const count = parseInt(stat.total);
+            total += count;
+            byType[stat.type] = (byType[stat.type] || 0) + count;
+            byQuality[stat.quality] = (byQuality[stat.quality] || 0) + count;
+            if (stat.avgRating) {
+                ratingSum += parseFloat(stat.avgRating) * count;
+                ratingCount += count;
+            }
+        });
+        const averageRating = ratingCount > 0 ? ratingSum / ratingCount : 0;
         return {
             total,
             byType,

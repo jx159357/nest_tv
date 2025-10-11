@@ -1,6 +1,27 @@
 import { CrawlerTarget } from './crawler.service';
 
 export const CRAWLER_TARGETS: CrawlerTarget[] = [
+  // 电影天堂 - 完整配置
+  {
+    name: '电影天堂',
+    baseUrl: 'http://www.dytt8899.com',
+    selectors: {
+      title: '.co_content22 ul li a, .title_all h1, .bd3r .co_area2 .title_all h1',
+      description: '.co_content22, .co_content8, .co_content222, .zoomX',
+      poster: '#Zoom img, .co_content8 img, .bd3r .co_area2 img',
+      rating: '.rating, .score, .co_content8 .rank',
+      director: '.co_content8 p, .actor p',
+      actors: '.co_content8 p, .actor p',
+      genres: ['.co_content8 p a, .actor p a, .co_content222 p a'],
+      releaseDate: '.co_content8 p span, .actor p span, .co_content222 p',
+      downloadUrls: ['.co_content22 a[href*="thunder"], .co_content222 a[href*="magnet"], .down_list a'],
+    },
+    enabled: true, // 启用此爬虫
+    priority: 1, // 最高优先级
+    maxPages: 50, // 最大爬取页数
+    respectRobotsTxt: true,
+    requestDelay: 2000, // 请求间隔2秒
+  },
   {
     name: '示例目标 - 测试用',
     baseUrl: 'https://httpbin.org/html',

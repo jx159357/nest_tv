@@ -75,8 +75,51 @@ exports.WatchHistoryController = WatchHistoryController;
 __decorate([
     (0, common_1.Post)(),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    (0, swagger_1.ApiOperation)({ summary: '创建或更新观看历史' }),
-    (0, swagger_1.ApiResponse)({ status: 201, description: '观看历史创建成功', type: watch_history_entity_1.WatchHistory }),
+    (0, swagger_1.ApiOperation)({
+        summary: '创建或更新观看历史',
+        description: '创建新的观看历史记录，如果已存在则更新进度信息'
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 201,
+        description: '观看历史创建成功',
+        schema: {
+            type: 'object',
+            properties: {
+                id: { type: 'number', example: 1 },
+                userId: { type: 'number', example: 1 },
+                mediaResourceId: { type: 'number', example: 1 },
+                currentTime: { type: 'number', example: 1200 },
+                duration: { type: 'number', example: 3600 },
+                isCompleted: { type: 'boolean', example: false },
+                lastWatchedAt: { type: 'string', format: 'date-time' },
+                createdAt: { type: 'string', format: 'date-time' },
+                updatedAt: { type: 'string', format: 'date-time' },
+            }
+        }
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 400,
+        description: '参数验证失败',
+        schema: {
+            type: 'object',
+            properties: {
+                statusCode: { type: 'number', example: 400 },
+                message: { type: 'string', example: 'Validation failed' },
+            }
+        }
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 401,
+        description: '未授权访问',
+        schema: {
+            type: 'object',
+            properties: {
+                statusCode: { type: 'number', example: 401 },
+                message: { type: 'string', example: 'Unauthorized' },
+            }
+        }
+    }),
+    (0, common_1.UsePipes)(new common_1.ValidationPipe({ transform: true })),
     __param(0, (0, current_user_decorator_1.GetCurrentUserId)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -186,6 +229,7 @@ __decorate([
     (0, swagger_1.ApiOperation)({ summary: '更新观看历史' }),
     (0, swagger_1.ApiParam)({ name: 'id', description: '观看历史ID' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: '观看历史更新成功', type: watch_history_entity_1.WatchHistory }),
+    (0, common_1.UsePipes)(new common_1.ValidationPipe({ transform: true })),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),

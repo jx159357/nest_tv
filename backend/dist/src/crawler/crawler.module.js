@@ -10,13 +10,14 @@ exports.CrawlerModule = void 0;
 const common_1 = require("@nestjs/common");
 const crawler_service_1 = require("./crawler.service");
 const media_module_1 = require("../media/media.module");
+const common_module_1 = require("../common/common.module");
 const crawler_controller_1 = require("./crawler.controller");
 let CrawlerModule = class CrawlerModule {
 };
 exports.CrawlerModule = CrawlerModule;
 exports.CrawlerModule = CrawlerModule = __decorate([
     (0, common_1.Module)({
-        imports: [media_module_1.MediaResourceModule],
+        imports: [media_module_1.MediaResourceModule, common_module_1.CommonModule],
         controllers: [crawler_controller_1.CrawlerController],
         providers: [crawler_service_1.CrawlerService],
         exports: [crawler_service_1.CrawlerService],

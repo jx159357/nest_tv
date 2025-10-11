@@ -17,19 +17,13 @@ const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const play_source_service_1 = require("./play-source.service");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const play_source_dto_1 = require("./dtos/play-source.dto");
 let PlaySourceController = class PlaySourceController {
     playSourceService;
     constructor(playSourceService) {
         this.playSourceService = playSourceService;
     }
-    async findAll(page = 1, pageSize = 10, mediaResourceId, type, status) {
-        const queryDto = {
-            page,
-            pageSize,
-            mediaResourceId,
-            type,
-            status,
-        };
+    async findAll(queryDto) {
         return this.playSourceService.findAll(queryDto);
     }
     async findById(id) {
@@ -58,23 +52,140 @@ let PlaySourceController = class PlaySourceController {
 exports.PlaySourceController = PlaySourceController;
 __decorate([
     (0, common_1.Get)(),
-    (0, swagger_1.ApiOperation)({ summary: '获取播放源列表' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: '获取成功' }),
-    __param(0, (0, common_1.Query)('page')),
-    __param(1, (0, common_1.Query)('pageSize')),
-    __param(2, (0, common_1.Query)('mediaResourceId')),
-    __param(3, (0, common_1.Query)('type')),
-    __param(4, (0, common_1.Query)('status')),
+    (0, swagger_1.ApiOperation)({
+        summary: '获取播放源列表',
+        description: '支持分页、搜索、类型筛选、质量筛选、状态筛选等多种条件的播放源列表查询',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: '获取成功',
+        schema: {
+            type: 'object',
+            properties: {
+                data: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            id: { type: 'number', example: 1 },
+                            url: { type: 'string', example: 'https://example.com/video.mp4' },
+                            quality: { type: 'string', example: '1080p' },
+                            type: { type: 'string', example: 'online' },
+                            isActive: { type: 'boolean', example: true },
+                            mediaResourceId: { type: 'number', example: 1 },
+                            priority: { type: 'number', example: 1 },
+                        },
+                    },
+                },
+                page: { type: 'number', example: 1 },
+                pageSize: { type: 'number', example: 10 },
+                total: { type: 'number', example: 50 },
+                totalPages: { type: 'number', example: 5 },
+            },
+        },
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 400,
+        description: '请求参数错误',
+        schema: {
+            type: 'object',
+            properties: {
+                statusCode: { type: 'number', example: 400 },
+                message: { type: 'string', example: 'Validation failed' },
+                error: { type: 'string', example: 'Bad Request' },
+            },
+        },
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 401,
+        description: '未授权访问',
+        schema: {
+            type: 'object',
+            properties: {
+                statusCode: { type: 'number', example: 401 },
+                message: { type: 'string', example: 'Unauthorized' },
+            },
+        },
+    }),
+    (0, swagger_1.ApiQuery)({ name: 'page', description: '页码，从1开始', example: 1 }),
+    (0, swagger_1.ApiQuery)({ name: 'pageSize', description: '每页数量，默认10条，最大100条', example: 10 }),
+    (0, swagger_1.ApiQuery)({ name: 'search', description: '搜索关键词，支持URL和描述模糊搜索', required: false }),
+    (0, swagger_1.ApiQuery)({
+        name: 'type',
+        description: '播放源类型',
+        example: 'online',
+        enum: ['online', 'local', 'torrent', 'm3u8'],
+    }),
+    (0, swagger_1.ApiQuery)({
+        name: 'quality',
+        description: '视频质量',
+        example: '1080p',
+        enum: ['4K', '1080p', '720p', '480p', '360p'],
+    }),
+    (0, swagger_1.ApiQuery)({ name: 'isActive', description: '是否激活', example: true, required: false }),
+    (0, swagger_1.ApiQuery)({ name: 'mediaResourceId', description: '媒体资源ID', example: 1, required: false }),
+    (0, common_1.UsePipes)(new common_1.ValidationPipe({ transform: true })),
+    __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, Number, Number, String, String]),
+    __metadata("design:paramtypes", [play_source_dto_1.PlaySourceQueryDto]),
     __metadata("design:returntype", Promise)
 ], PlaySourceController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
-    (0, swagger_1.ApiOperation)({ summary: '根据ID获取播放源' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: '获取成功' }),
-    (0, swagger_1.ApiResponse)({ status: 404, description: '播放源不存在' }),
-    (0, swagger_1.ApiParam)({ name: 'id', description: '播放源ID' }),
+    (0, swagger_1.ApiOperation)({
+        summary: '根据ID获取播放源',
+        description: '通过ID获取单个播放源的详细信息',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: '获取成功',
+        schema: {
+            type: 'object',
+            properties: {
+                id: { type: 'number', example: 1 },
+                url: { type: 'string', example: 'https://example.com/video.mp4' },
+                quality: { type: 'string', example: '1080p' },
+                type: { type: 'string', example: 'online' },
+                isActive: { type: 'boolean', example: true },
+                mediaResourceId: { type: 'number', example: 1 },
+                priority: { type: 'number', example: 1 },
+                size: { type: 'string', example: '2.5GB' },
+                language: { type: 'string', example: '中文' },
+                subtitle: { type: 'string', example: 'https://example.com/subtitle.srt' },
+                createdAt: { type: 'string', format: 'date-time' },
+                updatedAt: { type: 'string', format: 'date-time' },
+            },
+        },
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 404,
+        description: '播放源不存在',
+        schema: {
+            type: 'object',
+            properties: {
+                statusCode: { type: 'number', example: 404 },
+                message: { type: 'string', example: 'Play source with ID 1 not found' },
+                error: { type: 'string', example: 'Not Found' },
+            },
+        },
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 401,
+        description: '未授权访问',
+        schema: {
+            type: 'object',
+            properties: {
+                statusCode: { type: 'number', example: 401 },
+                message: { type: 'string', example: 'Unauthorized' },
+            },
+        },
+    }),
+    (0, swagger_1.ApiParam)({
+        name: 'id',
+        description: '播放源ID，正整数',
+        example: 1,
+        required: true,
+    }),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -85,9 +196,10 @@ __decorate([
     (0, swagger_1.ApiOperation)({ summary: '创建播放源' }),
     (0, swagger_1.ApiResponse)({ status: 201, description: '创建成功' }),
     (0, swagger_1.ApiResponse)({ status: 400, description: '参数错误' }),
+    (0, common_1.UsePipes)(new common_1.ValidationPipe({ transform: true })),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [play_source_dto_1.CreatePlaySourceDto]),
     __metadata("design:returntype", Promise)
 ], PlaySourceController.prototype, "create", null);
 __decorate([
@@ -96,10 +208,11 @@ __decorate([
     (0, swagger_1.ApiResponse)({ status: 200, description: '更新成功' }),
     (0, swagger_1.ApiResponse)({ status: 404, description: '播放源不存在' }),
     (0, swagger_1.ApiParam)({ name: 'id', description: '播放源ID' }),
+    (0, common_1.UsePipes)(new common_1.ValidationPipe({ transform: true })),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:paramtypes", [Number, play_source_dto_1.UpdatePlaySourceDto]),
     __metadata("design:returntype", Promise)
 ], PlaySourceController.prototype, "update", null);
 __decorate([

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -274,6 +274,7 @@ export class MediaResourceController {
   })
   @ApiResponse({ status: 401, description: '未授权', type: ErrorResponse })
   @ApiResponse({ status: 403, description: '权限不足', type: ErrorResponse })
+  @UsePipes(new ValidationPipe({ transform: true }))
   async create(@Body() createMediaResourceDto: CreateMediaResourceDto) {
     return this.mediaResourceService.create(createMediaResourceDto);
   }
@@ -337,6 +338,7 @@ export class MediaResourceController {
     description: '权限不足',
     type: ErrorResponse,
   })
+  @UsePipes(new ValidationPipe({ transform: true }))
   async update(@Param('id') id: number, @Body() updateMediaResourceDto: UpdateMediaResourceDto) {
     return this.mediaResourceService.update(id, updateMediaResourceDto);
   }

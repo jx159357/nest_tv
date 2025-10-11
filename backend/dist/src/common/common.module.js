@@ -10,13 +10,16 @@ exports.CommonModule = void 0;
 const common_1 = require("@nestjs/common");
 const app_logger_service_1 = require("./services/app-logger.service");
 const global_exception_filter_1 = require("./filters/global-exception.filter");
+const database_health_service_1 = require("./services/database-health.service");
+const health_controller_1 = require("./controllers/health.controller");
 let CommonModule = class CommonModule {
 };
 exports.CommonModule = CommonModule;
 exports.CommonModule = CommonModule = __decorate([
     (0, common_1.Module)({
-        providers: [app_logger_service_1.AppLoggerService, global_exception_filter_1.GlobalExceptionFilter],
-        exports: [app_logger_service_1.AppLoggerService],
+        providers: [app_logger_service_1.AppLoggerService, global_exception_filter_1.GlobalExceptionFilter, database_health_service_1.DatabaseHealthService],
+        controllers: [health_controller_1.HealthController],
+        exports: [app_logger_service_1.AppLoggerService, database_health_service_1.DatabaseHealthService],
     })
 ], CommonModule);
 //# sourceMappingURL=common.module.js.map

@@ -1,4 +1,5 @@
 import { MediaResourceService } from '../media/media-resource.service';
+import { AppLoggerService } from '../common/services/app-logger.service';
 export interface CrawlerTarget {
     name: string;
     baseUrl: string;
@@ -13,6 +14,11 @@ export interface CrawlerTarget {
         releaseDate: string;
         downloadUrls: string[];
     };
+    enabled?: boolean;
+    priority?: number;
+    maxPages?: number;
+    respectRobotsTxt?: boolean;
+    requestDelay?: number;
 }
 export interface CrawledData {
     title: string;
@@ -32,17 +38,27 @@ export interface CrawledData {
 }
 export declare class CrawlerService {
     private readonly mediaResourceService;
+    private readonly appLogger;
     private readonly logger;
     private readonly httpClient;
     private readonly cache;
-    constructor(mediaResourceService: MediaResourceService);
+    constructor(mediaResourceService: MediaResourceService, appLogger: AppLoggerService);
     getAvailableTargets(): CrawlerTarget[];
     private validateUrl;
     private getCache;
     private setCache;
     private cleanCache;
     private delay;
+    private fetchWithRetry;
+    private generateRequestId;
+    private validateAndCleanData;
     crawlWebsite(targetName: string, url: string): Promise<CrawledData | null>;
+    private extractDyttData;
+    private extractDyttDescription;
+    private extractDyttDirector;
+    private extractDyttActors;
+    private extractDyttGenres;
+    private inferEpisodeCount;
     batchCrawl(targetName: string, urls: string[]): Promise<CrawledData[]>;
     private extractText;
     private inferMediaType;

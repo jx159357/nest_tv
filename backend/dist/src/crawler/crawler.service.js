@@ -52,13 +52,17 @@ const axios_1 = __importDefault(require("axios"));
 const cheerio = __importStar(require("cheerio"));
 const crawler_config_1 = require("./crawler.config");
 const media_resource_service_1 = require("../media/media-resource.service");
+const media_resource_entity_1 = require("../entities/media-resource.entity");
+const app_logger_service_1 = require("../common/services/app-logger.service");
 let CrawlerService = CrawlerService_1 = class CrawlerService {
     mediaResourceService;
+    appLogger;
     logger = new common_1.Logger(CrawlerService_1.name);
     httpClient;
     cache = new Map();
-    constructor(mediaResourceService) {
+    constructor(mediaResourceService, appLogger) {
         this.mediaResourceService = mediaResourceService;
+        this.appLogger = appLogger;
         this.httpClient = axios_1.default.create({
             timeout: crawler_config_1.CRAWLER_CONFIG.request.timeout,
             headers: {
@@ -74,10 +78,10 @@ let CrawlerService = CrawlerService_1 = class CrawlerService {
             return Promise.reject(error);
         });
         this.httpClient.interceptors.response.use((response) => {
-            this.logger.log(`响应状态: ${response.status} - ${response.config.url}`);
+            this.appLogger.log(`响应状态: ${response.status} - ${response.config.url}`, 'CRAWLER_RESPONSE');
             return response;
         }, (error) => {
-            this.logger.error('响应拦截器错误:', error.message);
+            this.appLogger.logExternalServiceError('Crawler HTTP Client', 'Response Interceptor', error, error.config?.url, undefined);
             return Promise.reject(error);
         });
     }
@@ -134,56 +138,274 @@ let CrawlerService = CrawlerService_1 = class CrawlerService {
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
+    async fetchWithRetry(url, options = {}, maxRetries = 3, retryDelay = 2000) {
+        let lastError = new Error('Unknown error');
+        const requestId = this.generateRequestId();
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                this.appLogger.log(`尝试请求 (尝试 ${attempt}/${maxRetries}): ${url}`, 'CRAWLER_FETCH');
+                const response = await this.httpClient.get(url, {
+                    timeout: crawler_config_1.CRAWLER_CONFIG.request.timeout,
+                    ...options,
+                });
+                this.appLogger.log(`请求成功: ${url} - 状态: ${response.status}`, 'CRAWLER_SUCCESS');
+                return response;
+            }
+            catch (error) {
+                lastError = error;
+                this.appLogger.logExternalServiceError('Crawler HTTP Client', `Fetch Attempt ${attempt}/${maxRetries}`, error, url, requestId);
+                if (attempt < maxRetries) {
+                    const delay = retryDelay * Math.pow(2, attempt - 1);
+                    this.appLogger.warn(`等待 ${delay}ms 后重试...`, 'CRAWLER_RETRY', requestId);
+                    await this.delay(delay);
+                }
+            }
+        }
+        this.appLogger.error(`所有重试失败: ${url}`, 'CRAWLER_FAILED', lastError.stack, requestId);
+        throw lastError;
+    }
+    generateRequestId() {
+        return `crawler_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+    validateAndCleanData(data) {
+        const cleanedData = { ...data };
+        cleanedData.title = cleanedData.title
+            .replace(/电影天堂|迅雷下载|高清下载|完整版|免费观看|在线观看/g, '')
+            .trim();
+        if (!cleanedData.title || cleanedData.title.length < 2) {
+            throw new Error('标题无效或过短');
+        }
+        if (cleanedData.description) {
+            cleanedData.description = cleanedData.description
+                .replace(/\s+/g, ' ')
+                .substring(0, 1000);
+        }
+        if (cleanedData.downloadUrls) {
+            cleanedData.downloadUrls = cleanedData.downloadUrls
+                .filter(url => url && (url.startsWith('http') || url.startsWith('magnet:') || url.startsWith('thunder://')))
+                .map(url => url.trim())
+                .filter((url, index, self) => self.indexOf(url) === index);
+        }
+        if (!cleanedData.rating || cleanedData.rating < 0) {
+            cleanedData.rating = 7.5;
+        }
+        return cleanedData;
+    }
     async crawlWebsite(targetName, url) {
+        const requestId = this.generateRequestId();
         try {
+            this.appLogger.setContext(requestId, {
+                module: 'CRAWLER',
+                function: 'crawlWebsite',
+                requestId,
+            });
             if (!this.validateUrl(url)) {
                 throw new Error(`URL不符合爬取规则: ${url}`);
             }
             const cacheKey = `crawl:${targetName}:${url}`;
             const cached = this.getCache(cacheKey);
             if (cached) {
-                this.logger.log(`使用缓存数据: ${url}`);
+                this.appLogger.log(`使用缓存数据: ${url}`, 'CRAWLER_CACHE');
                 return cached;
             }
             const target = crawler_config_1.CRAWLER_TARGETS.find(t => t.name === targetName);
             if (!target) {
                 throw new Error(`未找到爬虫目标: ${targetName}`);
             }
-            this.logger.log(`开始爬取 ${targetName}: ${url}`);
-            const response = await this.httpClient.get(url);
+            if (target.enabled === false) {
+                throw new Error(`爬虫目标未启用: ${targetName}`);
+            }
+            this.appLogger.log(`开始爬取 ${targetName}: ${url}`, 'CRAWLER_START');
+            const response = await this.fetchWithRetry(url);
             if (response.status !== 200) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             const $ = cheerio.load(response.data);
-            const crawledData = {
-                title: this.extractText($, target.selectors.title) || '未知标题',
-                description: this.extractText($, target.selectors.description),
-                type: this.inferMediaType(url),
-                director: this.extractText($, target.selectors.director),
-                actors: this.extractText($, target.selectors.actors),
-                genres: this.extractGenres($, target.selectors.genres),
-                releaseDate: this.parseDate(this.extractText($, target.selectors.releaseDate)),
-                poster: this.resolveUrl($(target.selectors.poster).first().attr('src'), target.baseUrl),
-                rating: this.parseRating(this.extractText($, target.selectors.rating)),
-                source: target.name,
-                downloadUrls: this.extractDownloadUrls($, target.selectors.downloadUrls),
-                metadata: {
-                    crawledAt: new Date(),
-                    crawledUrl: url,
-                    website: target.name,
-                },
-            };
+            let crawledData;
+            if (targetName === '电影天堂') {
+                crawledData = await this.extractDyttData($, url, target);
+            }
+            else {
+                crawledData = {
+                    title: this.extractText($, target.selectors.title) || '未知标题',
+                    description: this.extractText($, target.selectors.description),
+                    type: this.inferMediaType(url),
+                    director: this.extractText($, target.selectors.director),
+                    actors: this.extractText($, target.selectors.actors),
+                    genres: this.extractGenres($, target.selectors.genres),
+                    releaseDate: this.parseDate(this.extractText($, target.selectors.releaseDate)),
+                    poster: this.resolveUrl($(target.selectors.poster).first().attr('src'), target.baseUrl),
+                    rating: this.parseRating(this.extractText($, target.selectors.rating)),
+                    source: target.name,
+                    downloadUrls: this.extractDownloadUrls($, target.selectors.downloadUrls),
+                    metadata: {
+                        crawledAt: new Date(),
+                        crawledUrl: url,
+                        website: target.name,
+                    },
+                };
+            }
             if (!this.validateCrawledData(crawledData)) {
                 throw new Error('爬取的数据验证失败');
             }
-            this.setCache(cacheKey, crawledData);
-            this.logger.log(`成功爬取数据: ${crawledData.title}`);
-            return crawledData;
+            this.appLogger.log(`成功爬取数据: ${crawledData.title}`, 'CRAWLER_SUCCESS');
+            const cleanedData = this.validateAndCleanData(crawledData);
+            this.setCache(cacheKey, cleanedData);
+            this.appLogger.logOperation('CRAWL', `${targetName}:${cleanedData.title}`, undefined, { url, target: targetName, title: cleanedData.title }, 'success', requestId);
+            this.appLogger.clearContext(requestId);
+            return cleanedData;
         }
         catch (error) {
-            this.logger.error(`爬取失败 ${targetName}: ${url}`, error.stack);
+            this.appLogger.error(`爬取失败 ${targetName}: ${url}`, 'CRAWLER_ERROR', error.stack, requestId);
+            this.appLogger.logOperation('CRAWL', `${targetName}:${url}`, undefined, { url, target: targetName, error: error.message }, 'error', requestId);
             return null;
         }
+    }
+    extractDyttData($, url, target) {
+        const titleText = $('.co_content22 ul li a').first().text().trim();
+        let title = titleText;
+        let quality = media_resource_entity_1.MediaQuality.HD;
+        const titleMatch = titleText.match(/《(.*?)》/);
+        if (titleMatch) {
+            title = titleMatch[1];
+        }
+        if (titleText.includes('4K') || titleText.includes('蓝光'))
+            quality = media_resource_entity_1.MediaQuality.BLUE_RAY;
+        else if (titleText.includes('1080P'))
+            quality = media_resource_entity_1.MediaQuality.FULL_HD;
+        else if (titleText.includes('720P') || titleText.includes('HD'))
+            quality = media_resource_entity_1.MediaQuality.HD;
+        const dateText = $('.co_content22 ul li span').first().text().trim();
+        let releaseDate;
+        const dateMatch = dateText.match(/(\d{4}-\d{1,2}-\d{1,2})/);
+        if (dateMatch) {
+            releaseDate = new Date(dateMatch[1]);
+        }
+        const downloadUrls = [];
+        $('.co_content22 ul li a').each((_, element) => {
+            const href = $(element).attr('href');
+            if (href && !href.includes('javascript')) {
+                downloadUrls.push(this.resolveUrl(href, target.baseUrl));
+            }
+        });
+        const contentText = $('.co_content22').text();
+        const ftpMatches = contentText.match(/ftp:\/\/[^\s\n]+/g);
+        if (ftpMatches) {
+            downloadUrls.push(...ftpMatches);
+        }
+        const magnetMatches = contentText.match(/magnet:\?[^\s\n]+/g);
+        if (magnetMatches) {
+            downloadUrls.push(...magnetMatches);
+        }
+        const thunderMatches = contentText.match(/thunder:\/\/[^\s\n]+/g);
+        if (thunderMatches) {
+            downloadUrls.push(...thunderMatches);
+        }
+        const uniqueUrls = [...new Set(downloadUrls)];
+        return {
+            title,
+            description: this.extractDyttDescription($),
+            type: this.inferMediaType(url),
+            director: this.extractDyttDirector($),
+            actors: this.extractDyttActors($),
+            genres: this.extractDyttGenres($),
+            releaseDate,
+            poster: undefined,
+            rating: 0,
+            source: target.name,
+            downloadUrls: uniqueUrls,
+            episodeCount: this.inferEpisodeCount(titleText),
+            metadata: {
+                quality,
+                crawledAt: new Date(),
+                crawledUrl: url,
+                website: target.name,
+                originalTitle: titleText,
+            },
+        };
+    }
+    extractDyttDescription($) {
+        let description = '';
+        const titleText = $('.co_content22 ul li a').first().text().trim();
+        if (titleText.includes('◎')) {
+            const descMatch = titleText.match(/◎(.*?)(?=◎|$)/);
+            if (descMatch) {
+                description = descMatch[1].trim();
+            }
+        }
+        if (!description) {
+            const content = $('.co_content22').text();
+            const lines = content.split('\n').filter(line => line.trim().length > 10);
+            if (lines.length > 0) {
+                description = lines[0].trim();
+            }
+        }
+        return description || '暂无简介';
+    }
+    extractDyttDirector($) {
+        const content = $('.co_content22').text();
+        const directorMatch = content.match(/导演[:：]\s*([^\n]+)/);
+        if (directorMatch) {
+            return directorMatch[1].trim();
+        }
+        const directorMatch2 = content.match(/Director[:：]\s*([^\n]+)/i);
+        if (directorMatch2) {
+            return directorMatch2[1].trim();
+        }
+        return '';
+    }
+    extractDyttActors($) {
+        const content = $('.co_content22').text();
+        const actorsMatch = content.match(/主演[:：]\s*([^\n]+)/);
+        if (actorsMatch) {
+            return actorsMatch[1].trim();
+        }
+        const actorsMatch2 = content.match(/Cast[:：]\s*([^\n]+)/i);
+        if (actorsMatch2) {
+            return actorsMatch2[1].trim();
+        }
+        return '';
+    }
+    extractDyttGenres($) {
+        const content = $('.co_content22').text();
+        const genres = [];
+        const genreMatch = content.match(/类型[:：]\s*([^\n]+)/);
+        if (genreMatch) {
+            const genreText = genreMatch[1].trim();
+            const genreList = genreText.split(/[/,，、]/);
+            genreList.forEach(genre => {
+                const trimmedGenre = genre.trim();
+                if (trimmedGenre && !genres.includes(trimmedGenre)) {
+                    genres.push(trimmedGenre);
+                }
+            });
+        }
+        const genreMatch2 = content.match(/Genre[:：]\s*([^\n]+)/i);
+        if (genreMatch2 && genres.length === 0) {
+            const genreText = genreMatch2[1].trim();
+            const genreList = genreText.split(/[/,，、]/);
+            genreList.forEach(genre => {
+                const trimmedGenre = genre.trim();
+                if (trimmedGenre && !genres.includes(trimmedGenre)) {
+                    genres.push(trimmedGenre);
+                }
+            });
+        }
+        return genres.length > 0 ? genres : ['电影'];
+    }
+    inferEpisodeCount(titleText) {
+        const episodeMatch = titleText.match(/(\d+)集/);
+        if (episodeMatch) {
+            return parseInt(episodeMatch[1]);
+        }
+        const seasonMatch = titleText.match(/第(\d+)季/);
+        if (seasonMatch) {
+            return undefined;
+        }
+        if (titleText.includes('连续剧') || titleText.includes('剧集')) {
+            return undefined;
+        }
+        return 1;
     }
     async batchCrawl(targetName, urls) {
         const results = [];
@@ -208,7 +430,18 @@ let CrawlerService = CrawlerService_1 = class CrawlerService {
     extractText($, selector) {
         if (!selector)
             return '';
-        return $(selector).first().text().trim();
+        try {
+            const text = $(selector).first().text().trim();
+            if (text.includes('《') && text.includes('》')) {
+                const titleMatch = text.match(/《(.*?)》/);
+                return titleMatch ? titleMatch[1] : text;
+            }
+            return text;
+        }
+        catch (error) {
+            this.logger.warn(`提取文本失败: ${selector}`, error.message);
+            return '';
+        }
     }
     inferMediaType(url) {
         const lowerUrl = url.toLowerCase();
@@ -289,6 +522,19 @@ let CrawlerService = CrawlerService_1 = class CrawlerService {
                 }
             });
         }
+        if (urls.length === 0) {
+            $('.co_content22').each((_, element) => {
+                const text = $(element).text();
+                const ftpMatch = text.match(/ftp:\/\/[^\s]+/g);
+                if (ftpMatch) {
+                    urls.push(...ftpMatch);
+                }
+                const magnetMatch = text.match(/magnet:\?[^\s]+/g);
+                if (magnetMatch) {
+                    urls.push(...magnetMatch);
+                }
+            });
+        }
         return [...new Set(urls)];
     }
     validateCrawledData(data) {
@@ -323,6 +569,7 @@ let CrawlerService = CrawlerService_1 = class CrawlerService {
 exports.CrawlerService = CrawlerService;
 exports.CrawlerService = CrawlerService = CrawlerService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [media_resource_service_1.MediaResourceService])
+    __metadata("design:paramtypes", [media_resource_service_1.MediaResourceService,
+        app_logger_service_1.AppLoggerService])
 ], CrawlerService);
 //# sourceMappingURL=crawler.service.js.map

@@ -10,6 +10,7 @@ import {
   HttpStatus,
   UsePipes,
   ValidationPipe,
+  Logger,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -39,10 +40,10 @@ export interface CrawlerStatsResponse {
  * 处理资源爬取相关的HTTP请求
  */
 @ApiTags('资源爬虫')
-@ApiBearerAuth()
 @Controller('crawler')
-@UseGuards(JwtAuthGuard)
 export class CrawlerController {
+  private readonly logger = new Logger(CrawlerController.name);
+  
   constructor(
     private readonly crawlerService: CrawlerService,
     private readonly mediaResourceService: MediaResourceService,
@@ -101,6 +102,8 @@ export class CrawlerController {
     status: 401,
     description: '未授权访问'
   })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   async crawlSingle(@Request() req, @Body() crawlRequest: CrawlRequestDto) {
     const result = await this.crawlerService.crawlWebsite(
       crawlRequest.targetName,
@@ -257,6 +260,45 @@ export class CrawlerController {
   @Post('crawl-and-save')
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ValidationPipe({ transform: true }))
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: '爬取并保存资源',
+    description: '根据指定的目标网站和URL爬取影视资源信息并保存到数据库，需要JWT认证'
+  })
+  @ApiBody({
+    description: '爬取请求参数',
+    type: CrawlAndSaveDto,
+  })
+  @ApiResponse({
+    status: 200,
+    description: '爬取并保存成功',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: '爬取并保存成功' },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', example: 1 },
+            title: { type: 'string', example: '电影标题' },
+            description: { type: 'string', example: '电影描述' },
+            type: { type: 'string', example: 'movie' },
+            quality: { type: 'string', example: '1080p' },
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 400,
+    description: '请求参数错误',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '未授权访问'
+  })
   async crawlAndSave(@Request() req, @Body() body: CrawlAndSaveDto) {
     const targetName = body.targetName || CRAWLER_TARGETS[0]?.name; // 默认使用配置中的第一个目标
     const result = await this.crawlerService.crawlWebsite(targetName, body.url);
@@ -451,5 +493,108 @@ export class CrawlerController {
     }
     
     return str.split(/[,，、]/).map(item => item.trim()).filter(item => item.length > 0);
+  }
+
+  /**
+   * 测试爬虫功能
+   * @param targetName 目标网站名称
+   * @returns 测试结果
+   */
+  @Post('test')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '测试爬虫功能',
+    description: '测试指定爬虫目标的连接和基本功能'
+  })
+  @ApiQuery({
+    name: 'targetName',
+    required: false,
+    description: '目标网站名称，默认为电影天堂',
+    example: '电影天堂'
+  })
+  @ApiResponse({
+    status: 200,
+    description: '测试成功',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: '爬虫功能正常' },
+        data: {
+          type: 'object',
+          properties: {
+            target: { type: 'string', example: '电影天堂' },
+            connection: { type: 'boolean', example: true },
+            responseTime: { type: 'number', example: 1500 },
+            selectors: { 
+              type: 'object',
+              properties: {
+                title: { type: 'string', example: '测试标题' },
+                description: { type: 'string', example: '测试描述' }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+  async testCrawler(@Query('targetName') targetName?: string) {
+    const target = targetName || '电影天堂';
+    
+    try {
+      // 测试连接
+      const startTime = Date.now();
+      const connectionOk = await this.crawlerService.testConnection(target);
+      const responseTime = Date.now() - startTime;
+
+      if (!connectionOk) {
+        return {
+          success: false,
+          message: `无法连接到目标网站: ${target}`,
+          data: {
+            target,
+            connection: false,
+            responseTime,
+            error: '连接失败'
+          }
+        };
+      }
+
+      // 如果是电影天堂，测试一个示例URL
+      let testData: any = null;
+      if (target === '电影天堂') {
+        const testUrl = 'http://www.dytt8899.com'; // 使用主页进行测试
+        try {
+          testData = await this.crawlerService.crawlWebsite(target, testUrl);
+        } catch (error) {
+          this.logger.warn(`测试爬取失败: ${error.message}`);
+        }
+      }
+
+      return {
+        success: true,
+        message: '爬虫功能测试完成',
+        data: {
+          target,
+          connection: true,
+          responseTime,
+          testData: testData ? {
+            title: testData.title || '未知标题',
+            hasDownloadUrls: testData.downloadUrls && testData.downloadUrls.length > 0,
+            description: testData.description ? testData.description.substring(0, 100) + '...' : '无描述'
+          } : null
+        }
+      };
+
+    } catch (error) {
+      return {
+        success: false,
+        message: `测试失败: ${error.message}`,
+        data: {
+          target,
+          error: error.message
+        }
+      };
+    }
   }
 }

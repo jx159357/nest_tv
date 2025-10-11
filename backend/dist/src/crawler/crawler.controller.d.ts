@@ -11,6 +11,7 @@ export interface CrawlerStatsResponse {
 export declare class CrawlerController {
     private readonly crawlerService;
     private readonly mediaResourceService;
+    private readonly logger;
     constructor(crawlerService: CrawlerService, mediaResourceService: MediaResourceService);
     crawlSingle(req: any, crawlRequest: CrawlRequestDto): Promise<{
         success: boolean;
@@ -78,4 +79,39 @@ export declare class CrawlerController {
     private mapMediaType;
     private mapQuality;
     private arrayFromString;
+    testCrawler(targetName?: string): Promise<{
+        success: boolean;
+        message: string;
+        data: {
+            target: string;
+            connection: boolean;
+            responseTime: number;
+            error: string;
+            testData?: undefined;
+        };
+    } | {
+        success: boolean;
+        message: string;
+        data: {
+            target: string;
+            connection: boolean;
+            responseTime: number;
+            testData: {
+                title: any;
+                hasDownloadUrls: any;
+                description: string;
+            } | null;
+            error?: undefined;
+        };
+    } | {
+        success: boolean;
+        message: string;
+        data: {
+            target: string;
+            error: any;
+            connection?: undefined;
+            responseTime?: undefined;
+            testData?: undefined;
+        };
+    }>;
 }

@@ -107,12 +107,24 @@
           {{ media.description }}
         </p>
 
+        <!-- 本地视频上传 -->
+        <div class="local-video-upload">
+          <LocalVideoUpload
+            @file-selected="onLocalVideoSelected"
+            @file-removed="onLocalVideoRemoved"
+            @play-video="onLocalVideoPlay"
+            @upload-complete="onLocalVideoUploadComplete"
+            @upload-error="onLocalVideoUploadError"
+          />
+        </div>
+
         <!-- 播放源选择 -->
-        <div v-if="playSources.length > 0" class="play-sources">
+        <div v-if="playSources.length > 0 || localVideoFile" class="play-sources">
           <div class="play-sources__header">
             <h3 class="play-sources__title">播放源</h3>
             <div class="play-sources__actions">
               <button 
+                v-if="playSources.length > 0"
                 class="play-sources__action-button"
                 @click="switchToBestSource"
                 title="切换到最佳播放源"
@@ -122,6 +134,7 @@
                 </svg>
               </button>
               <button 
+                v-if="playSources.length > 0"
                 class="play-sources__action-button"
                 @click="switchToNextSource"
                 title="切换到下一个播放源"
@@ -147,6 +160,37 @@
           </div>
           
           <div class="play-sources__list">
+            <!-- 本地视频播放源 -->
+            <button
+              v-if="localVideoFile"
+              class="play-source-button"
+              :class="{ 
+                'play-source-button--active': currentPlaySource?.id === 'local',
+                'play-source-button--switching': isSourceSwitching && currentPlaySource?.id === 'local'
+              }"
+              :disabled="isSourceSwitching"
+              @click="switchToLocalVideo"
+            >
+              <div class="play-source-button__content">
+                <span class="play-source-button__name">📁 本地视频</span>
+                <div class="play-source-button__meta">
+                  <span class="play-source-button__quality">
+                    {{ localVideoMetadata?.width }}×{{ localVideoMetadata?.height }}
+                  </span>
+                  <span class="play-source-button__type">
+                    本地
+                  </span>
+                  <span class="play-source-button__status">
+                    {{ formatFileSize(localVideoFile.size) }}
+                  </span>
+                </div>
+              </div>
+              <div v-if="currentPlaySource?.id === 'local'" class="play-source-button__indicator">
+                <div class="play-source-button__indicator-dot"></div>
+              </div>
+            </button>
+            
+            <!-- 在线播放源 -->
             <button
               v-for="source in playSources"
               :key="source.id"
@@ -310,7 +354,8 @@
   import { useAuthStore } from '@/stores/auth';
   import { mediaApi, playSourceApi } from '@/api';
   import VideoPlayer from '@/components/ui/VideoPlayer.vue';
-  import { GlobalErrorHandler } from '@/utils/global-error-handler';
+  import LocalVideoUpload from '@/components/ui/LocalVideoUpload.vue';
+  import { formatFileSize, formatDuration } from '@/utils/file-size';
   import type { MediaResource, PlaySource } from '@/types/media';
 
   interface DanmakuSettings {
@@ -328,12 +373,28 @@
   // 视频播放器引用
   const videoPlayerRef = ref<InstanceType<typeof VideoPlayer> | null>(null);
 
-  // 数据状态
+  // 视频元数据接口
+interface VideoMetadata {
+  width: number;
+  height: number;
+  duration: number;
+  size: number;
+  format: string;
+  codec?: string;
+  bitrate?: number;
+}
+
+// 数据状态
   const media = ref<MediaResource | null>(null);
   const playSources = ref<PlaySource[]>([]);
   const currentPlaySource = ref<PlaySource | null>(null);
   const isFavorite = ref(false);
   const showDanmakuSettings = ref(false);
+  
+  // 本地视频相关状态
+  const localVideoFile = ref<File | null>(null);
+  const localVideoUrl = ref<string>('');
+  const localVideoMetadata = ref<VideoMetadata | null>(null);
 
   // 试看功能状态
   const showPreviewModal = ref(false);
@@ -471,8 +532,8 @@
       // 这里应该调用API检查收藏状态
       isFavorite.value = false;
     } catch (error) {
-      // 使用全局错误处理器
-      GlobalErrorHandler.handle(error, '获取视频信息失败');
+      console.error('获取视频信息失败:', error);
+      // 这里可以添加错误处理逻辑，比如显示错误提示
     }
   };
 
@@ -593,8 +654,8 @@
   };
 
   const onVideoError = (error: string) => {
-    // 使用全局错误处理器处理视频播放错误
-    GlobalErrorHandler.handle({ message: error }, '视频播放错误');
+    console.error('视频播放错误:', error);
+    // 这里可以添加视频播放错误处理逻辑
   };
 
   // 收藏/取消收藏
@@ -612,8 +673,8 @@
       await mediaApi.toggleFavorite(media.value!.id.toString());
       isFavorite.value = !isFavorite.value;
     } catch (error) {
-      // 使用全局错误处理器
-      GlobalErrorHandler.handle(error, '收藏操作失败');
+      console.error('收藏操作失败:', error);
+      // 这里可以添加收藏失败的处理逻辑
     }
   };
 
@@ -661,6 +722,106 @@
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  // 本地视频处理方法
+  const onLocalVideoSelected = async (file: File, metadata?: VideoMetadata) => {
+    localVideoFile.value = file;
+    localVideoMetadata.value = metadata;
+    
+    // 创建本地URL
+    if (localVideoUrl.value) {
+      URL.revokeObjectURL(localVideoUrl.value);
+    }
+    localVideoUrl.value = URL.createObjectURL(file);
+    
+    console.log('本地视频文件已选择:', file.name, metadata);
+  };
+
+  const onLocalVideoRemoved = () => {
+    // 清理本地视频资源
+    if (localVideoUrl.value) {
+      URL.revokeObjectURL(localVideoUrl.value);
+      localVideoUrl.value = '';
+    }
+    
+    localVideoFile.value = null;
+    localVideoMetadata.value = null;
+    
+    // 如果当前播放的是本地视频，切换到其他源
+    if (currentPlaySource.value?.id === 'local' && playSources.value.length > 0) {
+      switchToBestSource();
+    }
+    
+    console.log('本地视频文件已移除');
+  };
+
+  const onLocalVideoPlay = (file: File, url: string) => {
+    // 切换到本地视频播放
+    switchToLocalVideo();
+    
+    console.log('播放本地视频:', file.name);
+  };
+
+  const onLocalVideoUploadComplete = (response: any) => {
+    console.log('本地视频上传完成:', response);
+    // 可以在这里处理上传完成后的逻辑
+  };
+
+  const onLocalVideoUploadError = (error: string) => {
+    console.error('本地视频上传失败:', error);
+    // 可以在这里显示错误提示
+  };
+
+  // 切换到本地视频播放源
+  const switchToLocalVideo = async () => {
+    if (!localVideoFile.value || !localVideoUrl.value) {
+      console.warn('没有可用的本地视频文件');
+      return;
+    }
+    
+    try {
+      isSourceSwitching.value = true;
+      sourceSwitchError.value = '';
+      sourceSwitchStartTime.value = Date.now();
+      
+      // 暂停当前播放
+      if (videoPlayerRef.value) {
+        videoPlayerRef.value.pause();
+      }
+      
+      // 设置本地视频为当前播放源
+      currentPlaySource.value = {
+        id: 'local',
+        name: '本地视频',
+        url: localVideoUrl.value,
+        type: 'local',
+        resolution: `${localVideoMetadata.value?.width || 0}×${localVideoMetadata.value?.height || 0}`,
+        isActive: true,
+        status: 'active',
+        priority: 10,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      } as PlaySource;
+      
+      // 等待一下确保源切换完成
+      await nextTick();
+      
+      // 恢复播放
+      if (videoPlayerRef.value) {
+        await videoPlayerRef.value.play();
+        
+        const switchDuration = Date.now() - sourceSwitchStartTime.value;
+        console.log(`本地视频切换完成，耗时: ${switchDuration}ms`);
+      }
+      
+    } catch (error) {
+      console.error('本地视频切换失败:', error);
+      sourceSwitchError.value = '本地视频切换失败，请重试';
+    } finally {
+      isSourceSwitching.value = false;
+    }
+  };
+
+  
   // 获取播放源类型标签
   const getSourceTypeLabel = (type: string): string => {
     const typeLabels: Record<string, string> = {
@@ -686,6 +847,12 @@
   onUnmounted(() => {
     // 组件销毁时清理资源
     videoPlayerRef.value?.pause();
+    
+    // 清理本地视频资源
+    if (localVideoUrl.value) {
+      URL.revokeObjectURL(localVideoUrl.value);
+      localVideoUrl.value = '';
+    }
     
     // 清理定时器
     if (previewWarningTimer.value) {
@@ -1269,6 +1436,10 @@
 
   @keyframes spin {
     to { transform: rotate(360deg); }
+  }
+
+  .local-video-upload {
+    margin-bottom: 1.5rem;
   }
 
   .video-actions {

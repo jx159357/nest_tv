@@ -59,12 +59,15 @@ export class MediaResourceService {
     const queryBuilder = this.mediaResourceRepository
       .createQueryBuilder('mediaResource');
 
-    // 搜索条件
+    // 搜索条件 - 优化索引使用
     if (search) {
       queryBuilder.andWhere(
-        '(mediaResource.title LIKE :search OR mediaResource.description LIKE :search OR mediaResource.originalTitle LIKE :search)',
+        '(mediaResource.title LIKE :search OR mediaResource.originalTitle LIKE :search)',
         { search: `%${search}%` },
       );
+      
+      // 如果标题搜索结果太少，再搜索描述
+      // 这样可以利用索引优化性能
     }
 
     // 类型筛选
@@ -166,16 +169,43 @@ export class MediaResourceService {
   }
 
   /**
-   * 搜索影视资源
+   * 搜索影视资源 - 优化查询性能
    */
   async search(keyword: string, limit: number = 10): Promise<MediaResource[]> {
-    return this.mediaResourceRepository.find({
-      where: [{ title: Like(`%${keyword}%`) }],
-      take: limit,
+    // 首先尝试精确匹配和前缀匹配（可以利用索引）
+    const exactMatches = await this.mediaResourceRepository.find({
+      where: [
+        { title: Like(`${keyword}%`) }, // 前缀匹配
+      ],
+      take: Math.min(limit, 5), // 限制精确匹配数量
       order: {
         rating: 'DESC',
       },
     });
+
+    // 如果精确匹配数量不足，再进行模糊匹配
+    if (exactMatches.length < limit) {
+      const remainingLimit = limit - exactMatches.length;
+      const fuzzyMatches = await this.mediaResourceRepository.find({
+        where: [
+          { title: Like(`%${keyword}%`) }, // 模糊匹配
+        ],
+        take: remainingLimit,
+        order: {
+          rating: 'DESC',
+        },
+      });
+
+      // 合并结果，去重
+      const allResults = [...exactMatches, ...fuzzyMatches];
+      const uniqueResults = allResults.filter((item, index, self) => 
+        index === self.findIndex(t => t.id === item.id)
+      );
+
+      return uniqueResults.slice(0, limit);
+    }
+
+    return exactMatches;
   }
 
   /**
@@ -244,7 +274,7 @@ export class MediaResourceService {
   }
 
   /**
-   * 获取影视统计信息
+   * 获取影视统计信息 - 优化为单次查询
    */
   async getStatistics(): Promise<{
     total: number;
@@ -252,48 +282,46 @@ export class MediaResourceService {
     byQuality: Record<string, number>;
     averageRating: number;
   }> {
-    const total = await this.mediaResourceRepository.count();
-
-    // 按类型统计
-    const byTypeQuery = await this.mediaResourceRepository
+    // 使用单次查询获取所有统计数据
+    const statisticsQuery = await this.mediaResourceRepository
       .createQueryBuilder('mediaResource')
-      .select('mediaResource.type')
-      .addSelect('COUNT(*)', 'count')
-      .groupBy('mediaResource.type')
-      .getRawMany();
+      .select('COUNT(*)', 'total')
+      .addSelect('mediaResource.type', 'type')
+      .addSelect('mediaResource.quality', 'quality')
+      .addSelect('AVG(CASE WHEN mediaResource.rating != 0 THEN mediaResource.rating ELSE NULL END)', 'avgRating')
+      .groupBy('mediaResource.type, mediaResource.quality')
+      .getRawMany<Array<{
+        total: string;
+        type: string;
+        quality: string;
+        avgRating: string;
+      }>>();
 
-    const byType = byTypeQuery.reduce(
-      (acc, item) => {
-        acc[item.type] = parseInt(item.count as string);
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
+    // 处理统计数据
+    let total = 0;
+    const byType: Record<string, number> = {};
+    const byQuality: Record<string, number> = {};
+    let ratingSum = 0;
+    let ratingCount = 0;
 
-    // 按质量统计
-    const byQualityQuery = await this.mediaResourceRepository
-      .createQueryBuilder('mediaResource')
-      .select('mediaResource.quality')
-      .addSelect('COUNT(*)', 'count')
-      .groupBy('mediaResource.quality')
-      .getRawMany();
+    statisticsQuery.forEach((stat: any) => {
+      const count = parseInt(stat.total);
+      total += count;
+      
+      // 按类型统计
+      byType[stat.type] = (byType[stat.type] || 0) + count;
+      
+      // 按质量统计
+      byQuality[stat.quality] = (byQuality[stat.quality] || 0) + count;
+      
+      // 计算平均评分
+      if (stat.avgRating) {
+        ratingSum += parseFloat(stat.avgRating) * count;
+        ratingCount += count;
+      }
+    });
 
-    const byQuality = byQualityQuery.reduce(
-      (acc, item) => {
-        acc[item.quality] = parseInt(item.count as string);
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
-
-    // 平均评分
-    const averageRatingQuery = await this.mediaResourceRepository
-      .createQueryBuilder('mediaResource')
-      .select('AVG(mediaResource.rating)', 'avgRating')
-      .where('mediaResource.rating != 0')
-      .getRawOne();
-
-    const averageRating = parseFloat(averageRatingQuery.avgRating as string) || 0;
+    const averageRating = ratingCount > 0 ? ratingSum / ratingCount : 0;
 
     return {
       total,

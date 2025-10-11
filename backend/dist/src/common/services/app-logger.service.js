@@ -16,20 +16,52 @@ let AppLoggerService = class AppLoggerService {
     requestLogEnabled = true;
     responseLogEnabled = true;
     errorLogEnabled = true;
+    contextStore = new Map();
     constructor() {
         this.logger = new common_1.Logger('NestTV');
+    }
+    setContext(requestId, context) {
+        this.contextStore.set(requestId, context);
+    }
+    getContext(requestId) {
+        return this.contextStore.get(requestId);
+    }
+    clearContext(requestId) {
+        this.contextStore.delete(requestId);
     }
     log(message, context) {
         this.logger.log(message, context);
     }
-    error(message, context, trace) {
-        this.logger.error(message, trace || '', context);
+    error(message, context, trace, requestId) {
+        const logContext = this.buildContext(context, requestId);
+        this.logger.error(message, trace || '', logContext);
     }
-    warn(message, context) {
-        this.logger.warn(message, context);
+    warn(message, context, requestId) {
+        const logContext = this.buildContext(context, requestId);
+        this.logger.warn(message, logContext);
     }
-    debug(message, context) {
-        this.logger.debug(message, context);
+    debug(message, context, requestId) {
+        const logContext = this.buildContext(context, requestId);
+        this.logger.debug(message, logContext);
+    }
+    buildContext(baseContext, requestId) {
+        const contextParts = [];
+        if (baseContext) {
+            contextParts.push(baseContext);
+        }
+        if (requestId) {
+            const requestContext = this.getContext(requestId);
+            if (requestContext) {
+                contextParts.push(`RequestID: ${requestId}`);
+                if (requestContext.userId) {
+                    contextParts.push(`UserID: ${requestContext.userId}`);
+                }
+                if (requestContext.module) {
+                    contextParts.push(`Module: ${requestContext.module}`);
+                }
+            }
+        }
+        return contextParts.join(' | ');
     }
     logRequest(info) {
         if (!this.requestLogEnabled)
@@ -51,21 +83,22 @@ let AppLoggerService = class AppLoggerService {
             this.logger.log(logMessage, context);
         }
     }
-    logOperation(action, resource, userId, metadata, status = 'success') {
+    logOperation(action, resource, userId, metadata, status = 'success', requestId) {
         const logMessage = `${action.toUpperCase()}: ${resource}`;
-        const context = [
+        const baseContext = [
             `USER_ID: ${userId || 'Anonymous'}`,
             `STATUS: ${status}`,
             `METADATA: ${JSON.stringify(metadata || {})}`,
         ].join(' | ');
+        const fullContext = this.buildContext(baseContext, requestId);
         if (status === 'error') {
             this.logger.error(logMessage, 'BUSINESS_OPERATION');
         }
         else if (status === 'warning') {
-            this.logger.warn(logMessage, 'BUSINESS_OPERATION');
+            this.logger.warn(logMessage, fullContext);
         }
         else {
-            this.logger.log(logMessage, 'BUSINESS_OPERATION');
+            this.logger.log(logMessage, fullContext);
         }
     }
     logPerformance(operation, duration, metadata) {
@@ -83,13 +116,42 @@ let AppLoggerService = class AppLoggerService {
         const context = `PARAMS: ${JSON.stringify(parameters)} | DURATION: ${duration}ms`;
         this.logger.debug(logMessage, context);
     }
-    logSecurity(event, userId, details) {
+    logSecurity(event, userId, details, requestId) {
         const logMessage = `SECURITY_EVENT: ${event}`;
-        const context = [
+        const baseContext = [
             `USER: ${userId || 'Anonymous'}`,
             `DETAILS: ${JSON.stringify(details || {})}`,
         ].join(' | ');
-        this.logger.warn(logMessage, context);
+        const fullContext = this.buildContext(baseContext, requestId);
+        this.logger.warn(logMessage, fullContext);
+    }
+    logDatabaseError(operation, error, query, params, requestId) {
+        const logMessage = `DATABASE_ERROR: ${operation} failed`;
+        const baseContext = [
+            `ERROR: ${error.message}`,
+            `QUERY: ${query || 'Unknown'}`,
+            `PARAMS: ${JSON.stringify(params || [])}`,
+        ].join(' | ');
+        const fullContext = this.buildContext(baseContext, requestId);
+        this.logger.error(logMessage, error.stack, fullContext);
+    }
+    logExternalServiceError(service, operation, error, url, requestId) {
+        const logMessage = `EXTERNAL_SERVICE_ERROR: ${service} - ${operation}`;
+        const baseContext = [
+            `ERROR: ${error.message}`,
+            `URL: ${url || 'Unknown'}`,
+        ].join(' | ');
+        const fullContext = this.buildContext(baseContext, requestId);
+        this.logger.error(logMessage, error.stack, fullContext);
+    }
+    logValidationError(field, value, validationErrors, requestId) {
+        const logMessage = `VALIDATION_ERROR: ${field}`;
+        const baseContext = [
+            `VALUE: ${JSON.stringify(value)}`,
+            `ERRORS: ${validationErrors.join(', ')}`,
+        ].join(' | ');
+        const fullContext = this.buildContext(baseContext, requestId);
+        this.logger.warn(logMessage, fullContext);
     }
     setLogTypeEnabled(type, enabled) {
         switch (type) {

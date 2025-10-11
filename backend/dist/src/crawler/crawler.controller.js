@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var CrawlerController_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CrawlerController = void 0;
 const common_1 = require("@nestjs/common");
@@ -21,9 +22,10 @@ const media_resource_service_1 = require("../media/media-resource.service");
 const media_resource_entity_1 = require("../entities/media-resource.entity");
 const crawl_request_dto_1 = require("./dtos/crawl-request.dto");
 const crawler_config_1 = require("./crawler.config");
-let CrawlerController = class CrawlerController {
+let CrawlerController = CrawlerController_1 = class CrawlerController {
     crawlerService;
     mediaResourceService;
+    logger = new common_1.Logger(CrawlerController_1.name);
     constructor(crawlerService, mediaResourceService) {
         this.crawlerService = crawlerService;
         this.mediaResourceService = mediaResourceService;
@@ -233,6 +235,60 @@ let CrawlerController = class CrawlerController {
         }
         return str.split(/[,，、]/).map(item => item.trim()).filter(item => item.length > 0);
     }
+    async testCrawler(targetName) {
+        const target = targetName || '电影天堂';
+        try {
+            const startTime = Date.now();
+            const connectionOk = await this.crawlerService.testConnection(target);
+            const responseTime = Date.now() - startTime;
+            if (!connectionOk) {
+                return {
+                    success: false,
+                    message: `无法连接到目标网站: ${target}`,
+                    data: {
+                        target,
+                        connection: false,
+                        responseTime,
+                        error: '连接失败'
+                    }
+                };
+            }
+            let testData = null;
+            if (target === '电影天堂') {
+                const testUrl = 'http://www.dytt8899.com';
+                try {
+                    testData = await this.crawlerService.crawlWebsite(target, testUrl);
+                }
+                catch (error) {
+                    this.logger.warn(`测试爬取失败: ${error.message}`);
+                }
+            }
+            return {
+                success: true,
+                message: '爬虫功能测试完成',
+                data: {
+                    target,
+                    connection: true,
+                    responseTime,
+                    testData: testData ? {
+                        title: testData.title || '未知标题',
+                        hasDownloadUrls: testData.downloadUrls && testData.downloadUrls.length > 0,
+                        description: testData.description ? testData.description.substring(0, 100) + '...' : '无描述'
+                    } : null
+                }
+            };
+        }
+        catch (error) {
+            return {
+                success: false,
+                message: `测试失败: ${error.message}`,
+                data: {
+                    target,
+                    error: error.message
+                }
+            };
+        }
+    }
 };
 exports.CrawlerController = CrawlerController;
 __decorate([
@@ -283,6 +339,8 @@ __decorate([
         status: 401,
         description: '未授权访问'
     }),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -367,6 +425,45 @@ __decorate([
     (0, common_1.Post)('crawl-and-save'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, common_1.UsePipes)(new common_1.ValidationPipe({ transform: true })),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, swagger_1.ApiOperation)({
+        summary: '爬取并保存资源',
+        description: '根据指定的目标网站和URL爬取影视资源信息并保存到数据库，需要JWT认证'
+    }),
+    (0, swagger_1.ApiBody)({
+        description: '爬取请求参数',
+        type: crawl_request_dto_1.CrawlAndSaveDto,
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: '爬取并保存成功',
+        schema: {
+            type: 'object',
+            properties: {
+                success: { type: 'boolean', example: true },
+                message: { type: 'string', example: '爬取并保存成功' },
+                data: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'number', example: 1 },
+                        title: { type: 'string', example: '电影标题' },
+                        description: { type: 'string', example: '电影描述' },
+                        type: { type: 'string', example: 'movie' },
+                        quality: { type: 'string', example: '1080p' },
+                    }
+                }
+            }
+        }
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 400,
+        description: '请求参数错误',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 401,
+        description: '未授权访问'
+    }),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -386,11 +483,53 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], CrawlerController.prototype, "testConnection", null);
-exports.CrawlerController = CrawlerController = __decorate([
+__decorate([
+    (0, common_1.Post)('test'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({
+        summary: '测试爬虫功能',
+        description: '测试指定爬虫目标的连接和基本功能'
+    }),
+    (0, swagger_1.ApiQuery)({
+        name: 'targetName',
+        required: false,
+        description: '目标网站名称，默认为电影天堂',
+        example: '电影天堂'
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: '测试成功',
+        schema: {
+            type: 'object',
+            properties: {
+                success: { type: 'boolean', example: true },
+                message: { type: 'string', example: '爬虫功能正常' },
+                data: {
+                    type: 'object',
+                    properties: {
+                        target: { type: 'string', example: '电影天堂' },
+                        connection: { type: 'boolean', example: true },
+                        responseTime: { type: 'number', example: 1500 },
+                        selectors: {
+                            type: 'object',
+                            properties: {
+                                title: { type: 'string', example: '测试标题' },
+                                description: { type: 'string', example: '测试描述' }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }),
+    __param(0, (0, common_1.Query)('targetName')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], CrawlerController.prototype, "testCrawler", null);
+exports.CrawlerController = CrawlerController = CrawlerController_1 = __decorate([
     (0, swagger_1.ApiTags)('资源爬虫'),
-    (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.Controller)('crawler'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [crawler_service_1.CrawlerService,
         media_resource_service_1.MediaResourceService])
 ], CrawlerController);

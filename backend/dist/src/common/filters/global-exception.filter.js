@@ -82,58 +82,53 @@ let GlobalExceptionFilter = GlobalExceptionFilter_1 = class GlobalExceptionFilte
     }
     logError(exception, request) {
         const { type, severity } = this.classifyError(exception);
+        const requestId = this.generateRequestId();
         const errorInfo = {
-            requestId: this.generateRequestId(),
+            requestId,
             method: request.method,
             url: request.url,
             ip: request.ip,
             userAgent: request.get('user-agent'),
             timestamp: new Date().toISOString(),
         };
-        if (exception instanceof common_1.HttpException) {
-            const status = exception.getStatus();
-            const response = exception.getResponse();
-            if (severity === ErrorSeverity.CRITICAL || severity === ErrorSeverity.HIGH) {
-                this.appLogger.error(`HTTP Exception: ${response?.message || exception.message}`, `${type} | Status: ${status} | Severity: ${severity}`);
-            }
-            else if (severity === ErrorSeverity.MEDIUM) {
-                this.appLogger.warn(`HTTP Exception: ${response?.message || exception.message}`, `${type} | Status: ${status} | Severity: ${severity}`);
-            }
-            else {
-                this.appLogger.log(`HTTP Exception: ${response?.message || exception.message}`, `${type} | Status: ${status} | Severity: ${severity}`);
-            }
+        const context = {
+            module: 'HTTP',
+            function: 'GlobalExceptionFilter',
+            requestId,
+        };
+        const userId = request.user?.userId;
+        if (userId) {
+            context.userId = userId;
+        }
+        this.appLogger.setContext(requestId, context);
+        if (type === ErrorType.UNKNOWN || type === ErrorType.INTERNAL) {
+            this.appLogger.error(`Unhandled Exception: ${exception instanceof Error ? exception.message : 'Unknown error'}`, 'GLOBAL_EXCEPTION_FILTER', exception instanceof Error ? exception.stack : undefined, requestId);
+        }
+        else if (type === ErrorType.EXTERNAL) {
+            this.appLogger.logExternalServiceError('External Service', 'HTTP Request', exception instanceof Error ? exception : new Error(String(exception)), request.url, requestId);
         }
         else {
-            const error = exception;
-            if (severity === ErrorSeverity.CRITICAL || severity === ErrorSeverity.HIGH) {
-                this.appLogger.error(`Unhandled Exception: ${error.message}`, `${type} | Severity: ${severity}`);
-            }
-            else if (severity === ErrorSeverity.MEDIUM) {
-                this.appLogger.warn(`Unhandled Exception: ${error.message}`, `${type} | Severity: ${severity}`);
-            }
-            else {
-                this.appLogger.log(`Unhandled Exception: ${error.message}`, `${type} | Severity: ${severity}`);
-            }
+            this.appLogger.error(`HTTP Exception: ${exception instanceof common_1.HttpException ? exception.getResponse()?.message || exception.message : 'Unknown error'}`, `${type} | Severity: ${severity}`, exception instanceof Error ? exception.stack : undefined, requestId);
         }
         if (exception instanceof common_1.HttpException) {
             const status = exception.getStatus();
             const response = exception.getResponse();
-            this.logger.debug(JSON.stringify({
+            this.appLogger.debug(JSON.stringify({
                 ...errorInfo,
                 error: response,
                 httpStatus: status
-            }));
+            }), 'HTTP_EXCEPTION_DETAILS', requestId);
         }
         else {
             const error = exception;
-            this.logger.debug(JSON.stringify({
+            this.appLogger.debug(JSON.stringify({
                 ...errorInfo,
                 error: {
                     name: error.name,
                     message: error.message,
                     stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
                 },
-            }));
+            }), 'UNHANDLED_EXCEPTION_DETAILS', requestId);
         }
     }
     buildErrorResponse(exception, request) {
