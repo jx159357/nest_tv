@@ -1,9 +1,4 @@
-import {
-  ExceptionFilter,
-  ArgumentsHost,
-  Catch,
-  HttpException,
-} from '@nestjs/common';
+import { ExceptionFilter, ArgumentsHost, Catch, HttpException } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { Logger } from '@nestjs/common';
 import { AppLoggerService, LogContext } from '../services/app-logger.service';
@@ -73,9 +68,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const errorResponse = this.buildErrorResponse(exception, request);
 
     // 发送错误响应
-    response
-      .status(errorResponse.statusCode)
-      .json(errorResponse);
+    response.status(errorResponse.statusCode).json(errorResponse);
   }
 
   /**
@@ -84,7 +77,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   private classifyError(exception: unknown): { type: ErrorType; severity: ErrorSeverity } {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
-      
+
       if (status === 401) {
         return { type: ErrorType.AUTHENTICATION, severity: ErrorSeverity.MEDIUM };
       } else if (status === 403) {
@@ -117,7 +110,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   private logError(exception: unknown, request: Request): void {
     const { type, severity } = this.classifyError(exception);
     const requestId = this.generateRequestId();
-    
+
     // 基础错误信息
     const errorInfo = {
       requestId,
@@ -134,12 +127,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       function: 'GlobalExceptionFilter',
       requestId,
     };
-    
+
     const userId = (request as any).user?.userId;
     if (userId) {
       context.userId = userId;
     }
-    
+
     this.appLogger.setContext(requestId, context);
 
     // 根据错误类型使用专门的日志方法
@@ -148,7 +141,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         `Unhandled Exception: ${exception instanceof Error ? exception.message : 'Unknown error'}`,
         'GLOBAL_EXCEPTION_FILTER',
         exception instanceof Error ? exception.stack : undefined,
-        requestId
+        requestId,
       );
     } else if (type === ErrorType.EXTERNAL) {
       this.appLogger.logExternalServiceError(
@@ -156,7 +149,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         'HTTP Request',
         exception instanceof Error ? exception : new Error(String(exception)),
         request.url,
-        requestId
+        requestId,
       );
     } else {
       // 使用增强的日志方法
@@ -164,7 +157,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         `HTTP Exception: ${exception instanceof HttpException ? (exception.getResponse() as any)?.message || exception.message : 'Unknown error'}`,
         `${type} | Severity: ${severity}`,
         exception instanceof Error ? exception.stack : undefined,
-        requestId
+        requestId,
       );
     }
 
@@ -172,21 +165,29 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const response = exception.getResponse() as any;
-      this.appLogger.debug(JSON.stringify({ 
-        ...errorInfo, 
-        error: response,
-        httpStatus: status 
-      }), 'HTTP_EXCEPTION_DETAILS', requestId);
+      this.appLogger.debug(
+        JSON.stringify({
+          ...errorInfo,
+          error: response,
+          httpStatus: status,
+        }),
+        'HTTP_EXCEPTION_DETAILS',
+        requestId,
+      );
     } else {
       const error = exception as Error;
-      this.appLogger.debug(JSON.stringify({
-        ...errorInfo,
-        error: {
-          name: error.name,
-          message: error.message,
-          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-        },
-      }), 'UNHANDLED_EXCEPTION_DETAILS', requestId);
+      this.appLogger.debug(
+        JSON.stringify({
+          ...errorInfo,
+          error: {
+            name: error.name,
+            message: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+          },
+        }),
+        'UNHANDLED_EXCEPTION_DETAILS',
+        requestId,
+      );
     }
   }
 
@@ -196,7 +197,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   private buildErrorResponse(exception: unknown, request: Request): ErrorResponse {
     const { type, severity } = this.classifyError(exception);
     const requestId = this.generateRequestId();
-    
+
     let statusCode = 500;
     let message = '服务器内部错误';
 
@@ -218,13 +219,19 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       requestId,
       type,
       severity,
-      data: process.env.NODE_ENV === 'development' ? {
-        error: exception instanceof Error ? {
-          name: exception.name,
-          message: exception.message,
-          stack: exception.stack,
-        } : exception,
-      } : undefined,
+      data:
+        process.env.NODE_ENV === 'development'
+          ? {
+              error:
+                exception instanceof Error
+                  ? {
+                      name: exception.name,
+                      message: exception.message,
+                      stack: exception.stack,
+                    }
+                  : exception,
+            }
+          : undefined,
     };
   }
 

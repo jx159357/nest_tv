@@ -1,8 +1,21 @@
-import { Controller, Post, UseGuards, Request, Body, HttpException, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  UseGuards,
+  Request,
+  Body,
+  HttpException,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './local-auth.guard';
 import { JwtAuthGuard } from './jwt-auth.guard';
+
+interface AuthenticatedRequest {
+  user: Record<string, any>;
+}
 
 /**
  * 认证控制器
@@ -24,7 +37,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '用户登录',
-    description: '使用用户名和密码进行身份验证，返回JWT访问令牌'
+    description: '使用用户名和密码进行身份验证，返回JWT访问令牌',
   })
   @ApiBody({
     description: '登录请求体',
@@ -34,16 +47,16 @@ export class AuthController {
         username: {
           type: 'string',
           description: '用户名',
-          example: 'admin'
+          example: 'admin',
         },
         password: {
           type: 'string',
           description: '密码',
-          example: 'password123'
-        }
+          example: 'password123',
+        },
       },
-      required: ['username', 'password']
-    }
+      required: ['username', 'password'],
+    },
   })
   @ApiResponse({
     status: 200,
@@ -54,18 +67,18 @@ export class AuthController {
         access_token: {
           type: 'string',
           description: 'JWT访问令牌',
-          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
         },
         user: {
           type: 'object',
           properties: {
             id: { type: 'number', example: 1 },
             username: { type: 'string', example: 'admin' },
-            email: { type: 'string', example: 'admin@example.com' }
-          }
-        }
-      }
-    }
+            email: { type: 'string', example: 'admin@example.com' },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 401,
@@ -74,11 +87,11 @@ export class AuthController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 401 },
-        message: { type: 'string', example: 'Unauthorized' }
-      }
-    }
+        message: { type: 'string', example: 'Unauthorized' },
+      },
+    },
   })
-  async login(@Request() req: any) {
+  async login(@Request() req: AuthenticatedRequest) {
     return this.authService.login(req.user);
   }
 
@@ -93,7 +106,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: '获取用户信息',
-    description: '获取当前登录用户的详细信息，需要有效的JWT令牌'
+    description: '获取当前登录用户的详细信息，需要有效的JWT令牌',
   })
   @ApiResponse({
     status: 200,
@@ -106,9 +119,9 @@ export class AuthController {
         email: { type: 'string', example: 'admin@example.com' },
         role: { type: 'string', example: 'admin' },
         createdAt: { type: 'string', format: 'date-time' },
-        updatedAt: { type: 'string', format: 'date-time' }
-      }
-    }
+        updatedAt: { type: 'string', format: 'date-time' },
+      },
+    },
   })
   @ApiResponse({
     status: 401,
@@ -117,11 +130,11 @@ export class AuthController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 401 },
-        message: { type: 'string', example: 'Unauthorized' }
-      }
-    }
+        message: { type: 'string', example: 'Unauthorized' },
+      },
+    },
   })
-  getProfile(@Request() req: any) {
+  getProfile(@Request() req: AuthenticatedRequest): Record<string, any> {
     return req.user;
   }
 
@@ -134,7 +147,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '简化登录',
-    description: '直接通过请求体传递用户名和密码进行登录，返回JWT访问令牌'
+    description: '直接通过请求体传递用户名和密码进行登录，返回JWT访问令牌',
   })
   @ApiBody({
     description: '简化登录请求体',
@@ -144,16 +157,16 @@ export class AuthController {
         identifier: {
           type: 'string',
           description: '用户名或邮箱',
-          example: 'admin'
+          example: 'admin',
         },
         password: {
           type: 'string',
           description: '密码',
-          example: 'password123'
-        }
+          example: 'password123',
+        },
       },
-      required: ['identifier', 'password']
-    }
+      required: ['identifier', 'password'],
+    },
   })
   @ApiResponse({
     status: 200,
@@ -163,18 +176,18 @@ export class AuthController {
       properties: {
         access_token: {
           type: 'string',
-          description: 'JWT访问令牌'
+          description: 'JWT访问令牌',
         },
         user: {
           type: 'object',
           properties: {
             id: { type: 'number' },
             username: { type: 'string' },
-            email: { type: 'string' }
-          }
-        }
-      }
-    }
+            email: { type: 'string' },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 401,
@@ -183,9 +196,9 @@ export class AuthController {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 401 },
-        message: { type: 'string', example: '用户名或密码错误' }
-      }
-    }
+        message: { type: 'string', example: '用户名或密码错误' },
+      },
+    },
   })
   async simpleLogin(@Body() loginData: { identifier: string; password: string }) {
     // 这里直接调用UserService来验证用户

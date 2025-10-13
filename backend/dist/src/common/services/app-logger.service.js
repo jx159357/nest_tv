@@ -137,10 +137,7 @@ let AppLoggerService = class AppLoggerService {
     }
     logExternalServiceError(service, operation, error, url, requestId) {
         const logMessage = `EXTERNAL_SERVICE_ERROR: ${service} - ${operation}`;
-        const baseContext = [
-            `ERROR: ${error.message}`,
-            `URL: ${url || 'Unknown'}`,
-        ].join(' | ');
+        const baseContext = [`ERROR: ${error.message}`, `URL: ${url || 'Unknown'}`].join(' | ');
         const fullContext = this.buildContext(baseContext, requestId);
         this.logger.error(logMessage, error.stack, fullContext);
     }

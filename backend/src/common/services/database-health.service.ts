@@ -23,7 +23,7 @@ export class DatabaseHealthService implements OnModuleInit {
   private async initializeHealthCheck() {
     // 初始化时立即检查一次
     await this.checkDatabaseHealth();
-    
+
     // 设置定期健康检查
     this.healthCheckInterval = setInterval(
       () => this.checkDatabaseHealth(),
@@ -33,17 +33,17 @@ export class DatabaseHealthService implements OnModuleInit {
 
   async checkDatabaseHealth(): Promise<boolean> {
     const requestId = `db_health_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     try {
       const maxRetries = this.configService.get<number>('DB_RETRY_ATTEMPTS', 5);
       const retryDelay = this.configService.get<number>('DB_RETRY_DELAY', 5000);
-      
+
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
           // 测试数据库连接
           const query = 'SELECT 1 as test';
           const result = await this.dataSource.query(query);
-          
+
           if (result && result[0] && result[0].test === 1) {
             if (!this.isHealthy) {
               this.appLogger.log('数据库连接已恢复', 'DATABASE_HEALTH_RECOVERED');
@@ -52,14 +52,8 @@ export class DatabaseHealthService implements OnModuleInit {
             return true;
           }
         } catch (error) {
-          this.appLogger.logDatabaseError(
-            'Health Check',
-            error,
-            'SELECT 1 as test',
-            [],
-            requestId
-          );
-          
+          this.appLogger.logDatabaseError('Health Check', error, 'SELECT 1 as test', [], requestId);
+
           if (attempt < maxRetries) {
             // 指数退避重试
             const delay = retryDelay * Math.pow(2, attempt - 1);
@@ -68,20 +62,18 @@ export class DatabaseHealthService implements OnModuleInit {
           }
         }
       }
-      
+
       this.isHealthy = false;
-      this.appLogger.error('数据库连接失败，已达到最大重试次数', 'DATABASE_HEALTH_FAILED', undefined, requestId);
+      this.appLogger.error(
+        '数据库连接失败，已达到最大重试次数',
+        'DATABASE_HEALTH_FAILED',
+        undefined,
+        requestId,
+      );
       return false;
-      
     } catch (error) {
       this.isHealthy = false;
-      this.appLogger.logDatabaseError(
-        'Health Check Exception',
-        error,
-        undefined,
-        [],
-        requestId
-      );
+      this.appLogger.logDatabaseError('Health Check Exception', error, undefined, [], requestId);
       return false;
     }
   }
@@ -93,41 +85,43 @@ export class DatabaseHealthService implements OnModuleInit {
     const requestId = `db_operation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const maxRetries = this.configService.get<number>('DB_RETRY_ATTEMPTS', 5);
     const retryDelay = this.configService.get<number>('DB_RETRY_DELAY', 5000);
-    
+
     let lastError: Error = new Error('未知错误');
-    
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         // 在执行操作前检查连接健康状态
         if (!this.isHealthy) {
           await this.checkDatabaseHealth();
         }
-        
+
         const result = await operation();
         this.appLogger.log(`${context}执行成功`, 'DATABASE_OPERATION_SUCCESS');
         return result;
-        
       } catch (error) {
         lastError = error;
-        
-        this.appLogger.logDatabaseError(
-          context,
-          error,
-          undefined,
-          [],
-          requestId
-        );
-        
+
+        this.appLogger.logDatabaseError(context, error, undefined, [], requestId);
+
         if (attempt < maxRetries) {
           // 指数退避重试
           const delay = retryDelay * Math.pow(2, attempt - 1);
-          this.appLogger.warn(`${context}重试，等待 ${delay}ms...`, 'DATABASE_OPERATION_RETRY', requestId);
+          this.appLogger.warn(
+            `${context}重试，等待 ${delay}ms...`,
+            'DATABASE_OPERATION_RETRY',
+            requestId,
+          );
           await this.sleep(delay);
         }
       }
     }
-    
-    this.appLogger.error(`${context}最终失败，已达到最大重试次数`, 'DATABASE_OPERATION_FAILED', lastError.stack, requestId);
+
+    this.appLogger.error(
+      `${context}最终失败，已达到最大重试次数`,
+      'DATABASE_OPERATION_FAILED',
+      lastError.stack,
+      requestId,
+    );
     throw lastError;
   }
 
@@ -150,13 +144,13 @@ export class DatabaseHealthService implements OnModuleInit {
     } catch (error) {
       this.appLogger.debug('获取连接池信息失败', 'DATABASE_POOL_INFO_FAILED');
     }
-    
+
     const status = {
       isHealthy: this.isHealthy,
       connectionCount,
       lastChecked: new Date(),
     };
-    
+
     this.appLogger.debug(`数据库状态: ${JSON.stringify(status)}`, 'DATABASE_STATUS');
     return status;
   }

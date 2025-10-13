@@ -35,8 +35,7 @@ let MediaResourceService = class MediaResourceService {
     }
     async findAll(queryDto) {
         const { page = 1, pageSize = 10, search, type, quality, minRating, maxRating, tags, startDate, endDate, } = queryDto;
-        const queryBuilder = this.mediaResourceRepository
-            .createQueryBuilder('mediaResource');
+        const queryBuilder = this.mediaResourceRepository.createQueryBuilder('mediaResource');
         if (search) {
             queryBuilder.andWhere('(mediaResource.title LIKE :search OR mediaResource.originalTitle LIKE :search)', { search: `%${search}%` });
         }

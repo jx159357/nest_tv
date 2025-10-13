@@ -78,12 +78,13 @@ export const CRAWLER_CONFIG = {
   // 请求配置
   request: {
     timeout: 30000, // 30秒超时
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    userAgent:
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
     headers: {
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
       'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
       'Accept-Encoding': 'gzip, deflate, br',
-      'Connection': 'keep-alive',
+      Connection: 'keep-alive',
       'Upgrade-Insecure-Requests': '1',
     },
   },
@@ -109,7 +110,28 @@ export const CRAWLER_CONFIG = {
     maxTitleLength: 200, // 最大标题长度
     minDescriptionLength: 10, // 最小描述长度
     maxDescriptionLength: 2000, // 最大描述长度
-    allowedGenres: ['动作', '喜剧', '爱情', '科幻', '恐怖', '悬疑', '动画', '纪录片', '战争', '犯罪', '冒险', '奇幻', '剧情', '传记', '历史', '音乐', '运动', '西部', '家庭', '惊悚'],
+    allowedGenres: [
+      '动作',
+      '喜剧',
+      '爱情',
+      '科幻',
+      '恐怖',
+      '悬疑',
+      '动画',
+      '纪录片',
+      '战争',
+      '犯罪',
+      '冒险',
+      '奇幻',
+      '剧情',
+      '传记',
+      '历史',
+      '音乐',
+      '运动',
+      '西部',
+      '家庭',
+      '惊悚',
+    ],
   },
 
   // 重试配置

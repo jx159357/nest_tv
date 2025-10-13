@@ -56,8 +56,7 @@ export class MediaResourceService {
       endDate,
     } = queryDto;
 
-    const queryBuilder = this.mediaResourceRepository
-      .createQueryBuilder('mediaResource');
+    const queryBuilder = this.mediaResourceRepository.createQueryBuilder('mediaResource');
 
     // 搜索条件 - 优化索引使用
     if (search) {
@@ -65,7 +64,7 @@ export class MediaResourceService {
         '(mediaResource.title LIKE :search OR mediaResource.originalTitle LIKE :search)',
         { search: `%${search}%` },
       );
-      
+
       // 如果标题搜索结果太少，再搜索描述
       // 这样可以利用索引优化性能
     }
@@ -198,8 +197,8 @@ export class MediaResourceService {
 
       // 合并结果，去重
       const allResults = [...exactMatches, ...fuzzyMatches];
-      const uniqueResults = allResults.filter((item, index, self) => 
-        index === self.findIndex(t => t.id === item.id)
+      const uniqueResults = allResults.filter(
+        (item, index, self) => index === self.findIndex(t => t.id === item.id),
       );
 
       return uniqueResults.slice(0, limit);
@@ -288,14 +287,19 @@ export class MediaResourceService {
       .select('COUNT(*)', 'total')
       .addSelect('mediaResource.type', 'type')
       .addSelect('mediaResource.quality', 'quality')
-      .addSelect('AVG(CASE WHEN mediaResource.rating != 0 THEN mediaResource.rating ELSE NULL END)', 'avgRating')
+      .addSelect(
+        'AVG(CASE WHEN mediaResource.rating != 0 THEN mediaResource.rating ELSE NULL END)',
+        'avgRating',
+      )
       .groupBy('mediaResource.type, mediaResource.quality')
-      .getRawMany<Array<{
-        total: string;
-        type: string;
-        quality: string;
-        avgRating: string;
-      }>>();
+      .getRawMany<
+        Array<{
+          total: string;
+          type: string;
+          quality: string;
+          avgRating: string;
+        }>
+      >();
 
     // 处理统计数据
     let total = 0;
@@ -307,13 +311,13 @@ export class MediaResourceService {
     statisticsQuery.forEach((stat: any) => {
       const count = parseInt(stat.total);
       total += count;
-      
+
       // 按类型统计
       byType[stat.type] = (byType[stat.type] || 0) + count;
-      
+
       // 按质量统计
       byQuality[stat.quality] = (byQuality[stat.quality] || 0) + count;
-      
+
       // 计算平均评分
       if (stat.avgRating) {
         ratingSum += parseFloat(stat.avgRating) * count;
@@ -357,7 +361,7 @@ export class MediaResourceService {
       .createQueryBuilder('mediaResource')
       .select('MAX(mediaResource.createdAt)', 'lastCrawlTime')
       .getRawOne<{ lastCrawlTime: string }>();
-    
+
     return result?.lastCrawlTime ? new Date(result.lastCrawlTime) : new Date();
   }
 

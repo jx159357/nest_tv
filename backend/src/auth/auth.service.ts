@@ -24,7 +24,7 @@ export class AuthService {
    * @param pass 密码
    * @returns 用户信息或null
    */
-  async validateUser(identifier: string, pass: string): Promise<any> {
+  async validateUser(identifier: string, pass: string): Promise<Record<string, any> | null> {
     try {
       // 调用UserService的登录方法来验证用户
       const result = await this.userService.login({ identifier, password: pass });
@@ -39,7 +39,7 @@ export class AuthService {
    * @param user 用户信息
    * @returns JWT令牌信息
    */
-  async login(user: any): Promise<JwtResponseDto> {
+  async login(user: Record<string, any>): Promise<JwtResponseDto> {
     try {
       // 验证用户状态
       if (!user || !user.id || !user.username) {
@@ -97,8 +97,10 @@ export class AuthService {
           role: user.role,
         },
       };
-    } catch (error) {
-      this.logger.error(`登录失败: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      this.logger.error(`登录失败: ${errorMessage}`, errorStack);
       throw new UnauthorizedException('登录失败，请重试');
     }
   }
@@ -107,7 +109,8 @@ export class AuthService {
    * 生成令牌ID
    */
   private generateTokenId(): string {
-    return Math.random().toString(36).substring(2, 15) + 
-           Math.random().toString(36).substring(2, 15);
+    return (
+      Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+    );
   }
 }

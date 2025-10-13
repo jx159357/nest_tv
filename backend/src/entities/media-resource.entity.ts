@@ -48,16 +48,13 @@ export enum MediaQuality {
 @Index('idx_media_type', ['type'])
 @Index('idx_media_created', ['createdAt'])
 @Index('idx_media_active', ['isActive'])
-
 // 筛选索引：类型+状态+评分
 @Index('idx_media_type_status', ['type', 'isActive'])
 @Index('idx_media_filter', ['type', 'isActive', 'rating'])
-
 // 热门索引：评分+观看次数+状态
 @Index('idx_media_rating', ['rating'])
 @Index('idx_media_viewcount', ['viewCount'])
 @Index('idx_media_popular', ['rating', 'viewCount', 'isActive'])
-
 // 分类和标签相关索引
 // @Index('idx_media_genres', ['genres']) // 注释掉有问题的索引，因为genres是TEXT类型
 @Index('idx_media_release_date', ['releaseDate'])
@@ -116,7 +113,7 @@ export class MediaResource {
 
   @Column({ type: 'int', nullable: true })
   duration?: number; // 时长（分钟）
-  
+
   @Column({ nullable: true })
   episodeCount?: number; // 剧集数（如果是电视剧）
 

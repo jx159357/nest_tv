@@ -163,7 +163,7 @@ __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({
         summary: '系统健康检查',
-        description: '检查数据库、Redis等核心服务的健康状态，返回系统整体健康状况和各服务详细状态'
+        description: '检查数据库、Redis等核心服务的健康状态，返回系统整体健康状况和各服务详细状态',
     }),
     (0, swagger_1.ApiResponse)({
         status: common_1.HttpStatus.OK,
@@ -184,19 +184,19 @@ __decorate([
                             isHealthy: true,
                             connectionCount: 5,
                             maxConnections: 100,
-                            responseTime: 12
+                            responseTime: 12,
                         },
-                        error: null
+                        error: null,
                     },
                     redis: {
                         status: 'healthy',
                         details: {
                             status: 'healthy',
                             message: 'Redis连接正常',
-                            responseTime: 3
+                            responseTime: 3,
                         },
-                        error: null
-                    }
+                        error: null,
+                    },
                 },
                 metadata: {
                     nodeVersion: 'v18.0.0',
@@ -206,15 +206,15 @@ __decorate([
                         rss: 52428800,
                         heapTotal: 31457280,
                         heapUsed: 20971520,
-                        external: 2097152
+                        external: 2097152,
                     },
                     cpuUsage: {
                         user: 1200000,
-                        system: 800000
-                    }
-                }
-            }
-        }
+                        system: 800000,
+                    },
+                },
+            },
+        },
     }),
     (0, swagger_1.ApiResponse)({
         status: common_1.HttpStatus.SERVICE_UNAVAILABLE,
@@ -229,19 +229,19 @@ __decorate([
                     database: {
                         status: 'unhealthy',
                         details: null,
-                        error: 'Connection timeout'
+                        error: 'Connection timeout',
                     },
                     redis: {
                         status: 'healthy',
                         details: {
                             status: 'healthy',
-                            message: 'Redis连接正常'
+                            message: 'Redis连接正常',
                         },
-                        error: null
-                    }
-                }
-            }
-        }
+                        error: null,
+                    },
+                },
+            },
+        },
     }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),

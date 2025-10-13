@@ -28,12 +28,7 @@ export * from './danmaku';
 export * from './logs';
 
 // 兼容性：重新导出一些常用类型以确保向后兼容
-import {
-  ApiResponse,
-  PaginatedResponse,
-  PaginationParams,
-  FilterParams,
-} from './api';
+import { ApiResponse, PaginatedResponse, PaginationParams, FilterParams } from './api';
 
 import {
   User,

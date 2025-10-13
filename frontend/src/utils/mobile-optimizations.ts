@@ -2,7 +2,9 @@
 export const mobileOptimizations = {
   // 设备检测
   deviceInfo: {
-    isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+    isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent,
+    ),
     isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent),
     isAndroid: /Android/.test(navigator.userAgent),
     isTablet: /iPad|Android/.test(navigator.userAgent) && window.innerWidth > 768,
@@ -45,7 +47,7 @@ export const mobileOptimizations = {
     isPinch: false,
     pinchDistance: 0,
     longPressTimer: null as number | null,
-    
+
     // 重置状态
     reset() {
       this.startPoint = { x: 0, y: 0 };
@@ -55,7 +57,7 @@ export const mobileOptimizations = {
       this.isSwipe = false;
       this.isPinch = false;
       this.pinchDistance = 0;
-      
+
       if (this.longPressTimer) {
         clearTimeout(this.longPressTimer);
         this.longPressTimer = null;
@@ -66,7 +68,7 @@ export const mobileOptimizations = {
     recognizeTap(touch: Touch) {
       const now = Date.now();
       const timeSinceLastTap = now - this.lastTapTime;
-      
+
       if (timeSinceLastTap < 300 && timeSinceLastTap > 50) {
         this.tapCount++;
         if (this.tapCount === 2) {
@@ -75,14 +77,14 @@ export const mobileOptimizations = {
       } else {
         this.tapCount = 1;
       }
-      
+
       this.lastTapTime = now;
       return { type: 'tap', touch };
     },
 
     // 识别长按
-    recognizeLongPress(touch: Touch): Promise<{ type: 'longPress', touch: Touch }> {
-      return new Promise((resolve) => {
+    recognizeLongPress(touch: Touch): Promise<{ type: 'longPress'; touch: Touch }> {
+      return new Promise(resolve => {
         this.longPressTimer = window.setTimeout(() => {
           this.isLongPress = true;
           resolve({ type: 'longPress', touch });
@@ -96,17 +98,17 @@ export const mobileOptimizations = {
       const deltaY = endTouch.clientY - startTouch.clientY;
       const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
       const deltaTime = Date.now() - this.startTime;
-      
+
       // 最小距离和最大时间限制
       if (distance > 30 && deltaTime < 500) {
         let direction: 'up' | 'down' | 'left' | 'right';
-        
+
         if (Math.abs(deltaX) > Math.abs(deltaY)) {
           direction = deltaX > 0 ? 'right' : 'left';
         } else {
           direction = deltaY > 0 ? 'down' : 'up';
         }
-        
+
         return {
           type: 'swipe',
           direction,
@@ -116,18 +118,18 @@ export const mobileOptimizations = {
           endTouch,
         };
       }
-      
+
       return null;
     },
 
     // 识别缩放
     recognizePinch(touches: Touch[]) {
       if (touches.length < 2) return null;
-      
+
       const dx = touches[0].clientX - touches[1].clientX;
       const dy = touches[0].clientY - touches[1].clientY;
       const distance = Math.sqrt(dx * dx + dy * dy);
-      
+
       if (this.pinchDistance > 0) {
         const scale = distance / this.pinchDistance;
         return {
@@ -139,7 +141,7 @@ export const mobileOptimizations = {
           },
         };
       }
-      
+
       this.pinchDistance = distance;
       return null;
     },
@@ -156,37 +158,38 @@ export const mobileOptimizations = {
     },
   ) {
     let gestureTimer: number | null = null;
-    
+
     const handleStart = (e: TouchEvent) => {
       const touch = e.touches[0];
       this.gestureRecognizer.reset();
       this.gestureRecognizer.startPoint = { x: touch.clientX, y: touch.clientY };
       this.gestureRecognizer.lastPoint = { x: touch.clientX, y: touch.clientY };
       this.gestureRecognizer.startTime = Date.now();
-      
+
       // 启动长按检测
       if (e.touches.length === 1 && handlers.onGesture) {
-        this.gestureRecognizer.recognizeLongPress(touch)
+        this.gestureRecognizer
+          .recognizeLongPress(touch)
           .then(gesture => handlers.onGesture!(gesture))
           .catch(() => {}); // 忽略取消的长按
       }
-      
+
       if (handlers.onTouchStart) {
         handlers.onTouchStart(e);
       }
     };
-    
+
     const handleMove = (e: TouchEvent) => {
       if (e.touches.length > 0) {
         const touch = e.touches[0];
         this.gestureRecognizer.lastPoint = { x: touch.clientX, y: touch.clientY };
-        
+
         // 取消长按
         if (this.gestureRecognizer.longPressTimer) {
           clearTimeout(this.gestureRecognizer.longPressTimer);
           this.gestureRecognizer.longPressTimer = null;
         }
-        
+
         // 检测缩放
         if (e.touches.length === 2 && handlers.onGesture) {
           const pinchGesture = this.gestureRecognizer.recognizePinch(Array.from(e.touches));
@@ -195,46 +198,50 @@ export const mobileOptimizations = {
           }
         }
       }
-      
+
       if (handlers.onTouchMove) {
         handlers.onTouchMove(e);
       }
     };
-    
+
     const handleEnd = (e: TouchEvent) => {
       if (this.gestureRecognizer.longPressTimer) {
         clearTimeout(this.gestureRecognizer.longPressTimer);
         this.gestureRecognizer.longPressTimer = null;
       }
-      
+
       if (e.changedTouches.length > 0 && handlers.onGesture) {
         const touch = e.changedTouches[0];
         const duration = Date.now() - this.gestureRecognizer.startTime;
-        
+
         // 检测轻触
-        if (duration < 200 && !this.gestureRecognizer.isSwipe && !this.gestureRecognizer.isLongPress) {
+        if (
+          duration < 200 &&
+          !this.gestureRecognizer.isSwipe &&
+          !this.gestureRecognizer.isLongPress
+        ) {
           const tapGesture = this.gestureRecognizer.recognizeTap(touch);
           if (tapGesture) {
             handlers.onGesture(tapGesture);
           }
         }
-        
+
         // 检测滑动
         if (!this.gestureRecognizer.isLongPress) {
           const swipeGesture = this.gestureRecognizer.recognizeSwipe(
             this.gestureRecognizer.startPoint as Touch,
-            touch
+            touch,
           );
           if (swipeGesture) {
             handlers.onGesture(swipeGesture);
           }
         }
       }
-      
+
       if (handlers.onTouchEnd) {
         handlers.onTouchEnd(e);
       }
-      
+
       // 延迟重置手势状态
       if (gestureTimer) {
         clearTimeout(gestureTimer);
@@ -243,11 +250,11 @@ export const mobileOptimizations = {
         this.gestureRecognizer.reset();
       }, 300);
     };
-    
+
     element.addEventListener('touchstart', handleStart, { passive: false });
     element.addEventListener('touchmove', handleMove, { passive: false });
     element.addEventListener('touchend', handleEnd, { passive: false });
-    
+
     // 返回清理函数
     return () => {
       element.removeEventListener('touchstart', handleStart);
@@ -286,16 +293,18 @@ export const mobileOptimizations = {
 
   // 优化触摸目标大小
   optimizeTouchTargets() {
-    const targets = document.querySelectorAll('.video-player__control-button, .clickable, [role="button"]');
+    const targets = document.querySelectorAll(
+      '.video-player__control-button, .clickable, [role="button"]',
+    );
     targets.forEach(target => {
       const element = target as HTMLElement;
       const rect = element.getBoundingClientRect();
-      
+
       // 确保最小触摸目标44x44px
       if (rect.width < 44 || rect.height < 44) {
         const newWidth = Math.max(44, rect.width);
         const newHeight = Math.max(44, rect.height);
-        
+
         element.style.minWidth = `${newWidth}px`;
         element.style.minHeight = `${newHeight}px`;
         element.style.display = 'flex';
@@ -308,13 +317,13 @@ export const mobileOptimizations = {
   // 适配安全区域
   adaptSafeArea() {
     const safeArea = this.screenInfo.safeArea;
-    
+
     // 添加CSS变量
     document.documentElement.style.setProperty('--safe-area-inset-top', `${safeArea.top}px`);
     document.documentElement.style.setProperty('--safe-area-inset-right', `${safeArea.right}px`);
     document.documentElement.style.setProperty('--safe-area-inset-bottom', `${safeArea.bottom}px`);
     document.documentElement.style.setProperty('--safe-area-inset-left', `${safeArea.left}px`);
-    
+
     // 自动调整元素边距
     const elements = document.querySelectorAll('.safe-area-top, .safe-area-bottom');
     elements.forEach(element => {
@@ -331,12 +340,12 @@ export const mobileOptimizations = {
   // 防抖动
   debounce<T extends (...args: any[]) => any>(func: T, wait: number): T {
     let timeout: number | null = null;
-    
+
     return ((...args: Parameters<T>) => {
       if (timeout) {
         clearTimeout(timeout);
       }
-      
+
       timeout = window.setTimeout(() => {
         func(...args);
         timeout = null;
@@ -347,7 +356,7 @@ export const mobileOptimizations = {
   // 节流
   throttle<T extends (...args: any[]) => any>(func: T, limit: number): T {
     let inThrottle: boolean = false;
-    
+
     return ((...args: Parameters<T>) => {
       if (!inThrottle) {
         func(...args);
@@ -361,16 +370,21 @@ export const mobileOptimizations = {
 
   // 检测设备性能
   detectPerformance() {
-    const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
-    
+    const connection =
+      (navigator as any).connection ||
+      (navigator as any).mozConnection ||
+      (navigator as any).webkitConnection;
+
     return {
       deviceMemory: (navigator as any).deviceMemory || 4,
       hardwareConcurrency: navigator.hardwareConcurrency || 4,
-      connection: connection ? {
-        effectiveType: connection.effectiveType,
-        downlink: connection.downlink,
-        rtt: connection.rtt,
-      } : null,
+      connection: connection
+        ? {
+            effectiveType: connection.effectiveType,
+            downlink: connection.downlink,
+            rtt: connection.rtt,
+          }
+        : null,
       pixelRatio: window.devicePixelRatio || 1,
     };
   },
@@ -379,11 +393,11 @@ export const mobileOptimizations = {
   applyAdaptiveOptimizations() {
     const performance = this.detectPerformance();
     const isLowEnd = performance.deviceMemory < 4 || performance.hardwareConcurrency < 4;
-    
+
     if (isLowEnd) {
       // 低端设备优化
       document.body.classList.add('low-performance');
-      
+
       // 减少动画
       const style = document.createElement('style');
       style.textContent = `
@@ -397,12 +411,13 @@ export const mobileOptimizations = {
       `;
       document.head.appendChild(style);
     }
-    
+
     if (performance.connection) {
-      const isSlowConnection = performance.connection.effectiveType === 'slow-2g' || 
-                               performance.connection.effectiveType === '2g' ||
-                               performance.connection.downlink < 0.5;
-      
+      const isSlowConnection =
+        performance.connection.effectiveType === 'slow-2g' ||
+        performance.connection.effectiveType === '2g' ||
+        performance.connection.downlink < 0.5;
+
       if (isSlowConnection) {
         document.body.classList.add('slow-connection');
       }

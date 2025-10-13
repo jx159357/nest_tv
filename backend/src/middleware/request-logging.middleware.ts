@@ -14,7 +14,7 @@ export class RequestLoggingMiddleware implements NestMiddleware {
     const startTime = Date.now();
     const { method, originalUrl, ip, headers } = req;
     const logger = this.logger; // 保存logger引用
-    
+
     // 记录请求开始
     logger.logRequest({
       method,
@@ -26,7 +26,7 @@ export class RequestLoggingMiddleware implements NestMiddleware {
 
     // 监听响应结束
     const originalEnd = res.end;
-    res.end = function(chunk?: any, encoding?: any): any {
+    res.end = function (chunk?: any, encoding?: any): any {
       const responseTime = Date.now() - startTime;
       const { statusCode } = res;
 
@@ -56,15 +56,15 @@ export class RequestLoggingMiddleware implements NestMiddleware {
   private getClientIp(req: Request): string {
     const forwarded = req.headers['x-forwarded-for'] as string;
     const realIp = req.headers['x-real-ip'] as string;
-    
+
     if (forwarded) {
       return forwarded.split(',')[0].trim();
     }
-    
+
     if (realIp) {
       return realIp;
     }
-    
+
     return req.ip || req.connection.remoteAddress || '';
   }
 }

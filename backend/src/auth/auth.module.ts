@@ -19,7 +19,7 @@ import { UserModule } from '../users/user.module';
     // 导入JWT模块，用于JWT令牌生成和验证
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
+      useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
         signOptions: { expiresIn: configService.get<string>('JWT_EXPIRES_IN') },
       }),

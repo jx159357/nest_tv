@@ -187,7 +187,7 @@ let CacheService = CacheService_1 = class CacheService {
         }
     }
     async multiSet(key, value, options = {}) {
-        const { ttl = this.defaultTtl, prefix = this.defaultPrefix, useMemoryCache = true, useRedisCache = true, memoryTtl = this.defaultMemoryTtl, priority = 'medium' } = options;
+        const { ttl = this.defaultTtl, prefix = this.defaultPrefix, useMemoryCache = true, useRedisCache = true, memoryTtl = this.defaultMemoryTtl, priority = 'medium', } = options;
         const fullKey = `${prefix}${key}`;
         try {
             if (useMemoryCache) {
@@ -260,14 +260,13 @@ let CacheService = CacheService_1 = class CacheService {
     }
     getCacheStats() {
         const totalRequests = this.stats.hits + this.stats.misses;
-        const hitRate = totalRequests > 0 ? (this.stats.hits / totalRequests * 100).toFixed(2) : '0';
+        const hitRate = totalRequests > 0 ? ((this.stats.hits / totalRequests) * 100).toFixed(2) : '0';
         return {
             ...this.stats,
             totalRequests,
             hitRate: `${hitRate}%`,
             memoryCacheSize: this.memoryCache.size,
-            memoryHitRate: this.stats.hits > 0 ?
-                (this.stats.memoryHits / this.stats.hits * 100).toFixed(2) : '0',
+            memoryHitRate: this.stats.hits > 0 ? ((this.stats.memoryHits / this.stats.hits) * 100).toFixed(2) : '0',
         };
     }
     cleanupMemoryCache() {
@@ -289,11 +288,11 @@ let CacheService = CacheService_1 = class CacheService {
         }, 120000);
     }
     setMemoryCache(key, value, ttl, priority) {
-        const expiresAt = Date.now() + (ttl * 1000);
+        const expiresAt = Date.now() + ttl * 1000;
         this.memoryCache.set(key, {
             value,
             expiresAt,
-            metadata: { priority, setAt: Date.now() }
+            metadata: { priority, setAt: Date.now() },
         });
         if (this.memoryCache.size > 1000) {
             this.evictLowPriorityCache();

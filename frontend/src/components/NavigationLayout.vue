@@ -132,7 +132,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed } from 'vue';
+  import { ref } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { useAuthStore } from '@/stores/auth';
 
@@ -151,7 +151,7 @@
     navigationItems?: NavigationItem[];
   }
 
-  const props = withDefaults(defineProps<Props>(), {
+  withDefaults(defineProps<Props>(), {
     title: '视频平台',
     navigationItems: () =>
       [

@@ -45,9 +45,7 @@ let GlobalExceptionFilter = GlobalExceptionFilter_1 = class GlobalExceptionFilte
         const request = ctx.getRequest();
         this.logError(exception, request);
         const errorResponse = this.buildErrorResponse(exception, request);
-        response
-            .status(errorResponse.statusCode)
-            .json(errorResponse);
+        response.status(errorResponse.statusCode).json(errorResponse);
     }
     classifyError(exception) {
         if (exception instanceof common_1.HttpException) {
@@ -116,7 +114,7 @@ let GlobalExceptionFilter = GlobalExceptionFilter_1 = class GlobalExceptionFilte
             this.appLogger.debug(JSON.stringify({
                 ...errorInfo,
                 error: response,
-                httpStatus: status
+                httpStatus: status,
             }), 'HTTP_EXCEPTION_DETAILS', requestId);
         }
         else {
@@ -154,13 +152,17 @@ let GlobalExceptionFilter = GlobalExceptionFilter_1 = class GlobalExceptionFilte
             requestId,
             type,
             severity,
-            data: process.env.NODE_ENV === 'development' ? {
-                error: exception instanceof Error ? {
-                    name: exception.name,
-                    message: exception.message,
-                    stack: exception.stack,
-                } : exception,
-            } : undefined,
+            data: process.env.NODE_ENV === 'development'
+                ? {
+                    error: exception instanceof Error
+                        ? {
+                            name: exception.name,
+                            message: exception.message,
+                            stack: exception.stack,
+                        }
+                        : exception,
+                }
+                : undefined,
         };
     }
     generateRequestId() {

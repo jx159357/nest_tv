@@ -15,12 +15,12 @@ export class HealthController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ 
-    summary: '系统健康检查', 
-    description: '检查数据库、Redis等核心服务的健康状态，返回系统整体健康状况和各服务详细状态' 
+  @ApiOperation({
+    summary: '系统健康检查',
+    description: '检查数据库、Redis等核心服务的健康状态，返回系统整体健康状况和各服务详细状态',
   })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
+  @ApiResponse({
+    status: HttpStatus.OK,
     description: '系统健康',
     schema: {
       type: 'object',
@@ -38,19 +38,19 @@ export class HealthController {
               isHealthy: true,
               connectionCount: 5,
               maxConnections: 100,
-              responseTime: 12
+              responseTime: 12,
             },
-            error: null
+            error: null,
           },
           redis: {
             status: 'healthy',
             details: {
               status: 'healthy',
               message: 'Redis连接正常',
-              responseTime: 3
+              responseTime: 3,
             },
-            error: null
-          }
+            error: null,
+          },
         },
         metadata: {
           nodeVersion: 'v18.0.0',
@@ -60,18 +60,18 @@ export class HealthController {
             rss: 52428800,
             heapTotal: 31457280,
             heapUsed: 20971520,
-            external: 2097152
+            external: 2097152,
           },
           cpuUsage: {
             user: 1200000,
-            system: 800000
-          }
-        }
-      }
-    }
+            system: 800000,
+          },
+        },
+      },
+    },
   })
-  @ApiResponse({ 
-    status: HttpStatus.SERVICE_UNAVAILABLE, 
+  @ApiResponse({
+    status: HttpStatus.SERVICE_UNAVAILABLE,
     description: '服务异常',
     schema: {
       type: 'object',
@@ -83,23 +83,23 @@ export class HealthController {
           database: {
             status: 'unhealthy',
             details: null,
-            error: 'Connection timeout'
+            error: 'Connection timeout',
           },
           redis: {
             status: 'healthy',
             details: {
               status: 'healthy',
-              message: 'Redis连接正常'
+              message: 'Redis连接正常',
             },
-            error: null
-          }
-        }
-      }
-    }
+            error: null,
+          },
+        },
+      },
+    },
   })
   async getHealth() {
     const startTime = Date.now();
-    
+
     // 并行检查各个服务
     const [databaseHealth, redisHealth] = await Promise.allSettled([
       this.databaseHealthService.checkDatabaseHealth(),
@@ -117,8 +117,10 @@ export class HealthController {
       version: '1.0.0',
       services: {
         database: {
-          status: databaseHealth.status === 'fulfilled' && databaseHealth.value ? 'healthy' : 'unhealthy',
-          details: databaseHealth.status === 'fulfilled' ? { isHealthy: databaseHealth.value } : null,
+          status:
+            databaseHealth.status === 'fulfilled' && databaseHealth.value ? 'healthy' : 'unhealthy',
+          details:
+            databaseHealth.status === 'fulfilled' ? { isHealthy: databaseHealth.value } : null,
           error: databaseHealth.status === 'rejected' ? databaseHealth.reason?.message : null,
         },
         redis: {
@@ -137,7 +139,9 @@ export class HealthController {
     };
 
     // 如果任何核心服务不健康，设置整体状态为 unhealthy
-    const unhealthyServices = Object.values(result.services).filter(service => service.status !== 'healthy');
+    const unhealthyServices = Object.values(result.services).filter(
+      service => service.status !== 'healthy',
+    );
     if (unhealthyServices.length > 0) {
       result.status = 'unhealthy';
     }
@@ -172,7 +176,7 @@ export class HealthController {
     try {
       // 检查数据库连接
       await this.databaseHealthService.checkDatabaseHealth();
-      
+
       // 检查Redis连接（如果配置了）
       if (process.env.REDIS_HOST) {
         await this.checkRedisHealth();
@@ -183,7 +187,6 @@ export class HealthController {
         timestamp: new Date().toISOString(),
         message: '应用已准备好接收请求',
       };
-      
     } catch (error) {
       return {
         status: 'not_ready',
@@ -213,11 +216,11 @@ export class HealthController {
       // 测试Redis连接
       const testKey = `health_check_${Date.now()}`;
       const testValue = 'ok';
-      
+
       await this.cacheService.set(testKey, testValue, { ttl: 10 }); // 10秒过期
       const retrievedValue = await this.cacheService.get(testKey);
       await this.cacheService.delete(testKey);
-      
+
       if (retrievedValue === testValue) {
         return {
           status: 'healthy',
@@ -230,7 +233,6 @@ export class HealthController {
           message: 'Redis读写测试失败',
         };
       }
-      
     } catch (error) {
       return {
         status: 'unhealthy',
@@ -245,7 +247,7 @@ export class HealthController {
   @ApiBearerAuth()
   async getMetrics() {
     const dbStatus = this.databaseHealthService.getDatabaseStatus();
-    
+
     return {
       timestamp: new Date().toISOString(),
       system: {

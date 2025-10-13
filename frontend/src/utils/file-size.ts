@@ -33,24 +33,24 @@ export function parseFileSize(formattedSize: string): number {
   const unit = match[2].toUpperCase();
 
   const units: Record<string, number> = {
-    'BYTES': 1,
-    'B': 1,
-    'KB': 1024,
-    'MB': 1024 * 1024,
-    'GB': 1024 * 1024 * 1024,
-    'TB': 1024 * 1024 * 1024 * 1024,
-    'PB': 1024 * 1024 * 1024 * 1024 * 1024,
-    'EB': 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
-    'ZB': 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
-    'YB': 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
-  'KIB': 1000,
-    'MIB': 1000 * 1000,
-    'GIB': 1000 * 1000 * 1000,
-    'TIB': 1000 * 1000 * 1000 * 1000,
-    'PIB': 1000 * 1000 * 1000 * 1000 * 1000,
-    'EIB': 1000 * 1000 * 1000 * 1000 * 1000 * 1000,
-    'ZIB': 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000,
-    'YIB': 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000,
+    BYTES: 1,
+    B: 1,
+    KB: 1024,
+    MB: 1024 * 1024,
+    GB: 1024 * 1024 * 1024,
+    TB: 1024 * 1024 * 1024 * 1024,
+    PB: 1024 * 1024 * 1024 * 1024 * 1024,
+    EB: 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
+    ZB: 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
+    YB: 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
+    KIB: 1000,
+    MIB: 1000 * 1000,
+    GIB: 1000 * 1000 * 1000,
+    TIB: 1000 * 1000 * 1000 * 1000,
+    PIB: 1000 * 1000 * 1000 * 1000 * 1000,
+    EIB: 1000 * 1000 * 1000 * 1000 * 1000 * 1000,
+    ZIB: 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000,
+    YIB: 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000,
   };
 
   const multiplier = units[unit] || 1;
@@ -95,12 +95,16 @@ export function calculateUploadProgress(loaded: number, total: number): number {
  * @param uploadSpeed 上传速度（字节/秒）
  * @returns 估算的剩余时间（秒），如果无法估算则返回null
  */
-export function estimateUploadTime(loaded: number, total: number, uploadSpeed: number): number | null {
+export function estimateUploadTime(
+  loaded: number,
+  total: number,
+  uploadSpeed: number,
+): number | null {
   if (uploadSpeed <= 0) return null;
-  
+
   const remainingBytes = total - loaded;
   if (remainingBytes <= 0) return 0;
-  
+
   return remainingBytes / uploadSpeed;
 }
 
@@ -111,15 +115,15 @@ export function estimateUploadTime(loaded: number, total: number, uploadSpeed: n
  */
 export function formatDuration(seconds: number): string {
   if (!isFinite(seconds) || seconds < 0) return '00:00';
-  
+
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);
-  
+
   if (hours > 0) {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }
-  
+
   return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
@@ -132,7 +136,7 @@ export function formatUploadTimeEstimate(seconds: number | null): string {
   if (seconds === null) return '计算中...';
   if (seconds === 0) return '已完成';
   if (seconds < 0) return '未知';
-  
+
   if (seconds < 60) {
     return `${Math.ceil(seconds)}秒`;
   } else if (seconds < 3600) {

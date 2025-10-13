@@ -16,8 +16,8 @@ async function bootstrap() {
 
   // 安全的CORS配置
   const isProduction = process.env.NODE_ENV === 'production';
-  const allowedOrigins = isProduction 
-    ? (process.env.ALLOWED_ORIGINS?.split(',') || ['https://yourdomain.com'])
+  const allowedOrigins = isProduction
+    ? process.env.ALLOWED_ORIGINS?.split(',') || ['https://yourdomain.com']
     : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:5173'];
 
   app.enableCors({
@@ -32,12 +32,12 @@ async function bootstrap() {
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: [
-      'Content-Type', 
-      'Authorization', 
-      'Accept-Language', 
+      'Content-Type',
+      'Authorization',
+      'Accept-Language',
       'X-Requested-With',
       'X-Request-ID',
-      'Accept-Charset'
+      'Accept-Charset',
     ],
     credentials: true, // 支持凭证（cookies, Authorization headers）
     optionsSuccessStatus: 200, // 预检请求成功状态
@@ -66,7 +66,7 @@ async function bootstrap() {
   const appLogger = app.get(AppLoggerService);
   const requestLoggingMiddleware = new RequestLoggingMiddleware(appLogger);
   const performanceMonitoringMiddleware = new PerformanceMonitoringMiddleware(appLogger);
-  
+
   app.use(new SecurityHeadersMiddleware().use);
   app.use(requestLoggingMiddleware.use.bind(requestLoggingMiddleware));
   app.use(performanceMonitoringMiddleware.use.bind(performanceMonitoringMiddleware));
@@ -81,7 +81,7 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
       transform: true,
       disableErrorMessages: false,
-    })
+    }),
   );
 
   // 端口检测和动态端口选择

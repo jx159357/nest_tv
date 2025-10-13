@@ -28,12 +28,12 @@ export class WatchHistoryController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ 
-    summary: '创建或更新观看历史', 
-    description: '创建新的观看历史记录，如果已存在则更新进度信息'
+  @ApiOperation({
+    summary: '创建或更新观看历史',
+    description: '创建新的观看历史记录，如果已存在则更新进度信息',
   })
-  @ApiResponse({ 
-    status: 201, 
+  @ApiResponse({
+    status: 201,
     description: '观看历史创建成功',
     schema: {
       type: 'object',
@@ -47,30 +47,30 @@ export class WatchHistoryController {
         lastWatchedAt: { type: 'string', format: 'date-time' },
         createdAt: { type: 'string', format: 'date-time' },
         updatedAt: { type: 'string', format: 'date-time' },
-      }
-    }
+      },
+    },
   })
-  @ApiResponse({ 
-    status: 400, 
+  @ApiResponse({
+    status: 400,
     description: '参数验证失败',
     schema: {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 400 },
         message: { type: 'string', example: 'Validation failed' },
-      }
-    }
+      },
+    },
   })
-  @ApiResponse({ 
-    status: 401, 
+  @ApiResponse({
+    status: 401,
     description: '未授权访问',
     schema: {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 401 },
         message: { type: 'string', example: 'Unauthorized' },
-      }
-    }
+      },
+    },
   })
   @UsePipes(new ValidationPipe({ transform: true }))
   async create(

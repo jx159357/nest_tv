@@ -63,10 +63,16 @@
             <h3 class="preview-overlay__title">试看结束</h3>
             <p class="preview-overlay__description">试看时间已结束，登录后即可观看完整视频。</p>
             <div class="preview-overlay__actions">
-              <button class="preview-overlay__button preview-overlay__button--primary" @click="goToLogin">
+              <button
+                class="preview-overlay__button preview-overlay__button--primary"
+                @click="goToLogin"
+              >
                 立即登录
               </button>
-              <button class="preview-overlay__button preview-overlay__button--secondary" @click="switchToNextSource">
+              <button
+                class="preview-overlay__button preview-overlay__button--secondary"
+                @click="switchToNextSource"
+              >
                 切换线路
               </button>
             </div>
@@ -77,7 +83,9 @@
         <div v-if="isPreviewMode && previewTimeRemaining > 0" class="preview-time-indicator">
           <div class="preview-time-indicator__content">
             <div class="preview-time-indicator__icon">⏱️</div>
-            <span class="preview-time-indicator__text">试看剩余: {{ formatPreviewTime(previewTimeRemaining) }}</span>
+            <span class="preview-time-indicator__text"
+              >试看剩余: {{ formatPreviewTime(previewTimeRemaining) }}</span
+            >
           </div>
         </div>
 
@@ -123,50 +131,53 @@
           <div class="play-sources__header">
             <h3 class="play-sources__title">播放源</h3>
             <div class="play-sources__actions">
-              <button 
+              <button
                 v-if="playSources.length > 0"
                 class="play-sources__action-button"
-                @click="switchToBestSource"
                 title="切换到最佳播放源"
+                @click="switchToBestSource"
               >
                 <svg class="play-sources__action-icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  <path
+                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                  />
                 </svg>
               </button>
-              <button 
+              <button
                 v-if="playSources.length > 0"
                 class="play-sources__action-button"
-                @click="switchToNextSource"
                 title="切换到下一个播放源"
+                @click="switchToNextSource"
               >
                 <svg class="play-sources__action-icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M4 6h2v12H4zm7 0h2v12h-2zm7 0h2v12h-2z"/>
+                  <path d="M4 6h2v12H4zm7 0h2v12h-2zm7 0h2v12h-2z" />
                 </svg>
               </button>
             </div>
           </div>
-          
+
           <!-- 播放源切换状态 -->
           <div v-if="isSourceSwitching" class="play-sources__switching">
             <div class="play-sources__switching-spinner"></div>
             <span class="play-sources__switching-text">正在切换播放源...</span>
           </div>
-          
+
           <!-- 播放源错误提示 -->
           <div v-if="sourceSwitchError" class="play-sources__error">
             <div class="play-sources__error-icon">⚠️</div>
             <span class="play-sources__error-text">{{ sourceSwitchError }}</span>
             <button class="play-sources__error-retry" @click="switchToBestSource">重试</button>
           </div>
-          
+
           <div class="play-sources__list">
             <!-- 本地视频播放源 -->
             <button
               v-if="localVideoFile"
               class="play-source-button"
-              :class="{ 
+              :class="{
                 'play-source-button--active': currentPlaySource?.id === 'local',
-                'play-source-button--switching': isSourceSwitching && currentPlaySource?.id === 'local'
+                'play-source-button--switching':
+                  isSourceSwitching && currentPlaySource?.id === 'local',
               }"
               :disabled="isSourceSwitching"
               @click="switchToLocalVideo"
@@ -177,9 +188,7 @@
                   <span class="play-source-button__quality">
                     {{ localVideoMetadata?.width }}×{{ localVideoMetadata?.height }}
                   </span>
-                  <span class="play-source-button__type">
-                    本地
-                  </span>
+                  <span class="play-source-button__type"> 本地 </span>
                   <span class="play-source-button__status">
                     {{ formatFileSize(localVideoFile.size) }}
                   </span>
@@ -189,15 +198,16 @@
                 <div class="play-source-button__indicator-dot"></div>
               </div>
             </button>
-            
+
             <!-- 在线播放源 -->
             <button
               v-for="source in playSources"
               :key="source.id"
               class="play-source-button"
-              :class="{ 
+              :class="{
                 'play-source-button--active': currentPlaySource?.id === source.id,
-                'play-source-button--switching': isSourceSwitching && currentPlaySource?.id === source.id
+                'play-source-button--switching':
+                  isSourceSwitching && currentPlaySource?.id === source.id,
               }"
               :disabled="isSourceSwitching"
               @click="switchPlaySource(source)"
@@ -374,23 +384,23 @@
   const videoPlayerRef = ref<InstanceType<typeof VideoPlayer> | null>(null);
 
   // 视频元数据接口
-interface VideoMetadata {
-  width: number;
-  height: number;
-  duration: number;
-  size: number;
-  format: string;
-  codec?: string;
-  bitrate?: number;
-}
+  interface VideoMetadata {
+    width: number;
+    height: number;
+    duration: number;
+    size: number;
+    format: string;
+    codec?: string;
+    bitrate?: number;
+  }
 
-// 数据状态
+  // 数据状态
   const media = ref<MediaResource | null>(null);
   const playSources = ref<PlaySource[]>([]);
   const currentPlaySource = ref<PlaySource | null>(null);
   const isFavorite = ref(false);
   const showDanmakuSettings = ref(false);
-  
+
   // 本地视频相关状态
   const localVideoFile = ref<File | null>(null);
   const localVideoUrl = ref<string>('');
@@ -446,7 +456,7 @@ interface VideoMetadata {
         const videoMinutes = Math.floor(media.value.duration / 60);
         previewDuration.value = Math.min(videoMinutes, 3);
       }
-      
+
       // 计算剩余试看时间
       updatePreviewTimeRemaining();
     } else {
@@ -469,11 +479,11 @@ interface VideoMetadata {
     if (isPreviewMode.value) {
       const remaining = Math.max(0, previewDuration.value * 60 - currentTime.value);
       previewTimeRemaining.value = remaining;
-      
+
       // 在试看结束前10秒显示警告
       if (remaining <= 10 && remaining > 0 && !showPreviewWarning.value) {
         showPreviewWarning.value = true;
-        
+
         // 10秒后隐藏警告
         if (previewWarningTimer.value) {
           clearTimeout(previewWarningTimer.value);
@@ -492,11 +502,11 @@ interface VideoMetadata {
       showPreviewModal.value = true;
       return;
     }
-    
+
     isPreviewMode.value = false;
     showPreviewModal.value = false;
     showPreviewWarning.value = false;
-    
+
     // 从暂停位置继续播放
     if (videoPlayerRef.value) {
       videoPlayerRef.value.play();
@@ -547,36 +557,35 @@ interface VideoMetadata {
     if (currentPlaySource.value?.id === source.id) {
       return; // 相同源不需要切换
     }
-    
+
     try {
       isSourceSwitching.value = true;
       sourceSwitchError.value = '';
       sourceSwitchStartTime.value = Date.now();
-      
+
       // 暂停当前播放
       if (videoPlayerRef.value) {
         videoPlayerRef.value.pause();
       }
-      
+
       // 设置新的播放源
       currentPlaySource.value = source;
-      
+
       // 等待一下确保源切换完成
       await nextTick();
-      
+
       // 尝试恢复播放
       if (videoPlayerRef.value) {
         await videoPlayerRef.value.play();
-        
+
         // 记录切换完成时间
         const switchDuration = Date.now() - sourceSwitchStartTime.value;
         console.log(`播放源切换完成，耗时: ${switchDuration}ms`);
       }
-      
     } catch (error) {
       console.error('播放源切换失败:', error);
       sourceSwitchError.value = '播放源切换失败，请重试';
-      
+
       // 切换回上一个可用源
       const previousSource = playSources.value.find(s => s.id !== source.id);
       if (previousSource) {
@@ -586,11 +595,11 @@ interface VideoMetadata {
       isSourceSwitching.value = false;
     }
   };
-  
+
   // 智能切换到最佳播放源
   const switchToBestSource = async () => {
     if (playSources.value.length === 0) return;
-    
+
     // 按优先级排序：在线 > 本地 > 其他
     const prioritizedSources = [...playSources.value].sort((a, b) => {
       const priority = { online: 3, local: 2, other: 1 };
@@ -598,14 +607,14 @@ interface VideoMetadata {
       const bPriority = priority[b.type as keyof typeof priority] || 1;
       return bPriority - aPriority;
     });
-    
+
     await switchPlaySource(prioritizedSources[0]);
   };
-  
+
   // 切换到下一个播放源
   const switchToNextSource = async () => {
     if (playSources.value.length <= 1) return;
-    
+
     const currentIndex = playSources.value.findIndex(s => s.id === currentPlaySource.value?.id);
     const nextIndex = (currentIndex + 1) % playSources.value.length;
     await switchPlaySource(playSources.value[nextIndex]);
@@ -643,7 +652,7 @@ interface VideoMetadata {
     if (isPreviewMode.value && time >= previewDuration.value * 60) {
       // 暂停视频播放
       videoPlayerRef.value?.pause();
-      
+
       // 显示试看结束提示
       showPreviewModal.value = true;
     }
@@ -726,13 +735,13 @@ interface VideoMetadata {
   const onLocalVideoSelected = async (file: File, metadata?: VideoMetadata) => {
     localVideoFile.value = file;
     localVideoMetadata.value = metadata;
-    
+
     // 创建本地URL
     if (localVideoUrl.value) {
       URL.revokeObjectURL(localVideoUrl.value);
     }
     localVideoUrl.value = URL.createObjectURL(file);
-    
+
     console.log('本地视频文件已选择:', file.name, metadata);
   };
 
@@ -742,22 +751,22 @@ interface VideoMetadata {
       URL.revokeObjectURL(localVideoUrl.value);
       localVideoUrl.value = '';
     }
-    
+
     localVideoFile.value = null;
     localVideoMetadata.value = null;
-    
+
     // 如果当前播放的是本地视频，切换到其他源
     if (currentPlaySource.value?.id === 'local' && playSources.value.length > 0) {
       switchToBestSource();
     }
-    
+
     console.log('本地视频文件已移除');
   };
 
   const onLocalVideoPlay = (file: File, url: string) => {
     // 切换到本地视频播放
     switchToLocalVideo();
-    
+
     console.log('播放本地视频:', file.name);
   };
 
@@ -777,17 +786,17 @@ interface VideoMetadata {
       console.warn('没有可用的本地视频文件');
       return;
     }
-    
+
     try {
       isSourceSwitching.value = true;
       sourceSwitchError.value = '';
       sourceSwitchStartTime.value = Date.now();
-      
+
       // 暂停当前播放
       if (videoPlayerRef.value) {
         videoPlayerRef.value.pause();
       }
-      
+
       // 设置本地视频为当前播放源
       currentPlaySource.value = {
         id: 'local',
@@ -799,20 +808,19 @@ interface VideoMetadata {
         status: 'active',
         priority: 10,
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       } as PlaySource;
-      
+
       // 等待一下确保源切换完成
       await nextTick();
-      
+
       // 恢复播放
       if (videoPlayerRef.value) {
         await videoPlayerRef.value.play();
-        
+
         const switchDuration = Date.now() - sourceSwitchStartTime.value;
         console.log(`本地视频切换完成，耗时: ${switchDuration}ms`);
       }
-      
     } catch (error) {
       console.error('本地视频切换失败:', error);
       sourceSwitchError.value = '本地视频切换失败，请重试';
@@ -821,7 +829,6 @@ interface VideoMetadata {
     }
   };
 
-  
   // 获取播放源类型标签
   const getSourceTypeLabel = (type: string): string => {
     const typeLabels: Record<string, string> = {
@@ -829,7 +836,7 @@ interface VideoMetadata {
       local: '本地',
       cdn: 'CDN',
       p2p: 'P2P',
-      backup: '备用'
+      backup: '备用',
     };
     return typeLabels[type] || type.toUpperCase();
   };
@@ -847,13 +854,13 @@ interface VideoMetadata {
   onUnmounted(() => {
     // 组件销毁时清理资源
     videoPlayerRef.value?.pause();
-    
+
     // 清理本地视频资源
     if (localVideoUrl.value) {
       URL.revokeObjectURL(localVideoUrl.value);
       localVideoUrl.value = '';
     }
-    
+
     // 清理定时器
     if (previewWarningTimer.value) {
       clearTimeout(previewWarningTimer.value);
@@ -1165,19 +1172,39 @@ interface VideoMetadata {
   }
 
   @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   @keyframes slideInBounce {
-    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
-    100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.8);
+    }
+    50% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.05);
+    }
+    100% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
   }
 
   @keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
   }
 
   .video-watch-main {
@@ -1435,7 +1462,9 @@ interface VideoMetadata {
   }
 
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .local-video-upload {
@@ -1565,12 +1594,12 @@ interface VideoMetadata {
     .video-watch-main {
       padding-top: 3.5rem;
     }
-    
+
     .video-player-wrapper {
       margin: 0 1rem;
       border-radius: 12px;
     }
-    
+
     .video-info {
       padding: 1.25rem;
     }
@@ -1591,7 +1620,7 @@ interface VideoMetadata {
       padding-top: 3.5rem;
       padding-bottom: 1rem;
     }
-    
+
     .video-player-wrapper {
       margin: 0 0.5rem;
       aspect-ratio: 16/9;
@@ -1646,34 +1675,34 @@ interface VideoMetadata {
       width: 100%;
       right: 0;
     }
-    
+
     .preview-time-indicator {
       top: 0.75rem;
       right: 0.75rem;
       padding: 0.4rem 0.8rem;
     }
-    
+
     .preview-time-indicator__content {
       font-size: 0.8rem;
     }
-    
+
     .preview-warning {
       width: 90%;
       padding: 1rem;
     }
-    
+
     .preview-warning__content {
       gap: 0.75rem;
     }
-    
+
     .preview-warning__icon {
       font-size: 1.5rem;
     }
-    
+
     .preview-warning__text {
       font-size: 0.85rem;
     }
-    
+
     .preview-overlay__actions {
       flex-direction: column;
       gap: 0.75rem;
@@ -1684,35 +1713,35 @@ interface VideoMetadata {
     .video-watch-header {
       padding: 0.5rem;
     }
-    
+
     .video-watch-header__title {
       font-size: 0.9rem;
     }
-    
+
     .video-watch-main {
       padding-top: 3rem;
     }
-    
+
     .video-player-wrapper {
       margin: 0;
       border-radius: 0;
     }
-    
+
     .video-info {
       margin: 0;
       border-radius: 0;
       padding: 1rem 0.75rem;
     }
-    
+
     .video-info__title {
       font-size: 1.1rem;
     }
-    
+
     .video-action-button {
       padding: 0.6rem 0.8rem;
       font-size: 0.85rem;
     }
-    
+
     .video-action-button__icon {
       width: 1rem;
       height: 1rem;
@@ -1731,17 +1760,17 @@ interface VideoMetadata {
       background: rgba(0, 0, 0, 0.9);
       backdrop-filter: blur(10px);
     }
-    
+
     .video-watch-header__title {
       font-size: 0.9rem;
     }
-    
+
     .video-watch-main {
       padding-top: 3rem;
       padding-bottom: 0;
       margin-top: 0;
     }
-    
+
     .video-player-wrapper {
       width: 100vw;
       height: calc(100vh - 3rem);
@@ -1753,11 +1782,11 @@ interface VideoMetadata {
       left: 0;
       z-index: 50;
     }
-    
+
     .video-info {
       display: none; /* 横屏模式隐藏视频信息 */
     }
-    
+
     /* 全屏播放器优化 */
     .video-player-wrapper:fullscreen {
       border-radius: 0;
@@ -1770,12 +1799,12 @@ interface VideoMetadata {
       max-width: 1200px;
       margin: 0 auto;
     }
-    
+
     .video-player-wrapper {
       max-width: 1200px;
       margin: 0 auto;
     }
-    
+
     .video-info {
       max-width: 1200px;
       margin: 0 auto;

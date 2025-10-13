@@ -212,20 +212,20 @@ let CrawlerController = CrawlerController_1 = class CrawlerController {
     }
     mapMediaType(type) {
         const typeMap = {
-            '电影': media_resource_entity_1.MediaType.MOVIE,
-            '电视剧': media_resource_entity_1.MediaType.TV_SERIES,
-            '综艺': media_resource_entity_1.MediaType.VARIETY,
-            '动漫': media_resource_entity_1.MediaType.ANIME,
-            '纪录片': media_resource_entity_1.MediaType.DOCUMENTARY,
+            电影: media_resource_entity_1.MediaType.MOVIE,
+            电视剧: media_resource_entity_1.MediaType.TV_SERIES,
+            综艺: media_resource_entity_1.MediaType.VARIETY,
+            动漫: media_resource_entity_1.MediaType.ANIME,
+            纪录片: media_resource_entity_1.MediaType.DOCUMENTARY,
         };
         return typeMap[type] || media_resource_entity_1.MediaType.MOVIE;
     }
     mapQuality(quality) {
         const qualityMap = {
-            '高清': media_resource_entity_1.MediaQuality.HD,
-            '超清': media_resource_entity_1.MediaQuality.FULL_HD,
-            '蓝光': media_resource_entity_1.MediaQuality.BLUE_RAY,
-            '标清': media_resource_entity_1.MediaQuality.SD,
+            高清: media_resource_entity_1.MediaQuality.HD,
+            超清: media_resource_entity_1.MediaQuality.FULL_HD,
+            蓝光: media_resource_entity_1.MediaQuality.BLUE_RAY,
+            标清: media_resource_entity_1.MediaQuality.SD,
         };
         return qualityMap[quality] || media_resource_entity_1.MediaQuality.HD;
     }
@@ -233,7 +233,10 @@ let CrawlerController = CrawlerController_1 = class CrawlerController {
         if (!str || typeof str !== 'string') {
             return [];
         }
-        return str.split(/[,，、]/).map(item => item.trim()).filter(item => item.length > 0);
+        return str
+            .split(/[,，、]/)
+            .map(item => item.trim())
+            .filter(item => item.length > 0);
     }
     async testCrawler(targetName) {
         const target = targetName || '电影天堂';
@@ -249,8 +252,8 @@ let CrawlerController = CrawlerController_1 = class CrawlerController {
                         target,
                         connection: false,
                         responseTime,
-                        error: '连接失败'
-                    }
+                        error: '连接失败',
+                    },
                 };
             }
             let testData = null;
@@ -270,12 +273,16 @@ let CrawlerController = CrawlerController_1 = class CrawlerController {
                     target,
                     connection: true,
                     responseTime,
-                    testData: testData ? {
-                        title: testData.title || '未知标题',
-                        hasDownloadUrls: testData.downloadUrls && testData.downloadUrls.length > 0,
-                        description: testData.description ? testData.description.substring(0, 100) + '...' : '无描述'
-                    } : null
-                }
+                    testData: testData
+                        ? {
+                            title: testData.title || '未知标题',
+                            hasDownloadUrls: testData.downloadUrls && testData.downloadUrls.length > 0,
+                            description: testData.description
+                                ? testData.description.substring(0, 100) + '...'
+                                : '无描述',
+                        }
+                        : null,
+                },
             };
         }
         catch (error) {
@@ -284,8 +291,8 @@ let CrawlerController = CrawlerController_1 = class CrawlerController {
                 message: `测试失败: ${error.message}`,
                 data: {
                     target,
-                    error: error.message
-                }
+                    error: error.message,
+                },
             };
         }
     }
@@ -297,7 +304,7 @@ __decorate([
     (0, common_1.UsePipes)(new common_1.ValidationPipe({ transform: true })),
     (0, swagger_1.ApiOperation)({
         summary: '爬取单个资源',
-        description: '根据指定的目标网站和URL爬取影视资源信息并保存到数据库'
+        description: '根据指定的目标网站和URL爬取影视资源信息并保存到数据库',
     }),
     (0, swagger_1.ApiBody)({
         description: '爬取请求参数',
@@ -319,10 +326,10 @@ __decorate([
                         description: { type: 'string', example: '电影描述' },
                         type: { type: 'string', example: 'movie' },
                         quality: { type: 'string', example: '1080p' },
-                    }
-                }
-            }
-        }
+                    },
+                },
+            },
+        },
     }),
     (0, swagger_1.ApiResponse)({
         status: 400,
@@ -331,13 +338,13 @@ __decorate([
             type: 'object',
             properties: {
                 success: { type: 'boolean', example: false },
-                message: { type: 'string', example: '参数验证失败' }
-            }
-        }
+                message: { type: 'string', example: '参数验证失败' },
+            },
+        },
     }),
     (0, swagger_1.ApiResponse)({
         status: 401,
-        description: '未授权访问'
+        description: '未授权访问',
     }),
     (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
@@ -353,7 +360,7 @@ __decorate([
     (0, common_1.UsePipes)(new common_1.ValidationPipe({ transform: true })),
     (0, swagger_1.ApiOperation)({
         summary: '批量爬取资源',
-        description: '批量爬取多个URL的影视资源信息，提高爬取效率'
+        description: '批量爬取多个URL的影视资源信息，提高爬取效率',
     }),
     (0, swagger_1.ApiBody)({
         description: '批量爬取请求参数',
@@ -375,12 +382,12 @@ __decorate([
                             url: { type: 'string' },
                             success: { type: 'boolean' },
                             data: { type: 'object' },
-                            error: { type: 'string' }
-                        }
-                    }
-                }
-            }
-        }
+                            error: { type: 'string' },
+                        },
+                    },
+                },
+            },
+        },
     }),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Body)()),
@@ -392,7 +399,7 @@ __decorate([
     (0, common_1.Get)('targets'),
     (0, swagger_1.ApiOperation)({
         summary: '获取爬虫目标列表',
-        description: '获取所有可用的爬虫目标网站及其配置信息'
+        description: '获取所有可用的爬虫目标网站及其配置信息',
     }),
     (0, swagger_1.ApiResponse)({
         status: 200,
@@ -410,12 +417,12 @@ __decorate([
                             name: { type: 'string', example: 'example-site' },
                             baseUrl: { type: 'string', example: 'https://example.com' },
                             description: { type: 'string', example: '示例网站' },
-                            enabled: { type: 'boolean', example: true }
-                        }
-                    }
-                }
-            }
-        }
+                            enabled: { type: 'boolean', example: true },
+                        },
+                    },
+                },
+            },
+        },
     }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
@@ -429,7 +436,7 @@ __decorate([
     (0, swagger_1.ApiBearerAuth)(),
     (0, swagger_1.ApiOperation)({
         summary: '爬取并保存资源',
-        description: '根据指定的目标网站和URL爬取影视资源信息并保存到数据库，需要JWT认证'
+        description: '根据指定的目标网站和URL爬取影视资源信息并保存到数据库，需要JWT认证',
     }),
     (0, swagger_1.ApiBody)({
         description: '爬取请求参数',
@@ -451,10 +458,10 @@ __decorate([
                         description: { type: 'string', example: '电影描述' },
                         type: { type: 'string', example: 'movie' },
                         quality: { type: 'string', example: '1080p' },
-                    }
-                }
-            }
-        }
+                    },
+                },
+            },
+        },
     }),
     (0, swagger_1.ApiResponse)({
         status: 400,
@@ -462,7 +469,7 @@ __decorate([
     }),
     (0, swagger_1.ApiResponse)({
         status: 401,
-        description: '未授权访问'
+        description: '未授权访问',
     }),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Body)()),
@@ -488,13 +495,13 @@ __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({
         summary: '测试爬虫功能',
-        description: '测试指定爬虫目标的连接和基本功能'
+        description: '测试指定爬虫目标的连接和基本功能',
     }),
     (0, swagger_1.ApiQuery)({
         name: 'targetName',
         required: false,
         description: '目标网站名称，默认为电影天堂',
-        example: '电影天堂'
+        example: '电影天堂',
     }),
     (0, swagger_1.ApiResponse)({
         status: 200,
@@ -514,13 +521,13 @@ __decorate([
                             type: 'object',
                             properties: {
                                 title: { type: 'string', example: '测试标题' },
-                                description: { type: 'string', example: '测试描述' }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+                                description: { type: 'string', example: '测试描述' },
+                            },
+                        },
+                    },
+                },
+            },
+        },
     }),
     __param(0, (0, common_1.Query)('targetName')),
     __metadata("design:type", Function),

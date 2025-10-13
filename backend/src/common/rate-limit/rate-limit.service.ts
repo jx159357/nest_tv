@@ -63,12 +63,18 @@ export class RateLimitService {
    */
   private async incrementCount(key: string, windowMs: number): Promise<number> {
     try {
-      const result = await this.redis.multi()
+      const result = await this.redis
+        .multi()
         .incr(key)
         .expire(key, Math.ceil(windowMs / 1000))
         .exec();
 
-      if (Array.isArray(result) && result[0] && result[0][0] === null && typeof result[0][1] === 'number') {
+      if (
+        Array.isArray(result) &&
+        result[0] &&
+        result[0][0] === null &&
+        typeof result[0][1] === 'number'
+      ) {
         return result[0][1];
       }
       return 1;
@@ -108,7 +114,7 @@ export class RateLimitService {
   async checkLimit(
     key: string,
     options: Partial<RateLimitOptions> = {},
-    algorithm: 'fixed' | 'token_bucket' | 'sliding_window' = 'fixed'
+    algorithm: 'fixed' | 'token_bucket' | 'sliding_window' = 'fixed',
   ): Promise<{ success: boolean; info?: RateLimitInfo }> {
     switch (algorithm) {
       case 'token_bucket':
@@ -125,7 +131,7 @@ export class RateLimitService {
    */
   private async fixedWindow(
     key: string,
-    options: Partial<RateLimitOptions> = {}
+    options: Partial<RateLimitOptions> = {},
   ): Promise<{ success: boolean; info?: RateLimitInfo }> {
     const config = { ...this.defaultOptions, ...options };
     const fullKey = `${config.keyPrefix}${key}`;
@@ -186,7 +192,7 @@ export class RateLimitService {
    */
   private async tokenBucket(
     key: string,
-    options: Partial<RateLimitOptions> = {}
+    options: Partial<RateLimitOptions> = {},
   ): Promise<{ success: boolean; info?: RateLimitInfo }> {
     const config = { ...this.defaultOptions, ...options };
     const fullKey = `${config.keyPrefix}token:${key}`;
@@ -195,7 +201,7 @@ export class RateLimitService {
 
     try {
       const currentTime = Math.floor(Date.now() / 1000);
-      
+
       // 使用Lua脚本实现原子性操作
       const luaScript = `
         local key = KEYS[1]
@@ -233,7 +239,7 @@ export class RateLimitService {
         currentTime,
         bucketSize,
         refillRate,
-        1
+        1,
       );
 
       if (Array.isArray(result) && result.length === 3) {
@@ -268,7 +274,7 @@ export class RateLimitService {
    */
   private async slidingWindow(
     key: string,
-    options: Partial<RateLimitOptions> = {}
+    options: Partial<RateLimitOptions> = {},
   ): Promise<{ success: boolean; info?: RateLimitInfo }> {
     const config = { ...this.defaultOptions, ...options };
     const fullKey = `${config.keyPrefix}sliding:${key}`;
@@ -278,22 +284,27 @@ export class RateLimitService {
     try {
       // 使用有序集合存储请求时间戳
       const pipeline = this.redis.pipeline();
-      
+
       // 移除过期的请求记录
       pipeline.zremrangebyscore(fullKey, 0, windowStart);
-      
+
       // 获取当前窗口内的请求数
       pipeline.zcard(fullKey);
-      
+
       // 添加当前请求
       pipeline.zadd(fullKey, currentTime, `${currentTime}-${Math.random()}`);
-      
+
       // 设置过期时间
       pipeline.expire(fullKey, Math.ceil(config.windowMs / 1000));
-      
+
       const results = await pipeline.exec();
 
-      if (Array.isArray(results) && results[1] && results[1][0] === null && results[1][1] !== null) {
+      if (
+        Array.isArray(results) &&
+        results[1] &&
+        results[1][0] === null &&
+        results[1][1] !== null
+      ) {
         const currentCount = results[1][1] as number;
         const remaining = Math.max(0, config.maxRequests - currentCount);
 
@@ -306,7 +317,9 @@ export class RateLimitService {
             resetTime: currentTime + config.windowMs,
           };
 
-          this.logger.warn(`滑动窗口限流: ${key}, 请求数: ${currentCount}, 限制: ${config.maxRequests}`);
+          this.logger.warn(
+            `滑动窗口限流: ${key}, 请求数: ${currentCount}, 限制: ${config.maxRequests}`,
+          );
           return { success: false, info };
         }
 

@@ -84,7 +84,6 @@
   import type { MediaResource } from '@/types/media';
 
   const router = useRouter();
-  const authStore = useAuthStore();
   const mediaStore = useMediaStore();
 
   const searchQuery = ref('');

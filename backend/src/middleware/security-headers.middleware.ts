@@ -13,14 +13,14 @@ export class SecurityHeadersMiddleware implements NestMiddleware {
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    
+
     // 移除敏感信息
     res.removeHeader('X-Powered-By');
     res.removeHeader('Server');
 
     // 严格传输安全
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-    
+
     // CSP策略
     const cspPolicy = [
       "default-src 'self'",
@@ -39,13 +39,13 @@ export class SecurityHeadersMiddleware implements NestMiddleware {
     ].join('; ');
 
     res.setHeader('Content-Security-Policy', cspPolicy);
-    
+
     // 权限策略
     res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-    
+
     // 防止MIME类型嗅探
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    
+
     // 启用HSTS
     res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
 

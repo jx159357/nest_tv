@@ -10,24 +10,24 @@ export const RedisClientProvider = {
     const client = createClient({
       url: `redis://${configService.get<string>('REDIS_HOST')}:${configService.get<number>('REDIS_PORT')}`,
       password: configService.get<string>('REDIS_PASSWORD') || undefined,
-      
+
       // 连接配置优化
       socket: {
         host: configService.get<string>('REDIS_HOST'),
         port: configService.get<number>('REDIS_PORT'),
-        reconnectStrategy: function(retries) {
+        reconnectStrategy: function (retries) {
           // 指数退避重连策略
           return Math.min(retries * 50, 1000);
         },
         connectTimeout: 10000, // 连接超时 10秒
       },
-      
+
       // 高级配置
       disableOfflineQueue: false, // 离线时仍可接收命令
       // enableReadyCheck: true, // 启用就绪检查（暂不支持）
       // enableOfflineQueue: true, // 启用离线队列（暂不支持）
       // retryDelayOnFailover: 100, // 故障转移重试延迟（暂不支持）
-      
+
       // 连接池配置
       // maxRetriesPerRequest: 3, // 每个请求最大重试次数（暂不支持）
       // // lazyConnect: false, // 暂不支持 // 禁用懒连接（暂不支持）
@@ -80,16 +80,16 @@ export const RedisCacheService = {
     const client = createClient({
       url: `redis://${configService.get<string>('REDIS_HOST')}:${configService.get<number>('REDIS_PORT')}`,
       password: configService.get<string>('REDIS_PASSWORD') || undefined,
-      
+
       // 缓存专用配置
       socket: {
-        reconnectStrategy: function(retries) {
+        reconnectStrategy: function (retries) {
           return Math.min(retries * 100, 2000); // 缓存重连更积极
         },
         connectTimeout: 5000, // 缓存连接超时更短
         // 缓存命令超时更短（移除不支持的commandTimeout）
       },
-      
+
       // 缓存优化配置
       // maxRetriesPerRequest: 1, // 缓存请求重试次数较少（暂不支持）
       // retryDelayOnFailover: 50, // 故障转移重试延迟更短（暂不支持）
@@ -112,16 +112,16 @@ export const RedisSessionProvider = {
     const client = createClient({
       url: `redis://${configService.get<string>('REDIS_HOST')}:${configService.get<number>('REDIS_PORT')}`,
       password: configService.get<string>('REDIS_PASSWORD') || undefined,
-      
+
       // 会话专用配置
       socket: {
-        reconnectStrategy: function(retries) {
+        reconnectStrategy: function (retries) {
           return Math.min(retries * 200, 3000); // 会话重连更保守
         },
         connectTimeout: 15000, // 会话连接超时更长
         // 会话命令超时更长（移除不支持的commandTimeout）
       },
-      
+
       // 会话优化配置
       // maxRetriesPerRequest: 5, // 会话请求重试次数更多（暂不支持）
       // retryDelayOnFailover: 200, // 会话故障转移重试延迟更长（暂不支持）

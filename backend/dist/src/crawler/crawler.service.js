@@ -70,17 +70,17 @@ let CrawlerService = CrawlerService_1 = class CrawlerService {
                 ...crawler_config_1.CRAWLER_CONFIG.request.headers,
             },
         });
-        this.httpClient.interceptors.request.use((config) => {
+        this.httpClient.interceptors.request.use(config => {
             this.logger.log(`请求URL: ${config.url}`);
             return config;
-        }, (error) => {
+        }, error => {
             this.logger.error('请求拦截器错误:', error);
             return Promise.reject(error);
         });
-        this.httpClient.interceptors.response.use((response) => {
+        this.httpClient.interceptors.response.use(response => {
             this.appLogger.log(`响应状态: ${response.status} - ${response.config.url}`, 'CRAWLER_RESPONSE');
             return response;
-        }, (error) => {
+        }, error => {
             this.appLogger.logExternalServiceError('Crawler HTTP Client', 'Response Interceptor', error, error.config?.url, undefined);
             return Promise.reject(error);
         });
@@ -176,13 +176,12 @@ let CrawlerService = CrawlerService_1 = class CrawlerService {
             throw new Error('标题无效或过短');
         }
         if (cleanedData.description) {
-            cleanedData.description = cleanedData.description
-                .replace(/\s+/g, ' ')
-                .substring(0, 1000);
+            cleanedData.description = cleanedData.description.replace(/\s+/g, ' ').substring(0, 1000);
         }
         if (cleanedData.downloadUrls) {
             cleanedData.downloadUrls = cleanedData.downloadUrls
-                .filter(url => url && (url.startsWith('http') || url.startsWith('magnet:') || url.startsWith('thunder://')))
+                .filter(url => url &&
+                (url.startsWith('http') || url.startsWith('magnet:') || url.startsWith('thunder://')))
                 .map(url => url.trim())
                 .filter((url, index, self) => self.indexOf(url) === index);
         }
@@ -517,7 +516,8 @@ let CrawlerService = CrawlerService_1 = class CrawlerService {
         for (const selector of selectors) {
             $(selector).each((_, element) => {
                 const href = $(element).attr('href');
-                if (href && (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('magnet:'))) {
+                if (href &&
+                    (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('magnet:'))) {
                     urls.push(href);
                 }
             });

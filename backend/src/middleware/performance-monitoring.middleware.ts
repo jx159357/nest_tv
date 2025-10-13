@@ -21,7 +21,7 @@ export class PerformanceMonitoringMiddleware implements NestMiddleware {
 
     // 监听响应结束
     const originalEnd = res.end;
-    res.end = function(chunk?: any, encoding?: string): Response {
+    res.end = function (chunk?: any, encoding?: string): Response {
       const endTime = Date.now();
       const endMemory = process.memoryUsage();
       const responseTime = endTime - startTime;
@@ -52,21 +52,17 @@ export class PerformanceMonitoringMiddleware implements NestMiddleware {
     const { responseTime, statusCode, memoryUsage } = metrics;
 
     // 记录性能日志
-    this.logger.logPerformance(
-      `${metrics.method} ${metrics.url}`,
-      responseTime,
-      {
-        statusCode,
-        memoryUsage: `${Math.round(memoryUsage / 1024 / 1024)}MB`,
-        requestId: metrics.requestId,
-      }
-    );
+    this.logger.logPerformance(`${metrics.method} ${metrics.url}`, responseTime, {
+      statusCode,
+      memoryUsage: `${Math.round(memoryUsage / 1024 / 1024)}MB`,
+      requestId: metrics.requestId,
+    });
 
     // 如果响应时间过长，发出警告
     if (responseTime > 5000) {
       this.logger.warn(
         `Slow request detected: ${metrics.method} ${metrics.url} took ${responseTime}ms`,
-        'PERFORMANCE_WARNING'
+        'PERFORMANCE_WARNING',
       );
     }
 
@@ -75,7 +71,7 @@ export class PerformanceMonitoringMiddleware implements NestMiddleware {
     if (heapUsedInMB > 500) {
       this.logger.warn(
         `High memory usage detected: ${heapUsedInMB.toFixed(2)}MB`,
-        'MEMORY_WARNING'
+        'MEMORY_WARNING',
       );
     }
   }

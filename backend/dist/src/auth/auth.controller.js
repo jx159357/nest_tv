@@ -44,7 +44,7 @@ __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({
         summary: '用户登录',
-        description: '使用用户名和密码进行身份验证，返回JWT访问令牌'
+        description: '使用用户名和密码进行身份验证，返回JWT访问令牌',
     }),
     (0, swagger_1.ApiBody)({
         description: '登录请求体',
@@ -54,16 +54,16 @@ __decorate([
                 username: {
                     type: 'string',
                     description: '用户名',
-                    example: 'admin'
+                    example: 'admin',
                 },
                 password: {
                     type: 'string',
                     description: '密码',
-                    example: 'password123'
-                }
+                    example: 'password123',
+                },
             },
-            required: ['username', 'password']
-        }
+            required: ['username', 'password'],
+        },
     }),
     (0, swagger_1.ApiResponse)({
         status: 200,
@@ -74,18 +74,18 @@ __decorate([
                 access_token: {
                     type: 'string',
                     description: 'JWT访问令牌',
-                    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+                    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
                 },
                 user: {
                     type: 'object',
                     properties: {
                         id: { type: 'number', example: 1 },
                         username: { type: 'string', example: 'admin' },
-                        email: { type: 'string', example: 'admin@example.com' }
-                    }
-                }
-            }
-        }
+                        email: { type: 'string', example: 'admin@example.com' },
+                    },
+                },
+            },
+        },
     }),
     (0, swagger_1.ApiResponse)({
         status: 401,
@@ -94,9 +94,9 @@ __decorate([
             type: 'object',
             properties: {
                 statusCode: { type: 'number', example: 401 },
-                message: { type: 'string', example: 'Unauthorized' }
-            }
-        }
+                message: { type: 'string', example: 'Unauthorized' },
+            },
+        },
     }),
     __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
@@ -109,7 +109,7 @@ __decorate([
     (0, swagger_1.ApiBearerAuth)(),
     (0, swagger_1.ApiOperation)({
         summary: '获取用户信息',
-        description: '获取当前登录用户的详细信息，需要有效的JWT令牌'
+        description: '获取当前登录用户的详细信息，需要有效的JWT令牌',
     }),
     (0, swagger_1.ApiResponse)({
         status: 200,
@@ -122,9 +122,9 @@ __decorate([
                 email: { type: 'string', example: 'admin@example.com' },
                 role: { type: 'string', example: 'admin' },
                 createdAt: { type: 'string', format: 'date-time' },
-                updatedAt: { type: 'string', format: 'date-time' }
-            }
-        }
+                updatedAt: { type: 'string', format: 'date-time' },
+            },
+        },
     }),
     (0, swagger_1.ApiResponse)({
         status: 401,
@@ -133,9 +133,9 @@ __decorate([
             type: 'object',
             properties: {
                 statusCode: { type: 'number', example: 401 },
-                message: { type: 'string', example: 'Unauthorized' }
-            }
-        }
+                message: { type: 'string', example: 'Unauthorized' },
+            },
+        },
     }),
     __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
@@ -147,7 +147,7 @@ __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({
         summary: '简化登录',
-        description: '直接通过请求体传递用户名和密码进行登录，返回JWT访问令牌'
+        description: '直接通过请求体传递用户名和密码进行登录，返回JWT访问令牌',
     }),
     (0, swagger_1.ApiBody)({
         description: '简化登录请求体',
@@ -157,16 +157,16 @@ __decorate([
                 identifier: {
                     type: 'string',
                     description: '用户名或邮箱',
-                    example: 'admin'
+                    example: 'admin',
                 },
                 password: {
                     type: 'string',
                     description: '密码',
-                    example: 'password123'
-                }
+                    example: 'password123',
+                },
             },
-            required: ['identifier', 'password']
-        }
+            required: ['identifier', 'password'],
+        },
     }),
     (0, swagger_1.ApiResponse)({
         status: 200,
@@ -176,18 +176,18 @@ __decorate([
             properties: {
                 access_token: {
                     type: 'string',
-                    description: 'JWT访问令牌'
+                    description: 'JWT访问令牌',
                 },
                 user: {
                     type: 'object',
                     properties: {
                         id: { type: 'number' },
                         username: { type: 'string' },
-                        email: { type: 'string' }
-                    }
-                }
-            }
-        }
+                        email: { type: 'string' },
+                    },
+                },
+            },
+        },
     }),
     (0, swagger_1.ApiResponse)({
         status: 401,
@@ -196,9 +196,9 @@ __decorate([
             type: 'object',
             properties: {
                 statusCode: { type: 'number', example: 401 },
-                message: { type: 'string', example: '用户名或密码错误' }
-            }
-        }
+                message: { type: 'string', example: '用户名或密码错误' },
+            },
+        },
     }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),

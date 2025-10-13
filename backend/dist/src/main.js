@@ -16,7 +16,7 @@ async function bootstrap() {
     });
     const isProduction = process.env.NODE_ENV === 'production';
     const allowedOrigins = isProduction
-        ? (process.env.ALLOWED_ORIGINS?.split(',') || ['https://yourdomain.com'])
+        ? process.env.ALLOWED_ORIGINS?.split(',') || ['https://yourdomain.com']
         : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:5173'];
     app.enableCors({
         origin: (origin, callback) => {
@@ -35,7 +35,7 @@ async function bootstrap() {
             'Accept-Language',
             'X-Requested-With',
             'X-Request-ID',
-            'Accept-Charset'
+            'Accept-Charset',
         ],
         credentials: true,
         optionsSuccessStatus: 200,

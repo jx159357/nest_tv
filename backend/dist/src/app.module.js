@@ -89,7 +89,7 @@ exports.AppModule = AppModule = __decorate([
                         supportBigNumbers: true,
                         typeCast: function (field, next) {
                             if (field.type === 'TINY' && field.length === 1) {
-                                return (field.string() === '1');
+                                return field.string() === '1';
                             }
                             return next();
                         },

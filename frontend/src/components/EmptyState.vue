@@ -94,7 +94,7 @@
     };
   }
 
-  const props = withDefaults(defineProps<Props>(), {
+  withDefaults(defineProps<Props>(), {
     icon: 'document',
   });
 </script>

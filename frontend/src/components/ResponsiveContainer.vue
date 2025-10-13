@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, onMounted, onUnmounted } from 'vue';
+  import { ref, computed, onUnmounted } from 'vue';
   import { getDeviceType, onResize } from '@/utils/responsive';
 
   const props = defineProps({

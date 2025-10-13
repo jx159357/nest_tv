@@ -14,7 +14,9 @@ exports.CRAWLER_TARGETS = [
             actors: '.co_content8 p, .actor p',
             genres: ['.co_content8 p a, .actor p a, .co_content222 p a'],
             releaseDate: '.co_content8 p span, .actor p span, .co_content222 p',
-            downloadUrls: ['.co_content22 a[href*="thunder"], .co_content222 a[href*="magnet"], .down_list a'],
+            downloadUrls: [
+                '.co_content22 a[href*="thunder"], .co_content222 a[href*="magnet"], .down_list a',
+            ],
         },
         enabled: true,
         priority: 1,
@@ -75,10 +77,10 @@ exports.CRAWLER_CONFIG = {
         delay: 1000,
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         headers: {
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5',
             'Accept-Encoding': 'gzip, deflate',
-            'Connection': 'keep-alive',
+            Connection: 'keep-alive',
         },
     },
     parsing: {

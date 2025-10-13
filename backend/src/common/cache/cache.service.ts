@@ -35,11 +35,11 @@ export class CacheService {
   private readonly logger = new Logger(CacheService.name);
   private readonly defaultPrefix = 'nest_tv:';
   private readonly defaultTtl = 1800; // 30分钟
-  
+
   // 内存缓存层
   private memoryCache = new Map<string, MemoryCacheItem<any>>();
   private readonly defaultMemoryTtl = 300; // 5分钟内存缓存
-  
+
   // 缓存统计
   private stats = {
     hits: 0,
@@ -253,15 +253,15 @@ export class CacheService {
    * 多层缓存设置
    */
   async multiSet<T>(key: string, value: T, options: MultiCacheOptions = {}): Promise<void> {
-    const { 
-      ttl = this.defaultTtl, 
+    const {
+      ttl = this.defaultTtl,
       prefix = this.defaultPrefix,
       useMemoryCache = true,
       useRedisCache = true,
       memoryTtl = this.defaultMemoryTtl,
-      priority = 'medium'
+      priority = 'medium',
     } = options;
-    
+
     const fullKey = `${prefix}${key}`;
 
     try {
@@ -276,7 +276,9 @@ export class CacheService {
         await this.redis.set(fullKey, serializedValue, 'EX', ttl);
       }
 
-      this.logger.debug(`多层缓存设置成功: ${fullKey} [内存:${useMemoryCache}, Redis:${useRedisCache}]`);
+      this.logger.debug(
+        `多层缓存设置成功: ${fullKey} [内存:${useMemoryCache}, Redis:${useRedisCache}]`,
+      );
     } catch (error) {
       this.stats.errors++;
       this.logger.error(`多层缓存设置失败: ${fullKey}`, error);
@@ -288,12 +290,8 @@ export class CacheService {
    * 多层缓存获取
    */
   async multiGet<T>(key: string, options: MultiCacheOptions = {}): Promise<T | null> {
-    const { 
-      prefix = this.defaultPrefix,
-      useMemoryCache = true,
-      useRedisCache = true
-    } = options;
-    
+    const { prefix = this.defaultPrefix, useMemoryCache = true, useRedisCache = true } = options;
+
     const fullKey = `${prefix}${key}`;
 
     try {
@@ -313,12 +311,12 @@ export class CacheService {
         const value = await this.redis.get(fullKey);
         if (value !== null && value !== undefined) {
           const parsedValue = JSON.parse(value);
-          
+
           // 回填内存缓存
           if (useMemoryCache) {
             this.setMemoryCache(fullKey, parsedValue, this.defaultMemoryTtl, 'low');
           }
-          
+
           this.stats.hits++;
           this.stats.redisHits++;
           this.logger.debug(`Redis缓存命中: ${fullKey}`);
@@ -341,12 +339,8 @@ export class CacheService {
    * 多层缓存删除
    */
   async multiDelete(key: string, options: MultiCacheOptions = {}): Promise<void> {
-    const { 
-      prefix = this.defaultPrefix,
-      useMemoryCache = true,
-      useRedisCache = true
-    } = options;
-    
+    const { prefix = this.defaultPrefix, useMemoryCache = true, useRedisCache = true } = options;
+
     const fullKey = `${prefix}${key}`;
 
     try {
@@ -372,15 +366,15 @@ export class CacheService {
    */
   getCacheStats() {
     const totalRequests = this.stats.hits + this.stats.misses;
-    const hitRate = totalRequests > 0 ? (this.stats.hits / totalRequests * 100).toFixed(2) : '0';
-    
+    const hitRate = totalRequests > 0 ? ((this.stats.hits / totalRequests) * 100).toFixed(2) : '0';
+
     return {
       ...this.stats,
       totalRequests,
       hitRate: `${hitRate}%`,
       memoryCacheSize: this.memoryCache.size,
-      memoryHitRate: this.stats.hits > 0 ? 
-        (this.stats.memoryHits / this.stats.hits * 100).toFixed(2) : '0',
+      memoryHitRate:
+        this.stats.hits > 0 ? ((this.stats.memoryHits / this.stats.hits) * 100).toFixed(2) : '0',
     };
   }
 
@@ -398,7 +392,7 @@ export class CacheService {
     }
 
     keysToDelete.forEach(key => this.memoryCache.delete(key));
-    
+
     if (keysToDelete.length > 0) {
       this.logger.debug(`清理过期内存缓存: ${keysToDelete.length} 个键`);
     }
@@ -418,12 +412,12 @@ export class CacheService {
    * 设置内存缓存
    */
   private setMemoryCache<T>(key: string, value: T, ttl: number, priority: string): void {
-    const expiresAt = Date.now() + (ttl * 1000);
-    
+    const expiresAt = Date.now() + ttl * 1000;
+
     this.memoryCache.set(key, {
       value,
       expiresAt,
-      metadata: { priority, setAt: Date.now() }
+      metadata: { priority, setAt: Date.now() },
     });
 
     // 如果内存缓存过大，删除一些低优先级的缓存
@@ -437,7 +431,7 @@ export class CacheService {
    */
   private getMemoryCache<T>(key: string): T | null {
     const item = this.memoryCache.get(key);
-    
+
     if (!item) {
       return null;
     }
@@ -469,15 +463,16 @@ export class CacheService {
       // 优先删除过期或低优先级的缓存
       if (item.expiresAt <= now || item.metadata?.priority === 'low') {
         keysToDelete.push(key);
-        
-        if (keysToDelete.length >= 100) { // 一次最多删除100个
+
+        if (keysToDelete.length >= 100) {
+          // 一次最多删除100个
           break;
         }
       }
     }
 
     keysToDelete.forEach(key => this.memoryCache.delete(key));
-    
+
     if (keysToDelete.length > 0) {
       this.logger.debug(`淘汰低优先级内存缓存: ${keysToDelete.length} 个键`);
     }

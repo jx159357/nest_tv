@@ -77,7 +77,7 @@ __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, swagger_1.ApiOperation)({
         summary: '创建或更新观看历史',
-        description: '创建新的观看历史记录，如果已存在则更新进度信息'
+        description: '创建新的观看历史记录，如果已存在则更新进度信息',
     }),
     (0, swagger_1.ApiResponse)({
         status: 201,
@@ -94,8 +94,8 @@ __decorate([
                 lastWatchedAt: { type: 'string', format: 'date-time' },
                 createdAt: { type: 'string', format: 'date-time' },
                 updatedAt: { type: 'string', format: 'date-time' },
-            }
-        }
+            },
+        },
     }),
     (0, swagger_1.ApiResponse)({
         status: 400,
@@ -105,8 +105,8 @@ __decorate([
             properties: {
                 statusCode: { type: 'number', example: 400 },
                 message: { type: 'string', example: 'Validation failed' },
-            }
-        }
+            },
+        },
     }),
     (0, swagger_1.ApiResponse)({
         status: 401,
@@ -116,8 +116,8 @@ __decorate([
             properties: {
                 statusCode: { type: 'number', example: 401 },
                 message: { type: 'string', example: 'Unauthorized' },
-            }
-        }
+            },
+        },
     }),
     (0, common_1.UsePipes)(new common_1.ValidationPipe({ transform: true })),
     __param(0, (0, current_user_decorator_1.GetCurrentUserId)()),

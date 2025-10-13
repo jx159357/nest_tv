@@ -4,6 +4,17 @@ import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '../users/user.service';
 
+interface JwtPayload {
+  sub: number;
+  username: string;
+  email: string;
+  role: string;
+  iat: number;
+  jti: string;
+  aud?: string | string[];
+  iss?: string;
+}
+
 /**
  * JWT策略
  * 用于验证JWT令牌并提取用户信息
@@ -36,7 +47,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
    * @param payload JWT载荷
    * @returns 用户信息
    */
-  async validate(payload: any) {
+  async validate(payload: JwtPayload): Promise<Record<string, any>> {
     try {
       // 验证载荷格式
       if (!payload || !payload.sub || typeof payload.sub !== 'number') {
@@ -46,7 +57,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       // 验证令牌签发者和受众
       const audience = this.configService.get<string>('JWT_AUDIENCE', 'nest-tv-client');
       const issuer = this.configService.get<string>('JWT_ISSUER', 'nest-tv-server');
-      
+
       if (payload.aud && !payload.aud.includes(audience)) {
         throw new UnauthorizedException('令牌受众不匹配');
       }
@@ -72,8 +83,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       }
 
       return user;
-    } catch (error) {
-      this.logger.warn(`JWT验证失败: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      this.logger.warn(`JWT验证失败: ${errorMessage}`, errorStack);
       throw new UnauthorizedException('令牌验证失败');
     }
   }

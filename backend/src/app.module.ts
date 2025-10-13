@@ -64,79 +64,87 @@ import { AppService } from './app.service';
           IPTVChannel,
           ParseProvider,
         ], // 所有实体类
-        
+
         // 连接池优化配置
         extra: {
           // 基础连接池设置
-          connectionLimit: Math.max(5, Math.min(20, Math.ceil(process.env.DB_CONNECTION_LIMIT ? parseInt(process.env.DB_CONNECTION_LIMIT) : 10))),
+          connectionLimit: Math.max(
+            5,
+            Math.min(
+              20,
+              Math.ceil(
+                process.env.DB_CONNECTION_LIMIT ? parseInt(process.env.DB_CONNECTION_LIMIT) : 10,
+              ),
+            ),
+          ),
           acquireTimeout: 60000, // 增加获取连接超时到60秒
           timeout: 60000, // 增加查询超时到60秒
-          
+
           // 高级连接池设置
           queueLimit: 20, // 增加等待队列大小
-          
+
           // SSL配置（安全连接）
           ssl: configService.get<boolean>('DB_SSL', false) ? { rejectUnauthorized: false } : false,
-          
+
           // 字符集和时区配置
           charset: 'utf8mb4',
           timezone: '+00:00',
-          
+
           // 连接复用和安全设置
           multipleStatements: false,
           namedPlaceholders: true,
-          
+
           // 数据类型和性能配置
           bigNumberStrings: false,
           dateStrings: false,
           debug: process.env.NODE_ENV === 'development',
-          
+
           // 性能优化设置
           supportBigNumbers: true,
           typeCast: function (field: any, next: any) {
             if (field.type === 'TINY' && field.length === 1) {
-              return (field.string() === '1');
+              return field.string() === '1';
             }
             return next();
           },
-          
+
           // 连接保活设置
           enableKeepAlive: true,
           keepAliveInitialDelay: 10000, // 保活初始延迟10秒
-          
+
           // 重连配置 - 增强重连机制
           reconnect: true,
           idleTimeout: 60000, // 空闲超时60秒
-          
+
           // 连接检测配置
           connectTimeout: 10000, // 连接超时10秒
           socketTimeout: 180000, // Socket超时3分钟
-          
+
           // 错误恢复配置
           poolPing: true, // 启用连接池健康检查
           poolPingInterval: 30000, // 每30秒检查一次连接
         },
-        
+
         // 事务和连接管理
         autoSaveEntities: false,
         retryAttempts: configService.get<number>('DB_RETRY_ATTEMPTS', 5), // 增加重试次数
         retryDelay: configService.get<number>('DB_RETRY_DELAY', 5000), // 增加重试延迟
-        
+
         // 查询性能监控
         maxQueryExecutionTime: configService.get<number>('DB_MAX_QUERY_TIME', 3000), // 增加最大查询时间
         slowQueryLimit: configService.get<number>('DB_SLOW_QUERY_LIMIT', 500), // 增加慢查询阈值
-        
+
         // 缓存策略 - 禁用TypeORM默认缓存，使用自定义Redis缓存
         cache: false,
-        
+
         // 监控和订阅者管理
         subscribers: [], // 禁用默认订阅者，防止内存泄漏
-        
+
         // 数据库迁移配置
         migrationsRun: false, // 禁用自动运行迁移
         dropSchema: false, // 禁用自动删除数据库
         migrations: ['src/migrations/*.ts'], // 迁移文件路径
-        
+
         // 日志和调试配置
         logging: configService.get<boolean>('DB_LOGGING', process.env.NODE_ENV === 'development'),
         logger: 'advanced-console', // 高级控制台日志
@@ -145,9 +153,12 @@ import { AppService } from './app.service';
           infoLevel: 'info',
           logLevel: process.env.NODE_ENV === 'development' ? 'debug' : 'warn',
         },
-        
+
         // 生产环境配置
-        synchronize: configService.get<boolean>('DB_SYNCHRONIZE', process.env.NODE_ENV === 'development'),
+        synchronize: configService.get<boolean>(
+          'DB_SYNCHRONIZE',
+          process.env.NODE_ENV === 'development',
+        ),
       }),
       inject: [ConfigService],
     }),

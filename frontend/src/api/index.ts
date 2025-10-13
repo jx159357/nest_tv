@@ -1,14 +1,14 @@
 import axios from 'axios';
-import { RequestInterceptor, ApiResponseWrapper, RetryHelper } from '@/utils/api-helpers';
+import { RequestInterceptor, RetryHelper } from '@/utils/api-helpers';
 import { GlobalErrorHandler } from '@/utils/global-error-handler';
-import { setupCacheInterceptors, withCache, forceRefresh } from '@/utils/api-cache';
+import { setupCacheInterceptors } from '@/utils/api-cache';
 
 // 创建axios实例
 const api = axios.create({
   baseURL: '/api',
   headers: {
     'Content-Type': 'application/json; charset=utf-8',
-    'Accept': 'application/json; charset=utf-8',
+    Accept: 'application/json; charset=utf-8',
   },
   timeout: 30000, // 30秒超时
 });
@@ -20,14 +20,6 @@ api.interceptors.response.use(interceptor.onResponse, interceptor.onResponseErro
 
 // 应用缓存拦截器
 setupCacheInterceptors(api);
-
-// 缓存管理器
-class CacheManager {
-  static clearPattern(pattern: RegExp) {
-    // 实现缓存清除逻辑
-    console.log('Clearing cache pattern:', pattern);
-  }
-}
 
 // 增强的API客户端
 class ApiClient {
@@ -64,7 +56,11 @@ class ApiClient {
   }
 
   // POST请求
-  static async post<T>(url: string, data?: Record<string, any>, config?: Record<string, any>): Promise<T> {
+  static async post<T>(
+    url: string,
+    data?: Record<string, any>,
+    config?: Record<string, any>,
+  ): Promise<T> {
     return RetryHelper.retry(async () => {
       try {
         const response = await this.instance.post(url, data, config);
@@ -81,7 +77,11 @@ class ApiClient {
   }
 
   // PUT请求
-  static async put<T>(url: string, data?: Record<string, any>, config?: Record<string, any>): Promise<T> {
+  static async put<T>(
+    url: string,
+    data?: Record<string, any>,
+    config?: Record<string, any>,
+  ): Promise<T> {
     return RetryHelper.retry(async () => {
       try {
         const response = await this.instance.put(url, data, config);
@@ -98,7 +98,11 @@ class ApiClient {
   }
 
   // PATCH请求
-  static async patch<T>(url: string, data?: Record<string, any>, config?: Record<string, any>): Promise<T> {
+  static async patch<T>(
+    url: string,
+    data?: Record<string, any>,
+    config?: Record<string, any>,
+  ): Promise<T> {
     return RetryHelper.retry(async () => {
       try {
         const response = await this.instance.patch(url, data, config);

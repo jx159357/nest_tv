@@ -11,22 +11,27 @@
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-2xl font-semibold text-gray-900">为您推荐</h2>
           <button
-            @click="refreshRecommendations"
             class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
             :disabled="personalizedLoading"
+            @click="refreshRecommendations"
           >
             {{ personalizedLoading ? '刷新中...' : '刷新' }}
           </button>
         </div>
 
         <div v-if="personalizedLoading" class="text-center py-8">
-          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <div
+            class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"
+          ></div>
           <p class="mt-2 text-gray-600">加载中...</p>
         </div>
 
         <div v-else-if="personalizedError" class="text-center py-8">
           <p class="text-red-600">{{ personalizedError }}</p>
-          <button @click="loadPersonalizedRecommendations" class="mt-2 text-blue-500 hover:underline">
+          <button
+            class="mt-2 text-blue-500 hover:underline"
+            @click="loadPersonalizedRecommendations"
+          >
             重试
           </button>
         </div>
@@ -45,7 +50,9 @@
         <h2 class="text-2xl font-semibold text-gray-900 mb-6">热门推荐</h2>
 
         <div v-if="popularLoading" class="text-center py-8">
-          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <div
+            class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"
+          ></div>
           <p class="mt-2 text-gray-600">加载中...</p>
         </div>
 
@@ -67,7 +74,9 @@
         <h2 class="text-2xl font-semibold text-gray-900 mb-6">编辑精选</h2>
 
         <div v-if="editorialLoading" class="text-center py-8">
-          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <div
+            class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"
+          ></div>
           <p class="mt-2 text-gray-600">加载中...</p>
         </div>
 
@@ -91,7 +100,6 @@
   import { ref, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
   import { useAuthStore } from '@/stores/auth';
-  import { mediaApi } from '@/api';
   // import { recommendationsApi } from '@/api'; // 暂时注释
 
   const router = useRouter();
@@ -101,11 +109,11 @@
   const personalized = ref([]);
   const popular = ref([]);
   const editorial = ref([]);
-  
+
   const personalizedLoading = ref(false);
   const popularLoading = ref(false);
   const editorialLoading = ref(false);
-  
+
   const personalizedError = ref(null);
   const popularError = ref(null);
   const editorialError = ref(null);
@@ -165,12 +173,6 @@
     } catch (error) {
       console.error('刷新推荐失败:', error);
     }
-  };
-
-  // 退出登录
-  const handleLogout = () => {
-    authStore.logout();
-    router.push('/login');
   };
 
   // 页面加载时获取推荐数据

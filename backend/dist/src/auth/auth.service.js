@@ -86,8 +86,7 @@ let AuthService = AuthService_1 = class AuthService {
         }
     }
     generateTokenId() {
-        return Math.random().toString(36).substring(2, 15) +
-            Math.random().toString(36).substring(2, 15);
+        return (Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15));
     }
 };
 exports.AuthService = AuthService;

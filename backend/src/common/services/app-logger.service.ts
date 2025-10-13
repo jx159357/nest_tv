@@ -74,11 +74,11 @@ export class AppLoggerService {
    */
   private buildContext(baseContext?: string, requestId?: string): string {
     const contextParts: string[] = [];
-    
+
     if (baseContext) {
       contextParts.push(baseContext);
     }
-    
+
     if (requestId) {
       const requestContext = this.getContext(requestId);
       if (requestContext) {
@@ -91,7 +91,7 @@ export class AppLoggerService {
         }
       }
     }
-    
+
     return contextParts.join(' | ');
   }
 
@@ -103,7 +103,7 @@ export class AppLoggerService {
 
     const logMessage = `${info.method} ${info.url} - IP: ${info.ip}`;
     const context = `HTTP_REQUEST | User-Agent: ${info.userAgent || 'Unknown'}`;
-    
+
     this.logger.log(logMessage, context);
   }
 
@@ -116,7 +116,7 @@ export class AppLoggerService {
     const statusColor = info.statusCode >= 400 ? 'ERROR' : 'SUCCESS';
     const logMessage = `${info.method} ${info.url} - ${info.statusCode} (${info.responseTime}ms)`;
     const context = `HTTP_RESPONSE_${statusColor}`;
-    
+
     if (info.statusCode >= 400) {
       this.logger.warn(logMessage, context);
     } else {
@@ -133,7 +133,7 @@ export class AppLoggerService {
     userId?: number,
     metadata?: Record<string, unknown>,
     status: 'success' | 'error' | 'warning' = 'success',
-    requestId?: string
+    requestId?: string,
   ): void {
     const logMessage = `${action.toUpperCase()}: ${resource}`;
     const baseContext = [
@@ -159,7 +159,7 @@ export class AppLoggerService {
   logPerformance(operation: string, duration: number, metadata?: Record<string, unknown>): void {
     const logMessage = `PERFORMANCE: ${operation} took ${duration}ms`;
     const context = metadata ? `METADATA: ${JSON.stringify(metadata)}` : '';
-    
+
     if (duration > 1000) {
       this.logger.warn(logMessage, context);
     } else {
@@ -173,14 +173,19 @@ export class AppLoggerService {
   logDatabase(query: string, parameters: unknown[], duration: number): void {
     const logMessage = `DATABASE_QUERY: ${query.substring(0, 100)}...`;
     const context = `PARAMS: ${JSON.stringify(parameters)} | DURATION: ${duration}ms`;
-    
+
     this.logger.debug(logMessage, context);
   }
 
   /**
    * 记录安全相关日志（增强版）
    */
-  logSecurity(event: string, userId?: string, details?: Record<string, unknown>, requestId?: string): void {
+  logSecurity(
+    event: string,
+    userId?: string,
+    details?: Record<string, unknown>,
+    requestId?: string,
+  ): void {
     const logMessage = `SECURITY_EVENT: ${event}`;
     const baseContext = [
       `USER: ${userId || 'Anonymous'}`,
@@ -194,7 +199,13 @@ export class AppLoggerService {
   /**
    * 记录数据库错误日志
    */
-  logDatabaseError(operation: string, error: Error, query?: string, params?: unknown[], requestId?: string): void {
+  logDatabaseError(
+    operation: string,
+    error: Error,
+    query?: string,
+    params?: unknown[],
+    requestId?: string,
+  ): void {
     const logMessage = `DATABASE_ERROR: ${operation} failed`;
     const baseContext = [
       `ERROR: ${error.message}`,
@@ -209,12 +220,15 @@ export class AppLoggerService {
   /**
    * 记录外部服务错误日志
    */
-  logExternalServiceError(service: string, operation: string, error: Error, url?: string, requestId?: string): void {
+  logExternalServiceError(
+    service: string,
+    operation: string,
+    error: Error,
+    url?: string,
+    requestId?: string,
+  ): void {
     const logMessage = `EXTERNAL_SERVICE_ERROR: ${service} - ${operation}`;
-    const baseContext = [
-      `ERROR: ${error.message}`,
-      `URL: ${url || 'Unknown'}`,
-    ].join(' | ');
+    const baseContext = [`ERROR: ${error.message}`, `URL: ${url || 'Unknown'}`].join(' | ');
 
     const fullContext = this.buildContext(baseContext, requestId);
     this.logger.error(logMessage, error.stack, fullContext);
@@ -223,7 +237,12 @@ export class AppLoggerService {
   /**
    * 记录验证错误日志
    */
-  logValidationError(field: string, value: any, validationErrors: string[], requestId?: string): void {
+  logValidationError(
+    field: string,
+    value: any,
+    validationErrors: string[],
+    requestId?: string,
+  ): void {
     const logMessage = `VALIDATION_ERROR: ${field}`;
     const baseContext = [
       `VALUE: ${JSON.stringify(value)}`,

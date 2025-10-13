@@ -43,7 +43,7 @@ export interface CrawlerStatsResponse {
 @Controller('crawler')
 export class CrawlerController {
   private readonly logger = new Logger(CrawlerController.name);
-  
+
   constructor(
     private readonly crawlerService: CrawlerService,
     private readonly mediaResourceService: MediaResourceService,
@@ -60,7 +60,7 @@ export class CrawlerController {
   @UsePipes(new ValidationPipe({ transform: true }))
   @ApiOperation({
     summary: '爬取单个资源',
-    description: '根据指定的目标网站和URL爬取影视资源信息并保存到数据库'
+    description: '根据指定的目标网站和URL爬取影视资源信息并保存到数据库',
   })
   @ApiBody({
     description: '爬取请求参数',
@@ -82,10 +82,10 @@ export class CrawlerController {
             description: { type: 'string', example: '电影描述' },
             type: { type: 'string', example: 'movie' },
             quality: { type: 'string', example: '1080p' },
-          }
-        }
-      }
-    }
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 400,
@@ -94,13 +94,13 @@ export class CrawlerController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: false },
-        message: { type: 'string', example: '参数验证失败' }
-      }
-    }
+        message: { type: 'string', example: '参数验证失败' },
+      },
+    },
   })
   @ApiResponse({
     status: 401,
-    description: '未授权访问'
+    description: '未授权访问',
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -144,7 +144,7 @@ export class CrawlerController {
   @UsePipes(new ValidationPipe({ transform: true }))
   @ApiOperation({
     summary: '批量爬取资源',
-    description: '批量爬取多个URL的影视资源信息，提高爬取效率'
+    description: '批量爬取多个URL的影视资源信息，提高爬取效率',
   })
   @ApiBody({
     description: '批量爬取请求参数',
@@ -166,12 +166,12 @@ export class CrawlerController {
               url: { type: 'string' },
               success: { type: 'boolean' },
               data: { type: 'object' },
-              error: { type: 'string' }
-            }
-          }
-        }
-      }
-    }
+              error: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
   })
   async batchCrawl(@Request() req, @Body() batchCrawlRequest: BatchCrawlRequestDto) {
     const results = await this.crawlerService.batchCrawl(
@@ -217,7 +217,7 @@ export class CrawlerController {
   @Get('targets')
   @ApiOperation({
     summary: '获取爬虫目标列表',
-    description: '获取所有可用的爬虫目标网站及其配置信息'
+    description: '获取所有可用的爬虫目标网站及其配置信息',
   })
   @ApiResponse({
     status: 200,
@@ -235,12 +235,12 @@ export class CrawlerController {
               name: { type: 'string', example: 'example-site' },
               baseUrl: { type: 'string', example: 'https://example.com' },
               description: { type: 'string', example: '示例网站' },
-              enabled: { type: 'boolean', example: true }
-            }
-          }
-        }
-      }
-    }
+              enabled: { type: 'boolean', example: true },
+            },
+          },
+        },
+      },
+    },
   })
   async getTargets() {
     const targets = this.crawlerService.getAvailableTargets();
@@ -264,7 +264,7 @@ export class CrawlerController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: '爬取并保存资源',
-    description: '根据指定的目标网站和URL爬取影视资源信息并保存到数据库，需要JWT认证'
+    description: '根据指定的目标网站和URL爬取影视资源信息并保存到数据库，需要JWT认证',
   })
   @ApiBody({
     description: '爬取请求参数',
@@ -286,10 +286,10 @@ export class CrawlerController {
             description: { type: 'string', example: '电影描述' },
             type: { type: 'string', example: 'movie' },
             quality: { type: 'string', example: '1080p' },
-          }
-        }
-      }
-    }
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 400,
@@ -297,7 +297,7 @@ export class CrawlerController {
   })
   @ApiResponse({
     status: 401,
-    description: '未授权访问'
+    description: '未授权访问',
   })
   async crawlAndSave(@Request() req, @Body() body: CrawlAndSaveDto) {
     const targetName = body.targetName || CRAWLER_TARGETS[0]?.name; // 默认使用配置中的第一个目标
@@ -343,7 +343,7 @@ export class CrawlerController {
       const totalMedia = await this.mediaResourceService.getTotalCount();
       const activeMedia = await this.mediaResourceService.getActiveCount();
       const targetsAvailable = this.crawlerService.getAvailableTargets().map(t => t.name);
-      
+
       // 这里可以扩展为更详细的统计信息
       return {
         totalCrawled: totalMedia,
@@ -460,13 +460,13 @@ export class CrawlerController {
    */
   private mapMediaType(type: string): MediaType {
     const typeMap: Record<string, MediaType> = {
-      '电影': MediaType.MOVIE,
-      '电视剧': MediaType.TV_SERIES,
-      '综艺': MediaType.VARIETY,
-      '动漫': MediaType.ANIME,
-      '纪录片': MediaType.DOCUMENTARY,
+      电影: MediaType.MOVIE,
+      电视剧: MediaType.TV_SERIES,
+      综艺: MediaType.VARIETY,
+      动漫: MediaType.ANIME,
+      纪录片: MediaType.DOCUMENTARY,
     };
-    
+
     return typeMap[type] || MediaType.MOVIE;
   }
 
@@ -475,12 +475,12 @@ export class CrawlerController {
    */
   private mapQuality(quality: string): MediaQuality {
     const qualityMap: Record<string, MediaQuality> = {
-      '高清': MediaQuality.HD,
-      '超清': MediaQuality.FULL_HD,
-      '蓝光': MediaQuality.BLUE_RAY,
-      '标清': MediaQuality.SD,
+      高清: MediaQuality.HD,
+      超清: MediaQuality.FULL_HD,
+      蓝光: MediaQuality.BLUE_RAY,
+      标清: MediaQuality.SD,
     };
-    
+
     return qualityMap[quality] || MediaQuality.HD;
   }
 
@@ -491,8 +491,11 @@ export class CrawlerController {
     if (!str || typeof str !== 'string') {
       return [];
     }
-    
-    return str.split(/[,，、]/).map(item => item.trim()).filter(item => item.length > 0);
+
+    return str
+      .split(/[,，、]/)
+      .map(item => item.trim())
+      .filter(item => item.length > 0);
   }
 
   /**
@@ -504,13 +507,13 @@ export class CrawlerController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '测试爬虫功能',
-    description: '测试指定爬虫目标的连接和基本功能'
+    description: '测试指定爬虫目标的连接和基本功能',
   })
   @ApiQuery({
     name: 'targetName',
     required: false,
     description: '目标网站名称，默认为电影天堂',
-    example: '电影天堂'
+    example: '电影天堂',
   })
   @ApiResponse({
     status: 200,
@@ -526,21 +529,21 @@ export class CrawlerController {
             target: { type: 'string', example: '电影天堂' },
             connection: { type: 'boolean', example: true },
             responseTime: { type: 'number', example: 1500 },
-            selectors: { 
+            selectors: {
               type: 'object',
               properties: {
                 title: { type: 'string', example: '测试标题' },
-                description: { type: 'string', example: '测试描述' }
-              }
-            }
-          }
-        }
-      }
-    }
+                description: { type: 'string', example: '测试描述' },
+              },
+            },
+          },
+        },
+      },
+    },
   })
   async testCrawler(@Query('targetName') targetName?: string) {
     const target = targetName || '电影天堂';
-    
+
     try {
       // 测试连接
       const startTime = Date.now();
@@ -555,8 +558,8 @@ export class CrawlerController {
             target,
             connection: false,
             responseTime,
-            error: '连接失败'
-          }
+            error: '连接失败',
+          },
         };
       }
 
@@ -578,22 +581,25 @@ export class CrawlerController {
           target,
           connection: true,
           responseTime,
-          testData: testData ? {
-            title: testData.title || '未知标题',
-            hasDownloadUrls: testData.downloadUrls && testData.downloadUrls.length > 0,
-            description: testData.description ? testData.description.substring(0, 100) + '...' : '无描述'
-          } : null
-        }
+          testData: testData
+            ? {
+                title: testData.title || '未知标题',
+                hasDownloadUrls: testData.downloadUrls && testData.downloadUrls.length > 0,
+                description: testData.description
+                  ? testData.description.substring(0, 100) + '...'
+                  : '无描述',
+              }
+            : null,
+        },
       };
-
     } catch (error) {
       return {
         success: false,
         message: `测试失败: ${error.message}`,
         data: {
           target,
-          error: error.message
-        }
+          error: error.message,
+        },
       };
     }
   }

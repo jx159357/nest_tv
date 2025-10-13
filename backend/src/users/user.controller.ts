@@ -19,6 +19,10 @@ import { UserResponseDto } from './dtos/user-response.dto';
 import { JwtResponseDto } from '../auth/dtos/jwt-response.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
+interface AuthenticatedRequest {
+  user: Record<string, any>;
+}
+
 /**
  * 用户控制器
  * 处理用户相关的HTTP请求，包括注册、登录等
@@ -92,7 +96,17 @@ export class UserController {
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  getProfile(@Request() req: any) {
-    return req.user;
+  getProfile(@Request() req: AuthenticatedRequest): UserResponseDto {
+    const user = req.user;
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      avatar: user.avatar,
+      phone: user.phone,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
   }
 }

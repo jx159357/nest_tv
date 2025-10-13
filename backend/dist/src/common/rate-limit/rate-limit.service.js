@@ -46,11 +46,15 @@ let RateLimitService = RateLimitService_1 = class RateLimitService {
     }
     async incrementCount(key, windowMs) {
         try {
-            const result = await this.redis.multi()
+            const result = await this.redis
+                .multi()
                 .incr(key)
                 .expire(key, Math.ceil(windowMs / 1000))
                 .exec();
-            if (Array.isArray(result) && result[0] && result[0][0] === null && typeof result[0][1] === 'number') {
+            if (Array.isArray(result) &&
+                result[0] &&
+                result[0][0] === null &&
+                typeof result[0][1] === 'number') {
                 return result[0][1];
             }
             return 1;
@@ -200,7 +204,10 @@ let RateLimitService = RateLimitService_1 = class RateLimitService {
             pipeline.zadd(fullKey, currentTime, `${currentTime}-${Math.random()}`);
             pipeline.expire(fullKey, Math.ceil(config.windowMs / 1000));
             const results = await pipeline.exec();
-            if (Array.isArray(results) && results[1] && results[1][0] === null && results[1][1] !== null) {
+            if (Array.isArray(results) &&
+                results[1] &&
+                results[1][0] === null &&
+                results[1][1] !== null) {
                 const currentCount = results[1][1];
                 const remaining = Math.max(0, config.maxRequests - currentCount);
                 if (currentCount >= config.maxRequests) {

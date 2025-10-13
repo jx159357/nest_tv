@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { RouterView, onBeforeRouteUpdate } from 'vue-router';
+  import { onBeforeRouteUpdate } from 'vue-router';
   import { onMounted } from 'vue';
   import { useAuthStore } from '@/stores/auth';
   import { useThemeStore } from '@/stores/theme';

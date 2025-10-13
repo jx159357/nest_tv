@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -9,7 +21,11 @@ import {
 } from '@nestjs/swagger';
 import { PlaySourceService } from './play-source.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CreatePlaySourceDto, UpdatePlaySourceDto, PlaySourceQueryDto } from './dtos/play-source.dto';
+import {
+  CreatePlaySourceDto,
+  UpdatePlaySourceDto,
+  PlaySourceQueryDto,
+} from './dtos/play-source.dto';
 
 @ApiTags('播放源管理')
 @Controller('play-sources')

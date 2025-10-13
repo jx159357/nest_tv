@@ -81,7 +81,7 @@ export class DanmakuWebSocketService {
       console.log('✅ WebSocket连接成功');
       this.isConnected.value = true;
       this.reconnectAttempts = 0;
-      
+
       // 加入房间
       this.socket?.emit('join-room', {
         videoId: this.roomId.value,
@@ -90,21 +90,21 @@ export class DanmakuWebSocketService {
 
       // 发送队列中的消息
       this.flushMessageQueue();
-      
+
       // 开始心跳
       this.startHeartbeat();
-      
+
       // 触发连接成功事件
       this.emit('connected');
     });
 
     // 连接断开
-    this.socket.on('disconnect', (reason) => {
+    this.socket.on('disconnect', reason => {
       console.log('❌ WebSocket连接断开:', reason);
       this.isConnected.value = false;
       this.stopHeartbeat();
       this.emit('disconnected', reason);
-      
+
       // 自动重连
       if (this.options.autoReconnect && reason !== 'io client disconnect') {
         this.handleReconnect();
@@ -112,7 +112,7 @@ export class DanmakuWebSocketService {
     });
 
     // 连接错误
-    this.socket.on('connect_error', (error) => {
+    this.socket.on('connect_error', error => {
       console.error('❌ WebSocket连接错误:', error);
       this.handleConnectionError(error);
     });
@@ -133,7 +133,7 @@ export class DanmakuWebSocketService {
     });
 
     // 错误消息
-    this.socket.on('error', (error) => {
+    this.socket.on('error', error => {
       console.error('❌ WebSocket错误:', error);
       this.emit('error', error);
     });
@@ -162,7 +162,7 @@ export class DanmakuWebSocketService {
   // 获取房间信息
   getRoomInfo() {
     if (!this.isConnected.value || !this.socket) return;
-    
+
     this.socket.emit('get-room-info', {
       videoId: this.roomId.value,
     });
@@ -171,7 +171,7 @@ export class DanmakuWebSocketService {
   // 心跳检测
   private startHeartbeat() {
     this.stopHeartbeat();
-    
+
     this.heartbeatInterval = window.setInterval(() => {
       if (this.isConnected.value && this.socket) {
         this.socket.emit('heartbeat', {
@@ -199,7 +199,7 @@ export class DanmakuWebSocketService {
 
     this.reconnectAttempts++;
     console.log(`🔄 尝试重连 (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-    
+
     this.reconnectInterval = window.setTimeout(() => {
       if (this.roomId.value && this.userId.value) {
         this.connect(this.roomId.value, this.userId.value);
@@ -211,7 +211,7 @@ export class DanmakuWebSocketService {
   private handleConnectionError(error: any) {
     this.isConnected.value = false;
     this.emit('error', error);
-    
+
     // 如果启用了自动重连，尝试重连
     if (this.options.autoReconnect) {
       this.handleReconnect();
@@ -229,10 +229,10 @@ export class DanmakuWebSocketService {
 
   private flushMessageQueue() {
     if (!this.isConnected.value || !this.socket) return;
-    
+
     const messages = [...this.messageQueue];
     this.messageQueue = [];
-    
+
     messages.forEach(message => {
       switch (message.event) {
         case 'send-danmaku':
@@ -295,15 +295,15 @@ export class DanmakuWebSocketService {
       this.socket.disconnect();
       this.socket = null;
     }
-    
+
     this.stopHeartbeat();
     this.isConnected.value = false;
     this.reconnectAttempts = 0;
     this.messageQueue = [];
-    
+
     // 清理事件监听器
     this.listeners.clear();
-    
+
     // 清理重连定时器
     if (this.reconnectInterval) {
       clearTimeout(this.reconnectInterval);
@@ -398,8 +398,8 @@ export function useDanmakuWebSocket(videoId: string) {
   // 设置事件监听器
   onMounted(() => {
     connect();
-    service.on('connected', () => isConnected.value = true);
-    service.on('disconnected', () => isConnected.value = false);
+    service.on('connected', () => (isConnected.value = true));
+    service.on('disconnected', () => (isConnected.value = false));
   });
 
   onUnmounted(() => {
