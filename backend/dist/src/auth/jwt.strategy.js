@@ -62,7 +62,9 @@ let JwtStrategy = JwtStrategy_1 = class JwtStrategy extends (0, passport_1.Passp
             return user;
         }
         catch (error) {
-            this.logger.warn(`JWT验证失败: ${error.message}`, error.stack);
+            const errorMessage = error instanceof Error ? error.message : '未知错误';
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            this.logger.warn(`JWT验证失败: ${errorMessage}`, errorStack);
             throw new common_1.UnauthorizedException('令牌验证失败');
         }
     }

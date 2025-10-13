@@ -8,7 +8,7 @@ export declare class AuthService {
     private configService;
     private readonly logger;
     constructor(userService: UserService, jwtService: JwtService, configService: ConfigService);
-    validateUser(identifier: string, pass: string): Promise<any>;
-    login(user: any): Promise<JwtResponseDto>;
+    validateUser(identifier: string, pass: string): Promise<Record<string, any> | null>;
+    login(user: Record<string, any>): Promise<JwtResponseDto>;
     private generateTokenId;
 }

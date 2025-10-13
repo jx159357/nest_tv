@@ -24,7 +24,7 @@ exports.UserModule = UserModule = __decorate([
             typeorm_1.TypeOrmModule.forFeature([user_entity_1.User]),
             jwt_1.JwtModule.registerAsync({
                 imports: [config_1.ConfigModule],
-                useFactory: async (configService) => ({
+                useFactory: (configService) => ({
                     secret: configService.get('JWT_SECRET'),
                     signOptions: { expiresIn: configService.get('JWT_EXPIRES_IN') },
                 }),

@@ -81,7 +81,9 @@ let AuthService = AuthService_1 = class AuthService {
             };
         }
         catch (error) {
-            this.logger.error(`登录失败: ${error.message}`, error.stack);
+            const errorMessage = error instanceof Error ? error.message : '未知错误';
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            this.logger.error(`登录失败: ${errorMessage}`, errorStack);
             throw new common_1.UnauthorizedException('登录失败，请重试');
         }
     }

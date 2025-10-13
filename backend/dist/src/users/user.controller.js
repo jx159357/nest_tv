@@ -36,7 +36,18 @@ let UserController = class UserController {
         return this.userService.login(loginUserDto);
     }
     getProfile(req) {
-        return req.user;
+        const user = req.user;
+        return {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            avatar: user.avatar,
+            phone: user.phone,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+            isActive: user.isActive || true,
+        };
     }
 };
 exports.UserController = UserController;
@@ -94,7 +105,7 @@ __decorate([
     __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", user_response_dto_1.UserResponseDto)
 ], UserController.prototype, "getProfile", null);
 exports.UserController = UserController = __decorate([
     (0, swagger_1.ApiTags)('用户管理'),
