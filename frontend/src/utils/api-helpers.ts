@@ -31,9 +31,18 @@ export class ApiErrorHandler {
 
     // 处理特定错误状态码
     if (error.response && error.response.status === 401) {
+      // 调试信息
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Authentication failed, clearing token and redirecting to login');
+      }
+      
       // 未授权，清除本地存储并重定向到登录页
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      
+      // 使用更友好的方式重定向，避免直接 location.href
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
     }
 
     if (error.response && error.response.status === 403) {
@@ -68,6 +77,15 @@ export class RequestInterceptor {
         const token = localStorage.getItem('token');
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
+          // 调试信息，生产环境可删除
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Authorization header set:', config.headers.Authorization);
+          }
+        } else {
+          // 调试信息，生产环境可删除
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('No token found in localStorage');
+          }
         }
         return config;
       },
@@ -76,6 +94,16 @@ export class RequestInterceptor {
         return response.data;
       },
       onResponseError: (error: AxiosError) => {
+        // 调试信息，生产环境可删除
+        if (process.env.NODE_ENV === 'development') {
+          console.error('API Error:', {
+            url: error.config?.url,
+            method: error.config?.method,
+            status: error.response?.status,
+            message: error.response?.data?.message,
+            headers: error.config?.headers,
+          });
+        }
         return ApiErrorHandler.handle(error);
       },
     };

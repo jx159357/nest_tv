@@ -10,13 +10,22 @@ exports.SecurityHeadersMiddleware = void 0;
 const common_1 = require("@nestjs/common");
 let SecurityHeadersMiddleware = class SecurityHeadersMiddleware {
     use(req, res, next) {
+        const isSwaggerPath = req.path.includes('swagger') ||
+            req.path.includes('api-docs') ||
+            (req.path.startsWith('/api') && (req.path.includes('.css') || req.path.includes('.js')));
+        if (isSwaggerPath) {
+            next();
+            return;
+        }
         res.setHeader('X-Content-Type-Options', 'nosniff');
         res.setHeader('X-Frame-Options', 'SAMEORIGIN');
         res.setHeader('X-XSS-Protection', '1; mode=block');
         res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
         res.removeHeader('X-Powered-By');
         res.removeHeader('Server');
-        res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+        if (!process.env.NODE_ENV?.includes('dev')) {
+            res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+        }
         const cspPolicy = [
             "default-src 'self'",
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
@@ -34,8 +43,9 @@ let SecurityHeadersMiddleware = class SecurityHeadersMiddleware {
         ].join('; ');
         res.setHeader('Content-Security-Policy', cspPolicy);
         res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-        res.setHeader('X-Content-Type-Options', 'nosniff');
-        res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+        if (!process.env.NODE_ENV?.includes('dev') && req.secure) {
+            res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+        }
         next();
     }
 };

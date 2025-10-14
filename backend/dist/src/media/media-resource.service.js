@@ -40,10 +40,12 @@ let MediaResourceService = class MediaResourceService {
             queryBuilder.andWhere('(mediaResource.title LIKE :search OR mediaResource.originalTitle LIKE :search)', { search: `%${search}%` });
         }
         if (type) {
-            queryBuilder.andWhere('mediaResource.type IN (:...type)', { type });
+            const typeArray = Array.isArray(type) ? type : [type];
+            queryBuilder.andWhere('mediaResource.type IN (:...type)', { type: typeArray });
         }
         if (quality) {
-            queryBuilder.andWhere('mediaResource.quality IN (:...quality)', { quality });
+            const qualityArray = Array.isArray(quality) ? quality : [quality];
+            queryBuilder.andWhere('mediaResource.quality IN (:...quality)', { quality: qualityArray });
         }
         if (minRating !== undefined) {
             queryBuilder.andWhere('mediaResource.rating >= :minRating', { minRating });
@@ -51,10 +53,13 @@ let MediaResourceService = class MediaResourceService {
         if (maxRating !== undefined) {
             queryBuilder.andWhere('mediaResource.rating <= :maxRating', { maxRating });
         }
-        if (tags && tags.length > 0) {
-            queryBuilder.andWhere('mediaResource.tags && JSON_CONTAINS(mediaResource.tags, :tags)', {
-                tags,
-            });
+        if (tags) {
+            const tagsArray = Array.isArray(tags) ? tags : tags.split(',').map(tag => tag.trim());
+            if (tagsArray.length > 0) {
+                queryBuilder.andWhere('mediaResource.tags && JSON_CONTAINS(mediaResource.tags, :tags)', {
+                    tags: tagsArray,
+                });
+            }
         }
         if (startDate && endDate) {
             queryBuilder.andWhere('mediaResource.releaseDate BETWEEN :startDate AND :endDate', {

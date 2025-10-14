@@ -10,58 +10,90 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PlaySourceQueryDto = void 0;
+const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
+const play_source_entity_1 = require("../../entities/play-source.entity");
 class PlaySourceQueryDto {
     page = 1;
-    limit = 10;
     pageSize = 10;
     mediaResourceId;
     type;
-    status;
     resolution;
-    activeOnly = true;
-    sortBy = 'priority';
-    sortOrder = 'ASC';
+    isActive;
+    search;
 }
 exports.PlaySourceQueryDto = PlaySourceQueryDto;
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: '页码', default: 1 }),
+    (0, swagger_1.ApiProperty)({
+        description: '页码',
+        example: 1,
+        required: false,
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)({}, { message: '页码必须是数字' }),
+    (0, class_validator_1.Min)(1, { message: '页码不能小于1' }),
     __metadata("design:type", Number)
 ], PlaySourceQueryDto.prototype, "page", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: '每页数量', default: 10 }),
-    __metadata("design:type", Number)
-], PlaySourceQueryDto.prototype, "limit", void 0);
-__decorate([
-    (0, swagger_1.ApiProperty)({ description: '每页数量', default: 10 }),
+    (0, swagger_1.ApiProperty)({
+        description: '每页数量',
+        example: 10,
+        required: false,
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)({}, { message: '每页数量必须是数字' }),
+    (0, class_validator_1.Min)(1, { message: '每页数量不能小于1' }),
+    (0, class_validator_1.Max)(100, { message: '每页数量不能超过100' }),
     __metadata("design:type", Number)
 ], PlaySourceQueryDto.prototype, "pageSize", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: '影视资源ID', required: false }),
+    (0, swagger_1.ApiProperty)({
+        description: '媒体资源ID',
+        example: 1,
+        required: false,
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)({}, { message: '媒体资源ID必须是数字' }),
     __metadata("design:type", Number)
 ], PlaySourceQueryDto.prototype, "mediaResourceId", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: '播放源类型', required: false }),
+    (0, swagger_1.ApiProperty)({
+        description: '播放源类型',
+        enum: play_source_entity_1.PlaySourceType,
+        required: false,
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(play_source_entity_1.PlaySourceType, { message: '播放源类型无效' }),
     __metadata("design:type", String)
 ], PlaySourceQueryDto.prototype, "type", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: '播放源状态', required: false }),
-    __metadata("design:type", String)
-], PlaySourceQueryDto.prototype, "status", void 0);
-__decorate([
-    (0, swagger_1.ApiProperty)({ description: '分辨率', required: false }),
+    (0, swagger_1.ApiProperty)({
+        description: '分辨率/质量',
+        example: '1080p',
+        required: false,
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)({ message: '分辨率必须是字符串' }),
     __metadata("design:type", String)
 ], PlaySourceQueryDto.prototype, "resolution", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: '是否只显示启用的播放源', default: true }),
+    (0, swagger_1.ApiProperty)({
+        description: '是否启用',
+        example: true,
+        required: false,
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)({ message: '启用状态必须是布尔值' }),
     __metadata("design:type", Boolean)
-], PlaySourceQueryDto.prototype, "activeOnly", void 0);
+], PlaySourceQueryDto.prototype, "isActive", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: '排序字段', default: 'priority' }),
+    (0, swagger_1.ApiProperty)({
+        description: '搜索关键词',
+        example: 'example',
+        required: false,
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)({ message: '搜索关键词必须是字符串' }),
     __metadata("design:type", String)
-], PlaySourceQueryDto.prototype, "sortBy", void 0);
-__decorate([
-    (0, swagger_1.ApiProperty)({ description: '排序方式', enum: ['ASC', 'DESC'], default: 'ASC' }),
-    __metadata("design:type", String)
-], PlaySourceQueryDto.prototype, "sortOrder", void 0);
+], PlaySourceQueryDto.prototype, "search", void 0);
 //# sourceMappingURL=play-source-query.dto.js.map

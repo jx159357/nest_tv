@@ -8,7 +8,7 @@ export class DatabaseHealthService implements OnModuleInit {
   private readonly logger = new Logger(DatabaseHealthService.name);
   private isHealthy = false;
   private healthCheckInterval: NodeJS.Timeout;
-  private readonly healthCheckIntervalMs = 30000; // 30秒检查一次
+  private readonly healthCheckIntervalMs = 300000; // 30秒检查一次
 
   constructor(
     private readonly dataSource: DataSource,

@@ -24,8 +24,8 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import {
   CreatePlaySourceDto,
   UpdatePlaySourceDto,
-  PlaySourceQueryDto,
 } from './dtos/play-source.dto';
+import { PlaySourceQueryDto } from './dtos/play-source-query.dto';
 
 @ApiTags('播放源管理')
 @Controller('play-sources')

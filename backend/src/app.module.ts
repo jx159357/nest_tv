@@ -18,6 +18,7 @@ import { DataCollectionModule } from './data-collection/data-collection.module';
 import { CommonModule } from './common/common.module';
 import { CacheModule } from './common/cache/cache.module';
 import { RateLimitModule } from './common/rate-limit/rate-limit.module';
+import { InitializationModule } from './initialization/initialization.module';
 import { User } from './entities/user.entity';
 import { MediaResource } from './entities/media-resource.entity';
 import { PlaySource } from './entities/play-source.entity';
@@ -210,6 +211,9 @@ import { AppService } from './app.service';
 
     // 通用模块 - 企业级服务和组件
     CommonModule,
+
+    // 初始化模块 - 默认数据和配置初始化
+    InitializationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

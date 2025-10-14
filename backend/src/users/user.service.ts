@@ -13,6 +13,7 @@ import { LoginUserDto } from './dtos/login-user.dto';
 import { UserResponseDto } from './dtos/user-response.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 
 /**
  * 用户服务
@@ -24,6 +25,7 @@ export class UserService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private jwtService: JwtService,
+    private configService: ConfigService,
   ) {}
 
   /**
@@ -108,16 +110,25 @@ export class UserService {
     user.lastLoginAt = new Date();
     await this.userRepository.save(user);
 
-    // 生成JWT令牌
+    // 生成JWT令牌 - 使用与AuthService相同的配置
     const payload = {
-      sub: user.id,
       username: user.username,
+      sub: user.id,
       email: user.email,
       role: user.role,
     };
 
+    // JWT选项 - 与AuthService保持一致
+    const jwtExpiration = this.configService.get<number>('JWT_EXPIRATION', 3600); // 1小时
+    const accessTokenOptions = {
+      expiresIn: jwtExpiration,
+      audience: this.configService.get<string>('JWT_AUDIENCE', 'nest-tv-client'),
+      issuer: this.configService.get<string>('JWT_ISSUER', 'nest-tv-server'),
+      algorithm: 'HS256' as const,
+    };
+
     return {
-      accessToken: this.jwtService.sign(payload),
+      accessToken: this.jwtService.sign(payload, accessTokenOptions),
       user: this.toUserResponseDto(user),
     };
   }

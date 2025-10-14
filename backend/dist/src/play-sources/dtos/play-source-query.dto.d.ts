@@ -1,12 +1,10 @@
+import { PlaySourceType } from '../../entities/play-source.entity';
 export declare class PlaySourceQueryDto {
     page?: number;
-    limit?: number;
     pageSize?: number;
     mediaResourceId?: number;
-    type?: string;
-    status?: string;
+    type?: PlaySourceType;
     resolution?: string;
-    activeOnly?: boolean;
-    sortBy?: string;
-    sortOrder?: 'ASC' | 'DESC';
+    isActive?: boolean;
+    search?: string;
 }

@@ -22,7 +22,7 @@ let DatabaseHealthService = DatabaseHealthService_1 = class DatabaseHealthServic
     logger = new common_1.Logger(DatabaseHealthService_1.name);
     isHealthy = false;
     healthCheckInterval;
-    healthCheckIntervalMs = 30000;
+    healthCheckIntervalMs = 300000;
     constructor(dataSource, configService, appLogger) {
         this.dataSource = dataSource;
         this.configService = configService;

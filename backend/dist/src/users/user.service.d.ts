@@ -4,10 +4,12 @@ import { RegisterUserDto } from './dtos/register-user.dto';
 import { LoginUserDto } from './dtos/login-user.dto';
 import { UserResponseDto } from './dtos/user-response.dto';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 export declare class UserService {
     private userRepository;
     private jwtService;
-    constructor(userRepository: Repository<User>, jwtService: JwtService);
+    private configService;
+    constructor(userRepository: Repository<User>, jwtService: JwtService, configService: ConfigService);
     register(registerUserDto: RegisterUserDto): Promise<UserResponseDto>;
     login(loginUserDto: LoginUserDto): Promise<any>;
     findById(id: number): Promise<UserResponseDto>;

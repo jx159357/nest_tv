@@ -14,6 +14,7 @@ export declare class PlaySourceService {
         pageSize: number;
         totalPages: number;
     }>;
+    findByName(name: string): Promise<PlaySource | null>;
     findById(id: number): Promise<PlaySource>;
     update(id: number, updatePlaySourceDto: UpdatePlaySourceDto): Promise<PlaySource>;
     remove(id: number): Promise<void>;

@@ -71,12 +71,16 @@ export class MediaResourceService {
 
     // 类型筛选
     if (type) {
-      queryBuilder.andWhere('mediaResource.type IN (:...type)', { type });
+      // 如果 type 是字符串，转换为数组；如果是数组，直接使用
+      const typeArray = Array.isArray(type) ? type : [type];
+      queryBuilder.andWhere('mediaResource.type IN (:...type)', { type: typeArray });
     }
 
     // 质量筛选
     if (quality) {
-      queryBuilder.andWhere('mediaResource.quality IN (:...quality)', { quality });
+      // 如果 quality 是字符串，转换为数组；如果是数组，直接使用
+      const qualityArray = Array.isArray(quality) ? quality : [quality];
+      queryBuilder.andWhere('mediaResource.quality IN (:...quality)', { quality: qualityArray });
     }
 
     // 评分筛选
@@ -88,10 +92,14 @@ export class MediaResourceService {
     }
 
     // 标签筛选
-    if (tags && tags.length > 0) {
-      queryBuilder.andWhere('mediaResource.tags && JSON_CONTAINS(mediaResource.tags, :tags)', {
-        tags,
-      });
+    if (tags) {
+      // 如果 tags 是字符串，先转换为数组（可能是逗号分隔的）
+      const tagsArray = Array.isArray(tags) ? tags : tags.split(',').map(tag => tag.trim());
+      if (tagsArray.length > 0) {
+        queryBuilder.andWhere('mediaResource.tags && JSON_CONTAINS(mediaResource.tags, :tags)', {
+          tags: tagsArray,
+        });
+      }
     }
 
     // 日期范围筛选

@@ -11,19 +11,27 @@ import { AuthService } from './auth.service';
 export class LocalStrategy extends PassportStrategy(Strategy) {
   constructor(private authService: AuthService) {
     super({
-      usernameField: 'identifier', // 使用identifier字段作为用户名
+      usernameField: 'username', // 使用username字段作为用户名
+      passwordField: 'password',
     });
   }
 
   /**
    * 验证用户名和密码
-   * @param identifier 用户名或邮箱
+   * @param username 用户名
    * @param password 密码
    * @returns 用户信息
    */
-  async validate(identifier: string, password: string): Promise<any> {
-    // 这里应该调用AuthService来验证用户
-    // 为了简化示例，我们直接返回null
-    return null;
+  async validate(username: string, password: string): Promise<any> {
+    try {
+      // 调用AuthService的validateUser方法来验证用户
+      const user = await this.authService.validateUser(username, password);
+      if (!user) {
+        throw new UnauthorizedException('用户名或密码错误');
+      }
+      return user;
+    } catch (error) {
+      throw new UnauthorizedException('用户名或密码错误');
+    }
   }
 }

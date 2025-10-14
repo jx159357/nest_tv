@@ -18,12 +18,22 @@ let LocalStrategy = class LocalStrategy extends (0, passport_1.PassportStrategy)
     authService;
     constructor(authService) {
         super({
-            usernameField: 'identifier',
+            usernameField: 'username',
+            passwordField: 'password',
         });
         this.authService = authService;
     }
-    async validate(identifier, password) {
-        return null;
+    async validate(username, password) {
+        try {
+            const user = await this.authService.validateUser(username, password);
+            if (!user) {
+                throw new common_1.UnauthorizedException('用户名或密码错误');
+            }
+            return user;
+        }
+        catch (error) {
+            throw new common_1.UnauthorizedException('用户名或密码错误');
+        }
     }
 };
 exports.LocalStrategy = LocalStrategy;

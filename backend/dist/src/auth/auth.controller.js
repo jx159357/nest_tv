@@ -157,7 +157,7 @@ __decorate([
                 identifier: {
                     type: 'string',
                     description: '用户名或邮箱',
-                    example: 'admin',
+                    example: 'testuser',
                 },
                 password: {
                     type: 'string',

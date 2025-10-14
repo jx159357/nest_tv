@@ -18,6 +18,7 @@ const swagger_1 = require("@nestjs/swagger");
 const play_source_service_1 = require("./play-source.service");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const play_source_dto_1 = require("./dtos/play-source.dto");
+const play_source_query_dto_1 = require("./dtos/play-source-query.dto");
 let PlaySourceController = class PlaySourceController {
     playSourceService;
     constructor(playSourceService) {
@@ -127,7 +128,7 @@ __decorate([
     (0, common_1.UsePipes)(new common_1.ValidationPipe({ transform: true })),
     __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [play_source_dto_1.PlaySourceQueryDto]),
+    __metadata("design:paramtypes", [play_source_query_dto_1.PlaySourceQueryDto]),
     __metadata("design:returntype", Promise)
 ], PlaySourceController.prototype, "findAll", null);
 __decorate([

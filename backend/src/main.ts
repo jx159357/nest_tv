@@ -60,12 +60,47 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  
+  // 设置自定义中间件来处理MIME类型
+  app.use('/api/swagger-ui.css', (req, res, next) => {
+    res.setHeader('Content-Type', 'text/css; charset=utf-8');
+    next();
+  });
+  
+  app.use('/api/swagger-ui-bundle.js', (req, res, next) => {
+    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    next();
+  });
+  
+  app.use('/api/swagger-ui-standalone-preset.js', (req, res, next) => {
+    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    next();
+  });
+  
+  app.use('/api/swagger-ui-init.js', (req, res, next) => {
+    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    next();
+  });
+
+  SwaggerModule.setup('api', app, document, {
+    customSiteTitle: 'Nest TV API Documentation',
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      filter: true,
+      showExtensions: true,
+      showCommonExtensions: true,
+      docExpansion: 'none',
+      defaultModelsExpandDepth: 2,
+      defaultModelExpandDepth: 2,
+    },
+  });
 
   // 应用全局中间件
   const appLogger = app.get(AppLoggerService);
   const requestLoggingMiddleware = new RequestLoggingMiddleware(appLogger);
   const performanceMonitoringMiddleware = new PerformanceMonitoringMiddleware(appLogger);
+
 
   app.use(new SecurityHeadersMiddleware().use);
   app.use(requestLoggingMiddleware.use.bind(requestLoggingMiddleware));

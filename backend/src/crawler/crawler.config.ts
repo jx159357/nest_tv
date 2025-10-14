@@ -1,10 +1,10 @@
 import { CrawlerTarget } from './crawler.service';
 
 export const CRAWLER_TARGETS: CrawlerTarget[] = [
-  // 电影天堂 - 完整配置
+  // 电影天堂 - 主站点配置 (默认常驻播放源)
   {
     name: '电影天堂',
-    baseUrl: 'http://www.dytt8899.com',
+    baseUrl: 'https://www.dytt8899.com',
     selectors: {
       title: '.co_content22 ul li a, .title_all h1, .bd3r .co_area2 .title_all h1',
       description: '.co_content22, .co_content8, .co_content222, .zoomX',
@@ -20,7 +20,7 @@ export const CRAWLER_TARGETS: CrawlerTarget[] = [
     },
     enabled: true, // 启用此爬虫
     priority: 1, // 最高优先级
-    maxPages: 50, // 最大爬取页数
+    maxPages: 100, // 最大爬取页数
     respectRobotsTxt: true,
     requestDelay: 2000, // 请求间隔2秒
   },

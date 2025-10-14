@@ -10,8 +10,8 @@ export class MediaResourceQueryDto {
   @ApiProperty({ description: '搜索关键词', required: false })
   search?: string;
 
-  @ApiProperty({ description: '影视类型', required: false })
-  type?: string;
+  @ApiProperty({ description: '影视类型（可以是单个类型或多个类型）', required: false })
+  type?: string | string[];
 
   @ApiProperty({ description: '类型标签', required: false })
   genre?: string;
@@ -22,11 +22,11 @@ export class MediaResourceQueryDto {
   @ApiProperty({ description: '最高评分', required: false })
   maxRating?: number;
 
-  @ApiProperty({ description: '视频质量', required: false })
-  quality?: string;
+  @ApiProperty({ description: '视频质量（可以是单个质量或多个质量）', required: false })
+  quality?: string | string[];
 
-  @ApiProperty({ description: '标签', required: false })
-  tags?: string;
+  @ApiProperty({ description: '标签（可以是单个标签或逗号分隔的多个标签）', required: false })
+  tags?: string | string[];
 
   @ApiProperty({ description: '开始日期', required: false })
   startDate?: Date;

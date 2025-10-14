@@ -19,10 +19,3 @@ export declare class UpdatePlaySourceDto {
     priority?: number;
     isActive?: boolean;
 }
-export declare class PlaySourceQueryDto {
-    page?: number;
-    pageSize?: number;
-    mediaResourceId?: number;
-    type?: PlaySourceType;
-    isActive?: boolean;
-}

@@ -53,7 +53,35 @@ async function bootstrap() {
         .addBearerAuth()
         .build();
     const document = swagger_1.SwaggerModule.createDocument(app, config);
-    swagger_1.SwaggerModule.setup('api', app, document);
+    app.use('/api/swagger-ui.css', (req, res, next) => {
+        res.setHeader('Content-Type', 'text/css; charset=utf-8');
+        next();
+    });
+    app.use('/api/swagger-ui-bundle.js', (req, res, next) => {
+        res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+        next();
+    });
+    app.use('/api/swagger-ui-standalone-preset.js', (req, res, next) => {
+        res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+        next();
+    });
+    app.use('/api/swagger-ui-init.js', (req, res, next) => {
+        res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+        next();
+    });
+    swagger_1.SwaggerModule.setup('api', app, document, {
+        customSiteTitle: 'Nest TV API Documentation',
+        swaggerOptions: {
+            persistAuthorization: true,
+            displayRequestDuration: true,
+            filter: true,
+            showExtensions: true,
+            showCommonExtensions: true,
+            docExpansion: 'none',
+            defaultModelsExpandDepth: 2,
+            defaultModelExpandDepth: 2,
+        },
+    });
     const appLogger = app.get(app_logger_service_1.AppLoggerService);
     const requestLoggingMiddleware = new request_logging_middleware_1.RequestLoggingMiddleware(appLogger);
     const performanceMonitoringMiddleware = new performance_monitoring_middleware_1.PerformanceMonitoringMiddleware(appLogger);

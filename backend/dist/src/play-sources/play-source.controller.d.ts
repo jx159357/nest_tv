@@ -1,5 +1,6 @@
 import { PlaySourceService } from './play-source.service';
-import { CreatePlaySourceDto, UpdatePlaySourceDto, PlaySourceQueryDto } from './dtos/play-source.dto';
+import { CreatePlaySourceDto, UpdatePlaySourceDto } from './dtos/play-source.dto';
+import { PlaySourceQueryDto } from './dtos/play-source-query.dto';
 export declare class PlaySourceController {
     private readonly playSourceService;
     constructor(playSourceService: PlaySourceService);

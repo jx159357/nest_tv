@@ -52,12 +52,15 @@ const typeorm_2 = require("typeorm");
 const user_entity_1 = require("../entities/user.entity");
 const bcrypt = __importStar(require("bcrypt"));
 const jwt_1 = require("@nestjs/jwt");
+const config_1 = require("@nestjs/config");
 let UserService = class UserService {
     userRepository;
     jwtService;
-    constructor(userRepository, jwtService) {
+    configService;
+    constructor(userRepository, jwtService, configService) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
+        this.configService = configService;
     }
     async register(registerUserDto) {
         const existingUserByUsername = await this.userRepository.findOne({
@@ -110,13 +113,20 @@ let UserService = class UserService {
         user.lastLoginAt = new Date();
         await this.userRepository.save(user);
         const payload = {
-            sub: user.id,
             username: user.username,
+            sub: user.id,
             email: user.email,
             role: user.role,
         };
+        const jwtExpiration = this.configService.get('JWT_EXPIRATION', 3600);
+        const accessTokenOptions = {
+            expiresIn: jwtExpiration,
+            audience: this.configService.get('JWT_AUDIENCE', 'nest-tv-client'),
+            issuer: this.configService.get('JWT_ISSUER', 'nest-tv-server'),
+            algorithm: 'HS256',
+        };
         return {
-            accessToken: this.jwtService.sign(payload),
+            accessToken: this.jwtService.sign(payload, accessTokenOptions),
             user: this.toUserResponseDto(user),
         };
     }
@@ -148,6 +158,7 @@ exports.UserService = UserService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        jwt_1.JwtService])
+        jwt_1.JwtService,
+        config_1.ConfigService])
 ], UserService);
 //# sourceMappingURL=user.service.js.map

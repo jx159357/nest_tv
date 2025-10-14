@@ -29,19 +29,15 @@ let PlaySourceService = class PlaySourceService {
         return result;
     }
     async findAll(queryDto) {
-        const { page = 1, pageSize = 10, mediaResourceId, type, status } = queryDto;
+        const { page = 1, pageSize = 10, mediaResourceId, type } = queryDto;
         const queryBuilder = this.playSourceRepository
             .createQueryBuilder('playSource')
-            .leftJoinAndSelect('playSource.mediaResource', 'mediaResource')
-            .leftJoinAndSelect('mediaResource.poster', 'poster');
+            .leftJoinAndSelect('playSource.mediaResource', 'mediaResource');
         if (mediaResourceId) {
             queryBuilder.andWhere('playSource.mediaResourceId = :mediaResourceId', { mediaResourceId });
         }
         if (type) {
             queryBuilder.andWhere('playSource.type = :type', { type });
-        }
-        if (status) {
-            queryBuilder.andWhere('playSource.status = :status', { status });
         }
         const total = await queryBuilder.getCount();
         const skip = (page - 1) * pageSize;
@@ -59,6 +55,11 @@ let PlaySourceService = class PlaySourceService {
             pageSize,
             totalPages,
         };
+    }
+    async findByName(name) {
+        return this.playSourceRepository.findOne({
+            where: { sourceName: name },
+        });
     }
     async findById(id) {
         const playSource = await this.playSourceRepository.findOne({

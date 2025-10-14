@@ -99,6 +99,9 @@ export class PlaySource {
   @Column({ length: 100, nullable: true })
   sourceName?: string; // 来源名称
 
+  @Column({ length: 200, nullable: true })
+  name?: string; // 播放源名称
+
   @Column({ default: true })
   isActive: boolean; // 是否启用
 

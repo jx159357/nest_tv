@@ -40,8 +40,8 @@ __decorate([
     __metadata("design:type", String)
 ], MediaResourceQueryDto.prototype, "search", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: '影视类型', required: false }),
-    __metadata("design:type", String)
+    (0, swagger_1.ApiProperty)({ description: '影视类型（可以是单个类型或多个类型）', required: false }),
+    __metadata("design:type", Object)
 ], MediaResourceQueryDto.prototype, "type", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ description: '类型标签', required: false }),
@@ -56,12 +56,12 @@ __decorate([
     __metadata("design:type", Number)
 ], MediaResourceQueryDto.prototype, "maxRating", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: '视频质量', required: false }),
-    __metadata("design:type", String)
+    (0, swagger_1.ApiProperty)({ description: '视频质量（可以是单个质量或多个质量）', required: false }),
+    __metadata("design:type", Object)
 ], MediaResourceQueryDto.prototype, "quality", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: '标签', required: false }),
-    __metadata("design:type", String)
+    (0, swagger_1.ApiProperty)({ description: '标签（可以是单个标签或逗号分隔的多个标签）', required: false }),
+    __metadata("design:type", Object)
 ], MediaResourceQueryDto.prototype, "tags", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ description: '开始日期', required: false }),

@@ -29,6 +29,7 @@ export declare class PlaySource {
     playCount: number;
     description?: string;
     sourceName?: string;
+    name?: string;
     isActive: boolean;
     headers?: any;
     expireDate?: Date;

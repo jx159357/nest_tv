@@ -37,12 +37,11 @@ export class PlaySourceService {
     pageSize: number;
     totalPages: number;
   }> {
-    const { page = 1, pageSize = 10, mediaResourceId, type, status } = queryDto;
+    const { page = 1, pageSize = 10, mediaResourceId, type } = queryDto;
 
     const queryBuilder = this.playSourceRepository
       .createQueryBuilder('playSource')
-      .leftJoinAndSelect('playSource.mediaResource', 'mediaResource')
-      .leftJoinAndSelect('mediaResource.poster', 'poster');
+      .leftJoinAndSelect('playSource.mediaResource', 'mediaResource');
 
     // 筛选条件
     if (mediaResourceId) {
@@ -51,10 +50,6 @@ export class PlaySourceService {
 
     if (type) {
       queryBuilder.andWhere('playSource.type = :type', { type });
-    }
-
-    if (status) {
-      queryBuilder.andWhere('playSource.status = :status', { status });
     }
 
     // 获取总数
@@ -78,6 +73,15 @@ export class PlaySourceService {
       pageSize,
       totalPages,
     };
+  }
+
+  /**
+   * 根据名称查找播放源
+   */
+  async findByName(name: string): Promise<PlaySource | null> {
+    return this.playSourceRepository.findOne({
+      where: { sourceName: name },
+    });
   }
 
   /**

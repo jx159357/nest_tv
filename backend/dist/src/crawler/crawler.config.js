@@ -4,7 +4,7 @@ exports.CRAWLER_RULES = exports.CRAWLER_CONFIG = exports.CRAWLER_TARGETS = void 
 exports.CRAWLER_TARGETS = [
     {
         name: '电影天堂',
-        baseUrl: 'http://www.dytt8899.com',
+        baseUrl: 'https://www.dytt8899.com',
         selectors: {
             title: '.co_content22 ul li a, .title_all h1, .bd3r .co_area2 .title_all h1',
             description: '.co_content22, .co_content8, .co_content222, .zoomX',
@@ -20,7 +20,7 @@ exports.CRAWLER_TARGETS = [
         },
         enabled: true,
         priority: 1,
-        maxPages: 50,
+        maxPages: 100,
         respectRobotsTxt: true,
         requestDelay: 2000,
     },

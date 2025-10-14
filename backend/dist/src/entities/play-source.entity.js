@@ -44,6 +44,7 @@ let PlaySource = class PlaySource {
     playCount;
     description;
     sourceName;
+    name;
     isActive;
     headers;
     expireDate;
@@ -109,6 +110,10 @@ __decorate([
     (0, typeorm_1.Column)({ length: 100, nullable: true }),
     __metadata("design:type", String)
 ], PlaySource.prototype, "sourceName", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ length: 200, nullable: true }),
+    __metadata("design:type", String)
+], PlaySource.prototype, "name", void 0);
 __decorate([
     (0, typeorm_1.Column)({ default: true }),
     __metadata("design:type", Boolean)
