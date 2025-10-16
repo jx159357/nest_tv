@@ -36,7 +36,15 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)({
         type: 'enum',
-        enum: ['collaborative', 'content', 'trending', 'editorial', 'personalized'],
+        enum: [
+            'collaborative',
+            'content',
+            'trending',
+            'editorial',
+            'personalized',
+            'latest',
+            'top-rated',
+        ],
         default: 'personalized',
     }),
     (0, typeorm_1.Index)(),
@@ -53,6 +61,11 @@ __decorate([
     __metadata("design:type", Number)
 ], Recommendation.prototype, "mediaResourceId", void 0);
 __decorate([
+    (0, typeorm_1.Index)(['userId', 'isActive', 'type']),
+    (0, typeorm_1.Index)(['userId', 'isActive', 'priority']),
+    (0, typeorm_1.Index)(['type', 'isActive', 'score']),
+    (0, typeorm_1.Index)(['expiresAt', 'isActive']),
+    (0, typeorm_1.Index)(['mediaResourceId', 'userId']),
     (0, typeorm_1.Column)({ type: 'decimal', precision: 5, scale: 2, default: 0 }),
     __metadata("design:type", Number)
 ], Recommendation.prototype, "score", void 0);

@@ -55,6 +55,10 @@ export enum MediaQuality {
 @Index('idx_media_rating', ['rating'])
 @Index('idx_media_viewcount', ['viewCount'])
 @Index('idx_media_popular', ['rating', 'viewCount', 'isActive'])
+// 推荐系统优化索引
+@Index('idx_media_trending', ['viewCount', 'rating', 'createdAt', 'isActive'])
+@Index('idx_media_content', ['type', 'rating', 'viewCount'])
+@Index('idx_media_quality', ['quality', 'rating'])
 // 分类和标签相关索引
 // @Index('idx_media_genres', ['genres']) // 注释掉有问题的索引，因为genres是TEXT类型
 @Index('idx_media_release_date', ['releaseDate'])

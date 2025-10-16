@@ -44,8 +44,54 @@ export declare const CRAWLER_CONFIG: {
     };
     proxy: {
         enabled: boolean;
-        servers: never[];
-        rotateInterval: number;
+        pool: {
+            maxProxies: number;
+            minWorkingProxies: number;
+            validationInterval: number;
+            testUrl: string;
+            testTimeout: number;
+            maxFailureCount: number;
+        };
+        rotation: {
+            strategy: string;
+            switchAfter: number;
+            failureThreshold: number;
+        };
+        providers: {
+            freeProxies: {
+                enabled: boolean;
+                refreshInterval: number;
+                providers: {
+                    name: string;
+                    active: boolean;
+                    priority: number;
+                }[];
+            };
+            paidProxies: {
+                enabled: boolean;
+                providers: never[];
+            };
+        };
+        targetStrategies: {
+            电影天堂: {
+                useProxy: boolean;
+                preferredProtocol: string;
+                requestDelay: number;
+                maxRetries: number;
+            };
+            阳光电影: {
+                useProxy: boolean;
+                preferredProtocol: string;
+                requestDelay: number;
+                maxRetries: number;
+            };
+            人人影视: {
+                useProxy: boolean;
+                preferredProtocol: string;
+                requestDelay: number;
+                maxRetries: number;
+            };
+        };
     };
     rateLimit: {
         enabled: boolean;

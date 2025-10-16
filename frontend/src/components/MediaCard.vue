@@ -4,12 +4,25 @@
       <slot name="image">
         <img
           v-if="media.poster"
-          :src="media.poster"
+          :src="imageSrc"
           :alt="media.title"
-          class="w-full h-48 object-cover"
+          class="w-full h-48 object-cover transition-opacity duration-300"
+          :class="{ 'opacity-0': !imageLoaded, 'opacity-100': imageLoaded }"
+          :loading="lazyLoading ? 'lazy' : 'eager'"
+          @load="handleImageLoad"
           @error="handleImageError"
         />
-        <div v-else class="w-full h-48 flex items-center justify-center bg-gray-200">
+        <div v-if="!imageLoaded" class="absolute inset-0 flex items-center justify-center bg-gray-200">
+          <div class="animate-pulse">
+            <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+        </div>
+        <div v-else-if="imageError" class="w-full h-48 flex items-center justify-center bg-gray-200">
+          <span class="text-gray-500">加载失败</span>
+        </div>
+        <div v-if="!media.poster" class="w-full h-48 flex items-center justify-center bg-gray-200">
           <span class="text-gray-500">暂无封面</span>
         </div>
       </slot>
@@ -41,7 +54,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue';
+  import { computed, ref, onMounted, onUnmounted } from 'vue';
   import type { MediaResource } from '@/types';
 
   interface Props {
@@ -51,6 +64,8 @@
     clickable?: boolean;
     size?: 'small' | 'medium' | 'large';
     hoverable?: boolean;
+    lazyLoading?: boolean;
+    placeholderImage?: string;
   }
 
   const props = withDefaults(defineProps<Props>(), {
@@ -59,12 +74,30 @@
     clickable: true,
     size: 'medium',
     hoverable: true,
+    lazyLoading: true,
+    placeholderImage: '/placeholder.jpg',
   });
 
   const emit = defineEmits<{
     click: [media: MediaResource];
     imageError: [event: Event];
+    imageLoad: [event: Event];
   }>();
+
+  const imageLoaded = ref(false);
+  const imageError = ref(false);
+  const observer = ref<IntersectionObserver | null>(null);
+  const imageElement = ref<HTMLImageElement | null>(null);
+  const shouldLoadImage = ref(!props.lazyLoading);
+
+  const imageSrc = computed(() => {
+    if (!props.media.poster) return '';
+    // 添加图片压缩参数
+    const url = new URL(props.media.poster, window.location.origin);
+    url.searchParams.set('quality', '80');
+    url.searchParams.set('width', '300');
+    return url.toString();
+  });
 
   const cardClasses = computed(() => [
     `card-${props.size}`,
@@ -80,9 +113,54 @@
     }
   };
 
+  const handleImageLoad = (event: Event) => {
+    imageLoaded.value = true;
+    imageError.value = false;
+    emit('imageLoad', event);
+  };
+
   const handleImageError = (event: Event) => {
+    imageLoaded.value = false;
+    imageError.value = true;
     emit('imageError', event);
   };
+
+  // 懒加载逻辑
+  const setupIntersectionObserver = () => {
+    if (!props.lazyLoading || !('IntersectionObserver' in window)) {
+      shouldLoadImage.value = true;
+      return;
+    }
+
+    observer.value = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            shouldLoadImage.value = true;
+            observer.value?.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        rootMargin: '50px',
+        threshold: 0.1,
+      }
+    );
+
+    if (imageElement.value) {
+      observer.value.observe(imageElement.value);
+    }
+  };
+
+  onMounted(() => {
+    setupIntersectionObserver();
+  });
+
+  onUnmounted(() => {
+    if (observer.value) {
+      observer.value.disconnect();
+    }
+  });
 </script>
 
 <style scoped>

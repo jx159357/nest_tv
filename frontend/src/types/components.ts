@@ -1,4 +1,6 @@
 // 组件 Props 类型
+import type { MediaResource, MediaType, MediaQuality } from './media';
+
 export interface MediaCardProps {
   media: MediaResource;
   showRating?: boolean;

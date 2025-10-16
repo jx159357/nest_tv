@@ -21,10 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { PlaySourceService } from './play-source.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import {
-  CreatePlaySourceDto,
-  UpdatePlaySourceDto,
-} from './dtos/play-source.dto';
+import { CreatePlaySourceDto, UpdatePlaySourceDto } from './dtos/play-source.dto';
 import { PlaySourceQueryDto } from './dtos/play-source-query.dto';
 
 @ApiTags('播放源管理')
@@ -110,7 +107,6 @@ export class PlaySourceController {
   })
   @ApiQuery({ name: 'isActive', description: '是否激活', example: true, required: false })
   @ApiQuery({ name: 'mediaResourceId', description: '媒体资源ID', example: 1, required: false })
-  @UsePipes(new ValidationPipe({ transform: true }))
   async findAll(@Query() queryDto: PlaySourceQueryDto) {
     return this.playSourceService.findAll(queryDto);
   }

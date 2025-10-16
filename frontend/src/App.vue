@@ -7,6 +7,9 @@
   import { useLoadingStore } from '@/stores/loading';
   import AppLayout from '@/components/AppLayout.vue';
   import GlobalLoading from '@/components/ui/GlobalLoading.vue';
+  import EnhancedModal from '@/components/EnhancedModal.vue';
+  import NotificationToast from '@/components/NotificationToast.vue';
+  import { modalState, notifications } from '@/composables/useModal';
 
   const authStore = useAuthStore();
   const themeStore = useThemeStore();
@@ -49,4 +52,21 @@
 <template>
   <AppLayout />
   <GlobalLoading />
+  
+  <!-- 全局模态框 -->
+  <EnhancedModal
+    v-if="modalState.isVisible"
+    :type="modalState.type"
+    :title="modalState.title"
+    :message="modalState.message"
+    :confirm-text="modalState.confirmText"
+    :cancel-text="modalState.cancelText"
+    :show-action="modalState.showAction"
+    @confirm="modalState.onConfirm"
+    @cancel="modalState.onCancel"
+    @close="modalState.isVisible = false"
+  />
+  
+  <!-- 全局通知 -->
+  <NotificationToast />
 </template>

@@ -60,23 +60,23 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  
+
   // 设置自定义中间件来处理MIME类型
   app.use('/api/swagger-ui.css', (req, res, next) => {
     res.setHeader('Content-Type', 'text/css; charset=utf-8');
     next();
   });
-  
+
   app.use('/api/swagger-ui-bundle.js', (req, res, next) => {
     res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
     next();
   });
-  
+
   app.use('/api/swagger-ui-standalone-preset.js', (req, res, next) => {
     res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
     next();
   });
-  
+
   app.use('/api/swagger-ui-init.js', (req, res, next) => {
     res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
     next();
@@ -100,7 +100,6 @@ async function bootstrap() {
   const appLogger = app.get(AppLoggerService);
   const requestLoggingMiddleware = new RequestLoggingMiddleware(appLogger);
   const performanceMonitoringMiddleware = new PerformanceMonitoringMiddleware(appLogger);
-
 
   app.use(new SecurityHeadersMiddleware().use);
   app.use(requestLoggingMiddleware.use.bind(requestLoggingMiddleware));

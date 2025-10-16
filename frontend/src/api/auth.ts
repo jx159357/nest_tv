@@ -1,5 +1,10 @@
 import ApiClient from './index';
-import type { LoginCredentials, RegisterUserData, AuthResponse, User } from '@/types';
+import type { 
+  LoginCredentials, 
+  RegisterUserData, 
+  AuthResponse, 
+  User 
+} from '@/types/user';
 
 export const authApi = {
   // 用户登录

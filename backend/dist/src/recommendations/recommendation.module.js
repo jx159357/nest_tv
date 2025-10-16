@@ -9,6 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RecommendationModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
+const cache_manager_1 = require("@nestjs/cache-manager");
 const recommendation_entity_1 = require("../entities/recommendation.entity");
 const recommendation_service_1 = require("./recommendation.service");
 const recommendation_controller_1 = require("./recommendation.controller");
@@ -24,9 +25,10 @@ exports.RecommendationModule = RecommendationModule = __decorate([
         imports: [
             typeorm_1.TypeOrmModule.forFeature([recommendation_entity_1.Recommendation, user_entity_1.User, media_resource_entity_1.MediaResource, watch_history_entity_1.WatchHistory]),
             media_module_1.MediaResourceModule,
+            cache_manager_1.CacheModule.register(),
         ],
-        providers: [recommendation_service_1.RecommendationService],
         controllers: [recommendation_controller_1.RecommendationController],
+        providers: [recommendation_service_1.RecommendationService],
         exports: [recommendation_service_1.RecommendationService],
     })
 ], RecommendationModule);

@@ -1,14 +1,7 @@
-import { IsString, IsUrl, IsArray, ArrayNotEmpty, IsOptional, IsEnum } from 'class-validator';
-import { CRAWLER_TARGETS } from '../crawler.config';
-
-// 从配置中提取允许的目标名称
-const ALLOWED_TARGETS = CRAWLER_TARGETS.map(target => target.name);
+import { IsString, IsUrl, IsArray, ArrayNotEmpty, IsOptional } from 'class-validator';
 
 export class CrawlRequestDto {
   @IsString()
-  @IsEnum(ALLOWED_TARGETS, {
-    message: `目标网站必须是: ${ALLOWED_TARGETS.join('、')}`,
-  })
   targetName: string;
 
   @IsString()
@@ -18,9 +11,6 @@ export class CrawlRequestDto {
 
 export class BatchCrawlRequestDto {
   @IsString()
-  @IsEnum(ALLOWED_TARGETS, {
-    message: `目标网站必须是: ${ALLOWED_TARGETS.join('、')}`,
-  })
   targetName: string;
 
   @IsArray()
@@ -35,8 +25,6 @@ export class CrawlAndSaveDto {
   url: string;
 
   @IsOptional()
-  @IsEnum(ALLOWED_TARGETS, {
-    message: `目标网站必须是: ${ALLOWED_TARGETS.join('、')}`,
-  })
+  @IsString()
   targetName?: string;
 }

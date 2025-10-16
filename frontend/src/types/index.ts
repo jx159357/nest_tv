@@ -65,9 +65,6 @@ import {
   RecommendationCreateData,
 } from './history';
 
-// 导出User类型
-import { User } from './user';
-
 import {
   MediaCardProps,
   LoadingSpinnerProps,

@@ -77,6 +77,23 @@ services:
       retries: 5
       interval: 30s
 
+  # Vue3 前端
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nest-tv-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+    networks:
+      - nest-network
+    environment:
+      - VITE_API_URL=http://localhost:3334
+      - VITE_WS_URL=ws://localhost:3334
+
   # Nginx 反向代理
   nginx:
     image: nginx:alpine
@@ -90,6 +107,7 @@ services:
       - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       - api
+      - frontend
     networks:
       - nest-network
 
@@ -105,99 +123,3 @@ networks:
     ipam:
       config:
         - subnet: 172.20.0.0/16
-      - "3335:3335"
-    environment:
-      - NODE_ENV=production
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_USERNAME=nest_user
-      - DB_PASSWORD=nest_password
-      - DB_DATABASE=nest_tv
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - JWT_SECRET=your-super-secret-jwt-key-here-change-in-production
-      - JWT_EXPIRES_IN=7d
-    depends_on:
-      - mysql
-      - redis
-    networks:
-      - app-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "node", "-e", "const http = require('http'); const options = { hostname: 'localhost', port: 3335, path: '/', timeout: 3000 }; const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.end();"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # MySQL数据库服务
-  mysql:
-    image: mysql:8.0
-    container_name: nest_tv_mysql
-    ports:
-      - "3307:3306"
-    environment:
-      - MYSQL_ROOT_PASSWORD=root_password
-      - MYSQL_DATABASE=nest_tv
-      - MYSQL_USER=nest_user
-      - MYSQL_PASSWORD=nest_password
-    volumes:
-      - mysql_data:/var/lib/mysql
-      - ./backend/database/init:/docker-entrypoint-initdb.d
-    networks:
-      - app-network
-    restart: unless-stopped
-    command: --default-authentication-plugin=mysql_native_password
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "nest_user", "-pnest_password"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
-  # Redis缓存服务
-  redis:
-    image: redis:7-alpine
-    container_name: nest_tv_redis
-    ports:
-      - "6380:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - app-network
-    restart: unless-stopped
-    command: redis-server --appendonly yes
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # 前端Nginx服务
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: nest_tv_frontend
-    ports:
-      - "3000:80"
-    depends_on:
-      - api
-    networks:
-      - app-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-volumes:
-  mysql_data:
-    driver: local
-  redis_data:
-    driver: local
-
-networks:
-  app-network:
-    driver: bridge

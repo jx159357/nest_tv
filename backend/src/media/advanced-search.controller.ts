@@ -62,12 +62,10 @@ export class AdvancedSearchController {
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiQuery({ name: 'keyword', description: '搜索关键词' })
   @ApiQuery({ name: 'limit', description: '返回数量限制，默认8', required: false })
-  async getSearchSuggestions(
-    @Query('keyword') keyword: string,
-    @Query('limit', ParseIntPipe) limit = 8,
-  ) {
+  async getSearchSuggestions(@Query('keyword') keyword: string, @Query('limit') limit?: string) {
     try {
-      return await this.advancedSearchService.getSearchSuggestions(keyword, limit);
+      const parsedLimit = limit ? parseInt(limit, 10) : 8;
+      return await this.advancedSearchService.getSearchSuggestions(keyword, parsedLimit);
     } catch (error) {
       throw new HttpException(
         error.message || '获取搜索建议失败',
@@ -83,9 +81,10 @@ export class AdvancedSearchController {
   @ApiOperation({ summary: '获取热门搜索关键词' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiQuery({ name: 'limit', description: '返回数量限制，默认20', required: false })
-  async getPopularKeywords(@Query('limit', ParseIntPipe) limit = 20): Promise<string[]> {
+  async getPopularKeywords(@Query('limit') limit?: string): Promise<string[]> {
     try {
-      return await this.advancedSearchService.getPopularSearchKeywords(limit);
+      const parsedLimit = limit ? parseInt(limit, 10) : 20;
+      return await this.advancedSearchService.getPopularSearchKeywords(parsedLimit);
     } catch (error) {
       throw new HttpException(
         error.message || '获取热门搜索关键词失败',
@@ -101,13 +100,11 @@ export class AdvancedSearchController {
   @ApiOperation({ summary: '获取用户搜索历史' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiQuery({ name: 'limit', description: '返回数量限制，默认10', required: false })
-  async getUserSearchHistory(
-    @Request() req,
-    @Query('limit', ParseIntPipe) limit = 10,
-  ): Promise<string[]> {
+  async getUserSearchHistory(@Request() req, @Query('limit') limit?: string): Promise<string[]> {
     try {
       const userId = req.user.userId;
-      return await this.advancedSearchService.getUserSearchHistory(userId, limit);
+      const parsedLimit = limit ? parseInt(limit, 10) : 10;
+      return await this.advancedSearchService.getUserSearchHistory(userId, parsedLimit);
     } catch (error) {
       throw new HttpException(
         error.message || '获取搜索历史失败',
@@ -145,10 +142,11 @@ export class AdvancedSearchController {
   @ApiQuery({ name: 'limit', description: '返回数量限制，默认5', required: false })
   async getRelatedKeywords(
     @Param('keyword') keyword: string,
-    @Query('limit', ParseIntPipe) limit = 5,
+    @Query('limit') limit?: string,
   ): Promise<string[]> {
     try {
-      return await this.advancedSearchService.getRelatedKeywords(keyword, limit);
+      const parsedLimit = limit ? parseInt(limit, 10) : 5;
+      return await this.advancedSearchService.getRelatedKeywords(keyword, parsedLimit);
     } catch (error) {
       throw new HttpException(
         error.message || '获取相关关键词失败',
@@ -164,7 +162,7 @@ export class AdvancedSearchController {
   @ApiOperation({ summary: '获取搜索趋势统计' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiQuery({ name: 'days', description: '统计天数，默认7', required: false })
-  async getSearchTrends(@Query('days', ParseIntPipe) days = 7): Promise<{
+  async getSearchTrends(@Query('days') days?: string): Promise<{
     totalSearches: number;
     dailyTrends: Array<{
       date: string;
@@ -177,6 +175,7 @@ export class AdvancedSearchController {
     }>;
   }> {
     try {
+      const parsedDays = days ? parseInt(days, 10) : 7;
       // 这里可以实现搜索趋势统计
       // 暂时返回模拟数据
       return {

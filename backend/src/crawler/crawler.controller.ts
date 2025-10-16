@@ -110,17 +110,19 @@ export class CrawlerController {
       crawlRequest.url,
     );
 
-    if (!result) {
+    if (!result.success) {
       return {
         success: false,
-        message: '爬取失败',
+        message: `爬取失败: ${result.error}`,
         data: null,
+        error: result.error,
+        details: result.details,
       };
     }
 
     // 将爬取的数据保存到数据库
     try {
-      await this.saveToDatabase(result, crawlRequest.targetName);
+      await this.saveToDatabase(result.data!, crawlRequest.targetName);
     } catch (error) {
       console.warn('保存数据失败:', error.message);
       // 继续返回爬取结果，不因为保存失败而影响用户
@@ -129,7 +131,7 @@ export class CrawlerController {
     return {
       success: true,
       message: '爬取成功',
-      data: result,
+      data: result.data,
     };
   }
 
@@ -303,21 +305,23 @@ export class CrawlerController {
     const targetName = body.targetName || CRAWLER_TARGETS[0]?.name; // 默认使用配置中的第一个目标
     const result = await this.crawlerService.crawlWebsite(targetName, body.url);
 
-    if (!result) {
+    if (!result.success) {
       return {
         success: false,
-        message: '爬取失败',
+        message: `爬取失败: ${result.error}`,
         data: null,
+        error: result.error,
+        details: result.details,
       };
     }
 
     // 实现保存到数据库的逻辑
     try {
-      await this.saveToDatabase(result, targetName);
+      await this.saveToDatabase(result.data!, targetName);
       return {
         success: true,
         message: '爬取并保存成功',
-        data: result,
+        data: result.data,
       };
     } catch (error) {
       console.warn('保存数据失败:', error.message);
@@ -325,7 +329,7 @@ export class CrawlerController {
         success: false,
         message: '爬取成功但保存失败',
         data: {
-          crawledData: result,
+          crawledData: result.data,
           error: error.message,
         },
       };

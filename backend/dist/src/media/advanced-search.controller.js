@@ -31,26 +31,29 @@ let AdvancedSearchController = class AdvancedSearchController {
             throw new common_1.HttpException(error.message || '搜索失败', error.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async getSearchSuggestions(keyword, limit = 8) {
+    async getSearchSuggestions(keyword, limit) {
         try {
-            return await this.advancedSearchService.getSearchSuggestions(keyword, limit);
+            const parsedLimit = limit ? parseInt(limit, 10) : 8;
+            return await this.advancedSearchService.getSearchSuggestions(keyword, parsedLimit);
         }
         catch (error) {
             throw new common_1.HttpException(error.message || '获取搜索建议失败', error.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async getPopularKeywords(limit = 20) {
+    async getPopularKeywords(limit) {
         try {
-            return await this.advancedSearchService.getPopularSearchKeywords(limit);
+            const parsedLimit = limit ? parseInt(limit, 10) : 20;
+            return await this.advancedSearchService.getPopularSearchKeywords(parsedLimit);
         }
         catch (error) {
             throw new common_1.HttpException(error.message || '获取热门搜索关键词失败', error.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async getUserSearchHistory(req, limit = 10) {
+    async getUserSearchHistory(req, limit) {
         try {
             const userId = req.user.userId;
-            return await this.advancedSearchService.getUserSearchHistory(userId, limit);
+            const parsedLimit = limit ? parseInt(limit, 10) : 10;
+            return await this.advancedSearchService.getUserSearchHistory(userId, parsedLimit);
         }
         catch (error) {
             throw new common_1.HttpException(error.message || '获取搜索历史失败', error.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
@@ -66,16 +69,18 @@ let AdvancedSearchController = class AdvancedSearchController {
             throw new common_1.HttpException(error.message || '清除搜索历史失败', error.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async getRelatedKeywords(keyword, limit = 5) {
+    async getRelatedKeywords(keyword, limit) {
         try {
-            return await this.advancedSearchService.getRelatedKeywords(keyword, limit);
+            const parsedLimit = limit ? parseInt(limit, 10) : 5;
+            return await this.advancedSearchService.getRelatedKeywords(keyword, parsedLimit);
         }
         catch (error) {
             throw new common_1.HttpException(error.message || '获取相关关键词失败', error.status || common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    async getSearchTrends(days = 7) {
+    async getSearchTrends(days) {
         try {
+            const parsedDays = days ? parseInt(days, 10) : 7;
             return {
                 totalSearches: 1250,
                 dailyTrends: [
@@ -236,9 +241,9 @@ __decorate([
     (0, swagger_1.ApiQuery)({ name: 'keyword', description: '搜索关键词' }),
     (0, swagger_1.ApiQuery)({ name: 'limit', description: '返回数量限制，默认8', required: false }),
     __param(0, (0, common_1.Query)('keyword')),
-    __param(1, (0, common_1.Query)('limit', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], AdvancedSearchController.prototype, "getSearchSuggestions", null);
 __decorate([
@@ -246,9 +251,9 @@ __decorate([
     (0, swagger_1.ApiOperation)({ summary: '获取热门搜索关键词' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: '获取成功' }),
     (0, swagger_1.ApiQuery)({ name: 'limit', description: '返回数量限制，默认20', required: false }),
-    __param(0, (0, common_1.Query)('limit', common_1.ParseIntPipe)),
+    __param(0, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AdvancedSearchController.prototype, "getPopularKeywords", null);
 __decorate([
@@ -257,9 +262,9 @@ __decorate([
     (0, swagger_1.ApiResponse)({ status: 200, description: '获取成功' }),
     (0, swagger_1.ApiQuery)({ name: 'limit', description: '返回数量限制，默认10', required: false }),
     __param(0, (0, common_1.Request)()),
-    __param(1, (0, common_1.Query)('limit', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], AdvancedSearchController.prototype, "getUserSearchHistory", null);
 __decorate([
@@ -278,9 +283,9 @@ __decorate([
     (0, swagger_1.ApiParam)({ name: 'keyword', description: '基础关键词' }),
     (0, swagger_1.ApiQuery)({ name: 'limit', description: '返回数量限制，默认5', required: false }),
     __param(0, (0, common_1.Param)('keyword')),
-    __param(1, (0, common_1.Query)('limit', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], AdvancedSearchController.prototype, "getRelatedKeywords", null);
 __decorate([
@@ -288,9 +293,9 @@ __decorate([
     (0, swagger_1.ApiOperation)({ summary: '获取搜索趋势统计' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: '获取成功' }),
     (0, swagger_1.ApiQuery)({ name: 'days', description: '统计天数，默认7', required: false }),
-    __param(0, (0, common_1.Query)('days', common_1.ParseIntPipe)),
+    __param(0, (0, common_1.Query)('days')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AdvancedSearchController.prototype, "getSearchTrends", null);
 __decorate([

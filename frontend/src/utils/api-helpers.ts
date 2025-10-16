@@ -1,5 +1,14 @@
 import type { AxiosResponse, AxiosError } from 'axios';
-import type { ApiResponse, ApiError } from '@/types';
+import type { ApiResponse } from '@/types';
+
+// 重新定义 ApiError 接口以兼容使用方式
+interface ApiError {
+  message: string;
+  status?: number;
+  code?: string;
+  details?: any;
+  data?: any;
+}
 
 // 成功响应包装器
 export class ApiResponseWrapper {
@@ -200,13 +209,13 @@ export class RetryHelper {
     delay: number = 1000,
     backoff: number = 2,
   ): Promise<T> {
-    let lastError: Error;
+    let lastError: Error | unknown;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         return await fn();
       } catch (error) {
-        lastError = error as Error;
+        lastError = error;
 
         if (attempt === maxAttempts) {
           throw lastError;
@@ -217,6 +226,9 @@ export class RetryHelper {
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
     }
+    
+    // TypeScript 要求必须有返回值，但实际上永远不会到达这里
+    throw lastError;
   }
 }
 

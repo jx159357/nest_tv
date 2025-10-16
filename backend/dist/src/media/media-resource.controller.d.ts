@@ -11,6 +11,15 @@ export declare class MediaResourceController {
         pageSize: number;
         totalPages: number;
     }>;
+    search(keyword: string, limit?: number): Promise<import("../entities/media-resource.entity").MediaResource[]>;
+    getPopular(limit?: number): Promise<import("../entities/media-resource.entity").MediaResource[]>;
+    getLatest(limit?: number): Promise<import("../entities/media-resource.entity").MediaResource[]>;
+    getStatistics(): Promise<{
+        total: number;
+        byType: Record<string, number>;
+        byQuality: Record<string, number>;
+        averageRating: number;
+    }>;
     findById(id: number): Promise<import("../entities/media-resource.entity").MediaResource>;
     create(createMediaResourceDto: CreateMediaResourceDto): Promise<import("../entities/media-resource.entity").MediaResource>;
     update(id: number, updateMediaResourceDto: UpdateMediaResourceDto): Promise<import("../entities/media-resource.entity").MediaResource>;
@@ -19,9 +28,6 @@ export declare class MediaResourceController {
         message: string;
         timestamp: string;
     }>;
-    search(keyword: string, limit?: number): Promise<import("../entities/media-resource.entity").MediaResource[]>;
-    getPopular(limit?: number): Promise<import("../entities/media-resource.entity").MediaResource[]>;
-    getLatest(limit?: number): Promise<import("../entities/media-resource.entity").MediaResource[]>;
     getSimilar(id: number, limit?: number): Promise<import("../entities/media-resource.entity").MediaResource[]>;
     incrementViews(id: number): Promise<{
         message: string;
@@ -31,11 +37,5 @@ export declare class MediaResourceController {
     }>;
     decrementLikes(id: number): Promise<{
         message: string;
-    }>;
-    getStatistics(): Promise<{
-        total: number;
-        byType: Record<string, number>;
-        byQuality: Record<string, number>;
-        averageRating: number;
     }>;
 }

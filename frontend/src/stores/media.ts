@@ -1,7 +1,16 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { mediaApi } from '@/api/media';
-import type { MediaResource, Pagination, MediaQueryParams } from '@/types';
+import type { PaginatedResponse, PaginationParams, FilterParams } from '@/types/api';
+import type { MediaResource, MediaQueryParams } from '@/types/media';
+
+// 定义分页类型
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
 
 export const useMediaStore = defineStore('media', () => {
   const mediaList = ref<MediaResource[]>([]);

@@ -1,5 +1,9 @@
 import ApiClient from './index';
-import type { MediaResource, MediaQueryParams, PlaySource } from '@/types';
+import type { 
+  MediaResource, 
+  MediaQueryParams, 
+  PlaySource 
+} from '@/types/media';
 
 export const mediaApi = {
   // 获取媒体资源列表

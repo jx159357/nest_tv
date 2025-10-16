@@ -1,4 +1,19 @@
 // 用户相关类型
+import type { MediaResource } from './media';
+
+// 临时定义 WatchHistoryItem 类型，等 history.ts 模块完善后再导入
+interface WatchHistoryItem {
+  id: number;
+  userId: number;
+  mediaResourceId: number;
+  mediaResource?: MediaResource;
+  watchProgress: number;
+  lastWatchedAt: Date;
+  isCompleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface User {
   id: number;
   username: string;

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { RequestInterceptor, RetryHelper } from '@/utils/api-helpers';
 import { GlobalErrorHandler } from '@/utils/global-error-handler';
-import { setupCacheInterceptors } from '@/utils/api-cache';
+import { setupCacheInterceptors, withCache } from '@/utils/api-cache';
 
 // 创建axios实例
 const api = axios.create({

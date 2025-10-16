@@ -11,13 +11,15 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PlaySourceQueryDto = void 0;
 const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
 const swagger_1 = require("@nestjs/swagger");
 const play_source_entity_1 = require("../../entities/play-source.entity");
 class PlaySourceQueryDto {
-    page = 1;
-    pageSize = 10;
+    page;
+    pageSize;
     mediaResourceId;
     type;
+    quality;
     resolution;
     isActive;
     search;
@@ -25,22 +27,24 @@ class PlaySourceQueryDto {
 exports.PlaySourceQueryDto = PlaySourceQueryDto;
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: '页码',
+        description: '页码，从1开始',
         example: 1,
         required: false,
     }),
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)({}, { message: '页码必须是数字' }),
     (0, class_validator_1.Min)(1, { message: '页码不能小于1' }),
     __metadata("design:type", Number)
 ], PlaySourceQueryDto.prototype, "page", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: '每页数量',
+        description: '每页数量，默认10条，最大100条',
         example: 10,
         required: false,
     }),
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)({}, { message: '每页数量必须是数字' }),
     (0, class_validator_1.Min)(1, { message: '每页数量不能小于1' }),
     (0, class_validator_1.Max)(100, { message: '每页数量不能超过100' }),
@@ -53,7 +57,9 @@ __decorate([
         required: false,
     }),
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)({}, { message: '媒体资源ID必须是数字' }),
+    (0, class_validator_1.Min)(1, { message: '媒体资源ID不能小于1' }),
     __metadata("design:type", Number)
 ], PlaySourceQueryDto.prototype, "mediaResourceId", void 0);
 __decorate([
@@ -68,9 +74,21 @@ __decorate([
 ], PlaySourceQueryDto.prototype, "type", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: '分辨率/质量',
+        description: '视频质量',
         example: '1080p',
         required: false,
+        enum: ['4K', '1080p', '720p', '480p', '360p'],
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)({ message: '视频质量必须是字符串' }),
+    __metadata("design:type", String)
+], PlaySourceQueryDto.prototype, "quality", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '分辨率',
+        example: '1080p',
+        required: false,
+        enum: ['4K', '1080p', '720p', '480p', '360p'],
     }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)({ message: '分辨率必须是字符串' }),
@@ -83,6 +101,7 @@ __decorate([
         required: false,
     }),
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Boolean),
     (0, class_validator_1.IsBoolean)({ message: '启用状态必须是布尔值' }),
     __metadata("design:type", Boolean)
 ], PlaySourceQueryDto.prototype, "isActive", void 0);

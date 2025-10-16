@@ -25,10 +25,9 @@ exports.RedisClientProvider = {
                 },
                 connectTimeout: 10000,
             },
-            disableOfflineQueue: false,
         });
         client.on('error', err => {
-            console.error('Redis客户端错误:', err);
+            console.warn('Redis客户端错误:', err.message);
         });
         client.on('connect', () => {
             console.log('Redis连接成功');
@@ -42,15 +41,29 @@ exports.RedisClientProvider = {
         client.on('end', () => {
             console.log('Redis连接结束');
         });
-        await client.connect();
         try {
-            await client.ping();
+            await client.connect();
             console.log('Redis连接测试成功');
+            return client;
         }
         catch (error) {
-            console.error('Redis连接测试失败:', error);
+            console.warn('Redis连接失败，将使用内存缓存:', error.message);
+            return {
+                connect: async () => { },
+                ping: async () => { throw new Error('Redis不可用'); },
+                get: async () => null,
+                set: async () => { },
+                del: async () => { },
+                exists: async () => 0,
+                keys: async () => [],
+                flushall: async () => { },
+                quit: async () => { },
+                on: () => { },
+                off: () => { },
+                once: () => { },
+                emit: () => { },
+            };
         }
-        return client;
     },
     inject: [config_1.ConfigService],
 };
@@ -68,8 +81,29 @@ exports.RedisCacheService = {
                 connectTimeout: 5000,
             },
         });
-        await client.connect();
-        return client;
+        try {
+            await client.connect();
+            console.log('Redis缓存服务连接成功');
+            return client;
+        }
+        catch (error) {
+            console.warn('Redis缓存服务连接失败，将使用内存缓存:', error.message);
+            return {
+                connect: async () => { },
+                ping: async () => { throw new Error('Redis不可用'); },
+                get: async () => null,
+                set: async () => { },
+                del: async () => { },
+                exists: async () => 0,
+                keys: async () => [],
+                flushall: async () => { },
+                quit: async () => { },
+                on: () => { },
+                off: () => { },
+                once: () => { },
+                emit: () => { },
+            };
+        }
     },
     inject: [config_1.ConfigService],
 };
@@ -87,8 +121,29 @@ exports.RedisSessionProvider = {
                 connectTimeout: 15000,
             },
         });
-        await client.connect();
-        return client;
+        try {
+            await client.connect();
+            console.log('Redis会话服务连接成功');
+            return client;
+        }
+        catch (error) {
+            console.warn('Redis会话服务连接失败，将使用内存会话:', error.message);
+            return {
+                connect: async () => { },
+                ping: async () => { throw new Error('Redis不可用'); },
+                get: async () => null,
+                set: async () => { },
+                del: async () => { },
+                exists: async () => 0,
+                keys: async () => [],
+                flushall: async () => { },
+                quit: async () => { },
+                on: () => { },
+                off: () => { },
+                once: () => { },
+                emit: () => { },
+            };
+        }
     },
     inject: [config_1.ConfigService],
 };

@@ -17,10 +17,14 @@ export declare class CrawlerController {
         success: boolean;
         message: string;
         data: null;
+        error: string | undefined;
+        details: any;
     } | {
         success: boolean;
         message: string;
-        data: import("./crawler.service").CrawledData;
+        data: import("./crawler.service").CrawledData | undefined;
+        error?: undefined;
+        details?: undefined;
     }>;
     batchCrawl(req: any, batchCrawlRequest: BatchCrawlRequestDto): Promise<{
         success: boolean;
@@ -41,17 +45,23 @@ export declare class CrawlerController {
         success: boolean;
         message: string;
         data: null;
+        error: string | undefined;
+        details: any;
     } | {
         success: boolean;
         message: string;
-        data: import("./crawler.service").CrawledData;
+        data: import("./crawler.service").CrawledData | undefined;
+        error?: undefined;
+        details?: undefined;
     } | {
         success: boolean;
         message: string;
         data: {
-            crawledData: import("./crawler.service").CrawledData;
+            crawledData: import("./crawler.service").CrawledData | undefined;
             error: any;
         };
+        error?: undefined;
+        details?: undefined;
     }>;
     getStats(): Promise<CrawlerStatsResponse>;
     testConnection(targetName: string): Promise<{

@@ -41,6 +41,27 @@ let MediaResourceController = class MediaResourceController {
         };
         return this.mediaResourceService.findAll(queryDto);
     }
+    async search(keyword, limit = 10) {
+        if (!keyword || keyword.trim() === '') {
+            return [];
+        }
+        if (isNaN(limit) || limit <= 0 || limit > 100) {
+            limit = 10;
+        }
+        return this.mediaResourceService.search(keyword.trim(), limit);
+    }
+    async getPopular(limit = 20) {
+        if (isNaN(limit) || limit <= 0 || limit > 100) {
+            limit = 20;
+        }
+        return this.mediaResourceService.getPopular(limit);
+    }
+    async getLatest(limit = 20) {
+        return this.mediaResourceService.getLatest(limit);
+    }
+    async getStatistics() {
+        return this.mediaResourceService.getStatistics();
+    }
     async findById(id) {
         return this.mediaResourceService.findById(id);
     }
@@ -58,15 +79,6 @@ let MediaResourceController = class MediaResourceController {
             timestamp: new Date().toISOString(),
         };
     }
-    async search(keyword, limit = 10) {
-        return this.mediaResourceService.search(keyword, limit);
-    }
-    async getPopular(limit = 20) {
-        return this.mediaResourceService.getPopular(limit);
-    }
-    async getLatest(limit = 20) {
-        return this.mediaResourceService.getLatest(limit);
-    }
     async getSimilar(id, limit = 6) {
         return this.mediaResourceService.getSimilar(id, limit);
     }
@@ -81,9 +93,6 @@ let MediaResourceController = class MediaResourceController {
     async decrementLikes(id) {
         await this.mediaResourceService.decrementLikes(id);
         return { message: '减少点赞数成功' };
-    }
-    async getStatistics() {
-        return this.mediaResourceService.getStatistics();
     }
 };
 exports.MediaResourceController = MediaResourceController;
@@ -172,6 +181,46 @@ __decorate([
     __metadata("design:paramtypes", [Number, Number, String, String, String, Number, Number, String, String, String]),
     __metadata("design:returntype", Promise)
 ], MediaResourceController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)('search'),
+    (0, swagger_1.ApiOperation)({ summary: '搜索影视资源' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '搜索成功' }),
+    (0, swagger_1.ApiQuery)({ name: 'keyword', description: '搜索关键词' }),
+    (0, swagger_1.ApiQuery)({ name: 'limit', description: '限制数量', required: false }),
+    __param(0, (0, common_1.Query)('keyword')),
+    __param(1, (0, common_1.Query)('limit')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Number]),
+    __metadata("design:returntype", Promise)
+], MediaResourceController.prototype, "search", null);
+__decorate([
+    (0, common_1.Get)('popular'),
+    (0, swagger_1.ApiOperation)({ summary: '获取热门影视' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '获取成功' }),
+    (0, swagger_1.ApiQuery)({ name: 'limit', description: '限制数量', required: false }),
+    __param(0, (0, common_1.Query)('limit')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], MediaResourceController.prototype, "getPopular", null);
+__decorate([
+    (0, common_1.Get)('latest'),
+    (0, swagger_1.ApiOperation)({ summary: '获取最新影视' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '获取成功' }),
+    (0, swagger_1.ApiQuery)({ name: 'limit', description: '限制数量', required: false }),
+    __param(0, (0, common_1.Query)('limit')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], MediaResourceController.prototype, "getLatest", null);
+__decorate([
+    (0, common_1.Get)('statistics'),
+    (0, swagger_1.ApiOperation)({ summary: '获取影视统计信息' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '获取成功' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], MediaResourceController.prototype, "getStatistics", null);
 __decorate([
     (0, common_1.Get)(':id'),
     (0, swagger_1.ApiOperation)({
@@ -424,38 +473,6 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], MediaResourceController.prototype, "remove", null);
 __decorate([
-    (0, common_1.Get)('search'),
-    (0, swagger_1.ApiOperation)({ summary: '搜索影视资源' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: '搜索成功' }),
-    (0, swagger_1.ApiQuery)({ name: 'keyword', description: '搜索关键词' }),
-    (0, swagger_1.ApiQuery)({ name: 'limit', description: '限制数量', required: false }),
-    __param(0, (0, common_1.Query)('keyword')),
-    __param(1, (0, common_1.Query)('limit')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Number]),
-    __metadata("design:returntype", Promise)
-], MediaResourceController.prototype, "search", null);
-__decorate([
-    (0, common_1.Get)('popular'),
-    (0, swagger_1.ApiOperation)({ summary: '获取热门影视' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: '获取成功' }),
-    (0, swagger_1.ApiQuery)({ name: 'limit', description: '限制数量', required: false }),
-    __param(0, (0, common_1.Query)('limit')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
-    __metadata("design:returntype", Promise)
-], MediaResourceController.prototype, "getPopular", null);
-__decorate([
-    (0, common_1.Get)('latest'),
-    (0, swagger_1.ApiOperation)({ summary: '获取最新影视' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: '获取成功' }),
-    (0, swagger_1.ApiQuery)({ name: 'limit', description: '限制数量', required: false }),
-    __param(0, (0, common_1.Query)('limit')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
-    __metadata("design:returntype", Promise)
-], MediaResourceController.prototype, "getLatest", null);
-__decorate([
     (0, common_1.Get)(':id/similar'),
     (0, swagger_1.ApiOperation)({ summary: '获取相似影视' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: '获取成功' }),
@@ -501,14 +518,6 @@ __decorate([
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], MediaResourceController.prototype, "decrementLikes", null);
-__decorate([
-    (0, common_1.Get)('statistics'),
-    (0, swagger_1.ApiOperation)({ summary: '获取影视统计信息' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: '获取成功' }),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", Promise)
-], MediaResourceController.prototype, "getStatistics", null);
 exports.MediaResourceController = MediaResourceController = __decorate([
     (0, swagger_1.ApiTags)('影视资源管理'),
     (0, common_1.Controller)('media'),

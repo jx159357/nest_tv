@@ -12,11 +12,10 @@ export const CRAWLER_TARGETS: CrawlerTarget[] = [
       rating: '.rating, .score, .co_content8 .rank',
       director: '.co_content8 p, .actor p',
       actors: '.co_content8 p, .actor p',
-      genres: ['.co_content8 p a, .actor p a, .co_content222 p a'],
+      genres: '.co_content8 p a, .actor p a, .co_content222 p a',
       releaseDate: '.co_content8 p span, .actor p span, .co_content222 p',
-      downloadUrls: [
+      downloadUrls:
         '.co_content22 a[href*="thunder"], .co_content222 a[href*="magnet"], .down_list a',
-      ],
     },
     enabled: true, // 启用此爬虫
     priority: 1, // 最高优先级
@@ -34,9 +33,9 @@ export const CRAWLER_TARGETS: CrawlerTarget[] = [
       rating: '',
       director: '',
       actors: '',
-      genres: [],
+      genres: '',
       releaseDate: '',
-      downloadUrls: [],
+      downloadUrls: '',
     },
   },
   {
@@ -49,9 +48,9 @@ export const CRAWLER_TARGETS: CrawlerTarget[] = [
       rating: '[data-testid="hero-rating-bar__aggregate-rating__score"]',
       director: 'a.ipc-metadata-list-item__list-content-item[href*="tt_ov_dr"]',
       actors: 'a.ipc-metadata-list-item__list-content-item[href*="tt_ov_st"]',
-      genres: ['.ipc-chip-list__scroller .ipc-chip span'],
+      genres: '.ipc-chip-list__scroller .ipc-chip span',
       releaseDate: '[data-testid="title-details-releasedate"]',
-      downloadUrls: [],
+      downloadUrls: '',
     },
   },
   // 注意：以下为示例配置，实际使用时请确保遵守相关网站的robots.txt和使用条款
@@ -65,9 +64,9 @@ export const CRAWLER_TARGETS: CrawlerTarget[] = [
       rating: '.ratingColumn strong',
       director: '',
       actors: '',
-      genres: [],
+      genres: '',
       releaseDate: '.titleColumn .secondaryInfo',
-      downloadUrls: [],
+      downloadUrls: '',
     },
   },
 ];

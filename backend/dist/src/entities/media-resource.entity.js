@@ -176,6 +176,9 @@ exports.MediaResource = MediaResource = __decorate([
     (0, typeorm_1.Index)('idx_media_rating', ['rating']),
     (0, typeorm_1.Index)('idx_media_viewcount', ['viewCount']),
     (0, typeorm_1.Index)('idx_media_popular', ['rating', 'viewCount', 'isActive']),
+    (0, typeorm_1.Index)('idx_media_trending', ['viewCount', 'rating', 'createdAt', 'isActive']),
+    (0, typeorm_1.Index)('idx_media_content', ['type', 'rating', 'viewCount']),
+    (0, typeorm_1.Index)('idx_media_quality', ['quality', 'rating']),
     (0, typeorm_1.Index)('idx_media_release_date', ['releaseDate']),
     (0, typeorm_1.Index)('idx_media_duration', ['duration'])
 ], MediaResource);

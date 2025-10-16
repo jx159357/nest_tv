@@ -4,6 +4,7 @@ export declare class PlaySourceQueryDto {
     pageSize?: number;
     mediaResourceId?: number;
     type?: PlaySourceType;
+    quality?: string;
     resolution?: string;
     isActive?: boolean;
     search?: string;

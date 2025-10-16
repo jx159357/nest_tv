@@ -4,14 +4,14 @@ export declare class AdvancedSearchController {
     private readonly advancedSearchService;
     constructor(advancedSearchService: AdvancedSearchService);
     advancedSearch(req: any, searchParams: AdvancedSearchParams): Promise<SearchResult>;
-    getSearchSuggestions(keyword: string, limit?: number): Promise<import("./advanced-search.service").SearchSuggestion[]>;
-    getPopularKeywords(limit?: number): Promise<string[]>;
-    getUserSearchHistory(req: any, limit?: number): Promise<string[]>;
+    getSearchSuggestions(keyword: string, limit?: string): Promise<import("./advanced-search.service").SearchSuggestion[]>;
+    getPopularKeywords(limit?: string): Promise<string[]>;
+    getUserSearchHistory(req: any, limit?: string): Promise<string[]>;
     clearUserSearchHistory(req: any): Promise<{
         message: string;
     }>;
-    getRelatedKeywords(keyword: string, limit?: number): Promise<string[]>;
-    getSearchTrends(days?: number): Promise<{
+    getRelatedKeywords(keyword: string, limit?: string): Promise<string[]>;
+    getSearchTrends(days?: string): Promise<{
         totalSearches: number;
         dailyTrends: Array<{
             date: string;

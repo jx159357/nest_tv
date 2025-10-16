@@ -63,11 +63,11 @@ export class InitializationService implements OnModuleInit {
     // 检查是否已存在默认播放源
     for (const playSourceConfig of defaultPlaySources) {
       const existingSource = await this.playSourceService.findByName(playSourceConfig.name);
-      
+
       if (!existingSource) {
         // 首先创建一个默认的媒体资源
         let mediaResource = await this.mediaResourceService.findByTitle('电影天堂资源库');
-        
+
         if (!mediaResource) {
           mediaResource = await this.mediaResourceService.create({
             title: '电影天堂资源库',

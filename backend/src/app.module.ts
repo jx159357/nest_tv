@@ -19,6 +19,8 @@ import { CommonModule } from './common/common.module';
 import { CacheModule } from './common/cache/cache.module';
 import { RateLimitModule } from './common/rate-limit/rate-limit.module';
 import { InitializationModule } from './initialization/initialization.module';
+import { SchedulerModule } from './scheduler/scheduler.module';
+import { ProxyPoolModule } from './modules/proxy-pool/proxy-pool.module';
 import { User } from './entities/user.entity';
 import { MediaResource } from './entities/media-resource.entity';
 import { PlaySource } from './entities/play-source.entity';
@@ -141,10 +143,10 @@ import { AppService } from './app.service';
         // 监控和订阅者管理
         subscribers: [], // 禁用默认订阅者，防止内存泄漏
 
-        // 数据库迁移配置
+        // 数据库迁移配置 - 使用编译后的JS文件避免ES Module问题
         migrationsRun: false, // 禁用自动运行迁移
         dropSchema: false, // 禁用自动删除数据库
-        migrations: ['src/migrations/*.ts'], // 迁移文件路径
+        migrations: ['dist/migrations/*.js'], // 使用编译后的JS文件
 
         // 日志和调试配置
         logging: configService.get<boolean>('DB_LOGGING', process.env.NODE_ENV === 'development'),
@@ -214,6 +216,12 @@ import { AppService } from './app.service';
 
     // 初始化模块 - 默认数据和配置初始化
     InitializationModule,
+
+    // 调度模块 - 定时任务和调度功能
+    SchedulerModule,
+
+    // 代理池模块 - 代理IP管理和轮换
+    ProxyPoolModule,
   ],
   controllers: [AppController],
   providers: [AppService],

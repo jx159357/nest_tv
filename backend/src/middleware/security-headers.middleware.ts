@@ -9,9 +9,10 @@ import { Request, Response, NextFunction } from 'express';
 export class SecurityHeadersMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction): void {
     // 检查是否是Swagger相关路径
-    const isSwaggerPath = req.path.includes('swagger') || 
-                          req.path.includes('api-docs') ||
-                          (req.path.startsWith('/api') && (req.path.includes('.css') || req.path.includes('.js')));
+    const isSwaggerPath =
+      req.path.includes('swagger') ||
+      req.path.includes('api-docs') ||
+      (req.path.startsWith('/api') && (req.path.includes('.css') || req.path.includes('.js')));
 
     // 如果是Swagger资源，跳过所有安全头设置
     if (isSwaggerPath) {

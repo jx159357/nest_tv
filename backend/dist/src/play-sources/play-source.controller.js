@@ -125,7 +125,6 @@ __decorate([
     }),
     (0, swagger_1.ApiQuery)({ name: 'isActive', description: '是否激活', example: true, required: false }),
     (0, swagger_1.ApiQuery)({ name: 'mediaResourceId', description: '媒体资源ID', example: 1, required: false }),
-    (0, common_1.UsePipes)(new common_1.ValidationPipe({ transform: true })),
     __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [play_source_query_dto_1.PlaySourceQueryDto]),

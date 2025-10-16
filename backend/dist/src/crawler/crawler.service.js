@@ -54,15 +54,18 @@ const crawler_config_1 = require("./crawler.config");
 const media_resource_service_1 = require("../media/media-resource.service");
 const media_resource_entity_1 = require("../entities/media-resource.entity");
 const app_logger_service_1 = require("../common/services/app-logger.service");
+const proxy_pool_service_1 = require("../common/services/proxy-pool.service");
 let CrawlerService = CrawlerService_1 = class CrawlerService {
     mediaResourceService;
     appLogger;
+    proxyPoolService;
     logger = new common_1.Logger(CrawlerService_1.name);
     httpClient;
     cache = new Map();
-    constructor(mediaResourceService, appLogger) {
+    constructor(mediaResourceService, appLogger, proxyPoolService) {
         this.mediaResourceService = mediaResourceService;
         this.appLogger = appLogger;
+        this.proxyPoolService = proxyPoolService;
         this.httpClient = axios_1.default.create({
             timeout: crawler_config_1.CRAWLER_CONFIG.request.timeout,
             headers: {
@@ -71,6 +74,27 @@ let CrawlerService = CrawlerService_1 = class CrawlerService {
             },
         });
         this.httpClient.interceptors.request.use(config => {
+            if (crawler_config_1.CRAWLER_CONFIG.proxy?.enabled && config.url) {
+                const targetName = this.extractTargetNameFromUrl(config.url);
+                const strategy = targetName
+                    ? crawler_config_1.CRAWLER_CONFIG.proxy?.targetStrategies?.[targetName]
+                    : null;
+                if (strategy && strategy.useProxy) {
+                    const proxy = this.proxyPoolService.getBestProxy(strategy.preferredProtocol);
+                    if (proxy) {
+                        config.proxy = this.createProxyConfig(proxy);
+                        config.headers = {
+                            ...config.headers,
+                            'X-Proxy-Source': proxy.source,
+                            'X-Proxy-ID': proxy.id,
+                        };
+                        this.logger.log(`使用代理 ${proxy.id} (${proxy.host}:${proxy.port}) 请求: ${config.url}`);
+                    }
+                    else {
+                        this.logger.warn(`没有可用的代理进行请求: ${config.url}`);
+                    }
+                }
+            }
             this.logger.log(`请求URL: ${config.url}`);
             return config;
         }, error => {
@@ -205,11 +229,12 @@ let CrawlerService = CrawlerService_1 = class CrawlerService {
             const cached = this.getCache(cacheKey);
             if (cached) {
                 this.appLogger.log(`使用缓存数据: ${url}`, 'CRAWLER_CACHE');
-                return cached;
+                return { success: true, data: cached };
             }
-            const target = crawler_config_1.CRAWLER_TARGETS.find(t => t.name === targetName);
+            let target = crawler_config_1.CRAWLER_TARGETS.find(t => t.name === targetName);
             if (!target) {
-                throw new Error(`未找到爬虫目标: ${targetName}`);
+                target = this.createDynamicTarget(targetName, url);
+                this.appLogger.log(`创建动态爬虫目标: ${targetName}`, 'CRAWLER_DYNAMIC');
             }
             if (target.enabled === false) {
                 throw new Error(`爬虫目标未启用: ${targetName}`);
@@ -225,24 +250,7 @@ let CrawlerService = CrawlerService_1 = class CrawlerService {
                 crawledData = await this.extractDyttData($, url, target);
             }
             else {
-                crawledData = {
-                    title: this.extractText($, target.selectors.title) || '未知标题',
-                    description: this.extractText($, target.selectors.description),
-                    type: this.inferMediaType(url),
-                    director: this.extractText($, target.selectors.director),
-                    actors: this.extractText($, target.selectors.actors),
-                    genres: this.extractGenres($, target.selectors.genres),
-                    releaseDate: this.parseDate(this.extractText($, target.selectors.releaseDate)),
-                    poster: this.resolveUrl($(target.selectors.poster).first().attr('src'), target.baseUrl),
-                    rating: this.parseRating(this.extractText($, target.selectors.rating)),
-                    source: target.name,
-                    downloadUrls: this.extractDownloadUrls($, target.selectors.downloadUrls),
-                    metadata: {
-                        crawledAt: new Date(),
-                        crawledUrl: url,
-                        website: target.name,
-                    },
-                };
+                crawledData = this.extractGenericData($, url, target);
             }
             if (!this.validateCrawledData(crawledData)) {
                 throw new Error('爬取的数据验证失败');
@@ -252,21 +260,57 @@ let CrawlerService = CrawlerService_1 = class CrawlerService {
             this.setCache(cacheKey, cleanedData);
             this.appLogger.logOperation('CRAWL', `${targetName}:${cleanedData.title}`, undefined, { url, target: targetName, title: cleanedData.title }, 'success', requestId);
             this.appLogger.clearContext(requestId);
-            return cleanedData;
+            return { success: true, data: cleanedData };
         }
         catch (error) {
+            const errorMessage = error.message || '未知错误';
             this.appLogger.error(`爬取失败 ${targetName}: ${url}`, 'CRAWLER_ERROR', error.stack, requestId);
-            this.appLogger.logOperation('CRAWL', `${targetName}:${url}`, undefined, { url, target: targetName, error: error.message }, 'error', requestId);
-            return null;
+            this.appLogger.logOperation('CRAWL', `${targetName}:${url}`, undefined, { url, target: targetName, error: errorMessage }, 'error', requestId);
+            return {
+                success: false,
+                error: errorMessage,
+                details: {
+                    url,
+                    targetName,
+                    timestamp: new Date().toISOString(),
+                    requestId,
+                },
+            };
         }
     }
     extractDyttData($, url, target) {
-        const titleText = $('.co_content22 ul li a').first().text().trim();
-        let title = titleText;
+        let title = '';
+        let titleText = '';
         let quality = media_resource_entity_1.MediaQuality.HD;
-        const titleMatch = titleText.match(/《(.*?)》/);
-        if (titleMatch) {
-            title = titleMatch[1];
+        titleText = $('title').text().trim();
+        if (titleText) {
+            const titleMatch = titleText.match(/《(.*?)》/);
+            if (titleMatch) {
+                title = titleMatch[1];
+            }
+            else {
+                title = titleText.replace(/[_-]?\s*(电影天堂|dytt8899).*$/gi, '').trim();
+            }
+        }
+        if (!title) {
+            const contentTitle = $('.co_content22 ul li a, .title_all h1, .bd3r .co_area2 .title_all h1')
+                .first()
+                .text()
+                .trim();
+            if (contentTitle) {
+                const titleMatch = contentTitle.match(/《(.*?)》/);
+                if (titleMatch) {
+                    title = titleMatch[1];
+                    titleText = contentTitle;
+                }
+                else {
+                    title = contentTitle;
+                }
+            }
+        }
+        if (!title) {
+            title = this.extractTitleFromPage($);
+            titleText = title;
         }
         if (titleText.includes('4K') || titleText.includes('蓝光'))
             quality = media_resource_entity_1.MediaQuality.BLUE_RAY;
@@ -274,42 +318,54 @@ let CrawlerService = CrawlerService_1 = class CrawlerService {
             quality = media_resource_entity_1.MediaQuality.FULL_HD;
         else if (titleText.includes('720P') || titleText.includes('HD'))
             quality = media_resource_entity_1.MediaQuality.HD;
-        const dateText = $('.co_content22 ul li span').first().text().trim();
+        const dateText = $('.co_content22 ul li span, .co_content222 p').first().text().trim();
         let releaseDate;
-        const dateMatch = dateText.match(/(\d{4}-\d{1,2}-\d{1,2})/);
-        if (dateMatch) {
-            releaseDate = new Date(dateMatch[1]);
+        const datePatterns = [
+            /(\d{4}-\d{1,2}-\d{1,2})/,
+            /(\d{4}\/\d{1,2}\/\d{1,2})/,
+            /(\d{4}年\d{1,2}月\d{1,2}日)/,
+        ];
+        for (const pattern of datePatterns) {
+            const dateMatch = dateText.match(pattern);
+            if (dateMatch) {
+                releaseDate = new Date(dateMatch[1]);
+                break;
+            }
         }
         const downloadUrls = [];
-        $('.co_content22 ul li a').each((_, element) => {
+        $('.co_content22 a, .co_content222 a, a[href*="thunder"], a[href*="magnet"], a[href*="ftp"]').each((_, element) => {
             const href = $(element).attr('href');
-            if (href && !href.includes('javascript')) {
+            if (href && !href.includes('javascript') && !href.includes('#')) {
                 downloadUrls.push(this.resolveUrl(href, target.baseUrl));
             }
         });
-        const contentText = $('.co_content22').text();
-        const ftpMatches = contentText.match(/ftp:\/\/[^\s\n]+/g);
+        const contentText = $('.co_content22, .co_content222, .zoomX').text();
+        const ftpMatches = contentText.match(/ftp:\/\/[^\s\n]+/gi);
         if (ftpMatches) {
             downloadUrls.push(...ftpMatches);
         }
-        const magnetMatches = contentText.match(/magnet:\?[^\s\n]+/g);
+        const magnetMatches = contentText.match(/magnet:\?[^\s\n]+/gi);
         if (magnetMatches) {
             downloadUrls.push(...magnetMatches);
         }
-        const thunderMatches = contentText.match(/thunder:\/\/[^\s\n]+/g);
+        const thunderMatches = contentText.match(/thunder:\/\/[^\s\n]+/gi);
         if (thunderMatches) {
             downloadUrls.push(...thunderMatches);
         }
-        const uniqueUrls = [...new Set(downloadUrls)];
+        const ed2kMatches = contentText.match(/ed2k:\/\/[^\s\n]+/gi);
+        if (ed2kMatches) {
+            downloadUrls.push(...ed2kMatches);
+        }
+        const uniqueUrls = [...new Set(downloadUrls)].filter(url => url && url.length > 5);
         return {
-            title,
-            description: this.extractDyttDescription($),
-            type: this.inferMediaType(url),
+            title: title || '未知标题',
+            description: this.extractDyttDescription($) || this.extractDescriptionFromPage($),
+            type: this.inferMediaType(url, titleText),
             director: this.extractDyttDirector($),
             actors: this.extractDyttActors($),
             genres: this.extractDyttGenres($),
             releaseDate,
-            poster: undefined,
+            poster: this.extractPosterFromPage($, target.baseUrl),
             rating: 0,
             source: target.name,
             downloadUrls: uniqueUrls,
@@ -406,6 +462,111 @@ let CrawlerService = CrawlerService_1 = class CrawlerService {
         }
         return 1;
     }
+    createDynamicTarget(targetName, url) {
+        const baseUrl = new URL(url).origin;
+        return {
+            name: targetName,
+            baseUrl,
+            selectors: {
+                title: 'title, h1, h2, .title, .movie-title, [class*="title"]',
+                description: 'meta[name="description"], .description, .summary, .content, [class*="desc"]',
+                poster: 'meta[property="og:image"], .poster img, .cover img, [class*="poster"] img, [class*="cover"] img',
+                rating: '.rating, .score, [class*="rating"], [class*="score"]',
+                director: '.director, [class*="director"]',
+                actors: '.cast, .actors, [class*="cast"], [class*="actor"]',
+                genres: '.genre, .category, [class*="genre"], [class*="category"]',
+                releaseDate: '.date, .release-date, [class*="date"], [class*="release"]',
+                downloadUrls: 'a[href*="download"], a[href*="torrent"], a[href*="magnet"]',
+            },
+            enabled: true,
+            priority: 99,
+            maxPages: 10,
+            respectRobotsTxt: true,
+            requestDelay: 3000,
+        };
+    }
+    extractGenericData($, url, target) {
+        return {
+            title: this.extractText($, target.selectors.title) || this.extractTitleFromPage($),
+            description: this.extractText($, target.selectors.description) || this.extractDescriptionFromPage($),
+            type: this.inferMediaType(url),
+            director: this.extractText($, target.selectors.director),
+            actors: this.extractText($, target.selectors.actors),
+            genres: this.extractGenres($, target.selectors.genres),
+            releaseDate: this.parseDate(this.extractText($, target.selectors.releaseDate)),
+            poster: this.resolveUrl($(target.selectors.poster).first().attr('src'), target.baseUrl) ||
+                this.extractPosterFromPage($, target.baseUrl),
+            rating: this.parseRating(this.extractText($, target.selectors.rating)),
+            source: target.name,
+            downloadUrls: this.extractDownloadUrls($, target.selectors.downloadUrls),
+            metadata: {
+                crawledAt: new Date(),
+                crawledUrl: url,
+                website: target.name,
+            },
+        };
+    }
+    extractTitleFromPage($) {
+        const selectors = [
+            'title',
+            'h1',
+            'meta[property="og:title"]',
+            '[class*="title"]',
+            '[class*="movie"]',
+            '[class*="film"]',
+        ];
+        for (const selector of selectors) {
+            const text = this.extractText($, selector);
+            if (text && text.length > 2 && text.length < 200) {
+                return text
+                    .replace(/\s+/g, ' ')
+                    .replace(/[_-]?\s*(电影|在线观看|下载|免费|完整版).*$/g, '')
+                    .trim();
+            }
+        }
+        return '未知标题';
+    }
+    extractDescriptionFromPage($) {
+        const selectors = [
+            'meta[name="description"]',
+            'meta[property="og:description"]',
+            '.description',
+            '.summary',
+            '.content',
+            '[class*="desc"]',
+        ];
+        for (const selector of selectors) {
+            let text = '';
+            if (selector.includes('meta')) {
+                text = $(selector).attr('content') || '';
+            }
+            else {
+                text = $(selector).text();
+            }
+            if (text && text.length > 10 && text.length < 1000) {
+                return text.replace(/\s+/g, ' ').trim();
+            }
+        }
+        return '暂无描述';
+    }
+    extractPosterFromPage($, baseUrl) {
+        const selectors = [
+            'meta[property="og:image"]',
+            '.poster img',
+            '.cover img',
+            '[class*="poster"] img',
+            '[class*="cover"] img',
+            'img[src*="poster"]',
+            'img[src*="cover"]',
+        ];
+        for (const selector of selectors) {
+            const src = selector.includes('meta') ? $(selector).attr('content') : $(selector).attr('src');
+            if (src) {
+                return this.resolveUrl(src, baseUrl);
+            }
+        }
+        return undefined;
+    }
     async batchCrawl(targetName, urls) {
         const results = [];
         const batchSize = crawler_config_1.CRAWLER_CONFIG.parsing.maxConcurrentRequests;
@@ -418,8 +579,11 @@ let CrawlerService = CrawlerService_1 = class CrawlerService {
             });
             const batchResults = await Promise.allSettled(promises);
             batchResults.forEach(result => {
-                if (result.status === 'fulfilled' && result.value) {
-                    results.push(result.value);
+                if (result.status === 'fulfilled' &&
+                    result.value &&
+                    result.value.success &&
+                    result.value.data) {
+                    results.push(result.value.data);
                 }
             });
         }
@@ -442,26 +606,35 @@ let CrawlerService = CrawlerService_1 = class CrawlerService {
             return '';
         }
     }
-    inferMediaType(url) {
+    inferMediaType(url, titleText) {
         const lowerUrl = url.toLowerCase();
-        if (lowerUrl.includes('tv') || lowerUrl.includes('series') || lowerUrl.includes('剧集')) {
+        const textToAnalyze = (titleText || url).toLowerCase();
+        if (lowerUrl.includes('tv') ||
+            lowerUrl.includes('series') ||
+            textToAnalyze.includes('剧集') ||
+            textToAnalyze.includes('连续剧') ||
+            textToAnalyze.includes('电视剧') ||
+            (textToAnalyze.includes('第') && textToAnalyze.includes('季'))) {
             return 'tv_series';
         }
-        if (lowerUrl.includes('variety') || lowerUrl.includes('综艺')) {
+        if (textToAnalyze.includes('综艺') || lowerUrl.includes('variety')) {
             return 'variety';
         }
-        if (lowerUrl.includes('anime') || lowerUrl.includes('动画') || lowerUrl.includes('动漫')) {
+        if (textToAnalyze.includes('动画') ||
+            textToAnalyze.includes('动漫') ||
+            lowerUrl.includes('anime')) {
             return 'anime';
         }
-        if (lowerUrl.includes('doc') || lowerUrl.includes('纪录')) {
+        if (textToAnalyze.includes('纪录') || lowerUrl.includes('doc')) {
             return 'documentary';
         }
         return 'movie';
     }
     extractGenres($, selectors) {
         const genres = [];
-        for (const selector of selectors) {
-            const elements = $(selector);
+        const selectorList = selectors.includes(',') ? selectors.split(',') : [selectors];
+        for (const selector of selectorList) {
+            const elements = $(selector.trim());
             elements.each((_, element) => {
                 const text = $(element).text().trim();
                 if (text && !genres.includes(text)) {
@@ -513,8 +686,9 @@ let CrawlerService = CrawlerService_1 = class CrawlerService {
     }
     extractDownloadUrls($, selectors) {
         const urls = [];
-        for (const selector of selectors) {
-            $(selector).each((_, element) => {
+        const selectorList = selectors.includes(',') ? selectors.split(',') : [selectors];
+        for (const selector of selectorList) {
+            $(selector.trim()).each((_, element) => {
                 const href = $(element).attr('href');
                 if (href &&
                     (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('magnet:'))) {
@@ -565,11 +739,72 @@ let CrawlerService = CrawlerService_1 = class CrawlerService {
             return false;
         }
     }
+    extractTargetNameFromUrl(url) {
+        for (const target of crawler_config_1.CRAWLER_TARGETS) {
+            if (url.includes(target.baseUrl)) {
+                return target.name;
+            }
+        }
+        return null;
+    }
+    createProxyConfig(proxy) {
+        const proxyConfig = {
+            protocol: proxy.protocol,
+            host: proxy.host,
+            port: proxy.port,
+        };
+        if (proxy.username && proxy.password) {
+            proxyConfig.auth = {
+                username: proxy.username,
+                password: proxy.password,
+            };
+        }
+        return proxyConfig;
+    }
+    getProxyStats() {
+        if (!crawler_config_1.CRAWLER_CONFIG.proxy?.enabled) {
+            return { enabled: false, message: '代理池未启用' };
+        }
+        return this.proxyPoolService.getProxyStats();
+    }
+    async refreshProxyPool() {
+        if (!crawler_config_1.CRAWLER_CONFIG.proxy?.enabled) {
+            throw new Error('代理池未启用');
+        }
+        const result = await this.proxyPoolService.fetchProxiesFromProviders();
+        return { success: result, failed: 0 };
+    }
+    async testProxy(proxyInfo) {
+        return this.proxyPoolService.testProxy(proxyInfo);
+    }
+    removeFailedProxies() {
+        return this.proxyPoolService.removeFailedProxies();
+    }
+    async initializeProxyPool() {
+        if (!crawler_config_1.CRAWLER_CONFIG.proxy?.enabled) {
+            this.logger.log('代理池未启用，跳过初始化');
+            return;
+        }
+        try {
+            const result = await this.proxyPoolService.fetchProxiesFromProviders();
+            this.logger.log(`代理池初始化完成，获取到 ${result} 个代理`);
+        }
+        catch (error) {
+            this.logger.error('代理池初始化失败:', error);
+        }
+    }
+    getProxyPoolConfig() {
+        return this.proxyPoolService.getConfig();
+    }
+    updateProxyPoolConfig(newConfig) {
+        this.proxyPoolService.updateConfig(newConfig);
+    }
 };
 exports.CrawlerService = CrawlerService;
 exports.CrawlerService = CrawlerService = CrawlerService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [media_resource_service_1.MediaResourceService,
-        app_logger_service_1.AppLoggerService])
+        app_logger_service_1.AppLoggerService,
+        proxy_pool_service_1.ProxyPoolService])
 ], CrawlerService);
 //# sourceMappingURL=crawler.service.js.map

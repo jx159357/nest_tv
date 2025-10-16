@@ -32,15 +32,17 @@ let CrawlerController = CrawlerController_1 = class CrawlerController {
     }
     async crawlSingle(req, crawlRequest) {
         const result = await this.crawlerService.crawlWebsite(crawlRequest.targetName, crawlRequest.url);
-        if (!result) {
+        if (!result.success) {
             return {
                 success: false,
-                message: '爬取失败',
+                message: `爬取失败: ${result.error}`,
                 data: null,
+                error: result.error,
+                details: result.details,
             };
         }
         try {
-            await this.saveToDatabase(result, crawlRequest.targetName);
+            await this.saveToDatabase(result.data, crawlRequest.targetName);
         }
         catch (error) {
             console.warn('保存数据失败:', error.message);
@@ -48,7 +50,7 @@ let CrawlerController = CrawlerController_1 = class CrawlerController {
         return {
             success: true,
             message: '爬取成功',
-            data: result,
+            data: result.data,
         };
     }
     async batchCrawl(req, batchCrawlRequest) {
@@ -92,19 +94,21 @@ let CrawlerController = CrawlerController_1 = class CrawlerController {
     async crawlAndSave(req, body) {
         const targetName = body.targetName || crawler_config_1.CRAWLER_TARGETS[0]?.name;
         const result = await this.crawlerService.crawlWebsite(targetName, body.url);
-        if (!result) {
+        if (!result.success) {
             return {
                 success: false,
-                message: '爬取失败',
+                message: `爬取失败: ${result.error}`,
                 data: null,
+                error: result.error,
+                details: result.details,
             };
         }
         try {
-            await this.saveToDatabase(result, targetName);
+            await this.saveToDatabase(result.data, targetName);
             return {
                 success: true,
                 message: '爬取并保存成功',
-                data: result,
+                data: result.data,
             };
         }
         catch (error) {
@@ -113,7 +117,7 @@ let CrawlerController = CrawlerController_1 = class CrawlerController {
                 success: false,
                 message: '爬取成功但保存失败',
                 data: {
-                    crawledData: result,
+                    crawledData: result.data,
                     error: error.message,
                 },
             };

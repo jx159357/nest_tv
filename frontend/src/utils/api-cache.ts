@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { type AxiosInstance } from 'axios';
 import type { AxiosRequestConfig, AxiosResponse } from 'axios';
 
 interface CacheConfig {
@@ -6,6 +6,11 @@ interface CacheConfig {
   key?: string; // 自定义缓存key
   forceRefresh?: boolean; // 强制刷新
   enabled?: boolean; // 是否启用缓存，默认true
+}
+
+// 扩展 AxiosRequestConfig 以包含缓存配置
+interface CachedAxiosRequestConfig extends AxiosRequestConfig {
+  cacheConfig?: CacheConfig;
 }
 
 interface CacheItem<T = any> {
@@ -300,7 +305,7 @@ export const apiCacheManager = new APICacheManager();
 /**
  * 为axios实例添加缓存拦截器
  */
-export const setupCacheInterceptors = (instance: typeof axios): void => {
+export const setupCacheInterceptors = (instance: AxiosInstance): void => {
   // 请求拦截器
   instance.interceptors.request.use(
     async config => {
@@ -335,7 +340,7 @@ export const setupCacheInterceptors = (instance: typeof axios): void => {
 export const withCache = (
   config: AxiosRequestConfig,
   cacheConfig?: CacheConfig,
-): AxiosRequestConfig => {
+): CachedAxiosRequestConfig => {
   return {
     ...config,
     cacheConfig: {
@@ -352,7 +357,7 @@ export const withCache = (
 export const forceRefresh = (
   config: AxiosRequestConfig,
   cacheConfig?: Omit<CacheConfig, 'forceRefresh'>,
-): AxiosRequestConfig => {
+): CachedAxiosRequestConfig => {
   return withCache(config, {
     ...cacheConfig,
     forceRefresh: true,

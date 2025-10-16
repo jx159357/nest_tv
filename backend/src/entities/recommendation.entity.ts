@@ -21,11 +21,26 @@ export class Recommendation {
 
   @Column({
     type: 'enum',
-    enum: ['collaborative', 'content', 'trending', 'editorial', 'personalized'],
+    enum: [
+      'collaborative',
+      'content',
+      'trending',
+      'editorial',
+      'personalized',
+      'latest',
+      'top-rated',
+    ],
     default: 'personalized',
   })
   @Index()
-  type: 'collaborative' | 'content' | 'trending' | 'editorial' | 'personalized'; // 推荐类型
+  type:
+    | 'collaborative'
+    | 'content'
+    | 'trending'
+    | 'editorial'
+    | 'personalized'
+    | 'latest'
+    | 'top-rated'; // 推荐类型
 
   @Column({ type: 'int' })
   @Index()
@@ -35,6 +50,12 @@ export class Recommendation {
   @Index()
   mediaResourceId: number; // 推荐的影视资源ID
 
+  // 复合索引优化常用查询
+  @Index(['userId', 'isActive', 'type'])
+  @Index(['userId', 'isActive', 'priority'])
+  @Index(['type', 'isActive', 'score'])
+  @Index(['expiresAt', 'isActive'])
+  @Index(['mediaResourceId', 'userId'])
   @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
   score: number; // 推荐得分（0-100）
 
@@ -55,6 +76,13 @@ export class Recommendation {
     similarMedia?: number[]; // 相似影视资源ID列表（用于内容推荐）
     tags?: string[]; // 相关标签
     category?: string; // 分类
+    scoreBreakdown?: {
+      viewScore?: number;
+      ratingScore?: number;
+      recencyScore?: number;
+      qualityScore?: number;
+      totalScore?: number;
+    };
   };
 
   @Column({ type: 'timestamp', nullable: true })

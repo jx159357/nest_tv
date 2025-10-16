@@ -7,6 +7,13 @@ export interface ApiResponse<T = any> {
   statusCode?: number;
 }
 
+export interface ApiError {
+  message: string;
+  statusCode?: number;
+  code?: string;
+  details?: any;
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   page: number;

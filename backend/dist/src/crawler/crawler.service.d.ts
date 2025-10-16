@@ -1,5 +1,7 @@
 import { MediaResourceService } from '../media/media-resource.service';
 import { AppLoggerService } from '../common/services/app-logger.service';
+import { ProxyPoolService } from '../common/services/proxy-pool.service';
+import { ProxyInfo } from '../common/types/proxy-pool.types';
 export interface CrawlerTarget {
     name: string;
     baseUrl: string;
@@ -10,9 +12,9 @@ export interface CrawlerTarget {
         rating: string;
         director: string;
         actors: string;
-        genres: string[];
+        genres: string;
         releaseDate: string;
-        downloadUrls: string[];
+        downloadUrls: string;
     };
     enabled?: boolean;
     priority?: number;
@@ -39,10 +41,11 @@ export interface CrawledData {
 export declare class CrawlerService {
     private readonly mediaResourceService;
     private readonly appLogger;
+    private readonly proxyPoolService;
     private readonly logger;
     private readonly httpClient;
     private readonly cache;
-    constructor(mediaResourceService: MediaResourceService, appLogger: AppLoggerService);
+    constructor(mediaResourceService: MediaResourceService, appLogger: AppLoggerService, proxyPoolService: ProxyPoolService);
     getAvailableTargets(): CrawlerTarget[];
     private validateUrl;
     private getCache;
@@ -52,13 +55,23 @@ export declare class CrawlerService {
     private fetchWithRetry;
     private generateRequestId;
     private validateAndCleanData;
-    crawlWebsite(targetName: string, url: string): Promise<CrawledData | null>;
+    crawlWebsite(targetName: string, url: string): Promise<{
+        success: boolean;
+        data?: CrawledData;
+        error?: string;
+        details?: any;
+    }>;
     private extractDyttData;
     private extractDyttDescription;
     private extractDyttDirector;
     private extractDyttActors;
     private extractDyttGenres;
     private inferEpisodeCount;
+    private createDynamicTarget;
+    private extractGenericData;
+    private extractTitleFromPage;
+    private extractDescriptionFromPage;
+    private extractPosterFromPage;
     batchCrawl(targetName: string, urls: string[]): Promise<CrawledData[]>;
     private extractText;
     private inferMediaType;
@@ -69,4 +82,19 @@ export declare class CrawlerService {
     private extractDownloadUrls;
     private validateCrawledData;
     testConnection(targetName: string): Promise<boolean>;
+    private extractTargetNameFromUrl;
+    private createProxyConfig;
+    getProxyStats(): import("../common/types/proxy-pool.types").ProxyStats | {
+        enabled: boolean;
+        message: string;
+    };
+    refreshProxyPool(): Promise<{
+        success: number;
+        failed: number;
+    }>;
+    testProxy(proxyInfo: ProxyInfo): Promise<any>;
+    removeFailedProxies(): number;
+    initializeProxyPool(): Promise<void>;
+    getProxyPoolConfig(): import("../common/types/proxy-pool.types").ProxyPoolConfig;
+    updateProxyPoolConfig(newConfig: any): void;
 }

@@ -37,7 +37,7 @@ let MediaResourceService = class MediaResourceService {
         const { page = 1, pageSize = 10, search, type, quality, minRating, maxRating, tags, startDate, endDate, } = queryDto;
         const queryBuilder = this.mediaResourceRepository.createQueryBuilder('mediaResource');
         if (search) {
-            queryBuilder.andWhere('(mediaResource.title LIKE :search OR mediaResource.originalTitle LIKE :search)', { search: `%${search}%` });
+            queryBuilder.andWhere('(mediaResource.title LIKE :search OR mediaResource.description LIKE :search)', { search: `%${search}%` });
         }
         if (type) {
             const typeArray = Array.isArray(type) ? type : [type];
@@ -56,9 +56,14 @@ let MediaResourceService = class MediaResourceService {
         if (tags) {
             const tagsArray = Array.isArray(tags) ? tags : tags.split(',').map(tag => tag.trim());
             if (tagsArray.length > 0) {
-                queryBuilder.andWhere('mediaResource.tags && JSON_CONTAINS(mediaResource.tags, :tags)', {
-                    tags: tagsArray,
+                const tagConditions = tagsArray
+                    .map((tag, index) => `JSON_CONTAINS(mediaResource.genres, :tag${index})`)
+                    .join(' OR ');
+                const tagParams = {};
+                tagsArray.forEach((tag, index) => {
+                    tagParams[`tag${index}`] = JSON.stringify(tag);
                 });
+                queryBuilder.andWhere(`(${tagConditions})`, tagParams);
             }
         }
         if (startDate && endDate) {
@@ -105,31 +110,37 @@ let MediaResourceService = class MediaResourceService {
         await this.mediaResourceRepository.remove(mediaResource);
     }
     async search(keyword, limit = 10) {
-        const exactMatches = await this.mediaResourceRepository.find({
-            where: [
-                { title: (0, typeorm_2.Like)(`${keyword}%`) },
-            ],
-            take: Math.min(limit, 5),
-            order: {
-                rating: 'DESC',
-            },
-        });
-        if (exactMatches.length < limit) {
-            const remainingLimit = limit - exactMatches.length;
-            const fuzzyMatches = await this.mediaResourceRepository.find({
+        try {
+            const exactMatches = await this.mediaResourceRepository.find({
                 where: [
-                    { title: (0, typeorm_2.Like)(`%${keyword}%`) },
+                    { title: (0, typeorm_2.Like)(`${keyword}%`) },
                 ],
-                take: remainingLimit,
+                take: Math.min(limit, 5),
                 order: {
                     rating: 'DESC',
                 },
             });
-            const allResults = [...exactMatches, ...fuzzyMatches];
-            const uniqueResults = allResults.filter((item, index, self) => index === self.findIndex(t => t.id === item.id));
-            return uniqueResults.slice(0, limit);
+            if (exactMatches.length < limit) {
+                const remainingLimit = limit - exactMatches.length;
+                const fuzzyMatches = await this.mediaResourceRepository.find({
+                    where: [
+                        { title: (0, typeorm_2.Like)(`%${keyword}%`) },
+                    ],
+                    take: remainingLimit,
+                    order: {
+                        rating: 'DESC',
+                    },
+                });
+                const allResults = [...exactMatches, ...fuzzyMatches];
+                const uniqueResults = allResults.filter((item, index, self) => index === self.findIndex(t => t.id === item.id));
+                return uniqueResults.slice(0, limit);
+            }
+            return exactMatches;
         }
-        return exactMatches;
+        catch (error) {
+            console.error('Search error:', error);
+            return [];
+        }
     }
     async getPopular(limit = 10) {
         return this.mediaResourceRepository.find({
@@ -163,13 +174,11 @@ let MediaResourceService = class MediaResourceService {
             .getMany();
     }
     async incrementViews(id) {
-        await this.mediaResourceRepository.increment({ id }, 'views', 1);
+        await this.mediaResourceRepository.increment({ id }, 'viewCount', 1);
     }
     async incrementLikes(id) {
-        await this.mediaResourceRepository.increment({ id }, 'likes', 1);
     }
     async decrementLikes(id) {
-        await this.mediaResourceRepository.decrement({ id }, 'likes', 1);
     }
     async getStatistics() {
         const statisticsQuery = await this.mediaResourceRepository

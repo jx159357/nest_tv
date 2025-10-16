@@ -1,5 +1,5 @@
 import ApiClient from './index';
-import type { PlaySource, PlaySourceQueryParams } from '@/types';
+import type { PlaySource, PlaySourceQueryParams } from '@/types/media';
 
 // 播放源相关API
 export const playSourceApi = {

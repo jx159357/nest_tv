@@ -18,9 +18,9 @@ export const CRAWLER_TARGETS: CrawlerTarget[] = [
       rating: '.co_content22 .rating',
       director: '.co_content22 .director',
       actors: '.co_content22 .actors',
-      genres: ['.co_content22 .genres'],
+      genres: '.co_content22 .genres',
       releaseDate: '.co_content22 .date',
-      downloadUrls: ['.co_content22 a'],
+      downloadUrls: '.co_content22 a',
     },
     enabled: true,
     priority: 1,
@@ -32,17 +32,17 @@ export const CRAWLER_TARGETS: CrawlerTarget[] = [
     name: '阳光电影',
     baseUrl: 'https://www.ygdy8.com',
     selectors: {
-      title: '.title a',
-      description: '.description',
-      poster: '.poster img',
-      rating: '.rating',
-      director: '.director',
-      actors: '.actors',
-      genres: ['.genres'],
-      releaseDate: '.date',
-      downloadUrls: ['.download a'],
+      title: '.title a, h1',
+      description: '.description, .content',
+      poster: '.poster img, .cover img',
+      rating: '.rating, .score',
+      director: '.director, .directors',
+      actors: '.actors, .cast',
+      genres: '.genres, .category',
+      releaseDate: '.date, .release-date',
+      downloadUrls: '.download a, a[href*="down"], a[href*="ftp"]',
     },
-    enabled: false, // 暂时禁用，待配置完善
+    enabled: true, // 启用阳光电影
     priority: 2,
     maxPages: 5,
     respectRobotsTxt: true,
@@ -53,17 +53,18 @@ export const CRAWLER_TARGETS: CrawlerTarget[] = [
     name: '人人影视',
     baseUrl: 'https://www.rrys2018.com',
     selectors: {
-      title: '.movie-title a',
-      description: '.movie-description',
-      poster: '.movie-poster img',
-      rating: '.movie-rating',
-      director: '.movie-director',
-      actors: '.movie-actors',
-      genres: ['.movie-genres'],
-      releaseDate: '.movie-date',
-      downloadUrls: ['.movie-download a'],
+      title: '.movie-title a, .title a, h1',
+      description: '.movie-description, .description, .summary',
+      poster: '.movie-poster img, .poster img, .cover img',
+      rating: '.movie-rating, .rating, .score',
+      director: '.movie-director, .director',
+      actors: '.movie-actors, .actors, .cast',
+      genres: '.movie-genres, .genres, .tags',
+      releaseDate: '.movie-date, .release-date, .date',
+      downloadUrls:
+        '.movie-download a, .download a, a[href*="down"], a[href*="magnet"], a[href*="thunder"]',
     },
-    enabled: false, // 暂时禁用，待配置完善
+    enabled: true, // 启用人人影视
     priority: 3,
     maxPages: 8,
     respectRobotsTxt: true,
@@ -150,11 +151,61 @@ export const CRAWLER_CONFIG = {
     maxFiles: 5,
   },
 
-  // 代理配置（可选）
+  // 代理配置（完整代理池支持）
   proxy: {
-    enabled: false,
-    servers: [], // 代理服务器列表
-    rotateInterval: 300000, // 5分钟轮换一次
+    enabled: true,
+    pool: {
+      maxProxies: 100,
+      minWorkingProxies: 5,
+      validationInterval: 300000, // 5分钟验证间隔
+      testUrl: 'http://httpbin.org/ip',
+      testTimeout: 10000,
+      maxFailureCount: 3,
+    },
+    rotation: {
+      strategy: 'best-response-time', // 'round-robin' | 'random' | 'best-response-time' | 'weighted'
+      switchAfter: 10,
+      failureThreshold: 3,
+    },
+    providers: {
+      // 免费代理提供商配置
+      freeProxies: {
+        enabled: true,
+        refreshInterval: 1800000, // 30分钟刷新一次
+        providers: [
+          { name: 'KuaiDailiFree', active: true, priority: 1 },
+          { name: 'XiciProxy', active: true, priority: 2 },
+          { name: 'Proxy89', active: true, priority: 3 },
+          { name: 'XiaoHuanProxy', active: true, priority: 4 },
+        ],
+      },
+      // 付费代理提供商配置（如果有）
+      paidProxies: {
+        enabled: false,
+        providers: [],
+      },
+    },
+    // 针对不同网站的代理策略
+    targetStrategies: {
+      电影天堂: {
+        useProxy: true,
+        preferredProtocol: 'http',
+        requestDelay: 3000, // 使用代理时增加延迟
+        maxRetries: 3,
+      },
+      阳光电影: {
+        useProxy: true,
+        preferredProtocol: 'http',
+        requestDelay: 4000,
+        maxRetries: 3,
+      },
+      人人影视: {
+        useProxy: true,
+        preferredProtocol: 'https',
+        requestDelay: 2000,
+        maxRetries: 2,
+      },
+    },
   },
 
   // 速率限制配置

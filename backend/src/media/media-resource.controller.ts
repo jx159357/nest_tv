@@ -141,6 +141,64 @@ export class MediaResourceController {
   }
 
   /**
+   * 搜索影视资源
+   */
+  @Get('search')
+  @ApiOperation({ summary: '搜索影视资源' })
+  @ApiResponse({ status: 200, description: '搜索成功' })
+  @ApiQuery({ name: 'keyword', description: '搜索关键词' })
+  @ApiQuery({ name: 'limit', description: '限制数量', required: false })
+  async search(@Query('keyword') keyword: string, @Query('limit') limit: number = 10) {
+    // 参数验证
+    if (!keyword || keyword.trim() === '') {
+      return [];
+    }
+
+    if (isNaN(limit) || limit <= 0 || limit > 100) {
+      limit = 10;
+    }
+
+    return this.mediaResourceService.search(keyword.trim(), limit);
+  }
+
+  /**
+   * 获取热门影视
+   */
+  @Get('popular')
+  @ApiOperation({ summary: '获取热门影视' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiQuery({ name: 'limit', description: '限制数量', required: false })
+  async getPopular(@Query('limit') limit: number = 20) {
+    // 参数验证
+    if (isNaN(limit) || limit <= 0 || limit > 100) {
+      limit = 20;
+    }
+
+    return this.mediaResourceService.getPopular(limit);
+  }
+
+  /**
+   * 获取最新影视
+   */
+  @Get('latest')
+  @ApiOperation({ summary: '获取最新影视' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiQuery({ name: 'limit', description: '限制数量', required: false })
+  async getLatest(@Query('limit') limit: number = 20) {
+    return this.mediaResourceService.getLatest(limit);
+  }
+
+  /**
+   * 获取影视统计信息
+   */
+  @Get('statistics')
+  @ApiOperation({ summary: '获取影视统计信息' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getStatistics() {
+    return this.mediaResourceService.getStatistics();
+  }
+
+  /**
    * 根据ID获取影视资源
    */
   @Get(':id')
@@ -400,40 +458,6 @@ export class MediaResourceController {
   }
 
   /**
-   * 搜索影视资源
-   */
-  @Get('search')
-  @ApiOperation({ summary: '搜索影视资源' })
-  @ApiResponse({ status: 200, description: '搜索成功' })
-  @ApiQuery({ name: 'keyword', description: '搜索关键词' })
-  @ApiQuery({ name: 'limit', description: '限制数量', required: false })
-  async search(@Query('keyword') keyword: string, @Query('limit') limit: number = 10) {
-    return this.mediaResourceService.search(keyword, limit);
-  }
-
-  /**
-   * 获取热门影视
-   */
-  @Get('popular')
-  @ApiOperation({ summary: '获取热门影视' })
-  @ApiResponse({ status: 200, description: '获取成功' })
-  @ApiQuery({ name: 'limit', description: '限制数量', required: false })
-  async getPopular(@Query('limit') limit: number = 20) {
-    return this.mediaResourceService.getPopular(limit);
-  }
-
-  /**
-   * 获取最新影视
-   */
-  @Get('latest')
-  @ApiOperation({ summary: '获取最新影视' })
-  @ApiResponse({ status: 200, description: '获取成功' })
-  @ApiQuery({ name: 'limit', description: '限制数量', required: false })
-  async getLatest(@Query('limit') limit: number = 20) {
-    return this.mediaResourceService.getLatest(limit);
-  }
-
-  /**
    * 获取相似影视
    */
   @Get(':id/similar')
@@ -483,15 +507,5 @@ export class MediaResourceController {
   async decrementLikes(@Param('id') id: number) {
     await this.mediaResourceService.decrementLikes(id);
     return { message: '减少点赞数成功' };
-  }
-
-  /**
-   * 获取影视统计信息
-   */
-  @Get('statistics')
-  @ApiOperation({ summary: '获取影视统计信息' })
-  @ApiResponse({ status: 200, description: '获取成功' })
-  async getStatistics() {
-    return this.mediaResourceService.getStatistics();
   }
 }

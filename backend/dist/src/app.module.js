@@ -28,6 +28,8 @@ const common_module_1 = require("./common/common.module");
 const cache_module_1 = require("./common/cache/cache.module");
 const rate_limit_module_1 = require("./common/rate-limit/rate-limit.module");
 const initialization_module_1 = require("./initialization/initialization.module");
+const scheduler_module_1 = require("./scheduler/scheduler.module");
+const proxy_pool_module_1 = require("./modules/proxy-pool/proxy-pool.module");
 const user_entity_1 = require("./entities/user.entity");
 const media_resource_entity_1 = require("./entities/media-resource.entity");
 const play_source_entity_1 = require("./entities/play-source.entity");
@@ -112,7 +114,7 @@ exports.AppModule = AppModule = __decorate([
                     subscribers: [],
                     migrationsRun: false,
                     dropSchema: false,
-                    migrations: ['src/migrations/*.ts'],
+                    migrations: ['dist/migrations/*.js'],
                     logging: configService.get('DB_LOGGING', process.env.NODE_ENV === 'development'),
                     logger: 'advanced-console',
                     loggerOptions: {
@@ -141,6 +143,8 @@ exports.AppModule = AppModule = __decorate([
             data_collection_module_1.DataCollectionModule,
             common_module_1.CommonModule,
             initialization_module_1.InitializationModule,
+            scheduler_module_1.SchedulerModule,
+            proxy_pool_module_1.ProxyPoolModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
