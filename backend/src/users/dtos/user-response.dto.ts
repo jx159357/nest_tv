@@ -19,7 +19,7 @@ export class UserResponseDto {
 
   @ApiProperty({
     description: '邮箱地址',
-    example: 'user@example.com',
+    example: 'media@streaming-platform.com',
   })
   email: string;
 
@@ -32,7 +32,7 @@ export class UserResponseDto {
 
   @ApiProperty({
     description: '昵称',
-    example: '测试用户',
+    example: '媒体用户',
     required: false,
   })
   nickname?: string;
@@ -46,7 +46,7 @@ export class UserResponseDto {
 
   @ApiProperty({
     description: '头像URL',
-    example: 'https://example.com/avatar.jpg',
+    example: 'https://streaming-platform.com/avatars/default.jpg',
     required: false,
   })
   avatar?: string;

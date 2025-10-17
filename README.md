@@ -275,10 +275,10 @@ POST /auth/register
 Content-Type: application/json
 
 {
-  "username": "testuser",
-  "password": "password123",
-  "email": "test@example.com",
-  "nickname": "测试用户"
+  "username": "mediauser",
+  "password": "securePassword123",
+  "email": "media@streaming-platform.com",
+  "nickname": "媒体用户"
 }
 
 # 用户登录

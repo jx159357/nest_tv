@@ -25,7 +25,7 @@ import { ApiProperty } from '@nestjs/swagger';
 export class RegisterUserDto {
   @ApiProperty({
     description: '用户名',
-    example: 'testuser',
+    example: 'mediauser',
     minLength: 3,
     maxLength: 20,
   })
@@ -46,7 +46,7 @@ export class RegisterUserDto {
 
   @ApiProperty({
     description: '邮箱地址',
-    example: 'user@example.com',
+    example: 'media@streaming-platform.com',
   })
   @IsNotEmpty({ message: '邮箱不能为空' })
   @IsEmail({}, { message: '邮箱格式不正确' })
@@ -64,7 +64,7 @@ export class RegisterUserDto {
 
   @ApiProperty({
     description: '昵称',
-    example: '测试用户',
+    example: '媒体用户',
     required: false,
     maxLength: 50,
   })

@@ -16,8 +16,8 @@ async function bootstrap() {
     });
     const isProduction = process.env.NODE_ENV === 'production';
     const allowedOrigins = isProduction
-        ? process.env.ALLOWED_ORIGINS?.split(',') || ['https://yourdomain.com']
-        : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:5173'];
+        ? process.env.ALLOWED_ORIGINS?.split(',') || ['https://streaming-platform.com']
+        : ['http://localhost:3334', 'http://localhost:5173', 'http://127.0.0.1:5173'];
     app.enableCors({
         origin: (origin, callback) => {
             if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {

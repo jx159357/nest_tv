@@ -37,7 +37,20 @@ export class ProxyMonitoringService {
   constructor(
     private readonly proxyPoolService: ProxyPoolService,
     private readonly appLogger: AppLoggerService,
-  ) {}
+  ) {
+    // 检查代理池是否启用
+    this.checkProxyPoolEnabled();
+  }
+
+  /**
+   * 检查代理池启用状态
+   */
+  private checkProxyPoolEnabled(): void {
+    const isEnabled = process.env.PROXY_POOL_ENABLED === 'true';
+    if (!isEnabled) {
+      this.logger.log('代理池功能已禁用，监控将跳过');
+    }
+  }
 
   /**
    * 每分钟收集代理池指标
@@ -45,6 +58,11 @@ export class ProxyMonitoringService {
   @Cron('0 * * * * *') // 每分钟执行
   collectMetrics(): void {
     try {
+      // 检查代理池是否启用
+      if (process.env.PROXY_POOL_ENABLED !== 'true') {
+        return; // 如果代理池禁用，跳过监控
+      }
+
       const currentStats = this.proxyPoolService.getProxyStats();
       const metrics: ProxyMonitoringMetrics = {
         timestamp: new Date(),

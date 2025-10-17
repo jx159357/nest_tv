@@ -24,7 +24,7 @@ exports.RegisterUserDto = RegisterUserDto;
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '用户名',
-        example: 'testuser',
+        example: 'mediauser',
         minLength: 3,
         maxLength: 20,
     }),
@@ -47,7 +47,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '邮箱地址',
-        example: 'user@example.com',
+        example: 'media@streaming-platform.com',
     }),
     (0, class_validator_1.IsNotEmpty)({ message: '邮箱不能为空' }),
     (0, class_validator_1.IsEmail)({}, { message: '邮箱格式不正确' }),
@@ -67,7 +67,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '昵称',
-        example: '测试用户',
+        example: '媒体用户',
         required: false,
         maxLength: 50,
     }),

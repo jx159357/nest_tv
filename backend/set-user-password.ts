@@ -34,16 +34,9 @@ async function setUserPassword() {
       console.log(`邮箱: ${user.email}`);
       console.log(`当前密码: ${user.password}`);
       
-      // 设置新密码
-      const newPassword = '123456789';
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      user.password = hashedPassword;
-      
-      // 保存用户
-      await userRepository.save(user);
-      
-      console.log(`密码已更新为: ${newPassword}`);
-      console.log(`加密后的密码: ${user.password}`);
+      // 设置新密码（生产环境需要安全处理）
+      console.log('生产环境不能设置硬编码密码，请通过应用接口进行密码重置');
+      return;
     } else {
       console.log('未找到用户名为 admin 的用户');
     }

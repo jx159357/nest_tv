@@ -26,9 +26,19 @@ let ProxyMonitoringService = ProxyMonitoringService_1 = class ProxyMonitoringSer
     constructor(proxyPoolService, appLogger) {
         this.proxyPoolService = proxyPoolService;
         this.appLogger = appLogger;
+        this.checkProxyPoolEnabled();
+    }
+    checkProxyPoolEnabled() {
+        const isEnabled = process.env.PROXY_POOL_ENABLED === 'true';
+        if (!isEnabled) {
+            this.logger.log('代理池功能已禁用，监控将跳过');
+        }
     }
     collectMetrics() {
         try {
+            if (process.env.PROXY_POOL_ENABLED !== 'true') {
+                return;
+            }
             const currentStats = this.proxyPoolService.getProxyStats();
             const metrics = {
                 timestamp: new Date(),

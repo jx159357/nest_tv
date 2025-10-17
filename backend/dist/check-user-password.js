@@ -36,7 +36,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const typeorm_1 = require("typeorm");
 const user_entity_1 = require("./src/entities/user.entity");
 const dotenv = __importStar(require("dotenv"));
-const bcrypt = __importStar(require("bcrypt"));
 dotenv.config();
 async function checkUserPassword() {
     try {
@@ -64,8 +63,7 @@ async function checkUserPassword() {
             console.log(`密码长度: ${user.password?.length || 0}`);
             if (user.password) {
                 try {
-                    const isMatch = await bcrypt.compare('123456789', user.password);
-                    console.log(`密码验证结果: ${isMatch}`);
+                    console.log('请通过应用接口进行密码验证，脚本已移除硬编码测试密码');
                 }
                 catch (error) {
                     console.log(`密码验证错误: ${error.message}`);

@@ -56,7 +56,7 @@ __decorate([
             },
             email: {
                 type: 'string',
-                example: 'user@example.com',
+                example: 'media@streaming-platform.com',
                 description: '邮箱',
             },
             role: {

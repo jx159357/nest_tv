@@ -51,7 +51,7 @@ export class PlaySourceController {
             type: 'object',
             properties: {
               id: { type: 'number', example: 1 },
-              url: { type: 'string', example: 'https://example.com/video.mp4' },
+              url: { type: 'string', example: 'https://cdn.streaming-platform.com/media/movie1-1080p.mp4' },
               quality: { type: 'string', example: '1080p' },
               type: { type: 'string', example: 'online' },
               isActive: { type: 'boolean', example: true },
@@ -134,7 +134,7 @@ export class PlaySourceController {
         priority: { type: 'number', example: 1 },
         size: { type: 'string', example: '2.5GB' },
         language: { type: 'string', example: '中文' },
-        subtitle: { type: 'string', example: 'https://example.com/subtitle.srt' },
+        subtitle: { type: 'string', example: 'https://cdn.streaming-platform.com/subtitles/movie1-zh.srt' },
         createdAt: { type: 'string', format: 'date-time' },
         updatedAt: { type: 'string', format: 'date-time' },
       },

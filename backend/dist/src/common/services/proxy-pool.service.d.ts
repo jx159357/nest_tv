@@ -1,9 +1,11 @@
 import { ConfigService } from '@nestjs/config';
 import { ProxyInfo, ProxyPoolConfig, ProxyStats, ProxyProvider, ProxyTestResult } from '../types/proxy-pool.types';
 import { AppLoggerService } from './app-logger.service';
+import { ProxyProviderService } from './proxy-provider.service';
 export declare class ProxyPoolService {
     private readonly configService;
     private readonly appLogger;
+    private readonly proxyProviderService;
     private readonly logger;
     private proxies;
     private workingProxies;
@@ -12,9 +14,10 @@ export declare class ProxyPoolService {
     private httpClient;
     private validationTimer;
     private config;
-    constructor(configService: ConfigService, appLogger: AppLoggerService);
+    constructor(configService: ConfigService, appLogger: AppLoggerService, proxyProviderService: ProxyProviderService);
     private getDefaultConfig;
     private initializeHttpClient;
+    private initializeProviders;
     private startValidationTimer;
     addProxy(proxyInfo: ProxyInfo): Promise<boolean>;
     addProxies(proxies: ProxyInfo[]): Promise<{

@@ -52,9 +52,11 @@ const config_1 = require("@nestjs/config");
 const axios_1 = __importDefault(require("axios"));
 const https = __importStar(require("https"));
 const app_logger_service_1 = require("./app-logger.service");
+const proxy_provider_service_1 = require("./proxy-provider.service");
 let ProxyPoolService = ProxyPoolService_1 = class ProxyPoolService {
     configService;
     appLogger;
+    proxyProviderService;
     logger = new common_1.Logger(ProxyPoolService_1.name);
     proxies = new Map();
     workingProxies = [];
@@ -63,38 +65,40 @@ let ProxyPoolService = ProxyPoolService_1 = class ProxyPoolService {
     httpClient;
     validationTimer = null;
     config;
-    constructor(configService, appLogger) {
+    constructor(configService, appLogger, proxyProviderService) {
         this.configService = configService;
         this.appLogger = appLogger;
+        this.proxyProviderService = proxyProviderService;
         this.config = this.getDefaultConfig();
         this.initializeHttpClient();
+        this.initializeProviders();
         this.startValidationTimer();
     }
     getDefaultConfig() {
         return {
-            enabled: this.configService.get('PROXY_POOL_ENABLED', true),
-            maxProxies: this.configService.get('MAX_PROXIES', 100),
-            minWorkingProxies: this.configService.get('MIN_WORKING_PROXIES', 5),
+            enabled: this.configService.get('PROXY_POOL_ENABLED', false),
+            maxProxies: this.configService.get('MAX_PROXIES', 50),
+            minWorkingProxies: this.configService.get('MIN_WORKING_PROXIES', 3),
             validation: {
-                testUrl: this.configService.get('PROXY_TEST_URL', 'http://httpbin.org/ip'),
-                timeout: this.configService.get('PROXY_TEST_TIMEOUT', 10000),
-                interval: this.configService.get('PROXY_VALIDATION_INTERVAL', 300000),
-                maxFailureCount: this.configService.get('PROXY_MAX_FAILURE_COUNT', 3),
-                retryAttempts: this.configService.get('PROXY_RETRY_ATTEMPTS', 2),
+                testUrl: this.configService.get('PROXY_TEST_URL', 'https://httpbin.org/ip'),
+                timeout: this.configService.get('PROXY_TEST_TIMEOUT', 5000),
+                interval: this.configService.get('PROXY_VALIDATION_INTERVAL', 600000),
+                maxFailureCount: this.configService.get('PROXY_MAX_FAILURE_COUNT', 5),
+                retryAttempts: this.configService.get('PROXY_RETRY_ATTEMPTS', 3),
             },
             rotation: {
-                strategy: this.configService.get('PROXY_ROTATION_STRATEGY', 'best-response-time'),
-                switchAfter: this.configService.get('PROXY_SWITCH_AFTER', 10),
-                failureThreshold: this.configService.get('PROXY_FAILURE_THRESHOLD', 3),
+                strategy: this.configService.get('PROXY_ROTATION_STRATEGY', 'round-robin'),
+                switchAfter: this.configService.get('PROXY_SWITCH_AFTER', 5),
+                failureThreshold: this.configService.get('PROXY_FAILURE_THRESHOLD', 5),
             },
             cache: {
-                responseTimeCache: this.configService.get('PROXY_RESPONSE_TIME_CACHE', 300000),
-                proxyListCache: this.configService.get('PROXY_LIST_CACHE', 600000),
+                responseTimeCache: this.configService.get('PROXY_RESPONSE_TIME_CACHE', 600000),
+                proxyListCache: this.configService.get('PROXY_LIST_CACHE', 1800000),
             },
             monitoring: {
                 enabled: this.configService.get('PROXY_MONITORING_ENABLED', true),
-                logLevel: this.configService.get('PROXY_LOG_LEVEL', 'info'),
-                statisticsInterval: this.configService.get('PROXY_STATISTICS_INTERVAL', 60000),
+                logLevel: this.configService.get('PROXY_LOG_LEVEL', 'warn'),
+                statisticsInterval: this.configService.get('PROXY_STATISTICS_INTERVAL', 300000),
             },
         };
     }
@@ -103,6 +107,20 @@ let ProxyPoolService = ProxyPoolService_1 = class ProxyPoolService {
             timeout: this.config.validation.timeout,
             validateStatus: status => status < 500,
         });
+    }
+    initializeProviders() {
+        try {
+            const providers = this.proxyProviderService.getActiveProviders();
+            this.logger.log(`初始化 ${providers.length} 个代理提供商`);
+            providers.forEach(provider => {
+                this.providers.set(provider.name, provider);
+                this.logger.log(`注册代理提供商: ${provider.name}`);
+            });
+            this.fetchProxiesFromProviders();
+        }
+        catch (error) {
+            this.logger.error('初始化代理提供商失败', error);
+        }
     }
     startValidationTimer() {
         if (this.validationTimer) {
@@ -366,6 +384,7 @@ exports.ProxyPoolService = ProxyPoolService;
 exports.ProxyPoolService = ProxyPoolService = ProxyPoolService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [config_1.ConfigService,
-        app_logger_service_1.AppLoggerService])
+        app_logger_service_1.AppLoggerService,
+        proxy_provider_service_1.ProxyProviderService])
 ], ProxyPoolService);
 //# sourceMappingURL=proxy-pool.service.js.map

@@ -59,8 +59,8 @@
   "message": "用户注册成功",
   "data": {
     "id": 1,
-    "username": "testuser",
-    "email": "test@example.com",
+    "username": "mediauser",
+    "email": "media@streaming-platform.com",
     "phone": "13800138000",
     "nickname": "测试用户",
     "role": "user",
@@ -115,13 +115,13 @@ Authorization: Bearer <access_token>
   "message": "获取用户信息成功",
   "data": {
     "id": 1,
-    "username": "testuser",
-    "email": "test@example.com",
+    "username": "mediauser",
+    "email": "media@streaming-platform.com",
     "phone": "13800138000",
     "nickname": "测试用户",
     "role": "user",
     "isActive": true,
-    "avatar": "https://example.com/avatar.jpg",
+    "avatar": "https://cdn.streaming-platform.com/avatars/user1.jpg",
     "lastLoginAt": "2024-08-28T12:00:00.000Z",
     "createdAt": "2024-08-28T10:00:00.000Z"
   }
@@ -294,12 +294,12 @@ Authorization: Bearer <access_token>
   "data": [
     {
       "id": 1,
-      "url": "https://example.com/video.mp4",
+      "url": "https://cdn.streaming-platform.com/media/movie1-1080p.mp4",
       "type": "online",
       "status": "active",
       "resolution": "1080p",
       "format": "mp4",
-      "subtitleUrl": "https://example.com/subtitle.vtt",
+      "subtitleUrl": "https://cdn.streaming-platform.com/subtitles/movie1-zh.vtt",
       "priority": 1,
       "isAds": false,
       "playCount": 100,

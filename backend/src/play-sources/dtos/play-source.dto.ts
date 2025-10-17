@@ -36,7 +36,7 @@ export class CreatePlaySourceDto {
 
   @ApiProperty({
     description: '播放URL',
-    example: 'https://example.com/video.mp4',
+    example: 'https://streaming-platform.com/videos/movie1.mp4',
   })
   @IsUrl({}, { message: '播放URL格式无效' })
   url: string;
@@ -61,7 +61,7 @@ export class CreatePlaySourceDto {
 
   @ApiProperty({
     description: '字幕URL',
-    example: 'https://example.com/subtitle.srt',
+    example: 'https://streaming-platform.com/subtitles/movie1.srt',
     required: false,
   })
   @IsOptional()
@@ -100,7 +100,7 @@ export class UpdatePlaySourceDto {
 
   @ApiProperty({
     description: '播放URL',
-    example: 'https://example.com/video.mp4',
+    example: 'https://streaming-platform.com/videos/movie1.mp4',
     required: false,
   })
   @IsOptional()
@@ -127,7 +127,7 @@ export class UpdatePlaySourceDto {
 
   @ApiProperty({
     description: '字幕URL',
-    example: 'https://example.com/subtitle.srt',
+    example: 'https://streaming-platform.com/subtitles/movie1.srt',
     required: false,
   })
   @IsOptional()

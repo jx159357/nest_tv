@@ -42,7 +42,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '邮箱地址',
-        example: 'user@example.com',
+        example: 'media@streaming-platform.com',
     }),
     __metadata("design:type", String)
 ], UserResponseDto.prototype, "email", void 0);
@@ -57,7 +57,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '昵称',
-        example: '测试用户',
+        example: '媒体用户',
         required: false,
     }),
     __metadata("design:type", String)
@@ -73,7 +73,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '头像URL',
-        example: 'https://example.com/avatar.jpg',
+        example: 'https://streaming-platform.com/avatars/default.jpg',
         required: false,
     }),
     __metadata("design:type", String)

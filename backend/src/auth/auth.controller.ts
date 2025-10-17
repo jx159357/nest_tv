@@ -47,7 +47,7 @@ export class AuthController {
         username: {
           type: 'string',
           description: '用户名',
-          example: 'admin',
+          example: 'mediauser',
         },
         password: {
           type: 'string',
@@ -74,7 +74,7 @@ export class AuthController {
           properties: {
             id: { type: 'number', example: 1 },
             username: { type: 'string', example: 'admin' },
-            email: { type: 'string', example: 'admin@example.com' },
+            email: { type: 'string', example: 'media@streaming-platform.com' },
           },
         },
       },

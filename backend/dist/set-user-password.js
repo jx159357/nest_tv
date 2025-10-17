@@ -36,7 +36,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const typeorm_1 = require("typeorm");
 const user_entity_1 = require("./src/entities/user.entity");
 const dotenv = __importStar(require("dotenv"));
-const bcrypt = __importStar(require("bcrypt"));
 dotenv.config();
 async function setUserPassword() {
     try {
@@ -61,12 +60,8 @@ async function setUserPassword() {
             console.log(`用户名: ${user.username}`);
             console.log(`邮箱: ${user.email}`);
             console.log(`当前密码: ${user.password}`);
-            const newPassword = '123456789';
-            const hashedPassword = await bcrypt.hash(newPassword, 10);
-            user.password = hashedPassword;
-            await userRepository.save(user);
-            console.log(`密码已更新为: ${newPassword}`);
-            console.log(`加密后的密码: ${user.password}`);
+            console.log('生产环境不能设置硬编码密码，请通过应用接口进行密码重置');
+            return;
         }
         else {
             console.log('未找到用户名为 admin 的用户');

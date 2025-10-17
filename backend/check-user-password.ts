@@ -38,8 +38,8 @@ async function checkUserPassword() {
       // 测试密码验证
       if (user.password) {
         try {
-          const isMatch = await bcrypt.compare('123456789', user.password);
-          console.log(`密码验证结果: ${isMatch}`);
+          // 生产环境密码验证（需要用户输入实际密码）
+          console.log('请通过应用接口进行密码验证，脚本已移除硬编码测试密码');
         } catch (error) {
           console.log(`密码验证错误: ${error.message}`);
         }

@@ -13,6 +13,7 @@ import {
   ProxyRequestConfig,
 } from '../types/proxy-pool.types';
 import { AppLoggerService } from './app-logger.service';
+import { ProxyProviderService } from './proxy-provider.service';
 
 @Injectable()
 export class ProxyPoolService {
@@ -28,9 +29,11 @@ export class ProxyPoolService {
   constructor(
     private readonly configService: ConfigService,
     private readonly appLogger: AppLoggerService,
+    private readonly proxyProviderService: ProxyProviderService,
   ) {
     this.config = this.getDefaultConfig();
     this.initializeHttpClient();
+    this.initializeProviders();
     this.startValidationTimer();
   }
 
@@ -39,33 +42,33 @@ export class ProxyPoolService {
    */
   private getDefaultConfig(): ProxyPoolConfig {
     return {
-      enabled: this.configService.get('PROXY_POOL_ENABLED', true),
-      maxProxies: this.configService.get('MAX_PROXIES', 100),
-      minWorkingProxies: this.configService.get('MIN_WORKING_PROXIES', 5),
+      enabled: this.configService.get('PROXY_POOL_ENABLED', false), // 生产环境默认禁用
+      maxProxies: this.configService.get('MAX_PROXIES', 50),
+      minWorkingProxies: this.configService.get('MIN_WORKING_PROXIES', 3),
 
       validation: {
-        testUrl: this.configService.get('PROXY_TEST_URL', 'http://httpbin.org/ip'),
-        timeout: this.configService.get('PROXY_TEST_TIMEOUT', 10000),
-        interval: this.configService.get('PROXY_VALIDATION_INTERVAL', 300000), // 5分钟
-        maxFailureCount: this.configService.get('PROXY_MAX_FAILURE_COUNT', 3),
-        retryAttempts: this.configService.get('PROXY_RETRY_ATTEMPTS', 2),
+        testUrl: this.configService.get('PROXY_TEST_URL', 'https://httpbin.org/ip'),
+        timeout: this.configService.get('PROXY_TEST_TIMEOUT', 5000),
+        interval: this.configService.get('PROXY_VALIDATION_INTERVAL', 600000), // 10分钟
+        maxFailureCount: this.configService.get('PROXY_MAX_FAILURE_COUNT', 5),
+        retryAttempts: this.configService.get('PROXY_RETRY_ATTEMPTS', 3),
       },
 
       rotation: {
-        strategy: this.configService.get('PROXY_ROTATION_STRATEGY', 'best-response-time'),
-        switchAfter: this.configService.get('PROXY_SWITCH_AFTER', 10),
-        failureThreshold: this.configService.get('PROXY_FAILURE_THRESHOLD', 3),
+        strategy: this.configService.get('PROXY_ROTATION_STRATEGY', 'round-robin'),
+        switchAfter: this.configService.get('PROXY_SWITCH_AFTER', 5),
+        failureThreshold: this.configService.get('PROXY_FAILURE_THRESHOLD', 5),
       },
 
       cache: {
-        responseTimeCache: this.configService.get('PROXY_RESPONSE_TIME_CACHE', 300000), // 5分钟
-        proxyListCache: this.configService.get('PROXY_LIST_CACHE', 600000), // 10分钟
+        responseTimeCache: this.configService.get('PROXY_RESPONSE_TIME_CACHE', 600000), // 10分钟
+        proxyListCache: this.configService.get('PROXY_LIST_CACHE', 1800000), // 30分钟
       },
 
       monitoring: {
         enabled: this.configService.get('PROXY_MONITORING_ENABLED', true),
-        logLevel: this.configService.get('PROXY_LOG_LEVEL', 'info'),
-        statisticsInterval: this.configService.get('PROXY_STATISTICS_INTERVAL', 60000), // 1分钟
+        logLevel: this.configService.get('PROXY_LOG_LEVEL', 'warn'),
+        statisticsInterval: this.configService.get('PROXY_STATISTICS_INTERVAL', 300000), // 5分钟
       },
     };
   }
@@ -78,6 +81,26 @@ export class ProxyPoolService {
       timeout: this.config.validation.timeout,
       validateStatus: status => status < 500,
     });
+  }
+
+  /**
+   * 初始化代理提供商
+   */
+  private initializeProviders(): void {
+    try {
+      const providers = this.proxyProviderService.getActiveProviders();
+      this.logger.log(`初始化 ${providers.length} 个代理提供商`);
+      
+      providers.forEach(provider => {
+        this.providers.set(provider.name, provider);
+        this.logger.log(`注册代理提供商: ${provider.name}`);
+      });
+
+      // 启动时获取一次代理
+      this.fetchProxiesFromProviders();
+    } catch (error) {
+      this.logger.error('初始化代理提供商失败', error);
+    }
   }
 
   /**

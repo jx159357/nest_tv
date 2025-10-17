@@ -53,7 +53,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '播放URL',
-        example: 'https://example.com/video.mp4',
+        example: 'https://streaming-platform.com/videos/movie1.mp4',
     }),
     (0, class_validator_1.IsUrl)({}, { message: '播放URL格式无效' }),
     __metadata("design:type", String)
@@ -81,7 +81,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '字幕URL',
-        example: 'https://example.com/subtitle.srt',
+        example: 'https://streaming-platform.com/subtitles/movie1.srt',
         required: false,
     }),
     (0, class_validator_1.IsOptional)(),
@@ -132,7 +132,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '播放URL',
-        example: 'https://example.com/video.mp4',
+        example: 'https://streaming-platform.com/videos/movie1.mp4',
         required: false,
     }),
     (0, class_validator_1.IsOptional)(),
@@ -162,7 +162,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: '字幕URL',
-        example: 'https://example.com/subtitle.srt',
+        example: 'https://streaming-platform.com/subtitles/movie1.srt',
         required: false,
     }),
     (0, class_validator_1.IsOptional)(),

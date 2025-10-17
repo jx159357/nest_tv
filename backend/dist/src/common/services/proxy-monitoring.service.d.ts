@@ -30,6 +30,7 @@ export declare class ProxyMonitoringService {
     private lastRequestCount;
     private readonly maxHistorySize;
     constructor(proxyPoolService: ProxyPoolService, appLogger: AppLoggerService);
+    private checkProxyPoolEnabled;
     collectMetrics(): void;
     private addToHistory;
     private checkAlerts;

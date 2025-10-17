@@ -72,7 +72,7 @@ services:
     networks:
       - nest-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api"]
+      test: ["CMD", "curl", "-f", "http://localhost:3334/api"]
       timeout: 10s
       retries: 5
       interval: 30s

@@ -222,25 +222,19 @@ INSERT IGNORE INTO admin_permissions (id, code, name, description, resource, act
 
 -- 创建一些示例数据（可选）
 -- 创建示例用户（密码通过bcrypt哈希，实际使用时应该通过应用创建）
--- 注意：这里的密码是 '123456' 的bcrypt哈希值
-INSERT IGNORE INTO users (id, username, email, password) VALUES 
-(1, 'admin', 'admin@example.com', '$2b$12$EixZaY6n7lO9lBz1tZkMR/G5J4T7P5Y.GXx7a'),
+-- 生产环境用户数据（需在实际部署时创建）
+-- INSERT IGNORE INTO users (id, username, email, password) VALUES 
+-- (1, 'admin', 'admin@streaming-platform.com', '$2b$12$...');
 
--- 创建示例媒体资源
-INSERT IGNORE INTO media_resources (id, title, description, type, poster, rating, duration, releaseDate, episodeCount, viewCount) VALUES 
-(1, '示例电影', '这是一部示例电影，用于演示系统功能', 'movie', 'https://via.placeholder.com/600x900?text=Sample+Movie', 8.5, 7200, '2024-01-01', NULL, 156),
-(2, '示例电视剧', '这是一部示例电视剧，包含多集内容', 'tv_show', 'https://via.placeholder.com/600x900?text=Sample+TV+Show', 9.2, 2700, '2024-01-01', 10, 89),
-(3, '示例纪录片', '这是一部示例纪录片', 'documentary', 'https://via.placeholder.com/600x900?text=Sample+Documentary', 7.8, 5400, '2023-12-15', NULL, 45);
+-- 生产环境媒体资源数据（需在实际部署时导入）
+-- INSERT IGNORE INTO media_resources (id, title, description, type, poster, rating, duration, releaseDate, episodeCount, viewCount) VALUES 
+-- (1, '实际电影标题', '电影描述', 'movie', 'https://cdn.streaming-platform.com/posters/movie1.jpg', 8.5, 7200, '2024-01-01', NULL, 156);
 
--- 创建示例播放源
-INSERT IGNORE INTO play_sources (id, mediaId, sourceName, url, type, quality, format, priority) VALUES 
-(1, 1, '示例播放源1', 'https://sample-videos.com/movie1.mp4', 'online', '1080p', 'mp4', 1),
-(2, 1, '示例播放源2', 'https://sample-videos.com/movie1_720p.mp4', 'online', '720p', 'mp4', 2),
-(3, 2, '示例播放源3', 'https://sample-videos.com/tv_show1.mp4', 'online', '1080p', 'mp4', 1),
-(4, 3, '示例播放源4', 'https://sample-videos.com/documentary1.mp4', 'online', '720p', 'mp4', 1);
-
--- 创建示例推荐
-INSERT IGNORE INTO recommendations (id, userId, mediaResourceId, type, score, reason) VALUES 
-(1, 1, 1, 'personalized', 9.5, '基于您的观看历史和兴趣推荐'),
-(2, 1, 2, 'trending', 9.2, '当前热门内容'),
-(3, 1, 3, 'similar', 8.8, '与您观看过的内容相似');
+-- 生产环境播放源数据（需在实际部署时配置）
+-- INSERT IGNORE INTO play_sources (id, mediaId, sourceName, url, type, quality, format, priority) VALUES 
+-- (1, 1, '高清播放源', 'https://cdn.streaming-platform.com/media/movie1-1080p.mp4', 'online', '1080p', 'mp4', 1);
+-- 生产环境推荐数据（需在实际部署时配置）
+-- INSERT IGNORE INTO recommendations (id, userId, mediaResourceId, type, score, reason) VALUES 
+-- (1, 1, 1, 'personalized', 9.5, '基于用户的观看历史和兴趣推荐'),
+-- (2, 1, 2, 'trending', 9.2, '当前热门内容'),
+-- (3, 1, 3, 'similar', 8.8, '与用户观看过的内容相似');

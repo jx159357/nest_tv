@@ -22,51 +22,6 @@ exports.CRAWLER_TARGETS = [
         respectRobotsTxt: true,
         requestDelay: 2000,
     },
-    {
-        name: '示例目标 - 测试用',
-        baseUrl: 'https://httpbin.org/html',
-        selectors: {
-            title: 'h1',
-            description: 'p',
-            poster: '',
-            rating: '',
-            director: '',
-            actors: '',
-            genres: '',
-            releaseDate: '',
-            downloadUrls: '',
-        },
-    },
-    {
-        name: 'IMDB示例',
-        baseUrl: 'https://www.imdb.com/title/tt0111161/',
-        selectors: {
-            title: '[data-testid="hero-title-block__title"]',
-            description: '[data-testid="plot-xl"]',
-            poster: '.ipc-poster img',
-            rating: '[data-testid="hero-rating-bar__aggregate-rating__score"]',
-            director: 'a.ipc-metadata-list-item__list-content-item[href*="tt_ov_dr"]',
-            actors: 'a.ipc-metadata-list-item__list-content-item[href*="tt_ov_st"]',
-            genres: '.ipc-chip-list__scroller .ipc-chip span',
-            releaseDate: '[data-testid="title-details-releasedate"]',
-            downloadUrls: '',
-        },
-    },
-    {
-        name: '电影资料库示例',
-        baseUrl: 'https://www.imdb.com/chart/top/',
-        selectors: {
-            title: '.titleColumn a',
-            description: '.ratingColumn strong',
-            poster: '.posterColumn img',
-            rating: '.ratingColumn strong',
-            director: '',
-            actors: '',
-            genres: '',
-            releaseDate: '.titleColumn .secondaryInfo',
-            downloadUrls: '',
-        },
-    },
 ];
 exports.CRAWLER_CONFIG = {
     request: {

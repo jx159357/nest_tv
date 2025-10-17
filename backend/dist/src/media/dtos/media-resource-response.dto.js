@@ -62,11 +62,11 @@ __decorate([
     __metadata("design:type", Array)
 ], MediaResourceDto.prototype, "tags", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: '影视封面URL', example: 'https://example.com/cover.jpg' }),
+    (0, swagger_1.ApiProperty)({ description: '影视封面URL', example: 'https://streaming-platform.com/covers/movie1.jpg' }),
     __metadata("design:type", String)
 ], MediaResourceDto.prototype, "coverUrl", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: '播放URL', example: 'https://example.com/video.mp4' }),
+    (0, swagger_1.ApiProperty)({ description: '播放URL', example: 'https://streaming-platform.com/videos/movie1.mp4' }),
     __metadata("design:type", String)
 ], MediaResourceDto.prototype, "playUrl", void 0);
 __decorate([
