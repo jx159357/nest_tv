@@ -77,7 +77,7 @@ let UserService = class UserService {
         }
         const newUser = this.userRepository.create({
             ...registerUserDto,
-            password: await bcrypt.hash(registerUserDto.password, 10),
+            password: await bcrypt.hash(registerUserDto.password, parseInt(this.configService.get('BCRYPT_ROUNDS', '12'))),
         });
         const savedUser = await this.userRepository.save(newUser);
         return this.toUserResponseDto(savedUser);

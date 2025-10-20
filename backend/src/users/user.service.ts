@@ -55,7 +55,10 @@ export class UserService {
     // 创建新用户
     const newUser = this.userRepository.create({
       ...registerUserDto,
-      password: await bcrypt.hash(registerUserDto.password, 10), // 加密密码
+      password: await bcrypt.hash(
+        registerUserDto.password,
+        parseInt(this.configService.get<string>('BCRYPT_ROUNDS', '12')),
+      ), // 加密密码，使用配置的盐值轮数
     });
 
     // 保存用户到数据库

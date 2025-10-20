@@ -88,7 +88,11 @@ let AuthService = AuthService_1 = class AuthService {
         }
     }
     generateTokenId() {
-        return (Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15));
+        const timestamp = Date.now().toString(36);
+        const randomPart = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('');
+        return `${timestamp}-${randomPart}`;
     }
 };
 exports.AuthService = AuthService;

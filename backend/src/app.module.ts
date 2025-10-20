@@ -68,23 +68,25 @@ import { AppService } from './app.service';
           ParseProvider,
         ], // 所有实体类
 
-        // 连接池优化配置
+        // 连接池优化配置（生产环境增强）
         extra: {
-          // 基础连接池设置
+          // 基础连接池设置 - 支持更大并发
           connectionLimit: Math.max(
-            5,
+            parseInt(configService.get<string>('DB_POOL_MIN', '5')),
             Math.min(
-              20,
+              parseInt(configService.get<string>('DB_POOL_MAX', '50')),
               Math.ceil(
-                process.env.DB_CONNECTION_LIMIT ? parseInt(process.env.DB_CONNECTION_LIMIT) : 10,
+                process.env.DB_CONNECTION_LIMIT ? parseInt(process.env.DB_CONNECTION_LIMIT) : 25,
               ),
             ),
           ),
-          acquireTimeout: 60000, // 增加获取连接超时到60秒
-          timeout: 60000, // 增加查询超时到60秒
+          acquireTimeout: parseInt(configService.get<string>('DB_ACQUIRE_TIMEOUT', '60000')),
+          timeout: parseInt(configService.get<string>('DB_QUERY_TIMEOUT', '60000')),
 
-          // 高级连接池设置
-          queueLimit: 20, // 增加等待队列大小
+          // 高级连接池设置 - 增强生产环境性能
+          queueLimit: parseInt(configService.get<string>('DB_QUEUE_LIMIT', '30')),
+          waitForConnections: true,
+          connectTimeout: parseInt(configService.get<string>('DB_CONNECTION_CHECK_TIMEOUT', '30000')),
 
           // SSL配置（安全连接）
           ssl: configService.get<boolean>('DB_SSL', false) ? { rejectUnauthorized: false } : false,
@@ -120,7 +122,6 @@ import { AppService } from './app.service';
           idleTimeout: 60000, // 空闲超时60秒
 
           // 连接检测配置
-          connectTimeout: 10000, // 连接超时10秒
           socketTimeout: 180000, // Socket超时3分钟
 
           // 错误恢复配置

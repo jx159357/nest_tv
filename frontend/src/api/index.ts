@@ -5,12 +5,16 @@ import { setupCacheInterceptors, withCache } from '@/utils/api-cache';
 
 // 创建axios实例
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   headers: {
     'Content-Type': 'application/json; charset=utf-8',
     Accept: 'application/json; charset=utf-8',
+    // 生产环境安全头
+    'X-Requested-With': 'XMLHttpRequest',
   },
-  timeout: 30000, // 30秒超时
+  timeout: parseInt(import.meta.env.VITE_API_TIMEOUT) || 30000,
+  // 生产环境SSL证书验证
+  withCredentials: true,
 });
 
 // 应用请求拦截器

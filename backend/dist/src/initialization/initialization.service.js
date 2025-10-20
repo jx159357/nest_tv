@@ -34,64 +34,42 @@ let InitializationService = InitializationService_1 = class InitializationServic
         }
     }
     async initializeDefaultPlaySources() {
-        const defaultPlaySources = [
-            {
-                name: '电影天堂-在线播放',
-                url: 'https://www.dytt8899.com',
-                type: play_source_entity_1.PlaySourceType.THIRD_PARTY,
-                resolution: '1080p',
-                language: '中文',
-                priority: 1,
-                isActive: true,
-                description: '电影天堂官方网站，提供最新电影资源',
-            },
-            {
-                name: '电影天堂-磁力链接',
-                url: 'https://www.dytt8899.com/html/gndy/dyzz/index.html',
-                type: play_source_entity_1.PlaySourceType.MAGNET,
-                resolution: '1080p',
-                language: '中文',
-                priority: 2,
-                isActive: true,
-                description: '电影天堂磁力链接下载',
-            },
-            {
-                name: '电影天堂-最新电影',
-                url: 'https://www.dytt8899.com/html/gndy/dyzz/index.html',
-                type: play_source_entity_1.PlaySourceType.ONLINE,
-                resolution: '1080p',
-                language: '中文',
-                priority: 3,
-                isActive: true,
-                description: '最新电影资源',
-            },
-        ];
-        for (const playSourceConfig of defaultPlaySources) {
-            const existingSource = await this.playSourceService.findByName(playSourceConfig.name);
-            if (!existingSource) {
-                let mediaResource = await this.mediaResourceService.findByTitle('电影天堂资源库');
-                if (!mediaResource) {
-                    mediaResource = await this.mediaResourceService.create({
-                        title: '电影天堂资源库',
-                        description: '电影天堂网站提供的影视资源集合，包含最新电影、电视剧、综艺等内容',
-                        type: 'movie',
-                        quality: 'full_hd',
-                        rating: 8.5,
-                        source: '电影天堂',
-                    });
-                }
-                await this.playSourceService.create({
-                    mediaResourceId: mediaResource.id,
-                    url: playSourceConfig.url,
-                    type: playSourceConfig.type,
-                    resolution: playSourceConfig.resolution,
-                    priority: playSourceConfig.priority,
-                    sourceName: playSourceConfig.name,
-                    description: playSourceConfig.description,
-                });
-                this.logger.log(`创建默认播放源: ${playSourceConfig.name}`);
-            }
+        if (process.env.NODE_ENV === 'production') {
+            this.logger.log('生产环境：跳过默认播放源初始化');
+            return;
         }
+        const allowInitDefault = process.env.ALLOW_INIT_DEFAULT_DATA === 'true';
+        if (!allowInitDefault) {
+            this.logger.log('默认数据初始化已禁用');
+            return;
+        }
+        const existingSources = await this.playSourceService.findAll({ pageSize: 1 });
+        if (existingSources.data.length > 0) {
+            this.logger.log('检测到已有播放源数据，跳过初始化');
+            return;
+        }
+        this.logger.log('开发环境：开始初始化示例播放源');
+        let mediaResource = await this.mediaResourceService.findByTitle('示例影视资源');
+        if (!mediaResource) {
+            mediaResource = await this.mediaResourceService.create({
+                title: '示例影视资源',
+                description: '用于系统测试和演示的示例影视资源',
+                type: 'movie',
+                quality: 'full_hd',
+                rating: 8.0,
+                source: '系统示例',
+            });
+        }
+        await this.playSourceService.create({
+            mediaResourceId: mediaResource.id,
+            url: 'https://example.com/sample-video.mp4',
+            type: play_source_entity_1.PlaySourceType.ONLINE,
+            resolution: '1080p',
+            priority: 1,
+            sourceName: '示例播放源',
+            description: '用于系统测试的示例播放源',
+        });
+        this.logger.log('示例播放源初始化完成');
     }
 };
 exports.InitializationService = InitializationService;

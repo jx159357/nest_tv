@@ -22,384 +22,181 @@ let CrawlerSchedulerService = CrawlerSchedulerService_1 = class CrawlerScheduler
     mediaResourceService;
     appLogger;
     logger = new common_1.Logger(CrawlerSchedulerService_1.name);
-    retryAttempts = 3;
-    retryDelay = 5000;
-    timeout = 30000;
     constructor(crawlerService, mediaResourceService, appLogger) {
         this.crawlerService = crawlerService;
         this.mediaResourceService = mediaResourceService;
         this.appLogger = appLogger;
     }
-    async handleMovieHeavenCrawl() {
-        const targetName = '电影天堂';
-        const requestId = this.generateRequestId();
-        const startTime = Date.now();
-        try {
-            this.appLogger.setContext(requestId, {
-                module: 'CRAWLER_SCHEDULER',
-                function: 'handleMovieHeavenCrawl',
-                requestId,
-            });
-            this.logger.log(`开始执行电影天堂定时爬取任务`);
-            this.appLogger.log(`开始定时爬取任务: ${targetName}`, 'CRAWLER_SCHEDULE_START');
-            const result = await this.executeWithRetry(() => this.crawlTargetWithTimeout(targetName), targetName, requestId);
-            const duration = Date.now() - startTime;
-            const summaryMessage = `电影天堂定时爬取完成: 总计${result.successCount + result.failureCount}个，成功${result.successCount}个，失败${result.failureCount}个，保存${result.savedCount}个，耗时${duration}ms`;
-            this.logger.log(summaryMessage);
-            if (result.errors.length > 0) {
-                this.logger.warn(`爬取过程中遇到错误: ${result.errors.join('; ')}`);
-            }
-            this.appLogger.logOperation('CRAWLER_SCHEDULE_COMPLETE', targetName, undefined, {
-                targetName,
-                totalUrls: result.successCount + result.failureCount,
-                successCount: result.successCount,
-                failureCount: result.failureCount,
-                savedCount: result.savedCount,
-                errors: result.errors,
-                warnings: result.warnings,
-                duration,
-                crawlTime: new Date().toISOString(),
-            }, result.errors.length > 0 ? 'warning' : 'success', requestId);
-        }
-        catch (error) {
-            const duration = Date.now() - startTime;
-            const errorMessage = `电影天堂定时爬取任务失败: ${error.message}`;
-            this.logger.error(errorMessage, error.stack);
-            this.appLogger.logOperation('CRAWLER_SCHEDULE_ERROR', targetName, undefined, {
-                targetName,
-                error: error.message,
-                stack: error.stack,
-                duration,
-                crawlTime: new Date().toISOString(),
-            }, 'error', requestId);
-        }
-        finally {
-            this.appLogger.clearContext(requestId);
-        }
-    }
-    async handleFullCrawl() {
-        this.logger.log('开始执行全量爬取任务');
-        this.appLogger.log('开始全量爬取任务', 'CRAWLER_FULL_SCHEDULE_START');
-        const enabledTargets = crawler_config_1.CRAWLER_TARGETS.filter(t => t.enabled);
-        let totalSuccess = 0;
-        let totalFailure = 0;
-        for (const target of enabledTargets) {
-            try {
-                this.logger.log(`正在爬取目标: ${target.name}`);
-                const result = await this.crawlTarget(target);
-                if (result.success) {
-                    totalSuccess += result.successCount;
-                    totalFailure += result.failureCount;
-                }
-                else {
-                    totalFailure++;
-                }
-            }
-            catch (error) {
-                this.logger.error(`爬取目标 ${target.name} 失败: ${error.message}`);
-                totalFailure++;
-            }
-            await this.delay(5000);
-        }
-        this.logger.log(`全量爬取任务完成: 成功${totalSuccess}个，失败${totalFailure}个`);
-        this.appLogger.log(`全量爬取完成: 成功${totalSuccess}, 失败${totalFailure}`, 'CRAWLER_FULL_SCHEDULE_COMPLETE');
-    }
-    async crawlTarget(target) {
-        try {
-            const crawlUrls = await this.discoverCrawlUrls(target.baseUrl, target.name);
-            const maxCrawlCount = 5;
-            const urlsToCrawl = crawlUrls.slice(0, maxCrawlCount);
-            let successCount = 0;
-            let failureCount = 0;
-            for (const url of urlsToCrawl) {
-                try {
-                    const result = await this.crawlerService.crawlWebsite(target.name, url);
-                    if (result.success && result.data) {
-                        try {
-                            await this.saveToDatabase(result.data, target.name);
-                            successCount++;
-                        }
-                        catch (saveError) {
-                            this.logger.warn(`保存失败: ${saveError.message}`);
-                            successCount++;
-                        }
-                    }
-                    else {
-                        failureCount++;
-                    }
-                    await this.delay(target.requestDelay || 2000);
-                }
-                catch (error) {
-                    failureCount++;
-                    this.logger.warn(`单个URL爬取失败: ${error.message}`);
-                }
-            }
-            return { success: true, successCount, failureCount };
-        }
-        catch (error) {
-            this.logger.error(`爬取目标 ${target.name} 失败: ${error.message}`);
-            return { success: false, successCount: 0, failureCount: 1 };
-        }
-    }
-    async discoverCrawlUrls(baseUrl, targetName) {
-        try {
-            if (targetName === '电影天堂') {
-                const commonPaths = [
-                    '/html/gndy/dyzz/index.html',
-                    '/html/gndy/jddy/index.html',
-                    '/html/tv/hytv/index.html',
-                    '/html/dongman/index.html',
-                ];
-                const urls = [];
-                for (const path of commonPaths) {
-                    urls.push(new URL(path, baseUrl).href);
-                }
-                return urls;
-            }
-            if (targetName === '阳光电影') {
-                const commonPaths = [
-                    '/html/gndy/dyzz/index.html',
-                    '/html/tv/hytv/index.html',
-                    '/html/dongman/index.html',
-                    '/html/zongyi/index.html',
-                    '/html/jilup/index.html',
-                ];
-                const urls = [];
-                for (const path of commonPaths) {
-                    urls.push(new URL(path, baseUrl).href);
-                }
-                return urls;
-            }
-            if (targetName === '人人影视') {
-                const commonPaths = [
-                    '/html/gndy/dyzz/index.html',
-                    '/html/tv/hytv/index.html',
-                    '/html/dongman/index.html',
-                    '/html/zongyi/index.html',
-                    '/html/jilup/index.html',
-                ];
-                const urls = [];
-                for (const path of commonPaths) {
-                    urls.push(new URL(path, baseUrl).href);
-                }
-                return urls;
-            }
-            const commonPaths = ['/', '/latest', '/new', '/movies', '/tv', '/anime', '/variety'];
-            return commonPaths.map(path => new URL(path, baseUrl).href);
-        }
-        catch (error) {
-            this.logger.error(`发现URL失败: ${error.message}`);
-            return [];
-        }
-    }
-    async saveToDatabase(data, source) {
-        if (!data || !data.title) {
-            throw new Error('无效的爬取数据：缺少标题');
-        }
-        const existingMedia = await this.mediaResourceService.findByTitle(data.title);
-        if (existingMedia) {
-            this.logger.log(`资源已存在，跳过: ${data.title}`);
+    async handleScheduledCrawl() {
+        const targets = crawler_config_1.CRAWLER_TARGETS.filter(target => target.enabled);
+        if (targets.length === 0) {
+            this.logger.log('没有启用的爬取目标，跳过定时任务');
             return;
         }
-        const mediaData = {
-            title: data.title.trim(),
-            description: (data.description || '').trim().substring(0, 1000),
-            type: this.mapMediaType(data.type),
-            director: (data.director || '').trim(),
-            actors: (data.actors || '').trim(),
-            genres: this.arrayFromString(data.genres),
-            releaseDate: data.releaseDate ? new Date(data.releaseDate) : undefined,
-            quality: this.mapQuality(data.quality),
-            poster: (data.poster || '').trim(),
-            backdrop: (data.backdrop || '').trim(),
-            rating: this.parseRating(data.rating),
-            viewCount: 0,
-            isActive: true,
-            source: source,
-            metadata: {
-                ...data.metadata,
-                crawledAt: new Date(),
-                source,
-            },
-            duration: data.duration ? parseInt(data.duration) : undefined,
-            episodeCount: data.episodeCount ? parseInt(data.episodeCount) : undefined,
-            downloadUrls: Array.isArray(data.downloadUrls)
-                ? data.downloadUrls.filter(url => url && url.trim().length > 0)
-                : [],
-        };
-        await this.mediaResourceService.create(mediaData);
-        this.logger.log(`成功保存资源: ${data.title}`);
-    }
-    mapMediaType(type) {
-        const typeMap = {
-            电影: 'movie',
-            电视剧: 'tv_series',
-            综艺: 'variety',
-            动漫: 'anime',
-            纪录片: 'documentary',
-            movie: 'movie',
-            tv_series: 'tv_series',
-            variety: 'variety',
-            anime: 'anime',
-            documentary: 'documentary',
-        };
-        return typeMap[type] || 'movie';
-    }
-    mapQuality(quality) {
-        const qualityMap = {
-            高清: 'hd',
-            超清: 'full_hd',
-            蓝光: 'blue_ray',
-            标清: 'sd',
-            hd: 'hd',
-            full_hd: 'full_hd',
-            blue_ray: 'blue_ray',
-            sd: 'sd',
-        };
-        return qualityMap[quality] || 'hd';
-    }
-    parseRating(rating) {
-        if (typeof rating === 'number') {
-            return Math.max(0, Math.min(10, rating));
-        }
-        if (typeof rating === 'string') {
-            const parsed = parseFloat(rating);
-            if (!isNaN(parsed)) {
-                return Math.max(0, Math.min(10, parsed));
+        const startTime = Date.now();
+        const results = [];
+        try {
+            this.logger.log(`开始执行定时爬取任务，共${targets.length}个目标`);
+            for (const target of targets) {
+                try {
+                    this.logger.log(`正在爬取目标: ${target.name}`);
+                    const result = await this.executeWithRetry(() => this.crawlTargetWithTimeout(target.name, target.baseUrl), target.name);
+                    results.push(result);
+                    this.logger.log(`目标 ${target.name} 爬取完成`);
+                }
+                catch (error) {
+                    this.logger.error(`目标 ${target.name} 爬取失败:`, error);
+                    results.push({
+                        success: false,
+                        successCount: 0,
+                        failureCount: 1,
+                        savedCount: 0,
+                        errors: [error instanceof Error ? error.message : '未知错误'],
+                        warnings: []
+                    });
+                }
+            }
+            const duration = Date.now() - startTime;
+            const totalSuccess = results.reduce((sum, r) => sum + (r.successCount || 0), 0);
+            const totalFailure = results.reduce((sum, r) => sum + (r.failureCount || 0), 0);
+            const totalSaved = results.reduce((sum, r) => sum + (r.savedCount || 0), 0);
+            const summaryMessage = `定时爬取完成: 总计${totalSuccess + totalFailure}个，成功${totalSuccess}个，失败${totalFailure}个，保存${totalSaved}个，耗时${duration}ms`;
+            this.logger.log(summaryMessage);
+            const allErrors = results.flatMap(r => r.errors || []);
+            if (allErrors.length > 0) {
+                this.logger.warn(`爬取过程中遇到错误: ${allErrors.join('; ')}`);
             }
         }
-        return 7.5;
-    }
-    arrayFromString(str) {
-        if (Array.isArray(str)) {
-            return str.filter(item => item && item.trim().length > 0);
+        catch (error) {
+            const errorMessage = error instanceof Error ? error.message : '未知错误';
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            this.logger.error(`定时爬取任务失败: ${errorMessage}`, errorStack);
         }
-        if (!str || typeof str !== 'string') {
-            return [];
-        }
-        return str
-            .split(/[,，、]/)
-            .map(item => item.trim())
-            .filter(item => item.length > 0);
     }
-    delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-    generateRequestId() {
-        return `scheduler_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    }
-    async executeWithRetry(task, targetName, requestId, maxAttempts = this.retryAttempts) {
-        let lastError;
-        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    async executeWithRetry(task, targetName, maxRetries = 3, retryDelay = 5000) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
                 return await task();
             }
             catch (error) {
-                lastError = error;
-                if (attempt < maxAttempts) {
-                    const delay = this.retryDelay * attempt;
-                    this.logger.warn(`${targetName} 爬取失败，第${attempt}次重试，${delay}ms后重试: ${error.message}`);
-                    await this.delay(delay);
+                if (attempt === maxRetries) {
+                    throw error;
                 }
-                else {
-                    this.logger.error(`${targetName} 爬取失败，已达最大重试次数: ${error.message}`);
-                }
+                this.logger.warn(`目标 ${targetName} 第${attempt}次尝试失败，${retryDelay}ms后重试`);
+                await this.sleep(retryDelay);
             }
         }
-        throw lastError || new Error('未知错误');
+        throw new Error(`执行任务失败: ${targetName}`);
     }
-    async crawlTargetWithTimeout(targetName) {
-        const result = {
-            success: true,
-            successCount: 0,
-            failureCount: 0,
-            savedCount: 0,
-            errors: [],
-            warnings: [],
-        };
+    async crawlTargetWithTimeout(targetName, url) {
         try {
-            const target = crawler_config_1.CRAWLER_TARGETS.find(t => t.name === targetName && t.enabled);
-            if (!target) {
-                throw new Error(`爬虫目标未启用或不存在: ${targetName}`);
-            }
-            const connectionOk = await Promise.race([
-                this.crawlerService.testConnection(targetName),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('连接测试超时')), 10000)),
-            ]);
-            if (!connectionOk) {
-                throw new Error(`无法连接到目标网站: ${targetName}`);
-            }
-            const crawlUrls = await Promise.race([
-                this.discoverCrawlUrls(target.baseUrl, targetName),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('URL发现超时')), 15000)),
-            ]);
-            if (crawlUrls.length === 0) {
-                result.warnings.push('未发现可爬取的URL列表');
-                return result;
-            }
-            this.logger.log(`发现 ${crawlUrls.length} 个URL进行爬取`);
-            const maxCrawlCount = 10;
-            const urlsToCrawl = crawlUrls.slice(0, maxCrawlCount);
-            for (let i = 0; i < urlsToCrawl.length; i++) {
-                const url = urlsToCrawl[i];
-                try {
-                    this.logger.log(`正在爬取 (${i + 1}/${urlsToCrawl.length}): ${url}`);
-                    const crawlResult = await Promise.race([
-                        this.crawlerService.crawlWebsite(targetName, url),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('单个URL爬取超时')), this.timeout)),
-                    ]);
-                    if (crawlResult.success && crawlResult.data) {
-                        try {
-                            await this.saveToDatabaseWithRetry(crawlResult.data, targetName);
-                            result.savedCount++;
-                            result.successCount++;
-                            this.logger.log(`成功爬取并保存: ${crawlResult.data.title}`);
-                        }
-                        catch (saveError) {
-                            result.warnings.push(`爬取成功但保存失败 (${crawlResult.data.title}): ${saveError.message}`);
-                            result.successCount++;
-                        }
-                    }
-                    else {
-                        result.failureCount++;
-                        result.errors.push(`爬取失败 (${url}): ${crawlResult.error}`);
-                    }
-                    if (target.requestDelay && i < urlsToCrawl.length - 1) {
-                        await this.delay(target.requestDelay);
-                    }
-                }
-                catch (error) {
-                    result.failureCount++;
-                    result.errors.push(`爬取过程出错 (${url}): ${error.message}`);
-                }
-            }
-            return result;
+            const result = await this.crawlerService.crawlWebsite(targetName, url);
+            return {
+                success: true,
+                successCount: result.success ? 1 : 0,
+                failureCount: result.success ? 0 : 1,
+                savedCount: result.data ? 1 : 0,
+                errors: result.error ? [result.error] : [],
+                warnings: []
+            };
         }
         catch (error) {
-            result.success = false;
-            result.errors.push(`目标爬取失败: ${error.message}`);
-            return result;
+            return {
+                success: false,
+                successCount: 0,
+                failureCount: 1,
+                savedCount: 0,
+                errors: [error instanceof Error ? error.message : '未知错误'],
+                warnings: []
+            };
         }
     }
-    async saveToDatabaseWithRetry(data, source, maxAttempts = 3) {
-        let lastError;
-        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    async triggerManualCrawl(targetName) {
+        const targets = crawler_config_1.CRAWLER_TARGETS.filter(target => target.enabled);
+        if (targets.length === 0) {
+            return { success: false, message: '没有启用的爬取目标' };
+        }
+        const target = targetName
+            ? targets.find(t => t.name === targetName)
+            : targets[0];
+        if (!target) {
+            return { success: false, message: `未找到目标: ${targetName}` };
+        }
+        try {
+            this.logger.log(`开始手动爬取目标: ${target.name}`);
+            const result = await this.crawlTargetWithTimeout(target.name, target.baseUrl);
+            return { success: true, target: target.name, result };
+        }
+        catch (error) {
+            this.logger.error(`手动爬取目标 ${target.name} 失败: `, error);
+            return {
+                success: false,
+                target: target.name,
+                error: error instanceof Error ? error.message : '未知错误'
+            };
+        }
+    }
+    async testConnection(targetName) {
+        const targets = crawler_config_1.CRAWLER_TARGETS.filter(target => target.enabled);
+        if (targets.length === 0) {
+            return { success: false, message: '没有启用的爬取目标' };
+        }
+        if (targetName) {
+            const target = targets.find(t => t.name === targetName);
+            if (!target) {
+                return { success: false, message: `未找到目标: ${targetName}` };
+            }
             try {
-                return await this.saveToDatabase(data, source);
+                await this.crawlerService.testConnection(target.name);
+                return { success: true, message: `目标 ${targetName} 连接正常` };
             }
             catch (error) {
-                lastError = error;
-                if (attempt < maxAttempts) {
-                    const delay = this.retryDelay * attempt;
-                    this.logger.warn(`数据保存失败，第${attempt}次重试，${delay}ms后重试: ${error.message}`);
-                    await this.delay(delay);
-                }
-                else {
-                    this.logger.error(`数据保存失败，已达最大重试次数: ${error.message}`);
-                }
+                return {
+                    success: false,
+                    message: `目标 ${targetName} 连接失败: ${error instanceof Error ? error.message : '未知错误'}`
+                };
             }
         }
-        throw lastError || new Error('保存数据失败');
+        else {
+            const results = [];
+            for (const target of targets) {
+                try {
+                    await this.crawlerService.testConnection(target.name);
+                    results.push(`${target.name}: 正常`);
+                }
+                catch (error) {
+                    results.push(`${target.name}: 失败`);
+                }
+            }
+            return {
+                success: true,
+                message: '连接测试完成',
+                targets: results
+            };
+        }
+    }
+    getCrawlerStatus() {
+        const targets = crawler_config_1.CRAWLER_TARGETS;
+        return {
+            enabled: targets.filter(t => t.enabled).length,
+            total: targets.length,
+            targets: targets.map(t => ({ name: t.name, enabled: t.enabled || false }))
+        };
+    }
+    async toggleTarget(targetName, enabled) {
+        const targetIndex = crawler_config_1.CRAWLER_TARGETS.findIndex(t => t.name === targetName);
+        if (targetIndex === -1) {
+            return { success: false, message: `未找到目标: ${targetName}` };
+        }
+        crawler_config_1.CRAWLER_TARGETS[targetIndex].enabled = enabled;
+        this.logger.log(`爬虫目标 ${targetName} 已${enabled ? '启用' : '禁用'}`);
+        return {
+            success: true,
+            message: `爬虫目标 ${targetName} 已${enabled ? '启用' : '禁用'}`
+        };
     }
 };
 exports.CrawlerSchedulerService = CrawlerSchedulerService;
@@ -408,13 +205,7 @@ __decorate([
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
-], CrawlerSchedulerService.prototype, "handleMovieHeavenCrawl", null);
-__decorate([
-    (0, schedule_1.Cron)('0 2 * * *'),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", Promise)
-], CrawlerSchedulerService.prototype, "handleFullCrawl", null);
+], CrawlerSchedulerService.prototype, "handleScheduledCrawl", null);
 exports.CrawlerSchedulerService = CrawlerSchedulerService = CrawlerSchedulerService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [crawler_service_1.CrawlerService,
