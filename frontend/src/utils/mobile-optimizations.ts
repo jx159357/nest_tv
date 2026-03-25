@@ -21,7 +21,7 @@ export const mobileOptimizations = {
     height: window.innerHeight,
     pixelRatio: window.devicePixelRatio || 1,
     orientation: window.innerWidth > window.innerHeight ? 'landscape' : 'portrait',
-    safeArea: this.getSafeAreaInsets(),
+    safeArea: { top: 0, right: 0, bottom: 0, left: 0 },
   },
 
   // 获取安全区域

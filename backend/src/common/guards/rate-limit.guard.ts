@@ -19,11 +19,25 @@ export const RATE_LIMIT_OPTIONS = 'rate_limit_options';
  * 限流装饰器
  */
 export const RateLimit = (options: RateLimitOptions) => {
-  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
+  return (target: object, propertyKey: string) => {
     Reflect.defineMetadata(RATE_LIMIT_OPTIONS, options, target, propertyKey);
     Reflect.defineMetadata(RATE_LIMIT_KEY, true, target, propertyKey);
   };
 };
+
+interface RateLimitRequest {
+  headers: Record<string, string | string[] | undefined>;
+  route?: { path?: string };
+  path?: string;
+  socket?: { remoteAddress?: string };
+  connection?: { remoteAddress?: string };
+  ip?: string;
+  user?: { id?: number };
+}
+
+interface RateLimitResponse {
+  setHeader(name: string, value: number | string): void;
+}
 
 @Injectable()
 export class RateLimitGuard implements CanActivate {
@@ -33,8 +47,8 @@ export class RateLimitGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
-    const response = context.switchToHttp().getResponse();
+    const request = context.switchToHttp().getRequest<RateLimitRequest>();
+    const response = context.switchToHttp().getResponse<RateLimitResponse>();
 
     // 获取限流配置
     const options = this.reflector.get<RateLimitOptions>(RATE_LIMIT_OPTIONS, context.getHandler());
@@ -75,7 +89,7 @@ export class RateLimitGuard implements CanActivate {
   /**
    * 获取限流键
    */
-  private getLimitKey(request: any, context: ExecutionContext): string {
+  private getLimitKey(request: RateLimitRequest, context: ExecutionContext): string {
     // 默认使用IP + 路径
     let key = `${this.getClientIP(request)}:${this.getRoutePath(context)}`;
 
@@ -90,17 +104,20 @@ export class RateLimitGuard implements CanActivate {
   /**
    * 获取客户端IP
    */
-  private getClientIP(request: any): string {
+  private getClientIP(request: RateLimitRequest): string {
     // 支持各种代理场景的IP获取
+    const headerIp =
+      this.normalizeHeader(request.headers['x-forwarded-for']) ||
+      this.normalizeHeader(request.headers['x-real-ip']) ||
+      this.normalizeHeader(request.headers['cf-connecting-ip']) ||
+      this.normalizeHeader(request.headers['true-client-ip']) ||
+      this.normalizeHeader(request.headers['x-client-ip']) ||
+      this.normalizeHeader(request.headers['x-forwarded']) ||
+      this.normalizeHeader(request.headers['forwarded-for']) ||
+      this.normalizeHeader(request.headers['remote-addr']);
+
     return (
-      request.headers['x-forwarded-for'] ||
-      request.headers['x-real-ip'] ||
-      request.headers['cf-connecting-ip'] || // Cloudflare
-      request.headers['true-client-ip'] ||
-      request.headers['x-client-ip'] ||
-      request.headers['x-forwarded'] ||
-      request.headers['forwarded-for'] ||
-      request.headers['remote-addr'] ||
+      headerIp ||
       request.socket?.remoteAddress ||
       request.connection?.remoteAddress ||
       request.ip ||
@@ -112,19 +129,19 @@ export class RateLimitGuard implements CanActivate {
    * 获取路由路径
    */
   private getRoutePath(context: ExecutionContext): string {
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<RateLimitRequest>();
     const routePath = request.route?.path || request.path || '/';
 
     // 清理路径中的参数
     return routePath
       .replace(/\/\d+/g, '/{id}') // 将数字ID替换为占位符
-      .replace(/\/[^\/]+\/[^\/]+/g, '/{param}'); // 将参数路径替换
+      .replace(/\/[^/]+\/[^/]+/g, '/{param}'); // 将参数路径替换
   }
 
   /**
    * 设置响应头
    */
-  private setResponseHeaders(response: any, info?: RateLimitInfo): void {
+  private setResponseHeaders(response: RateLimitResponse, info?: RateLimitInfo): void {
     if (!info) return;
 
     // 设置标准的限流响应头
@@ -143,5 +160,13 @@ export class RateLimitGuard implements CanActivate {
     if (info.isFirstRequest) {
       response.setHeader('X-RateLimit-First', 'true');
     }
+  }
+
+  private normalizeHeader(value: string | string[] | undefined): string | null {
+    if (Array.isArray(value)) {
+      return value[0] ?? null;
+    }
+
+    return value ?? null;
   }
 }

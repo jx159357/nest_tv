@@ -1,6 +1,21 @@
 import { vi } from 'vitest';
 import { config } from '@vue/test-utils';
 
+vi.mock('element-plus', () => ({
+  ElMessage: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  },
+  ElNotification: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  },
+}));
+
 // 全局测试配置
 config.global.mocks = {
   $t: key => key,

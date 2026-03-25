@@ -13,7 +13,10 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./test/setup.ts'],
-    include: ['src/**/*.{test,spec}.{js,jsx,ts,tsx}'],
+    include: [
+      'src/**/*.{test,spec}.{js,jsx,ts,tsx}',
+      'test/**/*.{test,spec}.{js,jsx,ts,tsx}',
+    ],
     coverage: {
       provider: 'istanbul',
       reporter: ['text', 'json', 'html'],

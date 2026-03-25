@@ -1,7 +1,8 @@
 import { ref, computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { mediaApi } from '@/api';
-import type { MediaResource, Recommendation, RecommendationType } from '@/types';
+import type { MediaResource } from '@/types/media';
+import type { Recommendation, RecommendationType } from '@/types/history';
 
 export const useRecommendationService = () => {
   const authStore = useAuthStore();
@@ -27,12 +28,14 @@ export const useRecommendationService = () => {
       const favorites = await mediaApi.getFavorites({ limit: 20 });
 
       // 提取用户偏好的类型和标签
-      const userPreferences = analyzeUserPreferences([...watchHistory, ...favorites]);
+      const userPreferences = analyzeUserPreferences([
+        ...(watchHistory as any[]),
+        ...favorites.data,
+      ]);
 
       // 基于偏好获取推荐
       const recommendedMedia = await mediaApi.getRecommendedMedia({
         limit,
-        type: userPreferences.preferredTypes,
       });
 
       personalizedMedia.value = recommendedMedia;
@@ -113,7 +116,7 @@ export const useRecommendationService = () => {
         sortOrder: 'DESC',
       });
 
-      return similarMedia.filter(m => m.id !== parseInt(mediaId));
+      return similarMedia.data.filter(m => m.id !== parseInt(mediaId));
     } catch (err) {
       console.error('获取相似媒体失败:', err);
       return [];
@@ -245,16 +248,16 @@ export const useRecommendationService = () => {
         }
       });
 
-      userProfile.completionRate /= userHistory.length;
+      userProfile.completionRate /= Math.max(1, userHistory.length);
       userProfile.avgWatchTime =
         userHistory.reduce((sum: number, item: any) => sum + (item.currentTime || 0), 0) /
-        userHistory.length;
+        Math.max(1, userHistory.length);
 
       // 获取候选媒体
       const candidateMedia = await mediaApi.getMediaList({ limit: 100 });
 
       // 计算推荐分数
-      const scoredMedia = candidateMedia.map(media => {
+      const scoredMedia = candidateMedia.data.map(media => {
         const score = calculateMLScore(media, userProfile);
         return { ...media, score };
       });
@@ -280,7 +283,7 @@ export const useRecommendationService = () => {
       (typeScore /
         Math.max(
           1,
-          Object.values(userProfile.watchedTypes).reduce((a, b) => a + b, 0),
+          (Object.values(userProfile.watchedTypes) as number[]).reduce((a, b) => a + b, 0),
         )) *
       30;
 
@@ -290,7 +293,10 @@ export const useRecommendationService = () => {
         (sum, genre) => sum + (userProfile.watchedGenres[genre] || 0),
         0,
       );
-      const totalGenreViews = Object.values(userProfile.watchedGenres).reduce((a, b) => a + b, 0);
+      const totalGenreViews = (Object.values(userProfile.watchedGenres) as number[]).reduce(
+        (a, b) => a + b,
+        0,
+      );
       score += (genreScore / Math.max(1, totalGenreViews)) * 25;
     }
 

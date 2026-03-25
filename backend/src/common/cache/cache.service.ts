@@ -4,8 +4,10 @@ import Redis from 'ioredis';
 interface MemoryCacheItem<T> {
   value: T;
   expiresAt: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
+
+type RedisInfoStats = Record<string, string>;
 
 export const REDIS_CLIENT = 'REDIS_CLIENT';
 
@@ -37,7 +39,7 @@ export class CacheService {
   private readonly defaultTtl = 1800; // 30分钟
 
   // 内存缓存层
-  private memoryCache = new Map<string, MemoryCacheItem<any>>();
+  private memoryCache = new Map<string, MemoryCacheItem<unknown>>();
   private readonly defaultMemoryTtl = 300; // 5分钟内存缓存
 
   // 缓存统计
@@ -85,7 +87,7 @@ export class CacheService {
         return null;
       }
 
-      const parsedValue = JSON.parse(value);
+      const parsedValue = this.deserialize<T>(value);
       this.logger.debug(`缓存命中: ${fullKey}`);
       return parsedValue;
     } catch (error) {
@@ -216,7 +218,7 @@ export class CacheService {
     try {
       const values = await this.redis.mget(fullKeys);
       return values.map(value =>
-        value === null || value === undefined ? null : JSON.parse(value),
+        value === null || value === undefined ? null : this.deserialize<T>(value),
       );
     } catch (error) {
       this.logger.error(`批量获取缓存失败`, error);
@@ -227,16 +229,18 @@ export class CacheService {
   /**
    * 获取缓存统计信息
    */
-  async getStats(): Promise<any> {
+  async getStats(): Promise<RedisInfoStats> {
     try {
       const info = await this.redis.info();
       const lines = info.split('\r\n');
-      const stats: any = {};
+      const stats: RedisInfoStats = {};
 
       for (const line of lines) {
         if (line.includes(':')) {
           const [key, value] = line.split(':');
-          stats[key.trim()] = value.trim();
+          if (key && value !== undefined) {
+            stats[key.trim()] = value.trim();
+          }
         }
       }
 
@@ -310,7 +314,7 @@ export class CacheService {
       if (useRedisCache) {
         const value = await this.redis.get(fullKey);
         if (value !== null && value !== undefined) {
-          const parsedValue = JSON.parse(value);
+          const parsedValue = this.deserialize<T>(value);
 
           // 回填内存缓存
           if (useMemoryCache) {
@@ -430,7 +434,7 @@ export class CacheService {
    * 获取内存缓存
    */
   private getMemoryCache<T>(key: string): T | null {
-    const item = this.memoryCache.get(key);
+    const item = this.memoryCache.get(key) as MemoryCacheItem<T> | undefined;
 
     if (!item) {
       return null;
@@ -443,6 +447,10 @@ export class CacheService {
     }
 
     return item.value;
+  }
+
+  private deserialize<T>(value: string): T {
+    return JSON.parse(value) as T;
   }
 
   /**

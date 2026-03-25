@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { ProxyPoolService } from './proxy-pool.service';
-import { ProxyStats, ProxyInfo } from '../types/proxy-pool.types';
+import { ProxyInfo } from '../types/proxy-pool.types';
 import { AppLoggerService } from './app-logger.service';
 
 export interface ProxyMonitoringMetrics {
@@ -23,8 +23,10 @@ export interface ProxyAlert {
   severity: 'low' | 'medium' | 'high' | 'critical';
   message: string;
   timestamp: Date;
-  metadata: any;
+  metadata: Record<string, unknown>;
 }
+
+type LogMethod = (message: string) => void;
 
 @Injectable()
 export class ProxyMonitoringService {
@@ -89,8 +91,12 @@ export class ProxyMonitoringService {
 
       // 记录关键指标
       this.logKeyMetrics(metrics);
-    } catch (error) {
-      this.appLogger.error('收集代理池指标失败', 'ProxyMonitoringService', error.message);
+    } catch (error: unknown) {
+      this.appLogger.error(
+        '收集代理池指标失败',
+        'ProxyMonitoringService',
+        error instanceof Error ? error.message : '未知错误',
+      );
     }
   }
 
@@ -197,16 +203,16 @@ export class ProxyMonitoringService {
   /**
    * 获取日志级别
    */
-  private getLogLevel(severity: string): Function {
+  private getLogLevel(severity: string): LogMethod {
     switch (severity) {
       case 'critical':
-        return this.logger.error.bind(this.logger);
+        return (message: string) => this.logger.error(message);
       case 'high':
-        return this.logger.warn.bind(this.logger);
+        return (message: string) => this.logger.warn(message);
       case 'medium':
-        return this.logger.log.bind(this.logger);
+        return (message: string) => this.logger.log(message);
       default:
-        return this.logger.debug.bind(this.logger);
+        return (message: string) => this.logger.debug(message);
     }
   }
 

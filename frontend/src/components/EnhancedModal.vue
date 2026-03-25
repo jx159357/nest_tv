@@ -87,7 +87,7 @@ const emit = defineEmits<{
 }>();
 
 // 自动关闭定时器
-const autoCloseTimer = ref<NodeJS.Timeout | null>(null);
+const autoCloseTimer = ref<ReturnType<typeof setTimeout> | null>(null);
 
 onMounted(() => {
   // 对于成功、错误、信息类型的模态框，自动关闭

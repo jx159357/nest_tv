@@ -1,6 +1,6 @@
 <template>
   <div class="lazy-image-container" :style="containerStyle">
-    <div v-if="loading" class="lazy-image-skeleton" :style="skeletonStyle">
+    <div v-if="isLoading" class="lazy-image-skeleton" :style="skeletonStyle">
       <div class="skeleton-content"></div>
     </div>
 
@@ -26,7 +26,15 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+  import {
+    ref,
+    computed,
+    onMounted,
+    onUnmounted,
+    watch,
+    nextTick,
+    type CSSProperties,
+  } from 'vue';
 
   interface Props {
     src: string;
@@ -71,7 +79,7 @@
 
   // 响应式数据
   const isVisible = ref(false);
-  const loading = ref(props.loading === 'eager');
+  const isLoading = ref(props.loading === 'eager');
   const loaded = ref(false);
   const error = ref(false);
   const currentRetryCount = ref(0);
@@ -97,7 +105,7 @@
     return url.toString();
   });
 
-  const containerStyle = computed(() => ({
+  const containerStyle = computed<CSSProperties>(() => ({
     width: props.width,
     height: props.height,
     position: 'relative',
@@ -107,7 +115,7 @@
     ...props.style,
   }));
 
-  const skeletonStyle = computed(() => ({
+  const skeletonStyle = computed<CSSProperties>(() => ({
     width: '100%',
     height: props.height === 'auto' ? '200px' : props.height,
     backgroundColor: '#e0e0e0',
@@ -116,7 +124,7 @@
     justifyContent: 'center',
   }));
 
-  const imageStyle = computed(() => ({
+  const imageStyle = computed<CSSProperties>(() => ({
     width: '100%',
     height: '100%',
     objectFit: 'cover',
@@ -124,7 +132,7 @@
     opacity: loaded.value ? 1 : 0,
   }));
 
-  const errorStyle = computed(() => ({
+  const errorStyle = computed<CSSProperties>(() => ({
     width: '100%',
     height: props.height === 'auto' ? '200px' : props.height,
     backgroundColor: '#ffebee',
@@ -149,7 +157,7 @@
   // 事件处理
   const handleLoad = () => {
     loaded.value = true;
-    loading.value = false;
+    isLoading.value = false;
     error.value = false;
     currentRetryCount.value = 0;
   };
@@ -166,7 +174,7 @@
       }, 1000 * currentRetryCount.value);
     } else {
       loaded.value = false;
-      loading.value = false;
+      isLoading.value = false;
       error.value = true;
     }
   };
@@ -240,7 +248,7 @@
     () => {
       if (isVisible.value) {
         loaded.value = false;
-        loading.value = true;
+        isLoading.value = true;
         error.value = false;
         currentRetryCount.value = 0;
       }

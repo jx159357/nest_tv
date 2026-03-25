@@ -2,10 +2,10 @@ import { IsNumber, IsNotEmpty, IsBoolean, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateWatchHistoryDto {
-  @ApiProperty({ description: '用户ID' })
+  @ApiProperty({ description: '用户ID', required: false })
+  @IsOptional()
   @IsNumber()
-  @IsNotEmpty()
-  userId: number;
+  userId?: number;
 
   @ApiProperty({ description: '影视资源ID' })
   @IsNumber()

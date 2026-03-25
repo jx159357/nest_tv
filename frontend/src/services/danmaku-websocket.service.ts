@@ -1,6 +1,6 @@
 import { ref, reactive, onUnmounted, onMounted } from 'vue';
-import type { Socket } from 'socket.io-client';
 import io from 'socket.io-client';
+type Socket = any;
 import { useAuthStore } from '@/stores/auth';
 import type {
   DanmakuMessage,
@@ -8,7 +8,15 @@ import type {
   HeartbeatResponse,
   DanmakuSettings,
   DanmakuServiceConfig,
-} from '@/types';
+} from '@/types/danmaku';
+
+export type {
+  DanmakuMessage,
+  RoomInfo,
+  HeartbeatResponse,
+  DanmakuSettings,
+  DanmakuServiceConfig,
+};
 
 // WebSocket服务类
 export class DanmakuWebSocketService {

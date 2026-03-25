@@ -121,12 +121,16 @@ export class HealthController {
             databaseHealth.status === 'fulfilled' && databaseHealth.value ? 'healthy' : 'unhealthy',
           details:
             databaseHealth.status === 'fulfilled' ? { isHealthy: databaseHealth.value } : null,
-          error: databaseHealth.status === 'rejected' ? databaseHealth.reason?.message : null,
+          error:
+            databaseHealth.status === 'rejected'
+              ? this.getRejectionMessage(databaseHealth.reason)
+              : null,
         },
         redis: {
           status: redisHealth.status === 'fulfilled' && redisHealth.value ? 'healthy' : 'unhealthy',
           details: redisHealth.status === 'fulfilled' ? redisHealth.value : null,
-          error: redisHealth.status === 'rejected' ? redisHealth.reason?.message : null,
+          error:
+            redisHealth.status === 'rejected' ? this.getRejectionMessage(redisHealth.reason) : null,
         },
       },
       metadata: {
@@ -199,7 +203,7 @@ export class HealthController {
 
   @Get('liveness')
   @ApiOperation({ summary: '存活检查', description: '检查应用是否正在运行' })
-  async getLiveness() {
+  getLiveness() {
     return {
       status: 'alive',
       timestamp: new Date().toISOString(),
@@ -245,7 +249,7 @@ export class HealthController {
   @Get('metrics')
   @ApiOperation({ summary: '系统指标', description: '获取系统性能指标' })
   @ApiBearerAuth()
-  async getMetrics() {
+  getMetrics() {
     const dbStatus = this.databaseHealthService.getDatabaseStatus();
 
     return {
@@ -266,5 +270,9 @@ export class HealthController {
         version: '1.0.0',
       },
     };
+  }
+
+  private getRejectionMessage(reason: unknown): string {
+    return reason instanceof Error ? reason.message : '未知错误';
   }
 }

@@ -1,9 +1,9 @@
 <template>
-  <div class="virtual-scroll-container" @scroll="handleScroll">
+  <div ref="containerRef" class="virtual-scroll-container" @scroll="handleScroll">
     <div class="virtual-scroll-spacer" :style="{ height: `${totalHeight}px` }"></div>
     <div
       v-for="item in visibleItems"
-      :key="item.id || item.key"
+      :key="item.id"
       class="virtual-scroll-item"
       :style="{
         transform: `translateY(${item.offset}px`,
@@ -18,7 +18,6 @@
 
 <script setup lang="ts">
   import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-  import { usePerformanceMonitor } from '@/utils/performance';
 
   interface VirtualScrollItem<T = any> {
     id: string | number;
@@ -49,9 +48,7 @@
   const scrollTop = ref(0);
   const containerHeight = ref(0);
   const isScrolling = ref(false);
-  const scrollTimeout = ref<NodeJS.Timeout>();
-
-  const { trackRenderStart, trackRenderEnd } = usePerformanceMonitor('VirtualScroll');
+  const scrollTimeout = ref<ReturnType<typeof setTimeout>>();
 
   // 计算总高度
   const totalHeight = computed(() => {

@@ -514,17 +514,7 @@ export class PerformanceService {
 
   // 检查资源是否已缓存
   private isResourceCached(url: string): boolean {
-    if ('caches' in window) {
-      return caches
-        .open('performance-cache')
-        .then(cache => {
-          return cache.match(url);
-        })
-        .then(response => {
-          return !!response;
-        })
-        .catch(() => false);
-    }
+    void url;
     return false;
   }
 

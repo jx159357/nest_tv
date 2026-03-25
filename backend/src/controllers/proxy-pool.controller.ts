@@ -5,6 +5,15 @@ import { ProxyProviderService } from '../common/services/proxy-provider.service'
 import { ProxyMonitoringService } from '../common/services/proxy-monitoring.service';
 import { ProxyInfo } from '../common/types/proxy-pool.types';
 
+interface UpdateProxyPoolConfigDto {
+  enabled?: boolean;
+  maxProxies?: number;
+  minWorkingProxies?: number;
+}
+
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : '未知错误';
+
 @ApiTags('代理池管理')
 @Controller('proxy-pool')
 export class ProxyPoolController {
@@ -123,11 +132,11 @@ export class ProxyPoolController {
         message: '代理池刷新成功',
         result,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         success: false,
         message: '代理池刷新失败',
-        error: error.message,
+        error: getErrorMessage(error),
       };
     }
   }
@@ -163,10 +172,10 @@ export class ProxyPoolController {
         success: true,
         result,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         success: false,
-        error: error.message,
+        error: getErrorMessage(error),
       };
     }
   }
@@ -193,18 +202,18 @@ export class ProxyPoolController {
   @Put('config')
   @ApiOperation({ summary: '更新代理池配置' })
   @ApiResponse({ status: 200, description: '成功更新配置' })
-  updateConfig(@Body() config: any) {
+  updateConfig(@Body() config: UpdateProxyPoolConfigDto) {
     try {
       this.proxyPoolService.updateConfig(config);
       return {
         success: true,
         message: '配置更新成功',
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         success: false,
         message: '配置更新失败',
-        error: error.message,
+        error: getErrorMessage(error),
       };
     }
   }

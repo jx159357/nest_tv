@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { AppLoggerService } from './services/app-logger.service';
 import { GlobalExceptionFilter } from './filters/global-exception.filter';
 import { DatabaseHealthService } from './services/database-health.service';

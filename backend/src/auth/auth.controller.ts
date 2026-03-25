@@ -12,9 +12,10 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nes
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './local-auth.guard';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { UserResponseDto } from '../users/dtos/user-response.dto';
 
 interface AuthenticatedRequest {
-  user: Record<string, any>;
+  user: UserResponseDto;
 }
 
 /**
@@ -91,7 +92,7 @@ export class AuthController {
       },
     },
   })
-  async login(@Request() req: AuthenticatedRequest) {
+  login(@Request() req: AuthenticatedRequest) {
     return this.authService.login(req.user);
   }
 

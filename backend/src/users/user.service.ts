@@ -57,7 +57,7 @@ export class UserService {
       ...registerUserDto,
       password: await bcrypt.hash(
         registerUserDto.password,
-        parseInt(this.configService.get<string>('BCRYPT_ROUNDS', '12')),
+        parseInt(this.configService.get<string>('BCRYPT_ROUNDS', '12'), 10),
       ), // 加密密码，使用配置的盐值轮数
     });
 
@@ -73,7 +73,7 @@ export class UserService {
    * @param loginUserDto 登录用户信息
    * @returns JWT令牌和用户信息
    */
-  async login(loginUserDto: LoginUserDto): Promise<any> {
+  async login(loginUserDto: LoginUserDto): Promise<{ accessToken: string; user: UserResponseDto }> {
     // 根据用户名或邮箱查找用户，并显式选择password字段
     const user = await this.userRepository.findOne({
       where: [{ username: loginUserDto.identifier }, { email: loginUserDto.identifier }],
@@ -176,7 +176,8 @@ export class UserService {
    * @returns UserResponseDto对象
    */
   private toUserResponseDto(user: User): UserResponseDto {
-    const { password: _, ...userWithoutPassword } = user;
+    const { password, ...userWithoutPassword } = user;
+    void password;
     return userWithoutPassword as UserResponseDto;
   }
 }

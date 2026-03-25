@@ -211,11 +211,14 @@
   import { ref, onMounted, onUnmounted, computed } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { useMediaStore } from '@/stores/media';
+  import { useAuthStore } from '@/stores/auth';
+  import { watchHistoryApi } from '@/api/watchHistory';
   import DanmakuPlayer from '@/components/DanmakuPlayer.vue';
 
   const route = useRoute();
   const router = useRouter();
   const mediaStore = useMediaStore();
+  const authStore = useAuthStore();
 
   const media = ref(null);
   const currentPlaySource = ref(null);
@@ -223,6 +226,7 @@
   const loading = ref(true);
   const videoPlayer = ref(null);
   const isPlaying = ref(false);
+  const lastSavedTime = ref(0);
 
   const loadMedia = async () => {
     const mediaId = parseInt(route.params.id);
@@ -238,11 +242,40 @@
       }
 
       // 增加观看次数
-      await mediaStore.incrementViewCount(mediaId);
+      await mediaStore.incrementViewCount(String(mediaId));
     } catch (error) {
       console.error('加载视频失败:', error);
     } finally {
       loading.value = false;
+    }
+  };
+
+  const saveWatchProgress = async (force = false) => {
+    if (!authStore.token || !media.value || !videoPlayer.value) {
+      return;
+    }
+
+    const currentTime = Math.floor(videoPlayer.value.currentTime || 0);
+    const duration = Math.floor(videoPlayer.value.duration || media.value.duration || 0);
+
+    if (!force && currentTime - lastSavedTime.value < 15) {
+      return;
+    }
+
+    if (currentTime <= 0) {
+      return;
+    }
+
+    try {
+      await watchHistoryApi.recordProgress({
+        mediaResourceId: media.value.id,
+        currentTime,
+        duration,
+        isCompleted: duration > 0 && currentTime >= duration - 5,
+      });
+      lastSavedTime.value = currentTime;
+    } catch (error) {
+      console.error('保存观看进度失败:', error);
     }
   };
 
@@ -268,17 +301,14 @@
   const handleTimeUpdate = () => {
     // 处理播放进度更新
     if (videoPlayer.value) {
-      const currentTime = Math.floor(videoPlayer.value.currentTime);
-      const duration = Math.floor(videoPlayer.value.duration);
-
-      // 这里可以调用API保存观看进度
-      // saveWatchProgress(currentTime, duration)
+      void saveWatchProgress();
     }
   };
 
   const handleVideoEnded = () => {
     // 处理视频播放结束
     console.log('视频播放结束');
+    void saveWatchProgress(true);
   };
 
   const getVideoType = url => {
@@ -309,12 +339,14 @@
     // 每30秒保存一次观看进度
     saveInterval = setInterval(() => {
       if (videoPlayer.value && videoPlayer.value.currentTime > 0) {
-        handleTimeUpdate();
+        void saveWatchProgress(true);
       }
     }, 30000);
   });
 
   onUnmounted(() => {
+    void saveWatchProgress(true);
+
     if (saveInterval) {
       clearInterval(saveInterval);
     }

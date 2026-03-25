@@ -4,6 +4,7 @@ import 'virtual:uno.css'; // 导入UnoCSS虚拟模块
 import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
+import { i18n } from './i18n';
 import { initPreloadService } from './utils/preload-service';
 import { PerformanceService } from './services/performance.service';
 
@@ -11,6 +12,7 @@ const app = createApp(App);
 const pinia = createPinia();
 
 app.use(pinia);
+app.use(i18n);
 app.use(router);
 
 // 初始化预加载服务

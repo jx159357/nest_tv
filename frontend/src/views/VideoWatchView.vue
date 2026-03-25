@@ -175,9 +175,9 @@
               v-if="localVideoFile"
               class="play-source-button"
               :class="{
-                'play-source-button--active': currentPlaySource?.id === 'local',
+                'play-source-button--active': String(currentPlaySource?.id) === 'local',
                 'play-source-button--switching':
-                  isSourceSwitching && currentPlaySource?.id === 'local',
+                  isSourceSwitching && String(currentPlaySource?.id) === 'local',
               }"
               :disabled="isSourceSwitching"
               @click="switchToLocalVideo"
@@ -194,7 +194,7 @@
                   </span>
                 </div>
               </div>
-              <div v-if="currentPlaySource?.id === 'local'" class="play-source-button__indicator">
+              <div v-if="String(currentPlaySource?.id) === 'local'" class="play-source-button__indicator">
                 <div class="play-source-button__indicator-dot"></div>
               </div>
             </button>
@@ -205,7 +205,7 @@
               :key="source.id"
               class="play-source-button"
               :class="{
-                'play-source-button--active': currentPlaySource?.id === source.id,
+                'play-source-button--active': String(currentPlaySource?.id) === String(source.id),
                 'play-source-button--switching':
                   isSourceSwitching && currentPlaySource?.id === source.id,
               }"
@@ -756,7 +756,7 @@
     localVideoMetadata.value = null;
 
     // 如果当前播放的是本地视频，切换到其他源
-    if (currentPlaySource.value?.id === 'local' && playSources.value.length > 0) {
+    if (String(currentPlaySource.value?.id) === 'local' && playSources.value.length > 0) {
       switchToBestSource();
     }
 
@@ -807,9 +807,12 @@
         isActive: true,
         status: 'active',
         priority: 10,
+        isAds: false,
+        playCount: 0,
+        mediaResourceId: media.value?.id || 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      } as PlaySource;
+      } as unknown as PlaySource;
 
       // 等待一下确保源切换完成
       await nextTick();

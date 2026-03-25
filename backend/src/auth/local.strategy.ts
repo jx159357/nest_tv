@@ -30,7 +30,7 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
         throw new UnauthorizedException('用户名或密码错误');
       }
       return user;
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('用户名或密码错误');
     }
   }

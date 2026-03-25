@@ -39,7 +39,7 @@ export class ResourceCache<T = any> {
   private config: CacheConfig;
   private cache: Map<string, CacheEntry<T>>;
   private stats: CacheStats;
-  private cleanupTimer?: NodeJS.Timeout;
+  private cleanupTimer?: ReturnType<typeof setInterval>;
   private changeListeners: Map<string, (key: string, value: T | null) => void> = new Map();
 
   constructor(config: CacheConfig) {
@@ -465,13 +465,13 @@ export class ResourceCache<T = any> {
 export const createCache = <T = any>(config: CacheConfig) => new ResourceCache<T>(config);
 
 // 默认配置
-export const DEFAULT_CACHE_CONFIG: Partial<CacheConfig> = {
+export const DEFAULT_CACHE_CONFIG = {
   maxSize: 100,
   ttl: 300000, // 5分钟
   storageType: 'memory',
   compression: false,
   cleanupInterval: 60000,
-};
+} satisfies Omit<CacheConfig, 'name'>;
 
 // 创建默认缓存
 export const createDefaultCache = <T = any>(name: string, overrides?: Partial<CacheConfig>) => {
@@ -479,7 +479,7 @@ export const createDefaultCache = <T = any>(name: string, overrides?: Partial<Ca
     name,
     ...DEFAULT_CACHE_CONFIG,
     ...overrides,
-  });
+  } as CacheConfig);
 };
 
 // 全局缓存实例
@@ -572,5 +572,3 @@ export const cacheUtils = {
   },
 };
 
-// 导出缓存类型
-export type { CacheConfig, CacheEntry, CacheStats };

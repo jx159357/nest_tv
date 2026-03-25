@@ -84,7 +84,7 @@
 
           <div v-for="log in logs" :key="log.id" class="table-row" :class="`level-${log.level}`">
             <div class="col-time">
-              <div class="log-time">{{ formatDateTime(log.createdAt) }}</div>
+              <div class="log-time">{{ formatDateTime(log.timestamp) }}</div>
             </div>
 
             <div class="col-level">
@@ -113,7 +113,7 @@
 
             <div class="col-actions">
               <button class="btn-details" @click="viewDetails(log)">查看详情</button>
-              <button class="btn-delete" @click="deleteLog(log.id)">删除</button>
+              <button class="btn-delete" @click="deleteLog(String(log.id))">删除</button>
             </div>
           </div>
         </div>
@@ -145,7 +145,7 @@
 
           <div class="log-detail-item">
             <label>时间:</label>
-            <span>{{ formatDateTime(selectedLog.createdAt) }}</span>
+            <span>{{ formatDateTime(selectedLog.timestamp) }}</span>
           </div>
 
           <div class="log-detail-item">
@@ -192,7 +192,8 @@
 
 <script setup lang="ts">
   import { ref, onMounted } from 'vue';
-  import type { SystemLog, LogLevel, LogModule } from '@/types';
+  import type { SystemLog } from '@/types/logs';
+  import { LogLevel, LogModule } from '@/types/logs';
 
   // 响应式数据
   const loading = ref(true);
@@ -220,7 +221,7 @@
     return levelMap[level] || level;
   };
 
-  const formatDateTime = (dateString: string) => {
+  const formatDateTime = (dateString: string | Date) => {
     const date = new Date(dateString);
     return date.toLocaleString('zh-CN');
   };
@@ -302,7 +303,7 @@
     selectedLog.value = null;
   };
 
-  const deleteLog = async (id: number) => {
+  const deleteLog = async (id: string) => {
     if (!confirm('确定要删除这条日志吗？')) {
       return;
     }

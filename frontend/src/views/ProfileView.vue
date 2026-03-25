@@ -219,6 +219,10 @@
   const completedLoading = ref(false);
 
   const loadUserProfile = async () => {
+    if (!authStore.user?.id) {
+      await authStore.fetchUserProfile();
+    }
+
     if (!authStore.user?.id) return;
 
     statsLoading.value = true;
@@ -238,7 +242,7 @@
 
       // 加载已看完列表
       const completedResponse = await watchHistoryApi.getCompleted(authStore.user.id, { limit: 4 });
-      completed.value = completedResponse;
+      completed.value = completedResponse.data || [];
     } catch (error) {
       console.error('加载用户数据失败:', error);
     } finally {
@@ -292,8 +296,6 @@
   };
 
   onMounted(() => {
-    if (authStore.user) {
-      loadUserProfile();
-    }
+    loadUserProfile();
   });
 </script>

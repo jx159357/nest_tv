@@ -3,6 +3,14 @@ import { Request, Response } from 'express';
 import { Logger } from '@nestjs/common';
 import { AppLoggerService, LogContext } from '../services/app-logger.service';
 
+interface RequestWithUser extends Request {
+  user?: {
+    userId?: number;
+  };
+}
+
+type HttpExceptionResponse = string | { message?: string | string[] };
+
 /**
  * 错误类型枚举
  */
@@ -59,7 +67,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const request = ctx.getRequest<RequestWithUser>();
 
     // 记录错误日志
     this.logError(exception, request);
@@ -107,7 +115,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   /**
    * 记录错误日志
    */
-  private logError(exception: unknown, request: Request): void {
+  private logError(exception: unknown, request: RequestWithUser): void {
     const { type, severity } = this.classifyError(exception);
     const requestId = this.generateRequestId();
 
@@ -128,7 +136,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       requestId,
     };
 
-    const userId = (request as any).user?.userId;
+    const userId = request.user?.userId;
     if (userId) {
       context.userId = userId;
     }
@@ -154,7 +162,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     } else {
       // 使用增强的日志方法
       this.appLogger.error(
-        `HTTP Exception: ${exception instanceof HttpException ? (exception.getResponse() as any)?.message || exception.message : 'Unknown error'}`,
+        `HTTP Exception: ${this.extractExceptionMessage(exception)}`,
         `${type} | Severity: ${severity}`,
         exception instanceof Error ? exception.stack : undefined,
         requestId,
@@ -164,7 +172,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     // 详细错误信息记录到调试日志
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
-      const response = exception.getResponse() as any;
+      const response = exception.getResponse() as HttpExceptionResponse;
       this.appLogger.debug(
         JSON.stringify({
           ...errorInfo,
@@ -175,7 +183,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         requestId,
       );
     } else {
-      const error = exception as Error;
+      const error = this.toError(exception);
       this.appLogger.debug(
         JSON.stringify({
           ...errorInfo,
@@ -194,7 +202,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   /**
    * 构建错误响应
    */
-  private buildErrorResponse(exception: unknown, request: Request): ErrorResponse {
+  private buildErrorResponse(exception: unknown, request: RequestWithUser): ErrorResponse {
     const { type, severity } = this.classifyError(exception);
     const requestId = this.generateRequestId();
 
@@ -203,10 +211,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     if (exception instanceof HttpException) {
       statusCode = exception.getStatus();
-      const response = exception.getResponse() as any;
-      message = response?.message || exception.message;
+      const response = exception.getResponse() as HttpExceptionResponse;
+      message = this.getHttpExceptionMessage(response, exception.message);
     } else {
-      const error = exception as Error;
+      const error = this.toError(exception);
       message = error.message;
     }
 
@@ -240,5 +248,32 @@ export class GlobalExceptionFilter implements ExceptionFilter {
    */
   private generateRequestId(): string {
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  private toError(exception: unknown): Error {
+    return exception instanceof Error ? exception : new Error(String(exception));
+  }
+
+  private getHttpExceptionMessage(response: HttpExceptionResponse, fallback: string): string {
+    if (typeof response === 'string') {
+      return response;
+    }
+
+    if (Array.isArray(response.message)) {
+      return response.message.join(', ');
+    }
+
+    return response.message || fallback;
+  }
+
+  private extractExceptionMessage(exception: unknown): string {
+    if (exception instanceof HttpException) {
+      return this.getHttpExceptionMessage(
+        exception.getResponse() as HttpExceptionResponse,
+        exception.message,
+      );
+    }
+
+    return this.toError(exception).message;
   }
 }

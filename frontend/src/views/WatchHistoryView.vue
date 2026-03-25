@@ -244,6 +244,7 @@
   import { ref, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
   import { useAuthStore } from '@/stores/auth';
+  import { watchHistoryApi } from '@/api/watchHistory';
 
   const router = useRouter();
   const authStore = useAuthStore();
@@ -269,6 +270,10 @@
 
   // 加载观看历史
   const loadWatchHistory = async () => {
+    if (!authStore.user?.id) {
+      await authStore.fetchUserProfile();
+    }
+
     if (!authStore.user?.id) return;
 
     loading.value = true;
@@ -294,17 +299,15 @@
         params.isCompleted = false;
       }
 
-      const response = await authStore.api.get(`/watch-history/user/${authStore.user.id}`, {
-        params,
-      });
+      const response = await watchHistoryApi.getMyWatchHistory(params);
 
-      if (response.data && response.data.data) {
-        watchHistory.value = response.data.data;
+      if (response?.data) {
+        watchHistory.value = response.data;
         pagination.value = {
-          page: response.data.page,
-          limit: response.data.limit,
-          total: response.data.total,
-          totalPages: response.data.totalPages,
+          page: response.page,
+          limit: response.limit,
+          total: response.total,
+          totalPages: response.totalPages,
         };
       } else {
         watchHistory.value = [];
@@ -410,7 +413,7 @@
 
     try {
       deletingId.value = id;
-      await authStore.api.delete(`/watch-history/${id}`);
+      await watchHistoryApi.deleteWatchHistory(String(id));
       loadWatchHistory(); // 重新加载数据
     } catch (error) {
       console.error('删除观看历史失败:', error);

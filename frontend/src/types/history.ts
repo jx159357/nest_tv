@@ -1,3 +1,6 @@
+import type { MediaResource, PlaySource } from './media';
+import type { User } from './user';
+
 // 观看历史相关类型
 export interface WatchHistory {
   id: number;
@@ -8,9 +11,13 @@ export interface WatchHistory {
   playSourceId?: number;
   playSource?: PlaySource;
   currentTime: number;
-  duration: number;
-  completed: boolean;
-  watchedAt: Date;
+  duration?: number;
+  watchDuration?: number;
+  totalDuration?: number;
+  completed?: boolean;
+  isCompleted?: boolean;
+  watchedAt?: Date;
+  lastPlayedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

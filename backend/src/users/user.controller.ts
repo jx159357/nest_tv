@@ -20,7 +20,7 @@ import { JwtResponseDto } from '../auth/dtos/jwt-response.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 interface AuthenticatedRequest {
-  user: Record<string, any>;
+  user: UserResponseDto;
 }
 
 /**
@@ -74,7 +74,9 @@ export class UserController {
   })
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ValidationPipe({ transform: true }))
-  async login(@Body() loginUserDto: LoginUserDto): Promise<any> {
+  async login(
+    @Body() loginUserDto: LoginUserDto,
+  ): Promise<{ accessToken: string; user: UserResponseDto }> {
     return this.userService.login(loginUserDto);
   }
 

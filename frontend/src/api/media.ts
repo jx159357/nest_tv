@@ -1,4 +1,5 @@
 import ApiClient from './index';
+import type { PaginatedResponse } from '@/types/api';
 import type { 
   MediaResource, 
   MediaQueryParams, 
@@ -8,7 +9,7 @@ import type {
 export const mediaApi = {
   // 获取媒体资源列表
   getMediaList: (params?: MediaQueryParams) => {
-    return ApiClient.get<MediaResource[]>('/media', { params });
+    return ApiClient.get<PaginatedResponse<MediaResource>>('/media', { params });
   },
 
   // 根据ID获取媒体资源详情
@@ -33,8 +34,8 @@ export const mediaApi = {
 
   // 搜索媒体资源
   searchMedia: (query: string, params?: MediaQueryParams) => {
-    return ApiClient.get<MediaResource[]>('/media/search', {
-      params: { q: query, ...params },
+    return ApiClient.get<PaginatedResponse<MediaResource>>('/media/search', {
+      params: { keyword: query, ...params },
     });
   },
 
@@ -54,29 +55,38 @@ export const mediaApi = {
 
   // 获取高评分媒体资源
   getTopRatedMedia: (limit?: number, minRating?: number, params?: MediaQueryParams) => {
-    return ApiClient.get<MediaResource[]>('/media/top-rated', {
+    return ApiClient.get<MediaResource[]>('/recommendations/top-rated', {
       params: { limit, minRating, ...params },
     });
   },
 
   // 获取推荐媒体资源
   getRecommendedMedia: (params?: MediaQueryParams) => {
-    return ApiClient.get<MediaResource[]>('/media/recommended', { params });
+    return ApiClient.get<MediaResource[]>('/recommendations/trending', { params });
   },
 
   // 根据类型获取媒体资源
   getMediaByType: (type: string, params?: MediaQueryParams) => {
-    return ApiClient.get<MediaResource[]>(`/media/type/${type}`, { params });
+    return ApiClient.get<PaginatedResponse<MediaResource>>('/media', {
+      params: { ...params, type },
+    });
+  },
+
+  // 获取相似媒体资源
+  getSimilarMedia: (mediaId: string | number, limit = 6) => {
+    return ApiClient.get<MediaResource[]>(`/media/${mediaId}/similar`, {
+      params: { limit },
+    });
   },
 
   // 获取媒体资源的播放源
   getPlaySources: (mediaId: string) => {
-    return ApiClient.get<PlaySource[]>(`/media/${mediaId}/play-sources`);
+    return ApiClient.get<PlaySource[]>(`/play-sources/media/${mediaId}`);
   },
 
   // 增加观看次数
   incrementViewCount: (mediaId: string) => {
-    return ApiClient.post<void>(`/media/${mediaId}/view`);
+    return ApiClient.put<void>(`/media/${mediaId}/views`);
   },
 
   // 收藏/取消收藏媒体资源
@@ -86,7 +96,7 @@ export const mediaApi = {
 
   // 获取用户收藏的媒体资源
   getFavorites: (params?: MediaQueryParams) => {
-    return ApiClient.get<MediaResource[]>('/media/favorites', { params });
+    return ApiClient.get<PaginatedResponse<MediaResource>>('/media/favorites', { params });
   },
 
   // 获取观看历史
@@ -98,4 +108,6 @@ export const mediaApi = {
   getStatistics: () => {
     return ApiClient.get<any>('/media/statistics');
   },
+
+  clearCache: () => undefined,
 };

@@ -1,4 +1,5 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
 
 // 路由懒加载配置
 const HomeView = () => import('../views/HomeView.vue');
@@ -18,13 +19,14 @@ const AdminMediaView = () => import('../views/AdminMediaView.vue');
 // const SettingsView = () => import('../views/SettingsView.vue'); // 暂时注释，文件不存在
 const NotFoundView = () => import('../views/NotFoundView.vue');
 
-const routes = [
+const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'home',
     component: HomeView,
     meta: {
       title: '首页 - Nest TV',
+      requiresAuth: true,
       preload: true, // 首页预加载
       keepAlive: true, // 保持组件状态
     },
@@ -55,7 +57,7 @@ const routes = [
     component: MediaDetailView,
     meta: {
       title: '影视详情 - Nest TV',
-      requiresAuth: false, // 影视详情页无需登录
+      requiresAuth: true,
       preload: true, // 预加载重要页面
     },
   },
@@ -65,7 +67,7 @@ const routes = [
     component: WatchView,
     meta: {
       title: '观看影视 - Nest TV',
-      requiresAuth: false, // 观看页面允许未登录访问
+      requiresAuth: true,
       preload: true, // 观看页面预加载
       keepAlive: true, // 保持播放状态
     },
@@ -96,9 +98,25 @@ const routes = [
     component: RecommendationsView,
     meta: {
       title: '推荐内容 - Nest TV',
-      requiresAuth: false,
+      requiresAuth: true,
       preload: true, // 推荐内容预加载
     },
+  },
+  {
+    path: '/search',
+    redirect: to => ({ path: '/', query: to.query }),
+  },
+  {
+    path: '/favorites',
+    redirect: '/watch-history',
+  },
+  {
+    path: '/continue-watching',
+    redirect: '/watch-history',
+  },
+  {
+    path: '/completed',
+    redirect: '/watch-history',
   },
   // {
   //   path: '/settings',
@@ -192,10 +210,36 @@ const router = createRouter({
       return savedPosition;
     }
     if (to.hash) {
-      return { selector: to.hash };
+      return { el: to.hash, top: 0 };
     }
     return { left: 0, top: 0 };
   },
+});
+
+router.beforeEach(to => {
+  const authStore = useAuthStore();
+  const requiresAuth = to.matched.some(record => record.meta?.requiresAuth);
+  const requiresAdmin = to.matched.some(record => record.meta?.requiresAdmin);
+
+  if (typeof to.meta?.title === 'string') {
+    document.title = to.meta.title;
+  }
+
+  if (requiresAuth && !authStore.token) {
+    return {
+      path: '/login',
+      query: { redirect: to.fullPath },
+    };
+  }
+
+  if (requiresAdmin) {
+    const role = authStore.user?.role;
+    if (role !== 'admin' && role !== 'superAdmin') {
+      return '/';
+    }
+  }
+
+  return true;
 });
 
 export default router;

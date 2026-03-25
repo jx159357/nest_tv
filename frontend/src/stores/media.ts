@@ -47,10 +47,10 @@ export const useMediaStore = defineStore('media', () => {
     }
   };
 
-  const fetchMediaDetail = async (id: string) => {
+  const fetchMediaDetail = async (id: string | number) => {
     loading.value = true;
     try {
-      const response = await mediaApi.getMediaById(id);
+      const response = await mediaApi.getMediaById(String(id));
       currentMedia.value = response;
       return response;
     } catch (error) {
@@ -91,12 +91,26 @@ export const useMediaStore = defineStore('media', () => {
     }
   };
 
+  const fetchRecommendations = async (mediaId: string | number, limit = 6) => {
+    try {
+      return await mediaApi.getSimilarMedia(mediaId, limit);
+    } catch (error) {
+      console.error('获取推荐媒体失败:', error);
+      throw error;
+    }
+  };
+
   const searchMedia = async (query: string, params?: MediaQueryParams) => {
     loading.value = true;
     try {
       const response = await mediaApi.searchMedia(query, params);
       mediaList.value = response.data;
-      pagination.value = response.pagination;
+      pagination.value = {
+        page: response.page,
+        limit: response.limit,
+        total: response.total,
+        totalPages: response.totalPages,
+      };
       return response;
     } catch (error) {
       console.error('搜索媒体失败:', error);
@@ -111,7 +125,12 @@ export const useMediaStore = defineStore('media', () => {
     try {
       const response = await mediaApi.getMediaByType(type, params);
       mediaList.value = response.data;
-      pagination.value = response.pagination;
+      pagination.value = {
+        page: response.page,
+        limit: response.limit,
+        total: response.total,
+        totalPages: response.totalPages,
+      };
       return response;
     } catch (error) {
       console.error('获取类型媒体失败:', error);
@@ -145,7 +164,12 @@ export const useMediaStore = defineStore('media', () => {
     try {
       const response = await mediaApi.getFavorites(params);
       mediaList.value = response.data;
-      pagination.value = response.pagination;
+      pagination.value = {
+        page: response.page,
+        limit: response.limit,
+        total: response.total,
+        totalPages: response.totalPages,
+      };
       return response;
     } catch (error) {
       console.error('获取收藏媒体失败:', error);
@@ -182,7 +206,12 @@ export const useMediaStore = defineStore('media', () => {
       });
 
       mediaList.value = [...mediaList.value, ...response.data];
-      pagination.value = response.pagination;
+      pagination.value = {
+        page: response.page,
+        limit: response.limit,
+        total: response.total,
+        totalPages: response.totalPages,
+      };
       return response;
     } catch (error) {
       console.error('加载更多媒体失败:', error);
@@ -203,6 +232,7 @@ export const useMediaStore = defineStore('media', () => {
     fetchPopularMedia,
     fetchLatestMedia,
     fetchTopRatedMedia,
+    fetchRecommendations,
     searchMedia,
     fetchMediaByType,
     incrementViewCount,

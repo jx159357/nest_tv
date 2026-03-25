@@ -5,7 +5,7 @@
       <div class="user-info">
         <img
           :src="authStore.user?.avatar || '/default-avatar.png'"
-          :alt="avatar"
+          :alt="authStore.user?.username || '用户头像'"
           class="user-avatar"
         />
         <div class="user-details">
@@ -76,26 +76,26 @@
         <h3 class="section-title">🎯 为您推荐</h3>
         <button
           class="refresh-btn"
-          :disabled="recommendationService.isLoading"
+          :disabled="recommendationsLoading"
           @click="refreshRecommendations"
         >
-          {{ recommendationService.isLoading ? '🔄' : '🔄 刷新' }}
+          {{ recommendationsLoading ? '🔄' : '🔄 刷新' }}
         </button>
       </div>
 
-      <div v-if="recommendationService.isLoading" class="loading-container">
+      <div v-if="recommendationsLoading" class="loading-container">
         <div class="loading-spinner">🔄</div>
         <p>正在为您生成个性化推荐...</p>
       </div>
 
-      <div v-else-if="recommendationService.error" class="error-container">
-        <p>❌ {{ recommendationService.error }}</p>
+      <div v-else-if="recommendationsError" class="error-container">
+        <p>❌ {{ recommendationsError }}</p>
         <button class="retry-btn" @click="refreshRecommendations">重试</button>
       </div>
 
       <div v-else class="recommendations-grid">
         <MediaCard
-          v-for="media in recommendationService.personalizedMedia"
+          v-for="media in personalizedMedia"
           :key="media.id"
           :media="media"
           :show-rating="true"
@@ -105,7 +105,7 @@
           @click="goToMedia(media.id)"
         />
 
-        <div v-if="recommendationService.personalizedMedia.length === 0" class="empty-state">
+        <div v-if="personalizedMedia.length === 0" class="empty-state">
           <p>🎭 暂无推荐内容，请多观看一些视频来帮助我们为您推荐</p>
           <button class="discover-btn" @click="goToBrowse">浏览内容</button>
         </div>
@@ -185,11 +185,13 @@
   import { useAuthStore } from '@/stores/auth';
   import { useRecommendationService } from '@/services/recommendation.service';
   import MediaCard from '@/components/ui/MediaCard.vue';
-  import type { MediaResource } from '@/types';
 
   const router = useRouter();
   const authStore = useAuthStore();
   const recommendationService = useRecommendationService();
+  const recommendationsLoading = computed(() => recommendationService.isLoading.value);
+  const recommendationsError = computed(() => recommendationService.error.value);
+  const personalizedMedia = computed(() => recommendationService.personalizedMedia.value);
 
   // 响应式状态
   const showDetailedAnalysis = ref(false);

@@ -347,7 +347,7 @@
   const sendDanmaku = () => {
     if (!inputText.value.trim() || !isConnected.value || !settings.enabled) return;
 
-    const success = wsSendDanmaku({
+    wsSendDanmaku({
       text: inputText.value.trim(),
       color: selectedColor.value,
       type: selectedType.value,
@@ -357,9 +357,7 @@
       isHighlighted: false,
     });
 
-    if (success) {
-      inputText.value = '';
-    }
+    inputText.value = '';
   };
 
   // 弹幕样式计算

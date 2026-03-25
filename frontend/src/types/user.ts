@@ -29,7 +29,7 @@ export interface User {
 }
 
 export interface LoginCredentials {
-  username: string;
+  identifier: string;
   password: string;
 }
 
@@ -43,6 +43,8 @@ export interface RegisterUserData {
 
 export interface AuthResponse {
   accessToken: string;
+  refreshToken?: string;
+  expiresIn?: number;
   user: User;
 }
 

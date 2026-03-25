@@ -55,7 +55,7 @@
 
 <script setup lang="ts">
   import { computed, ref, onMounted, onUnmounted } from 'vue';
-  import type { MediaResource } from '@/types';
+  import type { MediaResource } from '@/types/media';
 
   interface Props {
     media: MediaResource;

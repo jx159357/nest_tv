@@ -617,6 +617,7 @@
     (e: 'ended'): void;
     (e: 'timeupdate', time: number): void;
     (e: 'volumechange', volume: number): void;
+    (e: 'loadedmetadata', meta: { duration: number; videoWidth: number; videoHeight: number }): void;
     (e: 'ratechange', rate: number): void;
     (e: 'qualitychange', quality: string): void;
     (e: 'sourcechange', source: VideoSource): void;
@@ -1105,8 +1106,21 @@
   const toggleFullscreen = () => {
     if (!playerContainer.value) return;
 
+    const element = playerContainer.value as HTMLDivElement & {
+      webkitRequestFullscreen?: () => Promise<void> | void;
+      mozRequestFullScreen?: () => Promise<void> | void;
+      msRequestFullscreen?: () => Promise<void> | void;
+    };
+    const doc = document as Document & {
+      webkitExitFullscreen?: () => Promise<void> | void;
+      mozCancelFullScreen?: () => Promise<void> | void;
+      msExitFullscreen?: () => Promise<void> | void;
+      webkitFullscreenElement?: Element | null;
+      mozFullScreenElement?: Element | null;
+      msFullscreenElement?: Element | null;
+    };
+
     if (!isFullscreen.value) {
-      const element = playerContainer.value;
       if (element.requestFullscreen) {
         element.requestFullscreen();
       } else if (element.webkitRequestFullscreen) {
@@ -1117,24 +1131,30 @@
         element.msRequestFullscreen();
       }
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      } else if (document.mozCancelFullScreen) {
-        document.mozCancelFullScreen();
-      } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
+      if (doc.exitFullscreen) {
+        doc.exitFullscreen();
+      } else if (doc.webkitExitFullscreen) {
+        doc.webkitExitFullscreen();
+      } else if (doc.mozCancelFullScreen) {
+        doc.mozCancelFullScreen();
+      } else if (doc.msExitFullscreen) {
+        doc.msExitFullscreen();
       }
     }
   };
 
   const onFullscreenChange = () => {
+    const doc = document as Document & {
+      webkitFullscreenElement?: Element | null;
+      mozFullScreenElement?: Element | null;
+      msFullscreenElement?: Element | null;
+    };
+
     isFullscreen.value = !!(
-      document.fullscreenElement ||
-      document.webkitFullscreenElement ||
-      document.mozFullScreenElement ||
-      document.msFullscreenElement
+      doc.fullscreenElement ||
+      doc.webkitFullscreenElement ||
+      doc.mozFullScreenElement ||
+      doc.msFullscreenElement
     );
     emit('fullscreenchange', isFullscreen.value);
   };

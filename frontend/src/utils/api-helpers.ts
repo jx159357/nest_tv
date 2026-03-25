@@ -1,5 +1,5 @@
 import type { AxiosResponse, AxiosError } from 'axios';
-import type { ApiResponse } from '@/types';
+import type { ApiResponse } from '@/types/api';
 
 // 重新定义 ApiError 接口以兼容使用方式
 interface ApiError {
@@ -32,8 +32,10 @@ export class ApiResponseWrapper {
 // API 错误处理器
 export class ApiErrorHandler {
   static handle(error: AxiosError): Promise<never> {
+    const responseData = error.response?.data as { message?: string } | undefined;
+
     const apiError: ApiError = {
-      message: error.response?.data?.message || error.message || '请求失败',
+      message: responseData?.message || error.message || '请求失败',
       status: error.response?.status || 500,
       data: error.response?.data || {},
     };
@@ -99,17 +101,19 @@ export class RequestInterceptor {
         return config;
       },
       onResponse: (response: AxiosResponse) => {
-        // 统一处理响应数据
-        return response.data;
+        // 保留原始响应对象，避免在 ApiClient 中重复解包后得到 undefined
+        return response;
       },
       onResponseError: (error: AxiosError) => {
+        const responseData = error.response?.data as { message?: string } | undefined;
+
         // 调试信息，生产环境可删除
         if (process.env.NODE_ENV === 'development') {
           console.error('API Error:', {
             url: error.config?.url,
             method: error.config?.method,
             status: error.response?.status,
-            message: error.response?.data?.message,
+            message: responseData?.message,
             headers: error.config?.headers,
           });
         }
@@ -146,7 +150,7 @@ export class PaginationHelper {
     limit?: number;
     sortBy?: string;
     sortOrder?: 'ASC' | 'DESC';
-    [key: string]: any;
+    [key: string]: unknown;
   }): Record<string, any> {
     const query: Record<string, any> = {};
 

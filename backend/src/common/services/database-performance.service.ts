@@ -2,6 +2,27 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/typeorm';
 import { Connection } from 'typeorm';
 
+interface MysqlPoolStats {
+  allConnections: unknown[];
+  freeConnections: unknown[];
+  acquiringConnections: unknown[];
+}
+
+interface MysqlMasterPoolDriver {
+  master?: {
+    pool?: {
+      pool: MysqlPoolStats;
+    };
+  };
+}
+
+type ConnectionStats = {
+  totalConnections: number | 'unknown';
+  activeConnections: number | 'unknown';
+  freeConnections: number | 'unknown';
+  queuedRequests: number | 'unknown';
+};
+
 /**
  * 数据库性能监控服务
  * 监控查询性能、连接池状态和慢查询
@@ -43,12 +64,12 @@ export class DatabasePerformanceService {
   /**
    * 记录查询性能
    */
-  async logQueryPerformance(
+  logQueryPerformance(
     operation: string,
     startTime: number,
     query: string,
     parameters?: any[],
-  ): Promise<void> {
+  ): void {
     const duration = Date.now() - startTime;
 
     // 更新查询统计
@@ -102,7 +123,7 @@ export class DatabasePerformanceService {
     averageTime: number;
     slowQueries: Array<{ operation: string; avgTime: number; count: number }>;
     topOperations: Array<{ operation: string; count: number; avgTime: number }>;
-    connectionStats: any;
+    connectionStats: ConnectionStats;
   } {
     let totalQueries = 0;
     let totalTime = 0;
@@ -142,10 +163,10 @@ export class DatabasePerformanceService {
   /**
    * 获取连接池统计信息
    */
-  private getConnectionStats(): any {
+  private getConnectionStats(): ConnectionStats {
     try {
       // MySQL 连接池统计
-      const pool = (this.connection.driver as any).master?.pool;
+      const pool = (this.connection.driver as MysqlMasterPoolDriver).master?.pool;
       if (pool) {
         return {
           totalConnections: pool.pool.allConnections.length,
@@ -154,8 +175,10 @@ export class DatabasePerformanceService {
           queuedRequests: pool.pool.acquiringConnections.length,
         };
       }
-    } catch (error) {
-      this.logger.warn('无法获取连接池统计信息', error);
+    } catch (error: unknown) {
+      this.logger.warn(
+        `无法获取连接池统计信息: ${error instanceof Error ? error.message : '未知错误'}`,
+      );
     }
 
     return {
@@ -172,7 +195,7 @@ export class DatabasePerformanceService {
   async healthCheck(): Promise<{
     status: 'healthy' | 'unhealthy';
     responseTime: number;
-    connectionPool?: any;
+    connectionPool?: ConnectionStats;
     error?: string;
   }> {
     const startTime = Date.now();
@@ -187,11 +210,11 @@ export class DatabasePerformanceService {
         responseTime,
         connectionPool: this.getConnectionStats(),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         status: 'unhealthy',
         responseTime: Date.now() - startTime,
-        error: error.message,
+        error: error instanceof Error ? error.message : '未知错误',
       };
     }
   }
@@ -215,7 +238,10 @@ export class DatabasePerformanceService {
 
     // 检查连接池
     const poolStats = report.connectionStats;
-    if (poolStats.activeConnections && poolStats.totalConnections) {
+    if (
+      typeof poolStats.activeConnections === 'number' &&
+      typeof poolStats.totalConnections === 'number'
+    ) {
       const utilizationRate = poolStats.activeConnections / poolStats.totalConnections;
       if (utilizationRate > 0.8) {
         suggestions.push('连接池利用率过高，建议增加连接池大小');

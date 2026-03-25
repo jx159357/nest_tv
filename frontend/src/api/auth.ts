@@ -9,12 +9,12 @@ import type {
 export const authApi = {
   // 用户登录
   login: (credentials: LoginCredentials) => {
-    return ApiClient.post<AuthResponse>('/auth/login', credentials);
+    return ApiClient.post<AuthResponse>('/users/login', credentials);
   },
 
   // 用户注册
   register: (userData: RegisterUserData) => {
-    return ApiClient.post<User>('/auth/register', userData);
+    return ApiClient.post<User>('/users/register', userData);
   },
 
   // 获取用户信息

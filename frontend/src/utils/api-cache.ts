@@ -36,9 +36,9 @@ class APICacheManager {
   /**
    * 生成缓存key
    */
-  private generateKey(config: AxiosRequestConfig): string {
+  private generateKey(config: CachedAxiosRequestConfig): string {
     const { url, method, params, data } = config;
-    const normalizedUrl = url.replace(/\/$/, ''); // 移除尾部斜杠
+    const normalizedUrl = (url || '').replace(/\/$/, ''); // 移除尾部斜杠
 
     // 基于URL、方法、参数和数据生成唯一key
     const keyObj = {
@@ -159,7 +159,9 @@ class APICacheManager {
   /**
    * 请求拦截器
    */
-  public async requestInterceptor(config: AxiosRequestConfig): Promise<AxiosRequestConfig> {
+  public async requestInterceptor(
+    config: CachedAxiosRequestConfig,
+  ): Promise<CachedAxiosRequestConfig> {
     // 只缓存GET请求，除非显式配置
     if (config.method?.toLowerCase() !== 'get' && !config.cacheConfig?.enabled) {
       return config;
@@ -179,7 +181,10 @@ class APICacheManager {
 
     if (cachedData) {
       // 如果有缓存数据，直接返回，不发送网络请求
-      throw axios.Cancel('Cache hit');
+      throw Object.assign(new Error('Cache hit'), {
+        __cacheHit: true,
+        config,
+      });
     }
 
     return config;
@@ -189,12 +194,12 @@ class APICacheManager {
    * 响应拦截器
    */
   public async responseInterceptor(error: any): Promise<any> {
-    if (!axios.isCancel(error)) {
+    if (!error?.__cacheHit) {
       throw error;
     }
 
     // 如果是缓存命中，构造响应对象
-    const config = error.config;
+    const config = error.config as CachedAxiosRequestConfig;
     const cacheConfig = config.cacheConfig || {};
     const key = cacheConfig.key || this.generateKey(config);
     const cachedData = this.getCache(key);
@@ -279,7 +284,7 @@ class APICacheManager {
   public async preload(urls: string[], ttl: number = 300000): Promise<void> {
     const preloadPromises = urls.map(url => {
       return axios
-        .get(url, { cacheConfig: { ttl } })
+        .get(url, { cacheConfig: { ttl } } as any)
         .then(() => console.log(`预加载成功: ${url}`))
         .catch(() => console.log(`预加载失败: ${url}`));
     });
@@ -308,11 +313,11 @@ export const apiCacheManager = new APICacheManager();
 export const setupCacheInterceptors = (instance: AxiosInstance): void => {
   // 请求拦截器
   instance.interceptors.request.use(
-    async config => {
+    async (config: any) => {
       try {
         return await apiCacheManager.requestInterceptor(config);
       } catch (error) {
-        if (axios.isCancel(error)) {
+        if ((error as any)?.__cacheHit) {
           return Promise.reject(error);
         }
         return config;
@@ -338,7 +343,7 @@ export const setupCacheInterceptors = (instance: AxiosInstance): void => {
  * 缓存配置工具函数
  */
 export const withCache = (
-  config: AxiosRequestConfig,
+  config: CachedAxiosRequestConfig,
   cacheConfig?: CacheConfig,
 ): CachedAxiosRequestConfig => {
   return {
@@ -355,7 +360,7 @@ export const withCache = (
  * 强制刷新缓存
  */
 export const forceRefresh = (
-  config: AxiosRequestConfig,
+  config: CachedAxiosRequestConfig,
   cacheConfig?: Omit<CacheConfig, 'forceRefresh'>,
 ): CachedAxiosRequestConfig => {
   return withCache(config, {

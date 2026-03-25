@@ -53,7 +53,7 @@ RUN echo 'server {
 
     # API代理
     location /api/ {
-        proxy_pass http://api:3335;
+        proxy_pass http://api:3334;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";

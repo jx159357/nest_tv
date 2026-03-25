@@ -1,7 +1,3 @@
-import { Test } from '@nestjs/testing';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config';
-
 // 测试数据库配置
 process.env.DB_HOST = 'localhost';
 process.env.DB_PORT = '3306';

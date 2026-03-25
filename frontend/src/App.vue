@@ -9,7 +9,7 @@
   import GlobalLoading from '@/components/ui/GlobalLoading.vue';
   import EnhancedModal from '@/components/EnhancedModal.vue';
   import NotificationToast from '@/components/NotificationToast.vue';
-  import { modalState, notifications } from '@/composables/useModal';
+  import { modalState } from '@/composables/useModal';
 
   const authStore = useAuthStore();
   const themeStore = useThemeStore();
@@ -44,7 +44,7 @@
   // 路由更新前的加载状态管理
   onBeforeRouteUpdate((to, from) => {
     if (to.name !== from?.name) {
-      loadingStore.startRouteLoading(from?.name, to.name);
+      loadingStore.startRouteLoading(String(from?.name || ''), String(to.name || ''));
     }
   });
 </script>

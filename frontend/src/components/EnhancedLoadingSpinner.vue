@@ -73,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onMounted, onUnmounted } from 'vue';
+  import { computed, onMounted, onUnmounted, ref } from 'vue';
 
   interface Props {
     isLoading: boolean;
@@ -118,7 +118,6 @@
   // 计算属性
   const canceling = ref(false);
 
-  const cancelButtonClasses = computed(() => `cancel-${props.color}`);
   const overlayClasses = computed(() => [
     `loading-${props.variant}`,
     `loading-${props.size}`,

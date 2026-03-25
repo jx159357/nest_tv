@@ -1,13 +1,23 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { AppLoggerService } from './app-logger.service';
 
+interface HealthCheckRow {
+  test: number;
+}
+
+interface DataSourceDriverWithPool {
+  pool?: {
+    getAllConnections?: () => unknown[];
+  };
+}
+
 @Injectable()
-export class DatabaseHealthService implements OnModuleInit {
+export class DatabaseHealthService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(DatabaseHealthService.name);
   private isHealthy = false;
-  private healthCheckInterval: NodeJS.Timeout;
+  private healthCheckInterval?: ReturnType<typeof setInterval>;
   private readonly healthCheckIntervalMs = 300000; // 30秒检查一次
 
   constructor(
@@ -25,24 +35,23 @@ export class DatabaseHealthService implements OnModuleInit {
     await this.checkDatabaseHealth();
 
     // 设置定期健康检查
-    this.healthCheckInterval = setInterval(
-      () => this.checkDatabaseHealth(),
-      this.healthCheckIntervalMs,
-    );
+    this.healthCheckInterval = setInterval(() => {
+      void this.checkDatabaseHealth();
+    }, this.healthCheckIntervalMs);
   }
 
   async checkDatabaseHealth(): Promise<boolean> {
     const requestId = `db_health_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     try {
-      const maxRetries = this.configService.get<number>('DB_RETRY_ATTEMPTS', 5);
-      const retryDelay = this.configService.get<number>('DB_RETRY_DELAY', 5000);
+      const maxRetries = this.configService.get<number>('DB_RETRY_ATTEMPTS', 5) ?? 5;
+      const retryDelay = this.configService.get<number>('DB_RETRY_DELAY', 5000) ?? 5000;
 
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
           // 测试数据库连接
           const query = 'SELECT 1 as test';
-          const result = await this.dataSource.query(query);
+          const result: HealthCheckRow[] = await this.dataSource.query(query);
 
           if (result && result[0] && result[0].test === 1) {
             if (!this.isHealthy) {
@@ -51,8 +60,14 @@ export class DatabaseHealthService implements OnModuleInit {
             this.isHealthy = true;
             return true;
           }
-        } catch (error) {
-          this.appLogger.logDatabaseError('Health Check', error, 'SELECT 1 as test', [], requestId);
+        } catch (error: unknown) {
+          this.appLogger.logDatabaseError(
+            'Health Check',
+            error instanceof Error ? error : new Error(String(error)),
+            'SELECT 1 as test',
+            [],
+            requestId,
+          );
 
           if (attempt < maxRetries) {
             // 指数退避重试
@@ -71,9 +86,15 @@ export class DatabaseHealthService implements OnModuleInit {
         requestId,
       );
       return false;
-    } catch (error) {
+    } catch (error: unknown) {
       this.isHealthy = false;
-      this.appLogger.logDatabaseError('Health Check Exception', error, undefined, [], requestId);
+      this.appLogger.logDatabaseError(
+        'Health Check Exception',
+        error instanceof Error ? error : new Error(String(error)),
+        undefined,
+        [],
+        requestId,
+      );
       return false;
     }
   }
@@ -83,8 +104,8 @@ export class DatabaseHealthService implements OnModuleInit {
     context: string = '数据库操作',
   ): Promise<T> {
     const requestId = `db_operation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const maxRetries = this.configService.get<number>('DB_RETRY_ATTEMPTS', 5);
-    const retryDelay = this.configService.get<number>('DB_RETRY_DELAY', 5000);
+    const maxRetries = this.configService.get<number>('DB_RETRY_ATTEMPTS', 5) ?? 5;
+    const retryDelay = this.configService.get<number>('DB_RETRY_DELAY', 5000) ?? 5000;
 
     let lastError: Error = new Error('未知错误');
 
@@ -98,10 +119,10 @@ export class DatabaseHealthService implements OnModuleInit {
         const result = await operation();
         this.appLogger.log(`${context}执行成功`, 'DATABASE_OPERATION_SUCCESS');
         return result;
-      } catch (error) {
-        lastError = error;
+      } catch (error: unknown) {
+        lastError = error instanceof Error ? error : new Error(String(error));
 
-        this.appLogger.logDatabaseError(context, error, undefined, [], requestId);
+        this.appLogger.logDatabaseError(context, lastError, undefined, [], requestId);
 
         if (attempt < maxRetries) {
           // 指数退避重试
@@ -137,11 +158,11 @@ export class DatabaseHealthService implements OnModuleInit {
     let connectionCount = 0;
     try {
       // 安全获取连接数
-      const pool = (this.dataSource.driver as any).pool;
+      const pool = (this.dataSource.driver as DataSourceDriverWithPool).pool;
       if (pool && typeof pool.getAllConnections === 'function') {
         connectionCount = pool.getAllConnections().length;
       }
-    } catch (error) {
+    } catch {
       this.appLogger.debug('获取连接池信息失败', 'DATABASE_POOL_INFO_FAILED');
     }
 
@@ -159,7 +180,7 @@ export class DatabaseHealthService implements OnModuleInit {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  async onModuleDestroy() {
+  onModuleDestroy() {
     if (this.healthCheckInterval) {
       clearInterval(this.healthCheckInterval);
     }

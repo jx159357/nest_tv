@@ -162,7 +162,7 @@
   import { useAuthStore } from '@/stores/auth';
   import { useI18n } from 'vue-i18n';
   import { availableLocales, setLocale, getCurrentLocale } from '@/i18n';
-  import type { SearchSuggestion } from '@/types';
+  import type { SearchSuggestion } from '@/types/components';
   import ThemeToggle from '@/components/ui/ThemeToggle.vue';
 
   // 国际化

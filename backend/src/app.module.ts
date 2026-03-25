@@ -35,6 +35,12 @@ import { SearchHistory } from './entities/search-history.entity';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
+interface MysqlTypeCastField {
+  type: string;
+  length: number;
+  string(): string | null;
+}
+
 @ApiTags('系统')
 @Module({
   imports: [
@@ -86,7 +92,10 @@ import { AppService } from './app.service';
           // 高级连接池设置 - 增强生产环境性能
           queueLimit: parseInt(configService.get<string>('DB_QUEUE_LIMIT', '30')),
           waitForConnections: true,
-          connectTimeout: parseInt(configService.get<string>('DB_CONNECTION_CHECK_TIMEOUT', '30000')),
+          connectTimeout: parseInt(
+            configService.get<string>('DB_CONNECTION_CHECK_TIMEOUT', '30000'),
+            10,
+          ),
 
           // SSL配置（安全连接）
           ssl: configService.get<boolean>('DB_SSL', false) ? { rejectUnauthorized: false } : false,
@@ -106,7 +115,7 @@ import { AppService } from './app.service';
 
           // 性能优化设置
           supportBigNumbers: true,
-          typeCast: function (field: any, next: any) {
+          typeCast: (field: MysqlTypeCastField, next: () => unknown): unknown => {
             if (field.type === 'TINY' && field.length === 1) {
               return field.string() === '1';
             }

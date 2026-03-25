@@ -3,6 +3,14 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '../users/user.service';
 import { JwtResponseDto } from './dtos/jwt-response.dto';
+import { UserResponseDto } from '../users/dtos/user-response.dto';
+
+interface LoginResult {
+  accessToken: string;
+  user: UserResponseDto;
+}
+
+type AuthenticatedUser = UserResponseDto;
 
 /**
  * 认证服务
@@ -24,10 +32,10 @@ export class AuthService {
    * @param pass 密码
    * @returns 用户信息或null
    */
-  async validateUser(identifier: string, pass: string): Promise<Record<string, any> | null> {
+  async validateUser(identifier: string, pass: string): Promise<AuthenticatedUser | null> {
     try {
       // 调用UserService的登录方法来验证用户
-      const result = await this.userService.login({ identifier, password: pass });
+      const result: LoginResult = await this.userService.login({ identifier, password: pass });
       return result.user;
     } catch {
       return null;
@@ -39,7 +47,7 @@ export class AuthService {
    * @param user 用户信息
    * @returns JWT令牌信息
    */
-  async login(user: Record<string, any>): Promise<JwtResponseDto> {
+  login(user: AuthenticatedUser): JwtResponseDto {
     try {
       // 验证用户状态
       if (!user || !user.id || !user.username) {
@@ -51,8 +59,9 @@ export class AuthService {
       }
 
       const now = Date.now();
-      const jwtExpiration = this.configService.get<number>('JWT_EXPIRATION', 3600); // 1小时
-      const refreshExpiration = this.configService.get<number>('JWT_REFRESH_EXPIRATION', 604800); // 7天
+      const jwtExpiration = this.configService.get<number>('JWT_EXPIRATION', 3600) ?? 3600;
+      const refreshExpiration =
+        this.configService.get<number>('JWT_REFRESH_EXPIRATION', 604800) ?? 604800;
 
       // 构建JWT载荷
       const payload = {
@@ -67,15 +76,17 @@ export class AuthService {
       // JWT选项
       const accessTokenOptions = {
         expiresIn: jwtExpiration,
-        audience: this.configService.get<string>('JWT_AUDIENCE', 'nest-tv-client'),
-        issuer: this.configService.get<string>('JWT_ISSUER', 'nest-tv-server'),
+        audience:
+          this.configService.get<string>('JWT_AUDIENCE', 'nest-tv-client') ?? 'nest-tv-client',
+        issuer: this.configService.get<string>('JWT_ISSUER', 'nest-tv-server') ?? 'nest-tv-server',
         algorithm: 'HS256' as const,
       };
 
       const refreshTokenOptions = {
         expiresIn: refreshExpiration,
-        audience: this.configService.get<string>('JWT_AUDIENCE', 'nest-tv-client'),
-        issuer: this.configService.get<string>('JWT_ISSUER', 'nest-tv-server'),
+        audience:
+          this.configService.get<string>('JWT_AUDIENCE', 'nest-tv-client') ?? 'nest-tv-client',
+        issuer: this.configService.get<string>('JWT_ISSUER', 'nest-tv-server') ?? 'nest-tv-server',
         algorithm: 'HS256' as const,
       };
 

@@ -75,7 +75,6 @@
 <script setup lang="ts">
   import { ref, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
-  import { useAuthStore } from '@/stores/auth';
   import { useMediaStore } from '@/stores/media';
   import NavigationLayout from '@/components/NavigationLayout.vue';
   import MediaCard from '@/components/MediaCard.vue';

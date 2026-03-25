@@ -202,6 +202,8 @@
 
   const emit = defineEmits<Emits>();
 
+  const multiple = computed(() => props.allowMultiple);
+
   // 引用
   const fileInputRef = ref<HTMLInputElement | null>(null);
   const videoPreviewRef = ref<HTMLVideoElement | null>(null);

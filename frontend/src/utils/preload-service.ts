@@ -14,6 +14,7 @@ export class PreloadService {
   private preloadQueue: Set<string> = new Set();
   private preloadedRoutes: Set<string> = new Set();
   private observer: IntersectionObserver | null = null;
+  private preloadTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(router: Router) {
     this.router = router;
@@ -128,8 +129,9 @@ export class PreloadService {
   preloadAllRoutes(): void {
     this.router.getRoutes().forEach(route => {
       const meta = route.meta as RouteMeta;
-      if (meta?.preload && !this.preloadedRoutes.has(route.name)) {
-        this.preloadRoute(route.name).catch(() => {
+      const routeName = route.name ? String(route.name) : '';
+      if (meta?.preload && routeName && !this.preloadedRoutes.has(routeName)) {
+        this.preloadRoute(routeName).catch(() => {
           // 静默失败，不影响用户体验
         });
       }
@@ -157,12 +159,11 @@ export class PreloadService {
     });
 
     // 鼠标空闲时预加载（降低频率）
-    let preloadTimer: NodeJS.Timeout | null = null;
     document.addEventListener('mousemove', () => {
-      if (preloadTimer) {
-        clearTimeout(preloadTimer);
+      if (this.preloadTimer) {
+        clearTimeout(this.preloadTimer);
       }
-      preloadTimer = setTimeout(() => {
+      this.preloadTimer = setTimeout(() => {
         coreRoutes.forEach(routeName => {
           if (this.shouldPreload(routeName)) {
             this.preloadRoute(routeName).catch(() => {
@@ -244,6 +245,11 @@ export class PreloadService {
       this.observer.disconnect();
       this.observer = null;
     }
+
+    if (this.preloadTimer) {
+      clearTimeout(this.preloadTimer);
+      this.preloadTimer = null;
+    }
   }
 }
 
@@ -281,7 +287,7 @@ export const vPreload = {
   unmounted(el: HTMLElement) {
     const preloadService = getPreloadService();
     if (preloadService) {
-      preloadService.observer?.unobserve(el);
+      (preloadService as any).observer?.unobserve(el);
     }
   },
 };

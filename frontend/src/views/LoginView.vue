@@ -62,9 +62,10 @@
 
 <script setup>
   import { ref } from 'vue';
-  import { useRouter } from 'vue-router';
+  import { useRoute, useRouter } from 'vue-router';
   import { useAuthStore } from '@/stores/auth';
 
+  const route = useRoute();
   const router = useRouter();
   const authStore = useAuthStore();
 
@@ -84,7 +85,8 @@
     });
 
     if (result.success) {
-      router.push('/');
+      const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/';
+      router.push(redirect);
     } else {
       error.value = result.error;
     }

@@ -10,7 +10,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => !!token.value);
 
-  const login = async (credentials: { username: string; password: string }) => {
+  const login = async (credentials: { identifier: string; password: string }) => {
     isLoading.value = true;
     try {
       const response = await authApi.login(credentials);
@@ -21,10 +21,10 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('token', accessToken);
 
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       return {
         success: false,
-        error: error.message || '登录失败',
+        error: error?.message || '登录失败',
       };
     } finally {
       isLoading.value = false;
@@ -42,10 +42,10 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await authApi.register(userData);
       return { success: true, data: response };
-    } catch (error) {
+    } catch (error: any) {
       return {
         success: false,
-        error: error.message || '注册失败',
+        error: error?.message || '注册失败',
       };
     } finally {
       isLoading.value = false;
@@ -66,6 +66,7 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = response;
     } catch (error) {
       console.error('获取用户信息失败:', error);
+      logout();
     }
   };
 

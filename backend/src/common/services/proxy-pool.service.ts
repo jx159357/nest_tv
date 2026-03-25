@@ -2,18 +2,25 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
 import * as https from 'https';
-import * as http from 'http';
-import * as socks from 'socks';
 import {
   ProxyInfo,
   ProxyPoolConfig,
   ProxyStats,
   ProxyProvider,
   ProxyTestResult,
-  ProxyRequestConfig,
 } from '../types/proxy-pool.types';
 import { AppLoggerService } from './app-logger.service';
 import { ProxyProviderService } from './proxy-provider.service';
+
+interface AxiosProxyConfig {
+  protocol: ProxyInfo['protocol'];
+  host: string;
+  port: number;
+  auth?: {
+    username: string;
+    password: string;
+  };
+}
 
 @Injectable()
 export class ProxyPoolService {
@@ -90,16 +97,18 @@ export class ProxyPoolService {
     try {
       const providers = this.proxyProviderService.getActiveProviders();
       this.logger.log(`初始化 ${providers.length} 个代理提供商`);
-      
+
       providers.forEach(provider => {
         this.providers.set(provider.name, provider);
         this.logger.log(`注册代理提供商: ${provider.name}`);
       });
 
       // 启动时获取一次代理
-      this.fetchProxiesFromProviders();
-    } catch (error) {
-      this.logger.error('初始化代理提供商失败', error);
+      void this.fetchProxiesFromProviders();
+    } catch (error: unknown) {
+      this.logger.error(
+        `初始化代理提供商失败: ${error instanceof Error ? error.message : '未知错误'}`,
+      );
     }
   }
 
@@ -111,10 +120,9 @@ export class ProxyPoolService {
       clearInterval(this.validationTimer);
     }
 
-    this.validationTimer = setInterval(
-      () => this.validateAllProxies(),
-      this.config.validation.interval,
-    );
+    this.validationTimer = setInterval(() => {
+      void this.validateAllProxies();
+    }, this.config.validation.interval);
   }
 
   /**
@@ -152,8 +160,12 @@ export class ProxyPoolService {
         `添加代理 ${proxyInfo.id}: ${testResult.success ? '成功' : '失败'}`,
       );
       return testResult.success;
-    } catch (error) {
-      this.appLogger.error('添加代理失败', 'ProxyPoolService', error.message);
+    } catch (error: unknown) {
+      this.appLogger.error(
+        '添加代理失败',
+        'ProxyPoolService',
+        error instanceof Error ? error.message : '未知错误',
+      );
       return false;
     }
   }
@@ -198,14 +210,14 @@ export class ProxyPoolService {
         success: response.status === 200,
         responseTime,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       const responseTime = Date.now() - startTime;
 
       return {
         proxy,
         success: false,
         responseTime,
-        error: error.message,
+        error: error instanceof Error ? error.message : '未知错误',
       };
     }
   }
@@ -213,8 +225,8 @@ export class ProxyPoolService {
   /**
    * 创建Axios代理配置
    */
-  private createAxiosProxyConfig(proxy: ProxyInfo): any {
-    const proxyConfig: any = {
+  private createAxiosProxyConfig(proxy: ProxyInfo): AxiosProxyConfig {
+    const proxyConfig: AxiosProxyConfig = {
       protocol: proxy.protocol,
       host: proxy.host,
       port: proxy.port,
@@ -337,9 +349,10 @@ export class ProxyPoolService {
       case 'random':
         return candidates[Math.floor(Math.random() * candidates.length)];
 
-      case 'round-robin':
+      case 'round-robin': {
         const index = Date.now() % candidates.length;
         return candidates[index];
+      }
 
       case 'weighted':
         // 基于成功率和响应时间加权
@@ -462,8 +475,12 @@ export class ProxyPoolService {
         this.logger.log(
           `从 ${provider.name} 获取代理: 成功 ${result.success}, 失败 ${result.failed}`,
         );
-      } catch (error) {
-        this.appLogger.error('从提供商获取代理失败', 'ProxyPoolService', error.message);
+      } catch (error: unknown) {
+        this.appLogger.error(
+          '从提供商获取代理失败',
+          'ProxyPoolService',
+          error instanceof Error ? error.message : '未知错误',
+        );
       }
     }
 

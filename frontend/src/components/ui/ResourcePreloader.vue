@@ -31,7 +31,7 @@
 
   const triggerRef = ref<HTMLElement>();
   let observer: IntersectionObserver | null = null;
-  let timeoutId: NodeJS.Timeout | null = null;
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
   const loaded = new Set<string>();
   const failed = new Set<string>();
 
@@ -65,8 +65,8 @@
       ]);
 
       emit('preloadComplete', Array.from(loaded), Array.from(failed));
-    } catch (error) {
-      if (error.message === 'Preload timeout') {
+    } catch (error: any) {
+      if (error?.message === 'Preload timeout') {
         const failedResources = props.resources.filter(r => !loaded.has(r));
         emit('timeout', failedResources);
       }

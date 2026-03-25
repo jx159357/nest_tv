@@ -3,6 +3,17 @@ import axios, { AxiosInstance } from 'axios';
 import { ProxyProvider, ProxyInfo } from '../types/proxy-pool.types';
 import { AppLoggerService } from './app-logger.service';
 
+interface XiaoHuanProxyResponse {
+  data?: {
+    proxy?: Array<{
+      ip: string;
+      port: number;
+      country?: string;
+      speed?: number;
+    }>;
+  };
+}
+
 /**
  * 免费代理提供商基类
  */
@@ -64,9 +75,18 @@ export abstract class BaseFreeProxyProvider implements ProxyProvider {
         uptime: 0,
         tags: ['free'],
       };
-    } catch (error) {
+    } catch {
       return null;
     }
+  }
+
+  protected extractProxyMatches(data: unknown): string[] {
+    const body = typeof data === 'string' ? data : '';
+    return body.match(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+/g) || [];
+  }
+
+  protected getErrorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : '未知错误';
   }
 
   /**
@@ -115,7 +135,7 @@ export class KuaiDailiFreeProvider extends BaseFreeProxyProvider implements Prox
 
       // 这里需要根据实际的API响应格式进行解析
       // 由于快代理的免费API可能需要复杂的HTML解析，这里提供一个基础实现
-      const proxyMatches = response.data.match(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+/g) || [];
+      const proxyMatches = this.extractProxyMatches(response.data);
 
       for (const proxyStr of proxyMatches) {
         const proxy = this.parseProxyString(proxyStr, this.name);
@@ -125,8 +145,12 @@ export class KuaiDailiFreeProvider extends BaseFreeProxyProvider implements Prox
       }
 
       this.logger.log(`从快代理获取 ${proxies.length} 个代理`);
-    } catch (error) {
-      this.appLogger.error('从快代理获取代理失败', 'KuaiDailiFreeProvider', error.message);
+    } catch (error: unknown) {
+      this.appLogger.error(
+        '从快代理获取代理失败',
+        'KuaiDailiFreeProvider',
+        this.getErrorMessage(error),
+      );
     }
 
     return proxies;
@@ -160,7 +184,7 @@ export class XiciProxyProvider extends BaseFreeProxyProvider implements ProxyPro
       });
 
       // 使用正则表达式提取IP:PORT
-      const proxyMatches = response.data.match(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+/g) || [];
+      const proxyMatches = this.extractProxyMatches(response.data);
 
       for (const proxyStr of proxyMatches) {
         const proxy = this.parseProxyString(proxyStr, this.name);
@@ -170,8 +194,12 @@ export class XiciProxyProvider extends BaseFreeProxyProvider implements ProxyPro
       }
 
       this.logger.log(`从西刺代理获取 ${proxies.length} 个代理`);
-    } catch (error) {
-      this.appLogger.error('从西刺代理获取代理失败', 'XiciProxyProvider', error.message);
+    } catch (error: unknown) {
+      this.appLogger.error(
+        '从西刺代理获取代理失败',
+        'XiciProxyProvider',
+        this.getErrorMessage(error),
+      );
     }
 
     return proxies;
@@ -210,8 +238,8 @@ export class Proxy89Provider extends BaseFreeProxyProvider implements ProxyProvi
       }
 
       this.logger.log(`从89IP获取 ${proxies.length} 个代理`);
-    } catch (error) {
-      this.appLogger.error('从89IP获取代理失败', 'Proxy89Provider', error.message);
+    } catch (error: unknown) {
+      this.appLogger.error('从89IP获取代理失败', 'Proxy89Provider', this.getErrorMessage(error));
     }
 
     return proxies;
@@ -244,7 +272,7 @@ export class XiaoHuanProxyProvider extends BaseFreeProxyProvider implements Prox
       });
 
       // 解析JSON响应
-      const data = response.data;
+      const data = response.data as XiaoHuanProxyResponse;
       if (data.data && Array.isArray(data.data.proxy)) {
         for (const item of data.data.proxy) {
           const proxyStr = `${item.ip}:${item.port}`;
@@ -260,8 +288,12 @@ export class XiaoHuanProxyProvider extends BaseFreeProxyProvider implements Prox
       }
 
       this.logger.log(`从小幻代理获取 ${proxies.length} 个代理`);
-    } catch (error) {
-      this.appLogger.error('从小幻代理获取代理失败', 'XiaoHuanProxyProvider', error.message);
+    } catch (error: unknown) {
+      this.appLogger.error(
+        '从小幻代理获取代理失败',
+        'XiaoHuanProxyProvider',
+        this.getErrorMessage(error),
+      );
     }
 
     return proxies;
@@ -295,6 +327,10 @@ export class ProxyProviderService {
     this.providers.set(this.xiaoHuanProvider.name, this.xiaoHuanProvider);
 
     this.logger.log(`初始化 ${this.providers.size} 个代理提供商`);
+  }
+
+  private getErrorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : '未知错误';
   }
 
   /**
@@ -343,7 +379,7 @@ export class ProxyProviderService {
   toggleProvider(name: string, active: boolean): boolean {
     const provider = this.providers.get(name);
     if (provider) {
-      (provider as any).isActive = active;
+      provider.isActive = active;
       this.logger.log(`${active ? '启用' : '禁用'}代理提供商: ${name}`);
       return true;
     }
@@ -363,8 +399,8 @@ export class ProxyProviderService {
         const proxies = await provider.fetchProxies();
         result[provider.name] = proxies;
         this.logger.log(`从 ${provider.name} 获取到 ${proxies.length} 个代理`);
-      } catch (error) {
-        this.logger.error(`从 ${provider.name} 获取代理失败:`, error);
+      } catch (error: unknown) {
+        this.logger.error(`从 ${provider.name} 获取代理失败: ${this.getErrorMessage(error)}`);
         result[provider.name] = [];
       }
     }

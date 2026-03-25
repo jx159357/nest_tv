@@ -1,41 +1,48 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuthService } from '../../src/auth/auth.service';
-import { UserService } from '../../src/users/user.service';
+import { AuthService } from '../../../src/auth/auth.service';
+import { UserService } from '../../../src/users/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { User } from '../../src/entities/user.entity';
-import { Repository } from 'typeorm';
+import { UserResponseDto } from '../../../src/users/dtos/user-response.dto';
 
 describe('AuthService', () => {
   let service: AuthService;
-  let userService: UserService;
-  let jwtService: JwtService;
-  let userRepository: Repository<User>;
 
-  const mockUserRepository = {
-    findOne: jest.fn(),
-    create: jest.fn(),
-    save: jest.fn(),
+  const mockUser: UserResponseDto = {
+    id: 1,
+    username: 'testuser',
+    email: 'test@example.com',
+    role: 'user',
+    isActive: true,
+    createdAt: new Date('2024-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2024-01-01T00:00:00.000Z'),
   };
 
   const mockUserService = {
-    findByUsername: jest.fn(),
-    createUser: jest.fn(),
-    validateUser: jest.fn(),
+    login: jest.fn(),
   };
 
   const mockJwtService = {
     sign: jest.fn(),
-    verify: jest.fn(),
   };
 
   const mockConfigService = {
-    get: jest.fn(),
+    get: jest.fn((key: string, defaultValue?: unknown) => {
+      const values: Record<string, unknown> = {
+        JWT_EXPIRATION: 3600,
+        JWT_REFRESH_EXPIRATION: 604800,
+        JWT_AUDIENCE: 'nest-tv-client',
+        JWT_ISSUER: 'nest-tv-server',
+      };
+
+      return values[key] ?? defaultValue;
+    }),
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    jest.clearAllMocks();
+
+    const moduleRef: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
         {
@@ -50,17 +57,10 @@ describe('AuthService', () => {
           provide: ConfigService,
           useValue: mockConfigService,
         },
-        {
-          provide: getRepositoryToken(User),
-          useValue: mockUserRepository,
-        },
       ],
     }).compile();
 
-    service = module.get<AuthService>(AuthService);
-    userService = module.get<UserService>(UserService);
-    jwtService = module.get<JwtService>(JwtService);
-    userRepository = module.get<Repository<User>>(getRepositoryToken(User));
+    service = moduleRef.get(AuthService);
   });
 
   it('should be defined', () => {
@@ -68,51 +68,48 @@ describe('AuthService', () => {
   });
 
   describe('validateUser', () => {
-    it('should return user when credentials are valid', async () => {
-      const user = {
-        id: 1,
-        username: 'testuser',
-        password: 'hashedpassword',
-      };
-
-      mockUserService.validateUser.mockResolvedValue(user);
+    it('returns user when credentials are valid', async () => {
+      mockUserService.login.mockResolvedValue({
+        accessToken: 'token',
+        user: mockUser,
+      });
 
       const result = await service.validateUser('testuser', 'password');
-      expect(result).toEqual(user);
-      expect(mockUserService.validateUser).toHaveBeenCalledWith('testuser', 'password');
+
+      expect(result).toEqual(mockUser);
+      expect(mockUserService.login).toHaveBeenCalledWith({
+        identifier: 'testuser',
+        password: 'password',
+      });
     });
 
-    it('should return null when credentials are invalid', async () => {
-      mockUserService.validateUser.mockResolvedValue(null);
+    it('returns null when credentials are invalid', async () => {
+      mockUserService.login.mockRejectedValue(new Error('invalid credentials'));
 
       const result = await service.validateUser('testuser', 'wrongpassword');
+
       expect(result).toBeNull();
     });
   });
 
   describe('login', () => {
-    it('should return JWT token when login is successful', async () => {
-      const user = {
-        id: 1,
-        username: 'testuser',
-        email: 'test@example.com',
-      };
+    it('returns JWT payload when login succeeds', () => {
+      mockJwtService.sign.mockImplementation(() => 'signed-token');
 
-      const token = 'jwt-token';
-
-      mockJwtService.sign.mockReturnValue(token);
-
-      const result = await service.login(user);
+      const result = service.login(mockUser);
 
       expect(result).toEqual({
-        accessToken: token,
-        user,
+        accessToken: 'signed-token',
+        refreshToken: 'signed-token',
+        expiresIn: 3600,
+        user: {
+          id: mockUser.id,
+          username: mockUser.username,
+          email: mockUser.email,
+          role: mockUser.role,
+        },
       });
-      expect(mockJwtService.sign).toHaveBeenCalledWith({
-        username: user.username,
-        sub: user.id,
-        email: user.email,
-      });
+      expect(mockJwtService.sign).toHaveBeenCalledTimes(2);
     });
   });
 });

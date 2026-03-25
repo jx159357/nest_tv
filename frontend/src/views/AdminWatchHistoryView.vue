@@ -134,7 +134,8 @@
 <script setup lang="ts">
   import { ref, onMounted, computed } from 'vue';
   import { useRouter } from 'vue-router';
-  import type { WatchHistory, User } from '@/types';
+  import type { WatchHistory } from '@/types/history';
+  import type { User } from '@/types/user';
 
   const router = useRouter();
 
@@ -153,8 +154,8 @@
 
   // 计算属性
   const getProgressPercentage = (record: WatchHistory) => {
-    if (!record.totalDuration) return 0;
-    return Math.round((record.watchDuration / record.totalDuration) * 100);
+    if (!record.duration) return 0;
+    return Math.round((record.currentTime / record.duration) * 100);
   };
 
   const formatDuration = (seconds: number) => {
@@ -168,12 +169,12 @@
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | Date) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('zh-CN');
   };
 
-  const formatDateTime = (dateString: string) => {
+  const formatDateTime = (dateString: string | Date) => {
     const date = new Date(dateString);
     return date.toLocaleString('zh-CN');
   };
