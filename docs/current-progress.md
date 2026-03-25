@@ -11,6 +11,7 @@
   - `npx jest --runInBand` passes.
   - `npx jest --config ./test/jest-e2e.json --runInBand` passes.
   - `npm run lint:check` still fails, but ESLint project parsing is fixed and the remaining debt is now concentrated in a few modules.
+  - Latest full snapshot: `365 errors + 18 warnings` across `32` files.
 
 ## High-Value Work Already Completed
 
@@ -32,23 +33,34 @@
 ## Current Priority
 
 - Continue reducing backend lint debt without destabilizing runtime behavior.
+- Latest cleaned files:
+  - `backend/src/common/services/proxy-pool.service.ts`
+  - `backend/src/common/services/proxy-provider.service.ts`
+  - `backend/src/common/services/proxy-monitoring.service.ts`
+  - `backend/src/controllers/proxy-pool.controller.ts`
+  - `backend/src/scheduler/crawler-scheduler.service.ts`
+  - `backend/src/crawler/crawler.controller.ts`
+  - `backend/src/crawler/crawler.service.ts`
+  - `backend/src/media/advanced-search.controller.ts`
+  - `backend/src/media/advanced-search.service.ts`
 - Current highest-value backend files:
-  - `backend/src/common/cache/cache.service.ts`
-  - `backend/src/common/decorators/cache.decorator.ts`
-  - `backend/src/common/controllers/health.controller.ts`
+  - `backend/src/danmaku/services/danmaku.service.ts`
+  - `backend/src/parse-providers/parse-providers.service.ts`
+  - `backend/src/iptv/iptv.service.ts`
 
 ## Suggested Next Steps
 
-1. Finish cleaning backend `common/cache` and `health` lint errors.
-2. Re-run:
+1. Continue with backend `danmaku` lint cleanup, starting from `danmaku.service.ts`.
+2. Then move to `parse-providers.service.ts` and `iptv.service.ts`.
+3. Re-run:
    - `backend npm run lint:check`
    - `backend npm run build`
    - `backend npx jest --runInBand`
    - `backend npx jest --config ./test/jest-e2e.json --runInBand`
-3. Move to crawler/recommendation/admin module lint cleanup.
 
 ## Notes For Continuation
 
 - If context is lost, restart from the commands above and inspect `git status --short`.
 - The backend lint count has been reduced significantly, but it is not clean yet.
+- This round reduced backend lint from about `549 + 55` to `365 + 18`.
 - Avoid reverting the staged removals under `backend/dist` and `.env.production`; those are intentional index cleanups.

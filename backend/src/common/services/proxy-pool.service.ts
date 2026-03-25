@@ -200,7 +200,7 @@ export class ProxyPoolService {
       const response = await this.httpClient.get(this.config.validation.testUrl, {
         proxy: this.createAxiosProxyConfig(proxy),
         timeout: this.config.validation.timeout,
-        httpsAgent: this.createHttpsAgent(proxy),
+        httpsAgent: this.createHttpsAgent(),
       });
 
       const responseTime = Date.now() - startTime;
@@ -245,7 +245,7 @@ export class ProxyPoolService {
   /**
    * 创建HTTPS代理Agent
    */
-  private createHttpsAgent(proxy: ProxyInfo): https.Agent {
+  private createHttpsAgent(): https.Agent {
     return new https.Agent({
       rejectUnauthorized: false,
       keepAlive: true,
@@ -297,13 +297,17 @@ export class ProxyPoolService {
       }
 
       proxy.totalRequests++;
-    } catch (error) {
+    } catch (error: unknown) {
       proxy.failureCount++;
       proxy.totalRequests++;
       proxy.isWorking = false;
       proxy.lastChecked = new Date();
 
-      this.appLogger.error('代理验证失败', 'ProxyPoolService', error.message);
+      this.appLogger.error(
+        '代理验证失败',
+        'ProxyPoolService',
+        error instanceof Error ? error.message : '未知错误',
+      );
     }
   }
 

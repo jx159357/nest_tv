@@ -21,6 +21,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { CrawlerService } from './crawler.service';
+import type { CrawledData, CrawlWebsiteResult } from './crawler.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MediaResourceService } from '../media/media-resource.service';
 import { MediaType, MediaQuality } from '../entities/media-resource.entity';
@@ -34,6 +35,28 @@ export interface CrawlerStatsResponse {
   lastCrawlTime?: Date;
   targetsAvailable: string[];
 }
+
+interface PersistableCrawledData {
+  title: string;
+  description?: string;
+  type?: string;
+  director?: string;
+  actors?: string;
+  genres?: string | string[];
+  releaseDate?: string | number | Date;
+  quality?: string;
+  poster?: string;
+  backdrop?: string;
+  rating?: number;
+  viewCount?: number;
+  metadata?: Record<string, unknown>;
+  duration?: string | number;
+  episodeCount?: string | number;
+  downloadUrls?: string[];
+}
+
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : '未知错误';
 
 /**
  * 爬虫控制器
@@ -123,8 +146,8 @@ export class CrawlerController {
     // 将爬取的数据保存到数据库
     try {
       await this.saveToDatabase(result.data!, crawlRequest.targetName);
-    } catch (error) {
-      console.warn('保存数据失败:', error.message);
+    } catch (error: unknown) {
+      this.logger.warn(`保存数据失败: ${getErrorMessage(error)}`);
       // 继续返回爬取结果，不因为保存失败而影响用户
     }
 
@@ -191,12 +214,12 @@ export class CrawlerController {
         try {
           await this.saveToDatabase(result, batchCrawlRequest.targetName);
           savedCount++;
-        } catch (error) {
-          console.warn(`保存数据失败 (${result.title}):`, error.message);
+        } catch (error: unknown) {
+          this.logger.warn(`保存数据失败 (${result.title}): ${getErrorMessage(error)}`);
         }
       }
-    } catch (error) {
-      console.warn('批量保存过程中出现错误:', error.message);
+    } catch (error: unknown) {
+      this.logger.warn(`批量保存过程中出现错误: ${getErrorMessage(error)}`);
     }
 
     return {
@@ -244,7 +267,7 @@ export class CrawlerController {
       },
     },
   })
-  async getTargets() {
+  getTargets() {
     const targets = this.crawlerService.getAvailableTargets();
     return {
       success: true,
@@ -302,7 +325,7 @@ export class CrawlerController {
     description: '未授权访问',
   })
   async crawlAndSave(@Request() req, @Body() body: CrawlAndSaveDto) {
-    const targetName = body.targetName || CRAWLER_TARGETS[0]?.name; // 默认使用配置中的第一个目标
+    const targetName = body.targetName ?? CRAWLER_TARGETS[0]?.name ?? '电影天堂';
     const result = await this.crawlerService.crawlWebsite(targetName, body.url);
 
     if (!result.success) {
@@ -323,14 +346,16 @@ export class CrawlerController {
         message: '爬取并保存成功',
         data: result.data,
       };
-    } catch (error) {
-      console.warn('保存数据失败:', error.message);
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+      this.logger.warn(`保存数据失败: ${errorMessage}`);
+
       return {
         success: false,
         message: '爬取成功但保存失败',
         data: {
           crawledData: result.data,
-          error: error.message,
+          error: errorMessage,
         },
       };
     }
@@ -356,8 +381,8 @@ export class CrawlerController {
         lastCrawlTime: await this.mediaResourceService.getLastCrawlTime(),
         targetsAvailable,
       };
-    } catch (error) {
-      console.warn('获取统计信息失败:', error.message);
+    } catch (error: unknown) {
+      this.logger.warn(`获取统计信息失败: ${getErrorMessage(error)}`);
       // 降级处理
       return {
         totalCrawled: 0,
@@ -403,12 +428,12 @@ export class CrawlerController {
           url: target.baseUrl,
         },
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         success: false,
         message: '连接失败',
         data: {
-          error: error.message,
+          error: getErrorMessage(error),
           url: target.baseUrl,
         },
       };
@@ -420,7 +445,7 @@ export class CrawlerController {
    * @param data 爬取的数据
    * @param source 来源网站
    */
-  private async saveToDatabase(data: any, source: string): Promise<void> {
+  private async saveToDatabase(data: PersistableCrawledData, source: string): Promise<void> {
     if (!data || !data.title) {
       throw new Error('无效的爬取数据：缺少标题');
     }
@@ -428,7 +453,7 @@ export class CrawlerController {
     // 检查是否已存在相同标题的资源
     const existingMedia = await this.mediaResourceService.findByTitle(data.title);
     if (existingMedia) {
-      console.log(`资源已存在，跳过: ${data.title}`);
+      this.logger.log(`资源已存在，跳过: ${data.title}`);
       return;
     }
 
@@ -440,29 +465,29 @@ export class CrawlerController {
       director: data.director || '',
       actors: data.actors || '',
       genres: this.arrayFromString(data.genres),
-      releaseDate: data.releaseDate ? new Date(data.releaseDate) : undefined,
+      releaseDate: this.parseOptionalDate(data.releaseDate),
       quality: this.mapQuality(data.quality),
       poster: data.poster || '',
       backdrop: data.backdrop || '',
       rating: data.rating || 0,
       viewCount: data.viewCount || 0,
       isActive: true,
-      source: source,
+      source,
       metadata: data.metadata || {},
-      duration: data.duration ? parseInt(data.duration) : undefined,
-      episodeCount: data.episodeCount ? parseInt(data.episodeCount) : undefined,
+      duration: this.parseOptionalInteger(data.duration),
+      episodeCount: this.parseOptionalInteger(data.episodeCount),
       downloadUrls: Array.isArray(data.downloadUrls) ? data.downloadUrls : [],
     };
 
     // 保存到数据库
     await this.mediaResourceService.create(mediaData);
-    console.log(`成功保存资源: ${data.title}`);
+    this.logger.log(`成功保存资源: ${data.title}`);
   }
 
   /**
    * 映射媒体类型
    */
-  private mapMediaType(type: string): MediaType {
+  private mapMediaType(type?: string): MediaType {
     const typeMap: Record<string, MediaType> = {
       电影: MediaType.MOVIE,
       电视剧: MediaType.TV_SERIES,
@@ -471,13 +496,13 @@ export class CrawlerController {
       纪录片: MediaType.DOCUMENTARY,
     };
 
-    return typeMap[type] || MediaType.MOVIE;
+    return type ? (typeMap[type] ?? MediaType.MOVIE) : MediaType.MOVIE;
   }
 
   /**
    * 映射质量
    */
-  private mapQuality(quality: string): MediaQuality {
+  private mapQuality(quality?: string): MediaQuality {
     const qualityMap: Record<string, MediaQuality> = {
       高清: MediaQuality.HD,
       超清: MediaQuality.FULL_HD,
@@ -485,21 +510,47 @@ export class CrawlerController {
       标清: MediaQuality.SD,
     };
 
-    return qualityMap[quality] || MediaQuality.HD;
+    return quality ? (qualityMap[quality] ?? MediaQuality.HD) : MediaQuality.HD;
   }
 
   /**
    * 从字符串创建数组
    */
-  private arrayFromString(str: string): string[] {
-    if (!str || typeof str !== 'string') {
+  private arrayFromString(value?: string | string[]): string[] {
+    if (Array.isArray(value)) {
+      return value.map(item => item.trim()).filter(item => item.length > 0);
+    }
+
+    if (!value || typeof value !== 'string') {
       return [];
     }
 
-    return str
+    return value
       .split(/[,，、]/)
       .map(item => item.trim())
       .filter(item => item.length > 0);
+  }
+
+  private parseOptionalDate(value?: string | number | Date): Date | undefined {
+    if (!value) {
+      return undefined;
+    }
+
+    const parsedDate = new Date(value);
+    return Number.isNaN(parsedDate.getTime()) ? undefined : parsedDate;
+  }
+
+  private parseOptionalInteger(value?: string | number): number | undefined {
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : undefined;
+    }
+
+    if (typeof value !== 'string' || value.trim().length === 0) {
+      return undefined;
+    }
+
+    const parsedValue = parseInt(value, 10);
+    return Number.isNaN(parsedValue) ? undefined : parsedValue;
   }
 
   /**
@@ -568,13 +619,17 @@ export class CrawlerController {
       }
 
       // 如果是电影天堂，测试一个示例URL
-      let testData: any = null;
+      let testData: CrawledData | null = null;
       if (target === '电影天堂') {
         const testUrl = 'http://www.dytt8899.com'; // 使用主页进行测试
         try {
-          testData = await this.crawlerService.crawlWebsite(target, testUrl);
-        } catch (error) {
-          this.logger.warn(`测试爬取失败: ${error.message}`);
+          const testResult: CrawlWebsiteResult = await this.crawlerService.crawlWebsite(
+            target,
+            testUrl,
+          );
+          testData = testResult.success ? (testResult.data ?? null) : null;
+        } catch (error: unknown) {
+          this.logger.warn(`测试爬取失败: ${getErrorMessage(error)}`);
         }
       }
 
@@ -588,7 +643,8 @@ export class CrawlerController {
           testData: testData
             ? {
                 title: testData.title || '未知标题',
-                hasDownloadUrls: testData.downloadUrls && testData.downloadUrls.length > 0,
+                hasDownloadUrls:
+                  Array.isArray(testData.downloadUrls) && testData.downloadUrls.length > 0,
                 description: testData.description
                   ? testData.description.substring(0, 100) + '...'
                   : '无描述',
@@ -596,13 +652,15 @@ export class CrawlerController {
             : null,
         },
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
+
       return {
         success: false,
-        message: `测试失败: ${error.message}`,
+        message: `测试失败: ${errorMessage}`,
         data: {
           target,
-          error: error.message,
+          error: errorMessage,
         },
       };
     }

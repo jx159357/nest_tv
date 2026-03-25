@@ -1,12 +1,37 @@
-import { Injectable, Logger, HttpException, HttpStatus, Inject } from '@nestjs/common';
-import axios, { AxiosInstance } from 'axios';
+import { Injectable, Logger } from '@nestjs/common';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import * as cheerio from 'cheerio';
 import { CRAWLER_TARGETS, CRAWLER_CONFIG, CRAWLER_RULES } from './crawler.config';
 import { MediaResourceService } from '../media/media-resource.service';
-import { MediaType, MediaQuality } from '../entities/media-resource.entity';
+import { MediaQuality } from '../entities/media-resource.entity';
 import { AppLoggerService } from '../common/services/app-logger.service';
 import { ProxyPoolService } from '../common/services/proxy-pool.service';
-import { ProxyInfo } from '../common/types/proxy-pool.types';
+import {
+  ProxyInfo,
+  ProxyPoolConfig,
+  ProxyStats,
+  ProxyTestResult,
+} from '../common/types/proxy-pool.types';
+
+interface CrawlerProxyStrategy {
+  useProxy: boolean;
+  preferredProtocol?: ProxyInfo['protocol'];
+}
+
+interface CrawlerProxySettings {
+  enabled: boolean;
+  targetStrategies?: Record<string, CrawlerProxyStrategy>;
+}
+
+interface AxiosCrawlerProxyConfig {
+  protocol: ProxyInfo['protocol'];
+  host: string;
+  port: number;
+  auth?: {
+    username: string;
+    password: string;
+  };
+}
 
 export interface CrawlerTarget {
   name: string;
@@ -46,11 +71,21 @@ export interface CrawledData {
   metadata?: any;
 }
 
+export interface CrawlWebsiteResult {
+  success: boolean;
+  data?: CrawledData;
+  error?: string;
+  details?: unknown;
+}
+
 @Injectable()
 export class CrawlerService {
   private readonly logger = new Logger(CrawlerService.name);
   private readonly httpClient: AxiosInstance;
-  private readonly cache: Map<string, { data: any; timestamp: number }> = new Map();
+  private readonly cache: Map<string, { data: CrawledData; timestamp: number }> = new Map();
+  private readonly proxySettings: CrawlerProxySettings | undefined = (
+    CRAWLER_CONFIG as typeof CRAWLER_CONFIG & { proxy?: CrawlerProxySettings }
+  ).proxy;
 
   constructor(
     private readonly mediaResourceService: MediaResourceService,
@@ -70,22 +105,18 @@ export class CrawlerService {
     this.httpClient.interceptors.request.use(
       config => {
         // 如果启用了代理，自动选择最佳代理
-        if ((CRAWLER_CONFIG as any).proxy?.enabled && config.url) {
+        if (this.proxySettings?.enabled && config.url) {
           const targetName = this.extractTargetNameFromUrl(config.url);
           const strategy = targetName
-            ? (CRAWLER_CONFIG as any).proxy?.targetStrategies?.[targetName]
-            : null;
+            ? this.proxySettings?.targetStrategies?.[targetName]
+            : undefined;
 
           if (strategy && strategy.useProxy) {
             const proxy = this.proxyPoolService.getBestProxy(strategy.preferredProtocol);
             if (proxy) {
               config.proxy = this.createProxyConfig(proxy);
-              // 类型断言以解决headers类型问题
-              (config.headers as any) = {
-                ...config.headers,
-                'X-Proxy-Source': proxy.source,
-                'X-Proxy-ID': proxy.id,
-              };
+              config.headers.set('X-Proxy-Source', proxy.source);
+              config.headers.set('X-Proxy-ID', proxy.id);
               this.logger.log(
                 `使用代理 ${proxy.id} (${proxy.host}:${proxy.port}) 请求: ${config.url}`,
               );
@@ -98,9 +129,10 @@ export class CrawlerService {
         this.logger.log(`请求URL: ${config.url}`);
         return config;
       },
-      error => {
-        this.logger.error('请求拦截器错误:', error);
-        return Promise.reject(error);
+      (error: unknown) => {
+        const normalizedError = this.toError(error);
+        this.logger.error('请求拦截器错误:', normalizedError.stack);
+        return Promise.reject(normalizedError);
       },
     );
 
@@ -113,15 +145,16 @@ export class CrawlerService {
         );
         return response;
       },
-      error => {
+      (error: unknown) => {
+        const normalizedError = this.toError(error);
         this.appLogger.logExternalServiceError(
           'Crawler HTTP Client',
           'Response Interceptor',
-          error,
-          error.config?.url,
+          normalizedError,
+          axios.isAxiosError(error) ? error.config?.url : undefined,
           undefined,
         );
-        return Promise.reject(error);
+        return Promise.reject(normalizedError);
       },
     );
   }
@@ -169,7 +202,7 @@ export class CrawlerService {
   /**
    * 获取缓存数据
    */
-  private getCache(key: string): any | null {
+  private getCache(key: string): CrawledData | null {
     const cached = this.cache.get(key);
     if (cached && Date.now() - cached.timestamp < CRAWLER_CONFIG.cache.ttl * 1000) {
       return cached.data;
@@ -181,7 +214,7 @@ export class CrawlerService {
   /**
    * 设置缓存数据
    */
-  private setCache(key: string, data: any): void {
+  private setCache(key: string, data: CrawledData): void {
     if (CRAWLER_CONFIG.cache.enabled && this.cache.size < CRAWLER_CONFIG.cache.maxSize) {
       this.cache.set(key, { data, timestamp: Date.now() });
     }
@@ -211,10 +244,10 @@ export class CrawlerService {
    */
   private async fetchWithRetry(
     url: string,
-    options: any = {},
+    options: AxiosRequestConfig = {},
     maxRetries: number = 3,
     retryDelay: number = 2000,
-  ): Promise<any> {
+  ): Promise<AxiosResponse<string>> {
     let lastError: Error = new Error('Unknown error');
     const requestId = this.generateRequestId();
 
@@ -222,20 +255,20 @@ export class CrawlerService {
       try {
         this.appLogger.log(`尝试请求 (尝试 ${attempt}/${maxRetries}): ${url}`, 'CRAWLER_FETCH');
 
-        const response = await this.httpClient.get(url, {
+        const response = await this.httpClient.get<string>(url, {
           timeout: CRAWLER_CONFIG.request.timeout,
           ...options,
         });
 
         this.appLogger.log(`请求成功: ${url} - 状态: ${response.status}`, 'CRAWLER_SUCCESS');
         return response;
-      } catch (error) {
-        lastError = error;
+      } catch (error: unknown) {
+        lastError = this.toError(error);
 
         this.appLogger.logExternalServiceError(
           'Crawler HTTP Client',
           `Fetch Attempt ${attempt}/${maxRetries}`,
-          error,
+          lastError,
           url,
           requestId,
         );
@@ -307,10 +340,7 @@ export class CrawlerService {
    * @param url 要爬取的URL
    * @returns 爬取的结果，包含成功/失败状态和详细信息
    */
-  async crawlWebsite(
-    targetName: string,
-    url: string,
-  ): Promise<{ success: boolean; data?: CrawledData; error?: string; details?: any }> {
+  async crawlWebsite(targetName: string, url: string): Promise<CrawlWebsiteResult> {
     const requestId = this.generateRequestId();
 
     try {
@@ -364,7 +394,7 @@ export class CrawlerService {
 
       // 特殊处理电影天堂的数据提取
       if (targetName === '电影天堂') {
-        crawledData = await this.extractDyttData($, url, target);
+        crawledData = this.extractDyttData($, url, target);
       } else {
         crawledData = this.extractGenericData($, url, target);
       }
@@ -396,13 +426,14 @@ export class CrawlerService {
       this.appLogger.clearContext(requestId);
 
       return { success: true, data: cleanedData };
-    } catch (error) {
-      const errorMessage = error.message || '未知错误';
+    } catch (error: unknown) {
+      const normalizedError = this.toError(error);
+      const errorMessage = normalizedError.message || '未知错误';
 
       this.appLogger.error(
         `爬取失败 ${targetName}: ${url}`,
         'CRAWLER_ERROR',
-        error.stack,
+        normalizedError.stack,
         requestId,
       );
 
@@ -893,8 +924,8 @@ export class CrawlerService {
       }
 
       return text;
-    } catch (error) {
-      this.logger.warn(`提取文本失败: ${selector}`, error.message);
+    } catch (error: unknown) {
+      this.logger.warn(`提取文本失败: ${selector}`, this.toError(error).message);
       return '';
     }
   }
@@ -1090,8 +1121,8 @@ export class CrawlerService {
       });
 
       return response.status === 200;
-    } catch (error) {
-      this.logger.error(`连接测试失败 ${targetName}:`, error.message);
+    } catch (error: unknown) {
+      this.logger.error(`连接测试失败 ${targetName}:`, this.toError(error).message);
       return false;
     }
   }
@@ -1111,8 +1142,8 @@ export class CrawlerService {
   /**
    * 创建代理配置
    */
-  private createProxyConfig(proxy: ProxyInfo): any {
-    const proxyConfig: any = {
+  private createProxyConfig(proxy: ProxyInfo): AxiosCrawlerProxyConfig {
+    const proxyConfig: AxiosCrawlerProxyConfig = {
       protocol: proxy.protocol,
       host: proxy.host,
       port: proxy.port,
@@ -1131,8 +1162,8 @@ export class CrawlerService {
   /**
    * 获取代理池统计信息
    */
-  getProxyStats() {
-    if (!(CRAWLER_CONFIG as any).proxy?.enabled) {
+  getProxyStats(): ProxyStats | { enabled: false; message: string } {
+    if (!this.proxySettings?.enabled) {
       return { enabled: false, message: '代理池未启用' };
     }
     return this.proxyPoolService.getProxyStats();
@@ -1142,7 +1173,7 @@ export class CrawlerService {
    * 手动刷新代理池
    */
   async refreshProxyPool(): Promise<{ success: number; failed: number }> {
-    if (!(CRAWLER_CONFIG as any).proxy?.enabled) {
+    if (!this.proxySettings?.enabled) {
       throw new Error('代理池未启用');
     }
 
@@ -1153,7 +1184,7 @@ export class CrawlerService {
   /**
    * 测试特定代理
    */
-  async testProxy(proxyInfo: ProxyInfo): Promise<any> {
+  async testProxy(proxyInfo: ProxyInfo): Promise<ProxyTestResult> {
     return this.proxyPoolService.testProxy(proxyInfo);
   }
 
@@ -1168,7 +1199,7 @@ export class CrawlerService {
    * 初始化代理池
    */
   async initializeProxyPool(): Promise<void> {
-    if (!(CRAWLER_CONFIG as any).proxy?.enabled) {
+    if (!this.proxySettings?.enabled) {
       this.logger.log('代理池未启用，跳过初始化');
       return;
     }
@@ -1177,8 +1208,8 @@ export class CrawlerService {
       // 从提供商获取初始代理
       const result = await this.proxyPoolService.fetchProxiesFromProviders();
       this.logger.log(`代理池初始化完成，获取到 ${result} 个代理`);
-    } catch (error) {
-      this.logger.error('代理池初始化失败:', error);
+    } catch (error: unknown) {
+      this.logger.error('代理池初始化失败:', this.toError(error).stack);
     }
   }
 
@@ -1192,7 +1223,11 @@ export class CrawlerService {
   /**
    * 更新代理池配置
    */
-  updateProxyPoolConfig(newConfig: any): void {
+  updateProxyPoolConfig(newConfig: Partial<ProxyPoolConfig>): void {
     this.proxyPoolService.updateConfig(newConfig);
+  }
+
+  private toError(error: unknown): Error {
+    return error instanceof Error ? error : new Error(String(error));
   }
 }

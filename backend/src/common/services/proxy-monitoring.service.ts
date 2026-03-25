@@ -26,6 +26,55 @@ export interface ProxyAlert {
   metadata: Record<string, unknown>;
 }
 
+export type ProxyHealthStatus = 'excellent' | 'good' | 'fair' | 'poor' | 'critical';
+
+interface ProxyAlertSummary {
+  total: number;
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+}
+
+interface ProxyMetricSummary {
+  min: number;
+  max: number;
+  avg: number;
+  current: number;
+}
+
+interface ProxyThroughputSummary {
+  min: number;
+  max: number;
+  avg: number;
+  total: number;
+}
+
+export interface ProxyPerformanceReportData {
+  timeRange: string;
+  dataPoints: number;
+  workingProxies: ProxyMetricSummary;
+  successRate: ProxyMetricSummary;
+  responseTime: ProxyMetricSummary;
+  throughput: ProxyThroughputSummary;
+  alerts: Omit<ProxyAlertSummary, 'total'>;
+}
+
+export interface ProxyPerformanceReportError {
+  error: string;
+}
+
+export type ProxyPerformanceReport = ProxyPerformanceReportData | ProxyPerformanceReportError;
+
+export interface ProxyHealthReport {
+  score: number;
+  status: ProxyHealthStatus;
+  timestamp: Date;
+  metrics: ProxyMonitoringMetrics | null;
+  alerts: ProxyAlertSummary;
+  recommendations: string[];
+}
+
 type LogMethod = (message: string) => void;
 
 @Injectable()
@@ -271,7 +320,7 @@ export class ProxyMonitoringService {
   /**
    * 获取性能报告
    */
-  getPerformanceReport(hours: number = 24): any {
+  getPerformanceReport(hours: number = 24): ProxyPerformanceReport {
     const metrics = this.getMetricsHistory(hours);
     if (metrics.length === 0) {
       return { error: '没有可用的指标数据' };
@@ -281,6 +330,7 @@ export class ProxyMonitoringService {
     const successRates = metrics.map(m => m.successRate);
     const responseTimes = metrics.map(m => m.averageResponseTime);
     const requestsPerMinute = metrics.map(m => m.requestsPerMinute);
+    const activeAlerts = this.getActiveAlerts(hours);
 
     return {
       timeRange: `${hours}小时`,
@@ -310,10 +360,10 @@ export class ProxyMonitoringService {
         total: metrics.reduce((sum, val) => sum + val.requestsPerMinute, 0),
       },
       alerts: {
-        critical: this.getActiveAlerts(hours).filter(a => a.severity === 'critical').length,
-        high: this.getActiveAlerts(hours).filter(a => a.severity === 'high').length,
-        medium: this.getActiveAlerts(hours).filter(a => a.severity === 'medium').length,
-        low: this.getActiveAlerts(hours).filter(a => a.severity === 'low').length,
+        critical: activeAlerts.filter(a => a.severity === 'critical').length,
+        high: activeAlerts.filter(a => a.severity === 'high').length,
+        medium: activeAlerts.filter(a => a.severity === 'medium').length,
+        low: activeAlerts.filter(a => a.severity === 'low').length,
       },
     };
   }
@@ -357,7 +407,7 @@ export class ProxyMonitoringService {
   /**
    * 生成健康报告
    */
-  generateHealthReport(): any {
+  generateHealthReport(): ProxyHealthReport {
     const currentMetrics = this.getCurrentMetrics();
     const healthScore = this.getHealthScore();
     const activeAlerts = this.getActiveAlerts(24);
@@ -381,7 +431,7 @@ export class ProxyMonitoringService {
   /**
    * 获取健康状态
    */
-  private getHealthStatus(score: number): string {
+  private getHealthStatus(score: number): ProxyHealthStatus {
     if (score >= 90) return 'excellent';
     if (score >= 75) return 'good';
     if (score >= 60) return 'fair';

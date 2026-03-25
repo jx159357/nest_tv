@@ -85,6 +85,14 @@ export abstract class BaseFreeProxyProvider implements ProxyProvider {
     return body.match(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+/g) || [];
   }
 
+  protected extractProxyLines(data: unknown): string[] {
+    const body = typeof data === 'string' ? data : '';
+    return body
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+  }
+
   protected getErrorMessage(error: unknown): string {
     return error instanceof Error ? error.message : '未知错误';
   }
@@ -225,13 +233,13 @@ export class Proxy89Provider extends BaseFreeProxyProvider implements ProxyProvi
     try {
       // 89IP免费API
       const apiUrl = 'https://www.89ip.cn/api/index?format=text';
-      const response = await this.httpClient.get(apiUrl);
+      const response = await this.httpClient.get<string>(apiUrl);
 
       // 89IP返回的是纯文本格式，每行一个IP:PORT
-      const lines = response.data.split('\n').filter(line => line.trim());
+      const lines = this.extractProxyLines(response.data);
 
       for (const line of lines) {
-        const proxy = this.parseProxyString(line.trim(), this.name);
+        const proxy = this.parseProxyString(line, this.name);
         if (proxy) {
           proxies.push(proxy);
         }

@@ -3,6 +3,10 @@ import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/
 import { ProxyPoolService } from '../common/services/proxy-pool.service';
 import { ProxyProviderService } from '../common/services/proxy-provider.service';
 import { ProxyMonitoringService } from '../common/services/proxy-monitoring.service';
+import type {
+  ProxyHealthReport,
+  ProxyPerformanceReport,
+} from '../common/services/proxy-monitoring.service';
 import { ProxyInfo } from '../common/types/proxy-pool.types';
 
 interface UpdateProxyPoolConfigDto {
@@ -33,7 +37,7 @@ export class ProxyPoolController {
   @Get('health')
   @ApiOperation({ summary: '获取代理池健康状态' })
   @ApiResponse({ status: 200, description: '成功获取健康状态' })
-  getHealthReport() {
+  getHealthReport(): ProxyHealthReport {
     return this.proxyMonitoringService.generateHealthReport();
   }
 
@@ -41,9 +45,11 @@ export class ProxyPoolController {
   @ApiOperation({ summary: '获取代理池健康评分' })
   @ApiResponse({ status: 200, description: '成功获取健康评分' })
   getHealthScore() {
+    const healthReport = this.proxyMonitoringService.generateHealthReport();
+
     return {
-      score: this.proxyMonitoringService.getHealthScore(),
-      status: this.proxyMonitoringService.generateHealthReport().status,
+      score: healthReport.score,
+      status: healthReport.status,
     };
   }
 
@@ -70,7 +76,7 @@ export class ProxyPoolController {
   @ApiOperation({ summary: '获取代理池性能报告' })
   @ApiQuery({ name: 'hours', required: false, type: Number, description: '获取多少小时内的报告' })
   @ApiResponse({ status: 200, description: '成功获取性能报告' })
-  getPerformanceReport(@Query('hours') hours?: number) {
+  getPerformanceReport(@Query('hours') hours?: number): ProxyPerformanceReport {
     return this.proxyMonitoringService.getPerformanceReport(hours || 24);
   }
 

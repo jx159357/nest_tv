@@ -2,14 +2,12 @@ import {
   Controller,
   Get,
   Post,
-  Put,
   Delete,
   Param,
   Query,
   Body,
   UseGuards,
   Request,
-  ParseIntPipe,
   HttpStatus,
   HttpException,
 } from '@nestjs/common';
@@ -24,6 +22,20 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdvancedSearchService, SearchResult } from './advanced-search.service';
 import type { AdvancedSearchParams } from './advanced-search.service';
+
+interface AuthenticatedRequest {
+  user?: {
+    userId?: number;
+  };
+}
+
+const toHttpException = (error: unknown, fallbackMessage: string): HttpException => {
+  const message = error instanceof Error ? error.message : fallbackMessage;
+  const status =
+    error instanceof HttpException ? error.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+
+  return new HttpException(message || fallbackMessage, status);
+};
 
 @ApiTags('高级搜索')
 @Controller('search')
@@ -40,17 +52,14 @@ export class AdvancedSearchController {
   @ApiResponse({ status: 200, description: '搜索成功' })
   @ApiResponse({ status: 400, description: '参数错误' })
   async advancedSearch(
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Body() searchParams: AdvancedSearchParams,
   ): Promise<SearchResult> {
     try {
-      const userId = req.user.userId;
+      const userId = req.user?.userId;
       return await this.advancedSearchService.advancedSearch(searchParams, userId);
-    } catch (error) {
-      throw new HttpException(
-        error.message || '搜索失败',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    } catch (error: unknown) {
+      throw toHttpException(error, '搜索失败');
     }
   }
 
@@ -66,11 +75,8 @@ export class AdvancedSearchController {
     try {
       const parsedLimit = limit ? parseInt(limit, 10) : 8;
       return await this.advancedSearchService.getSearchSuggestions(keyword, parsedLimit);
-    } catch (error) {
-      throw new HttpException(
-        error.message || '获取搜索建议失败',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    } catch (error: unknown) {
+      throw toHttpException(error, '获取搜索建议失败');
     }
   }
 
@@ -85,11 +91,8 @@ export class AdvancedSearchController {
     try {
       const parsedLimit = limit ? parseInt(limit, 10) : 20;
       return await this.advancedSearchService.getPopularSearchKeywords(parsedLimit);
-    } catch (error) {
-      throw new HttpException(
-        error.message || '获取热门搜索关键词失败',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    } catch (error: unknown) {
+      throw toHttpException(error, '获取热门搜索关键词失败');
     }
   }
 
@@ -100,16 +103,16 @@ export class AdvancedSearchController {
   @ApiOperation({ summary: '获取用户搜索历史' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiQuery({ name: 'limit', description: '返回数量限制，默认10', required: false })
-  async getUserSearchHistory(@Request() req, @Query('limit') limit?: string): Promise<string[]> {
+  async getUserSearchHistory(
+    @Request() req: AuthenticatedRequest,
+    @Query('limit') limit?: string,
+  ): Promise<string[]> {
     try {
-      const userId = req.user.userId;
+      const userId = req.user?.userId ?? 0;
       const parsedLimit = limit ? parseInt(limit, 10) : 10;
       return await this.advancedSearchService.getUserSearchHistory(userId, parsedLimit);
-    } catch (error) {
-      throw new HttpException(
-        error.message || '获取搜索历史失败',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    } catch (error: unknown) {
+      throw toHttpException(error, '获取搜索历史失败');
     }
   }
 
@@ -119,16 +122,13 @@ export class AdvancedSearchController {
   @Delete('history')
   @ApiOperation({ summary: '清除用户搜索历史' })
   @ApiResponse({ status: 200, description: '清除成功' })
-  async clearUserSearchHistory(@Request() req): Promise<{ message: string }> {
+  async clearUserSearchHistory(@Request() req: AuthenticatedRequest): Promise<{ message: string }> {
     try {
-      const userId = req.user.userId;
+      const userId = req.user?.userId ?? 0;
       await this.advancedSearchService.clearUserSearchHistory(userId);
       return { message: '搜索历史清除成功' };
-    } catch (error) {
-      throw new HttpException(
-        error.message || '清除搜索历史失败',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    } catch (error: unknown) {
+      throw toHttpException(error, '清除搜索历史失败');
     }
   }
 
@@ -147,11 +147,8 @@ export class AdvancedSearchController {
     try {
       const parsedLimit = limit ? parseInt(limit, 10) : 5;
       return await this.advancedSearchService.getRelatedKeywords(keyword, parsedLimit);
-    } catch (error) {
-      throw new HttpException(
-        error.message || '获取相关关键词失败',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    } catch (error: unknown) {
+      throw toHttpException(error, '获取相关关键词失败');
     }
   }
 
@@ -162,7 +159,7 @@ export class AdvancedSearchController {
   @ApiOperation({ summary: '获取搜索趋势统计' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiQuery({ name: 'days', description: '统计天数，默认7', required: false })
-  async getSearchTrends(@Query('days') days?: string): Promise<{
+  getSearchTrends(@Query('days') days?: string): {
     totalSearches: number;
     dailyTrends: Array<{
       date: string;
@@ -173,9 +170,9 @@ export class AdvancedSearchController {
       keyword: string;
       count: number;
     }>;
-  }> {
+  } {
     try {
-      const parsedDays = days ? parseInt(days, 10) : 7;
+      void days;
       // 这里可以实现搜索趋势统计
       // 暂时返回模拟数据
       return {
@@ -193,11 +190,8 @@ export class AdvancedSearchController {
           { keyword: '蜘蛛侠', count: 25 },
         ],
       };
-    } catch (error) {
-      throw new HttpException(
-        error.message || '获取搜索趋势失败',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    } catch (error: unknown) {
+      throw toHttpException(error, '获取搜索趋势失败');
     }
   }
 
@@ -210,21 +204,18 @@ export class AdvancedSearchController {
   @ApiQuery({ name: 'query', description: '搜索查询' })
   async smartSearch(
     @Query('query') query: string,
-    @Request() req,
-    @Body() body?: { userId?: number; filters?: any },
+    @Request() req: AuthenticatedRequest,
+    @Body() body?: { userId?: number; filters?: Record<string, unknown> },
   ): Promise<SearchResult> {
     try {
-      const userId = body?.userId || req.user?.userId;
+      const userId = body?.userId ?? req.user?.userId;
 
       // 智能解析搜索查询
       const searchParams = this.parseSmartSearchQuery(query);
 
       return await this.advancedSearchService.advancedSearch(searchParams, userId);
-    } catch (error) {
-      throw new HttpException(
-        error.message || '智能搜索失败',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    } catch (error: unknown) {
+      throw toHttpException(error, '智能搜索失败');
     }
   }
 
@@ -234,14 +225,12 @@ export class AdvancedSearchController {
   @Get('filters/presets')
   @ApiOperation({ summary: '获取搜索过滤器预设' })
   @ApiResponse({ status: 200, description: '获取成功' })
-  async getFilterPresets(): Promise<
-    Array<{
-      id: string;
-      name: string;
-      description: string;
-      filters: AdvancedSearchParams;
-    }>
-  > {
+  getFilterPresets(): Array<{
+    id: string;
+    name: string;
+    description: string;
+    filters: AdvancedSearchParams;
+  }> {
     try {
       return [
         {
@@ -297,11 +286,8 @@ export class AdvancedSearchController {
           },
         },
       ];
-    } catch (error) {
-      throw new HttpException(
-        error.message || '获取搜索过滤器预设失败',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    } catch (error: unknown) {
+      throw toHttpException(error, '获取搜索过滤器预设失败');
     }
   }
 

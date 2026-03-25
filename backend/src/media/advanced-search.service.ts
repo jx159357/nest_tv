@@ -1,8 +1,7 @@
-import { Injectable, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, In, Between, Not, ILike } from 'typeorm';
-import { MediaResource, MediaType, MediaQuality } from '../entities/media-resource.entity';
-import { User } from '../entities/user.entity';
+import { Repository, SelectQueryBuilder } from 'typeorm';
+import { MediaResource } from '../entities/media-resource.entity';
 import { SearchHistory } from '../entities/search-history.entity';
 
 export interface AdvancedSearchParams {
@@ -43,6 +42,15 @@ export interface SearchSuggestion {
   text: string;
   type: 'keyword' | 'title' | 'actor' | 'director' | 'genre';
   count: number;
+}
+
+interface SearchSuggestionRow {
+  title?: string;
+  director?: string;
+  actors?: string;
+  genres?: unknown;
+  keyword?: string;
+  count: string;
 }
 
 @Injectable()
@@ -209,14 +217,16 @@ export class AdvancedSearchService {
       .groupBy('mediaResource.title')
       .orderBy('count', 'DESC')
       .take(limit / 2)
-      .getRawMany();
+      .getRawMany<SearchSuggestionRow>();
 
     titleSuggestions.forEach(item => {
-      suggestions.push({
-        text: item.title,
-        type: 'title',
-        count: parseInt(item.count as string),
-      });
+      if (item.title) {
+        suggestions.push({
+          text: item.title,
+          type: 'title',
+          count: parseInt(item.count, 10),
+        });
+      }
     });
 
     // 2. 搜索导演建议
@@ -230,14 +240,14 @@ export class AdvancedSearchService {
       .groupBy('mediaResource.director')
       .orderBy('count', 'DESC')
       .take(Math.max(1, Math.floor(limit / 4)))
-      .getRawMany();
+      .getRawMany<SearchSuggestionRow>();
 
     directorSuggestions.forEach(item => {
       if (item.director) {
         suggestions.push({
           text: item.director,
           type: 'director',
-          count: parseInt(item.count as string),
+          count: parseInt(item.count, 10),
         });
       }
     });
@@ -253,7 +263,7 @@ export class AdvancedSearchService {
       .groupBy('mediaResource.actors')
       .orderBy('count', 'DESC')
       .take(Math.max(1, Math.floor(limit / 4)))
-      .getRawMany();
+      .getRawMany<SearchSuggestionRow>();
 
     actorSuggestions.forEach(item => {
       if (item.actors) {
@@ -267,7 +277,7 @@ export class AdvancedSearchService {
             suggestions.push({
               text: actor,
               type: 'actor',
-              count: parseInt(item.count as string),
+              count: parseInt(item.count, 10),
             });
           }
         });
@@ -284,20 +294,18 @@ export class AdvancedSearchService {
       .groupBy('mediaResource.genres')
       .orderBy('count', 'DESC')
       .take(Math.max(1, Math.floor(limit / 4)))
-      .getRawMany();
+      .getRawMany<SearchSuggestionRow>();
 
     genreSuggestions.forEach(item => {
-      if (item.genres && Array.isArray(item.genres)) {
-        item.genres.forEach((genre: string) => {
-          if (genre.includes(keyword.trim())) {
-            suggestions.push({
-              text: genre,
-              type: 'genre',
-              count: parseInt(item.count as string),
-            });
-          }
-        });
-      }
+      this.parseGenresValue(item.genres).forEach(genre => {
+        if (genre.includes(keyword.trim())) {
+          suggestions.push({
+            text: genre,
+            type: 'genre',
+            count: parseInt(item.count, 10),
+          });
+        }
+      });
     });
 
     // 去重并按相关性排序
@@ -333,9 +341,11 @@ export class AdvancedSearchService {
       .groupBy('searchHistory.keyword')
       .orderBy('count', 'DESC')
       .take(limit)
-      .getRawMany();
+      .getRawMany<SearchSuggestionRow>();
 
-    return popularKeywords.map(item => item.keyword);
+    return popularKeywords
+      .map(item => item.keyword)
+      .filter((keyword): keyword is string => typeof keyword === 'string');
   }
 
   /**
@@ -413,7 +423,7 @@ export class AdvancedSearchService {
    * 应用排序逻辑
    */
   private applySorting(
-    queryBuilder: any,
+    queryBuilder: SelectQueryBuilder<MediaResource>,
     sortBy: string,
     sortOrder: string,
     keyword: string,
@@ -452,6 +462,25 @@ export class AdvancedSearchService {
         queryBuilder
           .addOrderBy('mediaResource.rating', order)
           .addOrderBy('mediaResource.releaseDate', order);
+    }
+  }
+
+  private parseGenresValue(value: unknown): string[] {
+    if (Array.isArray(value)) {
+      return value.filter((genre): genre is string => typeof genre === 'string');
+    }
+
+    if (typeof value !== 'string' || value.trim().length === 0) {
+      return [];
+    }
+
+    try {
+      const parsedValue: unknown = JSON.parse(value);
+      return Array.isArray(parsedValue)
+        ? parsedValue.filter((genre): genre is string => typeof genre === 'string')
+        : [];
+    } catch {
+      return [];
     }
   }
 
