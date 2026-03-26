@@ -41,7 +41,12 @@
         </div>
 
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <!-- 推荐内容将在这里显示 -->
+          <MediaCard
+            v-for="item in personalized"
+            :key="item.id"
+            :media="item"
+            @click="openMediaDetail"
+          />
         </div>
       </section>
 
@@ -65,13 +70,18 @@
         </div>
 
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <!-- 热门内容将在这里显示 -->
+          <MediaCard
+            v-for="item in popular"
+            :key="item.id"
+            :media="item"
+            @click="openMediaDetail"
+          />
         </div>
       </section>
 
       <!-- 编辑推荐 -->
       <section class="mb-12">
-        <h2 class="text-2xl font-semibold text-gray-900 mb-6">编辑精选</h2>
+        <h2 class="text-2xl font-semibold text-gray-900 mb-6">高分推荐</h2>
 
         <div v-if="editorialLoading" class="text-center py-8">
           <div
@@ -89,45 +99,59 @@
         </div>
 
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <!-- 编辑精选内容将在这里显示 -->
+          <MediaCard
+            v-for="item in editorial"
+            :key="item.id"
+            :media="item"
+            @click="openMediaDetail"
+          />
         </div>
       </section>
     </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { ref, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
   import { useAuthStore } from '@/stores/auth';
-  // import { recommendationsApi } from '@/api'; // 暂时注释
+  import { recommendationsApi } from '@/api';
+  import MediaCard from '@/components/MediaCard.vue';
+  import type { MediaResource } from '@/types/media';
 
   const router = useRouter();
   const authStore = useAuthStore();
 
   // 响应式数据
-  const personalized = ref([]);
-  const popular = ref([]);
-  const editorial = ref([]);
+  const personalized = ref<MediaResource[]>([]);
+  const popular = ref<MediaResource[]>([]);
+  const editorial = ref<MediaResource[]>([]);
 
   const personalizedLoading = ref(false);
   const popularLoading = ref(false);
   const editorialLoading = ref(false);
 
-  const personalizedError = ref(null);
-  const popularError = ref(null);
-  const editorialError = ref(null);
+  const personalizedError = ref<string | null>(null);
+  const popularError = ref<string | null>(null);
+  const editorialError = ref<string | null>(null);
+
+  const openMediaDetail = (media: MediaResource) => {
+    void router.push({ name: 'media-detail', params: { id: media.id } });
+  };
+
+  const getErrorMessage = (error: unknown, fallback: string) => {
+    return error instanceof Error ? error.message : fallback;
+  };
 
   // 加载个性化推荐
   const loadPersonalizedRecommendations = async () => {
     personalizedLoading.value = true;
     personalizedError.value = null;
     try {
-      // const response = await recommendationsApi.getPersonalized(authStore.user.id, { limit: 8 });
-      personalized.value = []; // 暂时空数组，直到API可用
-    } catch (error) {
+      personalized.value = await recommendationsApi.getPersonalized(8);
+    } catch (error: unknown) {
       console.error('加载个性化推荐失败:', error);
-      personalizedError.value = '加载推荐失败';
+      personalizedError.value = getErrorMessage(error, '加载推荐失败');
     } finally {
       personalizedLoading.value = false;
     }
@@ -138,11 +162,10 @@
     popularLoading.value = true;
     popularError.value = null;
     try {
-      // const response = await recommendationsApi.getPopular({ limit: 8 });
-      popular.value = []; // 暂时空数组，直到API可用
-    } catch (error) {
+      popular.value = await recommendationsApi.getTrending(8);
+    } catch (error: unknown) {
       console.error('加载热门推荐失败:', error);
-      popularError.value = '加载推荐失败';
+      popularError.value = getErrorMessage(error, '加载推荐失败');
     } finally {
       popularLoading.value = false;
     }
@@ -153,11 +176,10 @@
     editorialLoading.value = true;
     editorialError.value = null;
     try {
-      // const response = await recommendationsApi.getPopular({ limit: 8, type: 'editorial' });
-      editorial.value = []; // 暂时空数组，直到API可用
-    } catch (error) {
+      editorial.value = await recommendationsApi.getTopRated(8);
+    } catch (error: unknown) {
       console.error('加载编辑推荐失败:', error);
-      editorialError.value = '加载推荐失败';
+      editorialError.value = getErrorMessage(error, '加载推荐失败');
     } finally {
       editorialLoading.value = false;
     }
@@ -166,11 +188,8 @@
   // 刷新推荐
   const refreshRecommendations = async () => {
     try {
-      // await recommendationsApi.refreshRecommendations(authStore.user.id);
-      console.log('刷新推荐功能暂时不可用');
-      // 刷新后重新加载
       await loadPersonalizedRecommendations();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('刷新推荐失败:', error);
     }
   };

@@ -20,6 +20,43 @@
 - Frontend API/client alignment fixed.
 - Frontend route guards added.
 - Watch progress persistence wired back into watch history.
+- Recommendation page is now wired to live backend data:
+  - personalized recommendations from watch history
+  - trending recommendations
+  - top-rated recommendations
+- Admin management is partially activated with real data:
+  - admin dashboard uses live backend stats and health data
+  - admin users list uses real `/admin/users`
+  - admin media list uses real `/admin/media`
+  - admin play sources list uses real `/admin/play-sources`
+  - admin watch history uses real `/admin/watch-history`
+  - admin logs uses real `/admin/logs`
+- Admin backend placeholders reduced further:
+  - backend admin controller now returns real paginated data for users / media / play sources / watch history
+- Crawler persistence is improved:
+  - `crawler/crawl-and-save` now auto-creates play sources from discovered playable/download URLs
+  - repeated imports skip existing media and only sync missing play sources
+- Daily source collection is now wired into the app scheduler:
+  - daily job collects candidate URLs from configured collection sources
+  - crawled resources are persisted and synced into play sources
+  - recently created active play sources are automatically revalidated for stability
+  - source-level collection policy now exists (`dailyEnabled`, `dailyLimit`, `proxyMode`)
+  - scheduler exposes last-run summary and manual trigger endpoints for observability/debugging
+  - source-level `proxyMode` is now applied to collection requests (`direct` / `prefer-proxy` / `proxy-required`)
+- source health summaries are now available for UI/dashboard consumption (active rate, recent additions, latest checks)
+- source quality scoring and recommended proxy mode are now computed from real play-source health data
+- daily scheduler now prioritizes stronger sources first and dynamically reduces fetch volume for lower-quality sources
+- crawler UI now shows source quality score, suggested proxy mode, and runtime-editable source collection policy controls
+- data-collection detail extraction is richer now:
+  - source selectors support director / actors / genres / releaseDate / downloadUrls
+  - collected media data now carries more structured metadata before persistence
+  - download/playable URL extraction now scans both DOM links and page text for magnet / thunder / ftp / ed2k / m3u8 / direct video links
+- Torrent aggregation is improved:
+  - backend `torrent` endpoints now read real magnet play sources from the database instead of returning random placeholder data
+  - supported operations now include local magnet parsing, info lookup, health summary, search, popular, and latest
+- Frontend crawler management is improved:
+  - `CrawlerView` now uses a dedicated API client instead of placeholder/nonexistent store methods
+  - crawl results now surface persistence feedback such as created media ID and created/skipped play source counts
 - Deployment foundation repaired:
   - Dockerfiles rewritten
   - compose files unified
@@ -77,14 +114,23 @@
   - `backend/src/iptv/dto/create-iptv-channel.dto.ts`
 - Current highest-value backend files:
   - No remaining backend lint hotspots.
+  - Next product-facing expansion can target remaining admin placeholders, torrent placeholders, or richer recommendation algorithms.
 
 ## Suggested Next Steps
 
 1. Re-run backend unit tests and e2e tests after the lint cleanup milestone.
-2. Then decide whether to continue broader refactors or shift back to product work.
+2. Continue product work from the remaining placeholders:
+   - frontend remaining admin views (`roles` and related permission management polish)
+   - richer recommendation UX and algorithm tuning
+   - crawler/data-collection source quality and extraction depth
+   - scheduled task observability / task result dashboard
+   - play source validation depth (stream probing, parser verification, magnet metadata enrichment)
+   - source-specific proxy execution policy (only where truly needed)
 3. Re-run:
    - `backend npm run lint:check`
    - `backend npm run build`
+   - `frontend npm run type-check`
+   - `frontend npm run build`
    - `backend npx jest --runInBand`
    - `backend npx jest --config ./test/jest-e2e.json --runInBand`
 
@@ -93,4 +139,15 @@
 - If context is lost, restart from the commands above and inspect `git status --short`.
 - The backend lint debt has been cleaned to zero.
 - This round reduced backend lint from about `176 + 5` to `0 + 0`.
+- Follow-up product enhancement completed: recommendations frontend now consumes real backend recommendation endpoints.
+- Follow-up product enhancement completed: core admin dashboard/users/media/play-sources pages now consume real backend management endpoints.
+- Follow-up product enhancement completed: `admin/watch-history` and `admin/logs` now consume real backend endpoints.
+- Follow-up aggregation enhancement completed: crawler save flow now persists playable source records alongside media resources.
+- Follow-up aggregation enhancement completed: torrent endpoints are now backed by real stored magnet sources, and crawler UI now displays persistence/play-source creation results.
+- Follow-up aggregation enhancement completed: a daily scheduled collection job now crawls candidate resource pages and revalidates recent play sources.
+- Follow-up aggregation enhancement completed: source-level daily collection policy and scheduler summary/manual-run endpoints are now in place.
+- Follow-up aggregation enhancement completed: collection requests now honor per-source proxy policy and can gracefully fall back or fail fast depending on source configuration.
+- Follow-up aggregation enhancement completed: crawler management UI now shows daily collection status and source-level health/quality metrics.
+- Follow-up aggregation enhancement completed: daily collection now skips empty-shell resources lacking playable links and allocates crawl budget based on source quality score.
+- Follow-up aggregation enhancement completed: detail-page extraction now produces richer structured media metadata, improving aggregation quality.
 - Avoid reverting the staged removals under `backend/dist` and `.env.production`; those are intentional index cleanups.

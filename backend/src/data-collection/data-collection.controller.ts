@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -31,6 +31,13 @@ export class DataCollectionController {
     return this.dataCollectionService.getSources();
   }
 
+  @Get('source-health')
+  @ApiOperation({ summary: '获取采集来源健康摘要' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getSourceHealth() {
+    return this.dataCollectionService.getSourceHealthSummaries();
+  }
+
   /**
    * 根据名称获取爬虫源
    */
@@ -40,11 +47,29 @@ export class DataCollectionController {
   @ApiResponse({ status: 404, description: '爬虫源不存在' })
   @ApiParam({ name: 'name', description: '爬虫源名称' })
   getSource(@Param('name') name: string) {
-    const source = this.dataCollectionService.getSource(name);
+    const source = this.dataCollectionService.getSourceConfig(name);
     if (!source) {
       throw new Error(`爬虫源 ${name} 不存在或已禁用`);
     }
     return source;
+  }
+
+  @Patch('sources/:name/policy')
+  @ApiOperation({ summary: '更新采集来源策略' })
+  @ApiResponse({ status: 200, description: '更新成功' })
+  @ApiParam({ name: 'name', description: '爬虫源名称' })
+  updateSourcePolicy(
+    @Param('name') name: string,
+    @Body()
+    body: {
+      dailyEnabled?: boolean;
+      dailyLimit?: number;
+      proxyMode?: 'direct' | 'prefer-proxy' | 'proxy-required';
+      requirePlayableUrls?: boolean;
+      minimumPlayableUrls?: number;
+    },
+  ) {
+    return this.dataCollectionService.updateSourcePolicy(name, body);
   }
 
   /**
@@ -106,13 +131,44 @@ export class DataCollectionController {
   @ApiResponse({ status: 404, description: '爬虫源不存在' })
   @ApiParam({ name: 'sourceName', description: '爬虫源名称' })
   @ApiQuery({ name: 'limit', description: '限制数量', required: false })
-  getPopularUrls(@Param('sourceName') sourceName: string, @Query('limit') limit: number = 20) {
+  async getPopularUrls(
+    @Param('sourceName') sourceName: string,
+    @Query('limit') limit: number = 20,
+  ) {
     try {
-      const urls = this.dataCollectionService.getPopularUrls(sourceName, limit);
+      const urls = await this.dataCollectionService.getPopularUrls(sourceName, limit);
       return {
         success: true,
         data: urls,
         message: `获取到 ${urls.length} 个热门URL`,
+      };
+    } catch (error: unknown) {
+      return {
+        success: false,
+        message: this.getErrorMessage(error),
+      };
+    }
+  }
+
+  /**
+   * 从指定来源批量采集热门资源并同步播放源
+   */
+  @Post('collect-popular/:sourceName')
+  @ApiOperation({ summary: '按来源批量采集热门资源' })
+  @ApiResponse({ status: 200, description: '采集成功' })
+  @ApiResponse({ status: 404, description: '爬虫源不存在' })
+  @ApiParam({ name: 'sourceName', description: '爬虫源名称' })
+  @ApiQuery({ name: 'limit', description: '采集数量上限', required: false })
+  async collectPopularResources(
+    @Param('sourceName') sourceName: string,
+    @Query('limit') limit: number = 10,
+  ) {
+    try {
+      const summary = await this.dataCollectionService.collectPopularResources(sourceName, limit);
+      return {
+        success: true,
+        data: summary,
+        message: `来源 ${sourceName} 采集完成`,
       };
     } catch (error: unknown) {
       return {

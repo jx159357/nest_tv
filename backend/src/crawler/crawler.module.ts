@@ -4,9 +4,10 @@ import { MediaResourceModule } from '../media/media.module';
 import { CommonModule } from '../common/common.module';
 import { CrawlerController } from './crawler.controller';
 import { ProxyPoolModule } from '../modules/proxy-pool/proxy-pool.module';
+import { PlaySourceModule } from '../play-sources/play-source.module';
 
 @Module({
-  imports: [MediaResourceModule, CommonModule, ProxyPoolModule],
+  imports: [MediaResourceModule, PlaySourceModule, CommonModule, ProxyPoolModule],
   controllers: [CrawlerController],
   providers: [CrawlerService],
   exports: [CrawlerService],

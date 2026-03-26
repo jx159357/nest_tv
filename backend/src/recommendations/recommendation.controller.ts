@@ -3,12 +3,21 @@ import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { RecommendationService } from './recommendation.service';
 import { MediaResource } from '../entities/media-resource.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { GetCurrentUserId } from '../decorators/current-user.decorator';
 
 @ApiTags('推荐系统')
 @Controller('recommendations')
 @UseGuards(JwtAuthGuard)
 export class RecommendationController {
   constructor(private readonly recommendationService: RecommendationService) {}
+
+  @Get('personalized')
+  @ApiOperation({ summary: '获取个性化推荐' })
+  @ApiResponse({ status: 200, description: '成功获取个性化推荐', type: [MediaResource] })
+  @ApiQuery({ name: 'limit', required: false, description: '返回数量限制' })
+  async getPersonalized(@GetCurrentUserId() userId: number, @Query('limit') limit: number = 10) {
+    return this.recommendationService.getPersonalizedRecommendations(userId, limit);
+  }
 
   @Get('trending')
   @ApiOperation({ summary: '获取热门推荐' })

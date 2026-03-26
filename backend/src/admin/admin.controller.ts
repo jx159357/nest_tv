@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { AdminRole } from '../entities/admin-role.entity';
@@ -140,8 +140,7 @@ export class AdminController {
     @Query('limit') limit: number = 20,
     @Query('search') search?: string,
   ) {
-    // 这个方法将在UserModule中实现具体逻辑
-    return { message: '用户管理功能待实现', page, limit, search };
+    return this.adminService.getUsers(page, limit, search);
   }
 
   /**
@@ -157,9 +156,9 @@ export class AdminController {
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 20,
     @Query('type') type?: string,
+    @Query('search') search?: string,
   ) {
-    // 这个方法将在MediaModule中实现具体逻辑
-    return { message: '媒体资源管理功能待实现', page, limit, type };
+    return this.adminService.getMedia(page, limit, type, search);
   }
 
   /**
@@ -176,8 +175,7 @@ export class AdminController {
     @Query('limit') limit: number = 20,
     @Query('type') type?: string,
   ) {
-    // 这个方法将在PlaySourceModule中实现具体逻辑
-    return { message: '播放源管理功能待实现', page, limit, type };
+    return this.adminService.getPlaySources(page, limit, type);
   }
 
   /**
@@ -194,8 +192,7 @@ export class AdminController {
     @Query('limit') limit: number = 20,
     @Query('userId') userId?: number,
   ) {
-    // 这个方法将在WatchHistoryModule中实现具体逻辑
-    return { message: '观看历史管理功能待实现', page, limit, userId };
+    return this.adminService.getWatchHistory(page, limit, userId);
   }
 
   /**

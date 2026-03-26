@@ -16,6 +16,9 @@ const AdminLayout = () => import('../layouts/AdminLayout.vue');
 const AdminDashboardView = () => import('../views/AdminDashboardView.vue');
 const AdminUsersView = () => import('../views/AdminUsersView.vue');
 const AdminMediaView = () => import('../views/AdminMediaView.vue');
+const AdminPlaySourcesView = () => import('../views/AdminPlaySourcesView.vue');
+const AdminWatchHistoryView = () => import('../views/AdminWatchHistoryView.vue');
+const AdminLogsView = () => import('../views/AdminLogsView.vue');
 // const SettingsView = () => import('../views/SettingsView.vue'); // 暂时注释，文件不存在
 const NotFoundView = () => import('../views/NotFoundView.vue');
 
@@ -165,6 +168,36 @@ const routes: RouteRecordRaw[] = [
         component: AdminMediaView,
         meta: {
           title: '媒体管理 - Nest TV',
+          requiresAuth: true,
+          requiresAdmin: true,
+        },
+      },
+      {
+        path: 'play-sources',
+        name: 'admin-play-sources',
+        component: AdminPlaySourcesView,
+        meta: {
+          title: '播放源管理 - Nest TV',
+          requiresAuth: true,
+          requiresAdmin: true,
+        },
+      },
+      {
+        path: 'watch-history',
+        name: 'admin-watch-history',
+        component: AdminWatchHistoryView,
+        meta: {
+          title: '观看历史管理 - Nest TV',
+          requiresAuth: true,
+          requiresAdmin: true,
+        },
+      },
+      {
+        path: 'logs',
+        name: 'admin-logs',
+        component: AdminLogsView,
+        meta: {
+          title: '系统日志 - Nest TV',
           requiresAuth: true,
           requiresAdmin: true,
         },

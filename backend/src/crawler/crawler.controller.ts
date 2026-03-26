@@ -25,8 +25,10 @@ import type { CrawledData, CrawlWebsiteResult } from './crawler.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MediaResourceService } from '../media/media-resource.service';
 import { MediaType, MediaQuality } from '../entities/media-resource.entity';
+import { PlaySourceType } from '../entities/play-source.entity';
 import { CrawlRequestDto, BatchCrawlRequestDto, CrawlAndSaveDto } from './dtos/crawl-request.dto';
 import { CRAWLER_TARGETS } from './crawler.config';
+import { PlaySourceService } from '../play-sources/play-source.service';
 
 export interface CrawlerStatsResponse {
   totalCrawled: number;
@@ -34,6 +36,13 @@ export interface CrawlerStatsResponse {
   failureCount: number;
   lastCrawlTime?: Date;
   targetsAvailable: string[];
+}
+
+interface SaveResult {
+  mediaResourceId: number;
+  created: boolean;
+  playSourceCount: number;
+  skippedPlaySources: number;
 }
 
 interface PersistableCrawledData {
@@ -70,6 +79,7 @@ export class CrawlerController {
   constructor(
     private readonly crawlerService: CrawlerService,
     private readonly mediaResourceService: MediaResourceService,
+    private readonly playSourceService: PlaySourceService,
   ) {}
 
   /**
@@ -144,8 +154,9 @@ export class CrawlerController {
     }
 
     // 将爬取的数据保存到数据库
+    let saveResult: SaveResult | null = null;
     try {
-      await this.saveToDatabase(result.data!, crawlRequest.targetName);
+      saveResult = await this.saveToDatabase(result.data!, crawlRequest.targetName);
     } catch (error: unknown) {
       this.logger.warn(`保存数据失败: ${getErrorMessage(error)}`);
       // 继续返回爬取结果，不因为保存失败而影响用户
@@ -155,6 +166,7 @@ export class CrawlerController {
       success: true,
       message: '爬取成功',
       data: result.data,
+      persistence: saveResult,
     };
   }
 
@@ -340,11 +352,12 @@ export class CrawlerController {
 
     // 实现保存到数据库的逻辑
     try {
-      await this.saveToDatabase(result.data!, targetName);
+      const saveResult = await this.saveToDatabase(result.data!, targetName);
       return {
         success: true,
         message: '爬取并保存成功',
         data: result.data,
+        persistence: saveResult,
       };
     } catch (error: unknown) {
       const errorMessage = getErrorMessage(error);
@@ -445,7 +458,7 @@ export class CrawlerController {
    * @param data 爬取的数据
    * @param source 来源网站
    */
-  private async saveToDatabase(data: PersistableCrawledData, source: string): Promise<void> {
+  private async saveToDatabase(data: PersistableCrawledData, source: string): Promise<SaveResult> {
     if (!data || !data.title) {
       throw new Error('无效的爬取数据：缺少标题');
     }
@@ -453,8 +466,14 @@ export class CrawlerController {
     // 检查是否已存在相同标题的资源
     const existingMedia = await this.mediaResourceService.findByTitle(data.title);
     if (existingMedia) {
-      this.logger.log(`资源已存在，跳过: ${data.title}`);
-      return;
+      const syncResult = await this.syncPlaySources(existingMedia.id, data, source);
+      this.logger.log(`资源已存在，已同步播放源: ${data.title}`);
+      return {
+        mediaResourceId: existingMedia.id,
+        created: false,
+        playSourceCount: syncResult.created,
+        skippedPlaySources: syncResult.skipped,
+      };
     }
 
     // 转换数据格式
@@ -480,8 +499,78 @@ export class CrawlerController {
     };
 
     // 保存到数据库
-    await this.mediaResourceService.create(mediaData);
+    const mediaResource = await this.mediaResourceService.create(mediaData);
+    const syncResult = await this.syncPlaySources(mediaResource.id, data, source);
     this.logger.log(`成功保存资源: ${data.title}`);
+
+    return {
+      mediaResourceId: mediaResource.id,
+      created: true,
+      playSourceCount: syncResult.created,
+      skippedPlaySources: syncResult.skipped,
+    };
+  }
+
+  private async syncPlaySources(
+    mediaResourceId: number,
+    data: PersistableCrawledData,
+    source: string,
+  ): Promise<{ created: number; skipped: number }> {
+    const urls = Array.isArray(data.downloadUrls)
+      ? data.downloadUrls.filter((url): url is string => typeof url === 'string' && url.length > 0)
+      : [];
+
+    if (urls.length === 0) {
+      return { created: 0, skipped: 0 };
+    }
+
+    const existingSources = await this.playSourceService.getByMediaResource(mediaResourceId);
+    const existingUrls = new Set(existingSources.map(sourceItem => sourceItem.url));
+    let created = 0;
+    let skipped = 0;
+
+    for (const [index, url] of urls.entries()) {
+      if (existingUrls.has(url)) {
+        skipped++;
+        continue;
+      }
+
+      await this.playSourceService.create({
+        mediaResourceId,
+        type: this.inferPlaySourceType(url),
+        url,
+        priority: index + 1,
+        resolution: data.quality,
+        sourceName: `${source}源 ${index + 1}`,
+        description: data.description,
+      });
+
+      created++;
+    }
+
+    return { created, skipped };
+  }
+
+  private inferPlaySourceType(url: string): PlaySourceType {
+    const normalizedUrl = url.toLowerCase();
+
+    if (normalizedUrl.startsWith('magnet:')) {
+      return PlaySourceType.MAGNET;
+    }
+
+    if (
+      normalizedUrl.startsWith('ftp:') ||
+      normalizedUrl.startsWith('thunder:') ||
+      normalizedUrl.startsWith('ed2k:')
+    ) {
+      return PlaySourceType.DOWNLOAD;
+    }
+
+    if (normalizedUrl.includes('.m3u8') || normalizedUrl.startsWith('rtmp')) {
+      return PlaySourceType.STREAM;
+    }
+
+    return PlaySourceType.ONLINE;
   }
 
   /**

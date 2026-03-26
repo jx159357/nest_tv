@@ -239,6 +239,6 @@ class ApiClient {
 export { mediaApi } from './media';
 export { playSourceApi } from './playSource';
 export { authApi } from './auth';
-// export { recommendationsApi } from './recommendations'; // 暂时注释，文件不存在
+export { recommendationsApi } from './recommendations';
 
 export default ApiClient;

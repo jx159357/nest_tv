@@ -275,11 +275,30 @@
   </div>
 </template>
 
-<script setup>
-  import { ref, onMounted } from 'vue';
-  import { useAuthStore } from '@/stores/auth';
+<script setup lang="ts">
+  import { ref, onMounted, onUnmounted } from 'vue';
+  import { adminApi } from '@/api/admin';
 
-  const authStore = useAuthStore();
+  interface AdminLogItem {
+    id?: number;
+    action?: string;
+    resource?: string;
+    status?: 'success' | 'error' | 'warning';
+    description?: string;
+    errorMessage?: string;
+    createdAt?: string;
+  }
+
+  interface HealthStatus {
+    status: 'ok' | 'error' | string;
+    timestamp: string;
+    uptime: number;
+    memory: {
+      rss: number;
+      heapUsed: number;
+      heapTotal: number;
+    };
+  }
 
   // 状态管理
   const stats = ref({
@@ -287,21 +306,18 @@
     mediaCount: 0,
     playSourceCount: 0,
     watchHistoryCount: 0,
-    recentActivity: [],
+    recentActivity: [] as AdminLogItem[],
   });
 
   const loading = ref(false);
-  const health = ref(null);
+  const health = ref<HealthStatus | null>(null);
   const healthLoading = ref(false);
 
   // 加载统计数据
   const loadStats = async () => {
-    if (!authStore.user?.id) return;
-
     loading.value = true;
     try {
-      const response = await authStore.api.get('/admin/stats');
-      stats.value = response.data;
+      stats.value = await adminApi.getStats();
     } catch (error) {
       console.error('加载统计数据失败:', error);
     } finally {
@@ -313,8 +329,7 @@
   const loadHealth = async () => {
     healthLoading.value = true;
     try {
-      const response = await authStore.api.get('/admin/health');
-      health.value = response.data;
+      health.value = await adminApi.getHealth();
     } catch (error) {
       console.error('加载系统状态失败:', error);
       health.value = null;
@@ -324,7 +339,7 @@
   };
 
   // 获取操作文本
-  const getActionText = action => {
+  const getActionText = (action?: string) => {
     const actionMap = {
       create: '创建',
       update: '更新',
@@ -339,7 +354,7 @@
   };
 
   // 获取资源文本
-  const getResourceText = resource => {
+  const getResourceText = (resource?: string) => {
     const resourceMap = {
       user: '用户',
       media_resource: '媒体资源',
@@ -354,7 +369,7 @@
   };
 
   // 格式化日期
-  const formatDate = dateString => {
+  const formatDate = (dateString?: string) => {
     if (!dateString) return '';
     const date = new Date(dateString);
     return (
@@ -368,7 +383,7 @@
   };
 
   // 格式化运行时间
-  const formatUptime = seconds => {
+  const formatUptime = (seconds: number) => {
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
@@ -383,7 +398,7 @@
   };
 
   // 格式化内存使用
-  const formatMemory = memory => {
+  const formatMemory = (memory: HealthStatus['memory']) => {
     const mb = Math.round(memory.rss / 1024 / 1024);
     const heapUsed = Math.round(memory.heapUsed / 1024 / 1024);
     const heapTotal = Math.round(memory.heapTotal / 1024 / 1024);
@@ -392,24 +407,30 @@
   };
 
   // 格式化日期时间
-  const formatDateTime = timestamp => {
+  const formatDateTime = (timestamp?: string) => {
     if (!timestamp) return '';
     return new Date(timestamp).toLocaleString('zh-CN');
   };
 
+  let statsInterval: ReturnType<typeof setInterval> | null = null;
+  let healthInterval: ReturnType<typeof setInterval> | null = null;
+
   // 组件挂载时加载数据
   onMounted(() => {
-    loadStats();
-    loadHealth();
+    void loadStats();
+    void loadHealth();
 
     // 定时刷新数据
-    const statsInterval = setInterval(loadStats, 30000); // 30秒刷新统计数据
-    const healthInterval = setInterval(loadHealth, 60000); // 60秒刷新健康状态
+    statsInterval = setInterval(() => {
+      void loadStats();
+    }, 30000);
+    healthInterval = setInterval(() => {
+      void loadHealth();
+    }, 60000);
+  });
 
-    // 组件卸载时清除定时器
-    return () => {
-      clearInterval(statsInterval);
-      clearInterval(healthInterval);
-    };
+  onUnmounted(() => {
+    if (statsInterval) clearInterval(statsInterval);
+    if (healthInterval) clearInterval(healthInterval);
   });
 </script>

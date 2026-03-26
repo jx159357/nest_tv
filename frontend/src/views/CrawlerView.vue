@@ -25,6 +25,61 @@
         <p class="text-gray-600 mt-1">管理和监控影视资源爬虫任务</p>
       </div>
 
+      <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div>
+            <h2 class="text-lg font-medium text-gray-900">每日播放源采集任务</h2>
+            <p class="mt-1 text-sm text-gray-600">查看最近执行情况，并支持手动触发采集</p>
+          </div>
+          <button
+            :disabled="dailyRunning"
+            class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+            @click="runDailyCollection"
+          >
+            {{ dailyRunning ? '执行中...' : '立即执行一次' }}
+          </button>
+        </div>
+
+        <div v-if="dailySummary" class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-4">
+          <div class="rounded-lg bg-gray-50 p-4">
+            <div class="text-xs text-gray-500">状态</div>
+            <div class="mt-2 text-lg font-semibold text-gray-900">{{ dailySummary.status }}</div>
+          </div>
+          <div class="rounded-lg bg-gray-50 p-4">
+            <div class="text-xs text-gray-500">总尝试</div>
+            <div class="mt-2 text-lg font-semibold text-gray-900">
+              {{ dailySummary.totalAttempted }}
+            </div>
+          </div>
+          <div class="rounded-lg bg-gray-50 p-4">
+            <div class="text-xs text-gray-500">新建媒体 / 播放源</div>
+            <div class="mt-2 text-lg font-semibold text-gray-900">
+              {{ dailySummary.totalCreatedMedia }} / {{ dailySummary.totalCreatedPlaySources }}
+            </div>
+          </div>
+          <div class="rounded-lg bg-gray-50 p-4">
+            <div class="text-xs text-gray-500">播放源校验</div>
+            <div class="mt-2 text-lg font-semibold text-gray-900">
+              {{ dailySummary.validationSummary?.active || 0 }} /
+              {{ dailySummary.validationSummary?.checked || 0 }}
+            </div>
+          </div>
+          <div class="rounded-lg bg-gray-50 p-4">
+            <div class="text-xs text-gray-500">因无可播链接跳过</div>
+            <div class="mt-2 text-lg font-semibold text-gray-900">
+              {{ dailySummary.totalSkippedNoPlayableUrls }}
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-if="dailySummary?.message"
+          class="mt-4 rounded-lg bg-blue-50 p-4 text-sm text-blue-800"
+        >
+          {{ dailySummary.message }}
+        </div>
+      </div>
+
       <!-- 爬虫目标列表 -->
       <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
         <div class="flex justify-between items-center mb-4">
@@ -56,6 +111,88 @@
               <div>
                 <h3 class="font-medium text-gray-900">{{ target.name }}</h3>
                 <p class="text-sm text-gray-500 mt-1 truncate">{{ target.baseUrl }}</p>
+                <div
+                  v-if="getSourceHealth(target.name)"
+                  class="mt-2 space-y-1 text-xs text-gray-600"
+                >
+                  <p>
+                    质量分: {{ getSourceHealth(target.name)?.qualityScore }} · 可用率:
+                    {{ getSourceHealth(target.name)?.activeRate }}%
+                  </p>
+                  <p>
+                    日采集上限:
+                    {{ getSourceHealth(target.name)?.dailyLimit }}
+                  </p>
+                  <p>
+                    当前代理: {{ getSourceHealth(target.name)?.proxyMode }} · 建议代理:
+                    {{ getSourceHealth(target.name)?.suggestedProxyMode }}
+                  </p>
+                  <p>
+                    近24h新增源:
+                    {{ getSourceHealth(target.name)?.recentPlaySources24h }}
+                  </p>
+                  <p class="text-[11px] text-gray-500">
+                    {{ getSourceHealth(target.name)?.recommendation }}
+                  </p>
+                  <div class="mt-2 space-y-2 rounded bg-gray-50 p-2">
+                    <label class="flex items-center gap-2">
+                      <input
+                        v-model="getPolicyDraft(target.name).dailyEnabled"
+                        type="checkbox"
+                        class="h-4 w-4 rounded border-gray-300"
+                      />
+                      <span>参与每日采集</span>
+                    </label>
+                    <div class="grid grid-cols-2 gap-2">
+                      <label class="flex flex-col gap-1">
+                        <span>日采集上限</span>
+                        <input
+                          v-model.number="getPolicyDraft(target.name).dailyLimit"
+                          type="number"
+                          min="1"
+                          class="rounded border border-gray-300 px-2 py-1"
+                        />
+                      </label>
+                      <label class="flex flex-col gap-1">
+                        <span>代理模式</span>
+                        <select
+                          v-model="getPolicyDraft(target.name).proxyMode"
+                          class="rounded border border-gray-300 px-2 py-1"
+                        >
+                          <option value="direct">direct</option>
+                          <option value="prefer-proxy">prefer-proxy</option>
+                          <option value="proxy-required">proxy-required</option>
+                        </select>
+                      </label>
+                    </div>
+                    <label class="flex items-center gap-2">
+                      <input
+                        v-model="getPolicyDraft(target.name).requirePlayableUrls"
+                        type="checkbox"
+                        class="h-4 w-4 rounded border-gray-300"
+                      />
+                      <span>要求至少有可播放链接</span>
+                    </label>
+                    <div class="flex items-center justify-between gap-2">
+                      <label class="flex items-center gap-2">
+                        <span>最少链接数</span>
+                        <input
+                          v-model.number="getPolicyDraft(target.name).minimumPlayableUrls"
+                          type="number"
+                          min="0"
+                          class="w-16 rounded border border-gray-300 px-2 py-1"
+                        />
+                      </label>
+                      <button
+                        :disabled="savingPolicyFor === target.name"
+                        class="rounded bg-gray-900 px-2 py-1 text-white disabled:opacity-50"
+                        @click="saveSourcePolicy(target.name)"
+                      >
+                        {{ savingPolicyFor === target.name ? '保存中...' : '保存策略' }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
               <span
                 :class="[
@@ -86,12 +223,41 @@
                 {{ testingTarget === target.name ? '测试中...' : '测试连接' }}
               </button>
               <button
-                class="text-xs px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                :disabled="collectingSource === target.name"
+                class="text-xs px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 disabled:opacity-50"
+                @click="collectPopularFromSource(target.name)"
+              >
+                {{ collectingSource === target.name ? '采集中...' : '采集热门' }}
+              </button>
+              <button
+                class="text-xs px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                 @click="crawlFromTarget(target.name)"
               >
-                爬取资源
+                填入表单
               </button>
             </div>
+          </div>
+        </div>
+
+        <div
+          v-if="sourceCollectionResult"
+          class="mt-4 rounded-lg bg-blue-50 p-4 text-sm text-blue-900"
+        >
+          <div class="font-medium">来源 {{ sourceCollectionResult.sourceName }} 采集完成</div>
+          <div class="mt-2 grid grid-cols-2 gap-2 md:grid-cols-4">
+            <div>尝试: {{ sourceCollectionResult.attempted }}</div>
+            <div>成功: {{ sourceCollectionResult.succeeded }}</div>
+            <div>无可播跳过: {{ sourceCollectionResult.skippedNoPlayableUrls }}</div>
+            <div>新建媒体: {{ sourceCollectionResult.createdMedia }}</div>
+            <div>新建播放源: {{ sourceCollectionResult.createdPlaySources }}</div>
+          </div>
+          <div v-if="sourceCollectionResult.errors.length" class="mt-3 text-red-700">
+            <div class="font-medium">错误摘要</div>
+            <ul class="mt-1 list-disc pl-5">
+              <li v-for="item in sourceCollectionResult.errors.slice(0, 5)" :key="item">
+                {{ item }}
+              </li>
+            </ul>
           </div>
         </div>
 
@@ -209,10 +375,18 @@
           </div>
 
           <div
-            v-if="quickCrawlForm.saveToDatabase && crawlResult.data.id"
+            v-if="quickCrawlForm.saveToDatabase && crawlResult.persistence"
             class="p-4 bg-blue-50 rounded-lg"
           >
-            <p class="text-blue-800">数据已自动保存到数据库，ID: {{ crawlResult.data.id }}</p>
+            <p class="text-blue-800">
+              数据已自动保存到数据库，媒体ID: {{ crawlResult.persistence.mediaResourceId }}
+            </p>
+            <p class="mt-1 text-sm text-blue-700">
+              {{
+                crawlResult.persistence.created ? '新建媒体资源' : '复用已有媒体资源'
+              }}；新增播放源 {{ crawlResult.persistence.playSourceCount }} 个，跳过重复
+              {{ crawlResult.persistence.skippedPlaySources }} 个
+            </p>
           </div>
         </div>
 
@@ -284,10 +458,10 @@
         <!-- 批量爬取结果 -->
         <div v-if="batchCrawlResult" class="mt-6 p-4 bg-gray-50 rounded-lg">
           <h3 class="font-medium text-gray-900 mb-2">批量爬取结果</h3>
-          <div class="text-sm">
-            <p>成功: {{ batchCrawlResult.successCount }}</p>
-            <p>失败: {{ batchCrawlResult.failureCount }}</p>
-            <p>总计: {{ batchCrawlResult.totalRequested }}</p>
+          <div v-if="batchCrawlResult.data" class="text-sm">
+            <p>成功: {{ batchCrawlResult.data.successCount }}</p>
+            <p>失败: {{ batchCrawlResult.data.failureCount }}</p>
+            <p>总计: {{ batchCrawlResult.data.totalRequested }}</p>
           </div>
 
           <div v-if="batchCrawlResult.data && batchCrawlResult.data.crawledData" class="mt-3">
@@ -307,6 +481,13 @@
           </div>
 
           <div class="mt-4">
+            <div
+              v-if="batchCrawlResult.success && batchCrawlResult.data"
+              class="mb-4 rounded-lg bg-blue-50 p-4 text-sm text-blue-800"
+            >
+              已成功保存 {{ batchCrawlResult.data.savedCount }} 条资源，共请求
+              {{ batchCrawlResult.data.totalRequested }} 个 URL。
+            </div>
             <button
               class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               @click="clearBatchCrawlResult"
@@ -320,23 +501,37 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { ref, onMounted } from 'vue';
-  import { useAuthStore } from '@/stores/auth';
-
-  const authStore = useAuthStore();
+  import {
+    crawlerApi,
+    type BatchCrawlResponse,
+    type CollectedSourceSummary,
+    type CrawlerTarget,
+    type CrawlResultResponse,
+    type SourcePolicyUpdatePayload,
+    type SourceHealthSummary,
+  } from '@/api/crawler';
+  import { schedulerApi, type DailySourceCollectionRunSummary } from '@/api/scheduler';
 
   // 状态管理
-  const crawlerTargets = ref([]);
+  const crawlerTargets = ref<CrawlerTarget[]>([]);
   const targetsLoading = ref(false);
   const refreshing = ref(false);
   const testingTarget = ref('');
+  const collectingSource = ref('');
   const quickCrawling = ref(false);
   const batchCrawling = ref(false);
+  const dailyRunning = ref(false);
+  const savingPolicyFor = ref('');
 
   // 爬取结果
-  const crawlResult = ref(null);
-  const batchCrawlResult = ref(null);
+  const crawlResult = ref<CrawlResultResponse | null>(null);
+  const batchCrawlResult = ref<BatchCrawlResponse | null>(null);
+  const dailySummary = ref<DailySourceCollectionRunSummary | null>(null);
+  const sourceCollectionResult = ref<CollectedSourceSummary | null>(null);
+  const sourceHealthSummaries = ref<SourceHealthSummary[]>([]);
+  const policyDrafts = ref<Record<string, SourcePolicyUpdatePayload>>({});
 
   // 表单数据
   const quickCrawlForm = ref({
@@ -356,9 +551,9 @@
     targetsLoading.value = true;
 
     try {
-      const response = await authStore.api.get('/crawler/targets');
-      if (response.data && response.data.data) {
-        crawlerTargets.value = response.data.data.map(target => ({
+      const targets = await crawlerApi.getTargets();
+      if (targets.length > 0) {
+        crawlerTargets.value = targets.map(target => ({
           ...target,
           status: 'unknown', // 默认状态
         }));
@@ -371,25 +566,103 @@
     }
   };
 
+  const loadDailySummary = async () => {
+    try {
+      dailySummary.value = await schedulerApi.getDailySourceCollectionSummary();
+    } catch (error) {
+      console.error('加载每日采集摘要失败:', error);
+    }
+  };
+
+  const loadSourceHealth = async () => {
+    try {
+      sourceHealthSummaries.value = await crawlerApi.getSourceHealth();
+      sourceHealthSummaries.value.forEach(item => {
+        policyDrafts.value[item.name] = {
+          dailyEnabled: item.dailyEnabled,
+          dailyLimit: item.dailyLimit,
+          proxyMode: item.proxyMode,
+          requirePlayableUrls: item.requirePlayableUrls,
+          minimumPlayableUrls: item.minimumPlayableUrls,
+        };
+      });
+    } catch (error) {
+      console.error('加载来源健康摘要失败:', error);
+    }
+  };
+
+  const getSourceHealth = (targetName: string) => {
+    return sourceHealthSummaries.value.find(item => item.name === targetName);
+  };
+
+  const getPolicyDraft = (targetName: string) => {
+    return (
+      policyDrafts.value[targetName] || {
+        dailyEnabled: true,
+        dailyLimit: 8,
+        proxyMode: 'direct',
+        requirePlayableUrls: true,
+        minimumPlayableUrls: 1,
+      }
+    );
+  };
+
+  const saveSourcePolicy = async (targetName: string) => {
+    try {
+      savingPolicyFor.value = targetName;
+      await crawlerApi.updateSourcePolicy(targetName, getPolicyDraft(targetName));
+      await loadSourceHealth();
+    } catch (error) {
+      console.error('保存来源策略失败:', error);
+    } finally {
+      savingPolicyFor.value = '';
+    }
+  };
+
   // 刷新爬虫目标
   const refreshTargets = async () => {
     refreshing.value = true;
     await loadCrawlerTargets();
+    await loadDailySummary();
+    await loadSourceHealth();
     refreshing.value = false;
   };
 
+  const collectPopularFromSource = async (targetName: string) => {
+    try {
+      collectingSource.value = targetName;
+      const response = await crawlerApi.collectPopularResources(targetName, 8);
+      sourceCollectionResult.value = response.data || null;
+      await loadSourceHealth();
+      await loadDailySummary();
+    } catch (error) {
+      console.error('按来源采集失败:', error);
+    } finally {
+      collectingSource.value = '';
+    }
+  };
+
+  const runDailyCollection = async () => {
+    try {
+      dailyRunning.value = true;
+      dailySummary.value = await schedulerApi.runDailySourceCollection();
+    } catch (error) {
+      console.error('手动触发每日采集失败:', error);
+    } finally {
+      dailyRunning.value = false;
+    }
+  };
+
   // 测试连接
-  const testConnection = async targetName => {
+  const testConnection = async (targetName: string) => {
     try {
       testingTarget.value = targetName;
-      const response = await authStore.api.get(
-        `/crawler/test-connection?targetName=${encodeURIComponent(targetName)}`,
-      );
+      const response = await crawlerApi.testConnection(targetName);
 
       // 更新目标状态
       const targetIndex = crawlerTargets.value.findIndex(t => t.name === targetName);
       if (targetIndex !== -1) {
-        crawlerTargets.value[targetIndex].status = response.data.success ? 'online' : 'offline';
+        crawlerTargets.value[targetIndex].status = response.success ? 'online' : 'offline';
       }
     } catch (error) {
       console.error('测试连接失败:', error);
@@ -403,8 +676,8 @@
     }
   };
 
-  // 从目标爬取资源
-  const crawlFromTarget = targetName => {
+  // 从目标快速填充到表单
+  const crawlFromTarget = (targetName: string) => {
     quickCrawlForm.value.targetName = targetName;
   };
 
@@ -413,21 +686,22 @@
     try {
       quickCrawling.value = true;
 
-      const endpoint = quickCrawlForm.value.saveToDatabase
-        ? '/crawler/crawl-and-save'
-        : '/crawler/crawl';
+      const response = quickCrawlForm.value.saveToDatabase
+        ? await crawlerApi.crawlAndSave({
+            url: quickCrawlForm.value.url,
+            targetName: quickCrawlForm.value.targetName,
+          })
+        : await crawlerApi.crawl({
+            url: quickCrawlForm.value.url,
+            targetName: quickCrawlForm.value.targetName,
+          });
 
-      const response = await authStore.api.post(endpoint, {
-        url: quickCrawlForm.value.url,
-        targetName: quickCrawlForm.value.targetName,
-      });
-
-      crawlResult.value = response.data;
-    } catch (error) {
+      crawlResult.value = response;
+    } catch (error: unknown) {
       console.error('快速爬取失败:', error);
       crawlResult.value = {
         success: false,
-        message: error.response?.data?.message || '爬取失败',
+        message: error instanceof Error ? error.message : '爬取失败',
       };
     } finally {
       quickCrawling.value = false;
@@ -445,21 +719,17 @@
         .map(url => url.trim())
         .filter(url => url.length > 0);
 
-      const endpoint = batchCrawlForm.value.saveToDatabase
-        ? '/crawler/batch-crawl'
-        : '/crawler/batch-crawl';
-
-      const response = await authStore.api.post(endpoint, {
+      const response = await crawlerApi.batchCrawl({
         targetName: batchCrawlForm.value.targetName,
-        urls: urls,
+        urls,
       });
 
-      batchCrawlResult.value = response.data;
-    } catch (error) {
+      batchCrawlResult.value = response;
+    } catch (error: unknown) {
       console.error('批量爬取失败:', error);
       batchCrawlResult.value = {
         success: false,
-        message: error.response?.data?.message || '批量爬取失败',
+        message: error instanceof Error ? error.message : '批量爬取失败',
       };
     } finally {
       batchCrawling.value = false;
@@ -478,6 +748,8 @@
 
   // 组件挂载时加载数据
   onMounted(() => {
-    loadCrawlerTargets();
+    void loadCrawlerTargets();
+    void loadDailySummary();
+    void loadSourceHealth();
   });
 </script>

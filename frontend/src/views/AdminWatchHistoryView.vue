@@ -1,586 +1,221 @@
 <template>
-  <div class="admin-watch-history">
-    <div class="admin-header">
-      <h1>观看历史管理</h1>
-      <p>管理用户的观看记录和历史数据</p>
-    </div>
-
-    <div class="admin-content">
-      <!-- 搜索和过滤 -->
-      <div class="filter-section">
-        <div class="search-box">
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="搜索用户或媒体标题..."
-            @input="handleSearch"
-          />
-          <button @click="handleSearch">搜索</button>
-        </div>
-
-        <div class="filter-controls">
-          <select v-model="selectedUser" @change="handleFilter">
-            <option value="">所有用户</option>
-            <option v-for="user in users" :key="user.id" :value="user.id">
-              {{ user.username }}
-            </option>
-          </select>
-
-          <select v-model="sortBy" @change="handleSort">
-            <option value="createdAt">按观看时间</option>
-            <option value="updatedAt">按更新时间</option>
-            <option value="progress">按观看进度</option>
-          </select>
-        </div>
+  <div class="space-y-6">
+    <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">观看历史管理</h1>
+        <p class="mt-2 text-gray-600">查看用户观看进度、播放次数和最近活动</p>
       </div>
-
-      <!-- 统计信息 -->
-      <div class="stats-section">
-        <div class="stat-card">
-          <h3>总观看记录</h3>
-          <div class="stat-value">{{ totalRecords }}</div>
-        </div>
-        <div class="stat-card">
-          <h3>活跃用户</h3>
-          <div class="stat-value">{{ activeUsers }}</div>
-        </div>
-        <div class="stat-card">
-          <h3>今日观看</h3>
-          <div class="stat-value">{{ todayViews }}</div>
-        </div>
-      </div>
-
-      <!-- 观看历史列表 -->
-      <div class="history-list">
-        <div v-if="loading" class="loading">
-          <div class="loading-spinner"></div>
-          <p>加载中...</p>
-        </div>
-
-        <div v-else-if="watchHistory.length === 0" class="empty-state">
-          <p>暂无观看历史记录</p>
-        </div>
-
-        <div v-else class="history-table">
-          <div class="table-header">
-            <div class="col-user">用户</div>
-            <div class="col-media">媒体内容</div>
-            <div class="col-progress">观看进度</div>
-            <div class="col-duration">观看时长</div>
-            <div class="col-time">观看时间</div>
-            <div class="col-actions">操作</div>
-          </div>
-
-          <div v-for="record in watchHistory" :key="record.id" class="table-row">
-            <div class="col-user">
-              <div class="user-info">
-                <img :src="record.user?.avatar || '/default-avatar.png'" alt="用户头像" />
-                <div class="user-details">
-                  <div class="username">{{ record.user?.username }}</div>
-                  <div class="user-email">{{ record.user?.email }}</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-media">
-              <div class="media-info">
-                <img :src="record.mediaResource?.poster || '/default-poster.png'" alt="媒体海报" />
-                <div class="media-details">
-                  <div class="media-title">{{ record.mediaResource?.title }}</div>
-                  <div class="media-type">{{ record.mediaResource?.type }}</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-progress">
-              <div class="progress-bar">
-                <div
-                  class="progress-fill"
-                  :style="{ width: getProgressPercentage(record) + '%' }"
-                ></div>
-              </div>
-              <div class="progress-text">{{ getProgressPercentage(record) }}%</div>
-            </div>
-
-            <div class="col-duration">
-              {{ formatDuration(record.watchDuration) }}
-            </div>
-
-            <div class="col-time">
-              <div class="watch-time">{{ formatDate(record.updatedAt) }}</div>
-              <div class="watch-date">{{ formatDateTime(record.createdAt) }}</div>
-            </div>
-
-            <div class="col-actions">
-              <button class="btn-details" @click="viewDetails(record)">查看详情</button>
-              <button class="btn-delete" @click="deleteRecord(record.id)">删除</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 分页 -->
-      <div class="pagination">
-        <button :disabled="currentPage === 1" class="btn-prev" @click="prevPage">上一页</button>
-        <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
-        <button :disabled="currentPage === totalPages" class="btn-next" @click="nextPage">
-          下一页
+      <div class="flex gap-3">
+        <select
+          v-model="selectedUserId"
+          class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          @change="loadWatchHistory(1)"
+        >
+          <option value="">全部用户</option>
+          <option v-for="item in users" :key="item.id" :value="String(item.id)">
+            {{ item.nickname || item.username }}
+          </option>
+        </select>
+        <button
+          class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          @click="loadWatchHistory(1)"
+        >
+          刷新
         </button>
       </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div class="rounded-lg bg-white p-4 shadow">
+        <div class="text-sm text-gray-500">总记录数</div>
+        <div class="mt-2 text-2xl font-semibold text-gray-900">{{ total }}</div>
+      </div>
+      <div class="rounded-lg bg-white p-4 shadow">
+        <div class="text-sm text-gray-500">已看完</div>
+        <div class="mt-2 text-2xl font-semibold text-gray-900">{{ completedCount }}</div>
+      </div>
+      <div class="rounded-lg bg-white p-4 shadow">
+        <div class="text-sm text-gray-500">继续观看</div>
+        <div class="mt-2 text-2xl font-semibold text-gray-900">{{ inProgressCount }}</div>
+      </div>
+    </div>
+
+    <div class="rounded-lg bg-white shadow">
+      <div v-if="loading" class="p-8 text-center text-gray-500">加载中...</div>
+      <div v-else-if="error" class="p-8 text-center text-red-600">{{ error }}</div>
+      <template v-else>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
+                  用户
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
+                  媒体
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
+                  进度
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
+                  观看时长
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
+                  播放次数
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
+                  最近更新
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 bg-white">
+              <tr v-for="item in historyItems" :key="item.id">
+                <td class="px-4 py-3 text-sm text-gray-900">
+                  <div class="font-medium">{{ item.user?.username || `用户#${item.userId}` }}</div>
+                  <div class="text-xs text-gray-500">{{ item.user?.email || '—' }}</div>
+                </td>
+                <td class="px-4 py-3 text-sm text-gray-900">
+                  <div class="font-medium">
+                    {{ item.mediaResource?.title || `资源#${item.mediaResourceId}` }}
+                  </div>
+                  <div class="text-xs text-gray-500">{{ item.mediaResource?.type || '—' }}</div>
+                </td>
+                <td class="px-4 py-3 text-sm text-gray-600">
+                  <div class="h-2 w-28 overflow-hidden rounded-full bg-gray-200">
+                    <div
+                      class="h-full bg-green-500"
+                      :style="{ width: `${getProgress(item)}%` }"
+                    ></div>
+                  </div>
+                  <div class="mt-1 text-xs text-gray-500">{{ getProgress(item) }}%</div>
+                </td>
+                <td class="px-4 py-3 text-sm text-gray-600">
+                  {{ formatDuration(item.watchDuration) }}
+                </td>
+                <td class="px-4 py-3 text-sm text-gray-600">{{ item.playCount }}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(item.updatedAt) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div
+          class="flex items-center justify-between border-t border-gray-200 px-4 py-3 text-sm text-gray-600"
+        >
+          <span>共 {{ total }} 条</span>
+          <div class="flex items-center gap-3">
+            <button
+              :disabled="page <= 1"
+              class="rounded border px-3 py-1 disabled:opacity-50"
+              @click="loadWatchHistory(page - 1)"
+            >
+              上一页
+            </button>
+            <span>{{ page }} / {{ totalPages }}</span>
+            <button
+              :disabled="page >= totalPages"
+              class="rounded border px-3 py-1 disabled:opacity-50"
+              @click="loadWatchHistory(page + 1)"
+            >
+              下一页
+            </button>
+          </div>
+        </div>
+      </template>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref, onMounted, computed } from 'vue';
-  import { useRouter } from 'vue-router';
-  import type { WatchHistory } from '@/types/history';
+  import { computed, onMounted, ref } from 'vue';
+  import { adminApi } from '@/api/admin';
+  import type { AdminWatchHistoryItem } from '@/api/admin';
   import type { User } from '@/types/user';
 
-  const router = useRouter();
-
-  // 响应式数据
-  const loading = ref(true);
-  const watchHistory = ref<WatchHistory[]>([]);
+  const historyItems = ref<AdminWatchHistoryItem[]>([]);
   const users = ref<User[]>([]);
-  const searchQuery = ref('');
-  const selectedUser = ref('');
-  const sortBy = ref('createdAt');
-  const currentPage = ref(1);
+  const loading = ref(false);
+  const error = ref<string | null>(null);
+  const selectedUserId = ref('');
+  const page = ref(1);
   const totalPages = ref(1);
-  const totalRecords = ref(0);
-  const activeUsers = ref(0);
-  const todayViews = ref(0);
+  const total = ref(0);
 
-  // 计算属性
-  const getProgressPercentage = (record: WatchHistory) => {
-    if (!record.duration) return 0;
-    return Math.round((record.currentTime / record.duration) * 100);
-  };
+  const completedCount = computed(() => historyItems.value.filter(item => item.isCompleted).length);
+  const inProgressCount = computed(
+    () => historyItems.value.filter(item => !item.isCompleted).length,
+  );
 
-  const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const formatDate = (dateString: string | Date) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('zh-CN');
-  };
-
-  const formatDateTime = (dateString: string | Date) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('zh-CN');
-  };
-
-  // 方法
-  const fetchWatchHistory = async () => {
+  const loadUsers = async () => {
     try {
-      loading.value = true;
-      // 这里应该调用实际的API
-      // const response = await api.get('/admin/watch-history', {
-      //   params: {
-      //     page: currentPage.value,
-      //     search: searchQuery.value,
-      //     userId: selectedUser.value,
-      //     sortBy: sortBy.value
-      //   }
-      // })
-      // watchHistory.value = response.data.records
-      // totalPages.value = response.data.totalPages
-      // totalRecords.value = response.data.total
+      const response = await adminApi.getUsers({ page: 1, limit: 100 });
+      users.value = response.data;
+    } catch (err) {
+      console.error('加载用户列表失败:', err);
+    }
+  };
 
-      // 模拟数据
-      watchHistory.value = [];
-      totalPages.value = 1;
-      totalRecords.value = 0;
-      activeUsers.value = 0;
-      todayViews.value = 0;
+  const loadWatchHistory = async (nextPage = page.value) => {
+    loading.value = true;
+    error.value = null;
 
-      setTimeout(() => {
-        loading.value = false;
-      }, 1000);
-    } catch (error) {
-      console.error('获取观看历史失败:', error);
+    try {
+      const response = await adminApi.getWatchHistory({
+        page: nextPage,
+        limit: 10,
+        userId: selectedUserId.value ? Number(selectedUserId.value) : undefined,
+      });
+
+      historyItems.value = response.data;
+      page.value = response.page;
+      total.value = response.total;
+      totalPages.value = Math.max(response.totalPages, 1);
+    } catch (err: unknown) {
+      error.value = err instanceof Error ? err.message : '加载观看历史失败';
+    } finally {
       loading.value = false;
     }
   };
 
-  const fetchUsers = async () => {
-    try {
-      // 这里应该调用实际的API
-      // const response = await api.get('/admin/users')
-      // users.value = response.data
-
-      // 模拟数据
-      users.value = [];
-    } catch (error) {
-      console.error('获取用户列表失败:', error);
-    }
+  const getProgress = (item: AdminWatchHistoryItem) => {
+    return Math.round(item.progress?.percentage || 0);
   };
 
-  const handleSearch = () => {
-    currentPage.value = 1;
-    fetchWatchHistory();
+  const formatDate = (value?: string) => {
+    if (!value) return '—';
+    return new Date(value).toLocaleString('zh-CN');
   };
 
-  const handleFilter = () => {
-    currentPage.value = 1;
-    fetchWatchHistory();
-  };
+  const formatDuration = (seconds: number) => {
+    const totalSeconds = Math.max(seconds || 0, 0);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const remainSeconds = totalSeconds % 60;
 
-  const handleSort = () => {
-    currentPage.value = 1;
-    fetchWatchHistory();
-  };
-
-  const prevPage = () => {
-    if (currentPage.value > 1) {
-      currentPage.value--;
-      fetchWatchHistory();
-    }
-  };
-
-  const nextPage = () => {
-    if (currentPage.value < totalPages.value) {
-      currentPage.value++;
-      fetchWatchHistory();
-    }
-  };
-
-  const viewDetails = (record: WatchHistory) => {
-    // 查看观看历史详情
-    console.log('查看详情:', record);
-  };
-
-  const deleteRecord = async (id: number) => {
-    if (!confirm('确定要删除这条观看记录吗？')) {
-      return;
+    if (hours > 0) {
+      return `${hours}时 ${minutes}分 ${remainSeconds}秒`;
     }
 
-    try {
-      // 这里应该调用实际的API
-      // await api.delete(`/admin/watch-history/${id}`)
-
-      // 刷新列表
-      fetchWatchHistory();
-    } catch (error) {
-      console.error('删除观看记录失败:', error);
+    if (minutes > 0) {
+      return `${minutes}分 ${remainSeconds}秒`;
     }
+
+    return `${remainSeconds}秒`;
   };
 
-  // 生命周期
   onMounted(() => {
-    fetchWatchHistory();
-    fetchUsers();
+    void Promise.all([loadUsers(), loadWatchHistory()]);
   });
 </script>
-
-<style scoped>
-  .admin-watch-history {
-    padding: 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
-  .admin-header {
-    margin-bottom: 2rem;
-  }
-
-  .admin-header h1 {
-    font-size: 2rem;
-    color: #333;
-    margin-bottom: 0.5rem;
-  }
-
-  .admin-header p {
-    color: #666;
-  }
-
-  .admin-content {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    padding: 1.5rem;
-  }
-
-  /* 搜索和过滤 */
-  .filter-section {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    gap: 1rem;
-  }
-
-  .search-box {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .search-box input {
-    padding: 0.5rem 1rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    width: 300px;
-  }
-
-  .search-box button {
-    padding: 0.5rem 1rem;
-    background: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-
-  .filter-controls {
-    display: flex;
-    gap: 1rem;
-  }
-
-  .filter-controls select {
-    padding: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-  }
-
-  /* 统计信息 */
-  .stats-section {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
-  }
-
-  .stat-card {
-    background: #f8f9fa;
-    padding: 1.5rem;
-    border-radius: 8px;
-    text-align: center;
-  }
-
-  .stat-card h3 {
-    margin: 0 0 1rem 0;
-    color: #666;
-    font-size: 0.9rem;
-  }
-
-  .stat-value {
-    font-size: 2rem;
-    font-weight: bold;
-    color: #007bff;
-  }
-
-  /* 观看历史列表 */
-  .history-list {
-    margin-bottom: 2rem;
-  }
-
-  .loading {
-    text-align: center;
-    padding: 2rem;
-  }
-
-  .loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #007bff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 1rem;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-
-  .empty-state {
-    text-align: center;
-    padding: 2rem;
-    color: #666;
-  }
-
-  .history-table {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    overflow: hidden;
-  }
-
-  .table-header {
-    display: grid;
-    grid-template-columns: 1fr 2fr 1fr 1fr 1fr 1fr;
-    background: #f8f9fa;
-    padding: 1rem;
-    font-weight: bold;
-    border-bottom: 1px solid #ddd;
-  }
-
-  .table-row {
-    display: grid;
-    grid-template-columns: 1fr 2fr 1fr 1fr 1fr 1fr;
-    padding: 1rem;
-    border-bottom: 1px solid #eee;
-    align-items: center;
-  }
-
-  .table-row:last-child {
-    border-bottom: none;
-  }
-
-  /* 表格列样式 */
-  .user-info {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .user-info img {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    object-fit: cover;
-  }
-
-  .user-details {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .username {
-    font-weight: bold;
-    color: #333;
-  }
-
-  .user-email {
-    font-size: 0.8rem;
-    color: #666;
-  }
-
-  .media-info {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .media-info img {
-    width: 48px;
-    height: 72px;
-    border-radius: 4px;
-    object-fit: cover;
-  }
-
-  .media-details {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .media-title {
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 0.25rem;
-  }
-
-  .media-type {
-    font-size: 0.8rem;
-    color: #666;
-    background: #e9ecef;
-    padding: 0.125rem 0.5rem;
-    border-radius: 4px;
-    width: fit-content;
-  }
-
-  .progress-bar {
-    width: 100%;
-    height: 8px;
-    background: #e9ecef;
-    border-radius: 4px;
-    overflow: hidden;
-    margin-bottom: 0.25rem;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background: #28a745;
-    transition: width 0.3s ease;
-  }
-
-  .progress-text {
-    font-size: 0.8rem;
-    color: #666;
-  }
-
-  .watch-time {
-    font-weight: bold;
-    color: #333;
-  }
-
-  .watch-date {
-    font-size: 0.8rem;
-    color: #666;
-  }
-
-  .col-actions {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .btn-details,
-  .btn-delete {
-    padding: 0.25rem 0.5rem;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.8rem;
-  }
-
-  .btn-details {
-    background: #007bff;
-    color: white;
-  }
-
-  .btn-delete {
-    background: #dc3545;
-    color: white;
-  }
-
-  /* 分页 */
-  .pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  .btn-prev,
-  .btn-next {
-    padding: 0.5rem 1rem;
-    border: 1px solid #ddd;
-    background: white;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-
-  .btn-prev:disabled,
-  .btn-next:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .page-info {
-    font-weight: bold;
-    color: #666;
-  }
-</style>

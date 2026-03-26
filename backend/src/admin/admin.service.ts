@@ -5,6 +5,9 @@ import { AdminRole } from '../entities/admin-role.entity';
 import { AdminPermission } from '../entities/admin-permission.entity';
 import { AdminLog } from '../entities/admin-log.entity';
 import { User } from '../entities/user.entity';
+import { MediaResource } from '../entities/media-resource.entity';
+import { PlaySource } from '../entities/play-source.entity';
+import { WatchHistory } from '../entities/watch-history.entity';
 
 /**
  * 后台管理服务
@@ -23,7 +26,133 @@ export class AdminService {
     private adminLogRepository: Repository<AdminLog>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(MediaResource)
+    private mediaResourceRepository: Repository<MediaResource>,
+    @InjectRepository(PlaySource)
+    private playSourceRepository: Repository<PlaySource>,
+    @InjectRepository(WatchHistory)
+    private watchHistoryRepository: Repository<WatchHistory>,
   ) {}
+
+  async getUsers(page: number = 1, limit: number = 20, search?: string) {
+    const queryBuilder = this.userRepository
+      .createQueryBuilder('user')
+      .select([
+        'user.id',
+        'user.username',
+        'user.email',
+        'user.phone',
+        'user.nickname',
+        'user.role',
+        'user.isActive',
+        'user.avatar',
+        'user.lastLoginAt',
+        'user.createdAt',
+        'user.updatedAt',
+      ]);
+
+    if (search?.trim()) {
+      queryBuilder.andWhere(
+        '(user.username LIKE :search OR user.email LIKE :search OR user.nickname LIKE :search)',
+        { search: `%${search.trim()}%` },
+      );
+    }
+
+    const total = await queryBuilder.getCount();
+    const data = await queryBuilder
+      .orderBy('user.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async getMedia(page: number = 1, limit: number = 20, type?: string, search?: string) {
+    const queryBuilder = this.mediaResourceRepository.createQueryBuilder('media');
+
+    if (type) {
+      queryBuilder.andWhere('media.type = :type', { type });
+    }
+
+    if (search?.trim()) {
+      queryBuilder.andWhere('(media.title LIKE :search OR media.description LIKE :search)', {
+        search: `%${search.trim()}%`,
+      });
+    }
+
+    const total = await queryBuilder.getCount();
+    const data = await queryBuilder
+      .orderBy('media.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async getPlaySources(page: number = 1, limit: number = 20, type?: string) {
+    const queryBuilder = this.playSourceRepository
+      .createQueryBuilder('playSource')
+      .leftJoinAndSelect('playSource.mediaResource', 'mediaResource');
+
+    if (type) {
+      queryBuilder.andWhere('playSource.type = :type', { type });
+    }
+
+    const total = await queryBuilder.getCount();
+    const data = await queryBuilder
+      .orderBy('playSource.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async getWatchHistory(page: number = 1, limit: number = 20, userId?: number) {
+    const queryBuilder = this.watchHistoryRepository
+      .createQueryBuilder('watchHistory')
+      .leftJoinAndSelect('watchHistory.user', 'user')
+      .leftJoinAndSelect('watchHistory.mediaResource', 'mediaResource');
+
+    if (userId) {
+      queryBuilder.andWhere('watchHistory.userId = :userId', { userId });
+    }
+
+    const total = await queryBuilder.getCount();
+    const data = await queryBuilder
+      .orderBy('watchHistory.updatedAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
 
   /**
    * 记录管理操作日志

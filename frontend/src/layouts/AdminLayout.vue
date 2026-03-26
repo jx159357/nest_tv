@@ -56,6 +56,8 @@
     { path: '/admin/users', title: '用户管理', icon: '👥' },
     { path: '/admin/media', title: '媒体管理', icon: '🎬' },
     { path: '/admin/play-sources', title: '播放源管理', icon: '🔗' },
+    { path: '/admin/watch-history', title: '观看历史', icon: '📺' },
+    { path: '/admin/logs', title: '系统日志', icon: '🧾' },
     { path: '/admin/crawler', title: '数据采集', icon: '🕷️' },
   ];
 
