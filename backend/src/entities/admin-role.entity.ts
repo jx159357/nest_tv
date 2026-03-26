@@ -5,12 +5,8 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToMany,
-  JoinTable,
-  ManyToOne,
 } from 'typeorm';
-import { AdminPermission } from './admin-permission.entity';
 import { AdminLog } from './admin-log.entity';
-import { User } from './user.entity';
 
 /**
  * 后台管理员角色实体类

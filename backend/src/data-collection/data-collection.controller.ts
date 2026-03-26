@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, Query, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -16,6 +16,10 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @ApiBearerAuth()
 export class DataCollectionController {
   constructor(private readonly dataCollectionService: DataCollectionService) {}
+
+  private getErrorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : '未知错误';
+  }
 
   /**
    * 获取所有可用的爬虫源
@@ -51,7 +55,7 @@ export class DataCollectionController {
   @ApiResponse({ status: 200, description: '爬取成功' })
   @ApiResponse({ status: 400, description: '参数错误' })
   async crawlUrl(@Body() body: { sourceName: string; url: string; userId?: number }) {
-    const { sourceName, url, userId } = body;
+    const { sourceName, url } = body;
 
     try {
       const result = await this.dataCollectionService.crawlAndSave(sourceName, url);
@@ -60,10 +64,10 @@ export class DataCollectionController {
         data: result,
         message: '爬取成功',
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         success: false,
-        message: error.message,
+        message: this.getErrorMessage(error),
       };
     }
   }
@@ -76,7 +80,7 @@ export class DataCollectionController {
   @ApiResponse({ status: 200, description: '批量爬取成功' })
   @ApiResponse({ status: 400, description: '参数错误' })
   async batchCrawl(@Body() body: { sourceName: string; urls: string[]; userId?: number }) {
-    const { sourceName, urls, userId } = body;
+    const { sourceName, urls } = body;
 
     try {
       const results = await this.dataCollectionService.crawlBatch(sourceName, urls);
@@ -85,10 +89,10 @@ export class DataCollectionController {
         data: results,
         message: `批量爬取完成: ${results.length} 个URL`,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         success: false,
-        message: error.message,
+        message: this.getErrorMessage(error),
       };
     }
   }
@@ -102,21 +106,18 @@ export class DataCollectionController {
   @ApiResponse({ status: 404, description: '爬虫源不存在' })
   @ApiParam({ name: 'sourceName', description: '爬虫源名称' })
   @ApiQuery({ name: 'limit', description: '限制数量', required: false })
-  async getPopularUrls(
-    @Param('sourceName') sourceName: string,
-    @Query('limit') limit: number = 20,
-  ) {
+  getPopularUrls(@Param('sourceName') sourceName: string, @Query('limit') limit: number = 20) {
     try {
-      const urls = await this.dataCollectionService.getPopularUrls(sourceName, limit);
+      const urls = this.dataCollectionService.getPopularUrls(sourceName, limit);
       return {
         success: true,
         data: urls,
         message: `获取到 ${urls.length} 个热门URL`,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         success: false,
-        message: error.message,
+        message: this.getErrorMessage(error),
       };
     }
   }
@@ -144,8 +145,8 @@ export class DataCollectionController {
   @Get('statistics')
   @ApiOperation({ summary: '获取爬虫统计信息' })
   @ApiResponse({ status: 200, description: '获取成功' })
-  async getStatistics() {
-    const statistics = await this.dataCollectionService.getStatistics();
+  getStatistics() {
+    const statistics = this.dataCollectionService.getStatistics();
     return {
       success: true,
       data: statistics,

@@ -117,7 +117,7 @@ export class AdvancedCacheManager {
     const startTime = Date.now();
 
     try {
-      let cached = await this.cacheManager.get<any>(key);
+      let cached: unknown = await this.cacheManager.get<unknown>(key);
 
       if (cached === null) {
         this.updateStats(key, false, false, false);
@@ -137,7 +137,7 @@ export class AdvancedCacheManager {
             cached = decompressed;
             isCompressed = true;
           }
-        } catch (error) {
+        } catch {
           this.logger.debug(`解压缩失败: ${key}, 可能数据未被压缩`);
         }
       }
@@ -145,9 +145,9 @@ export class AdvancedCacheManager {
       // 尝试反序列化
       if (config?.serialize && typeof cached === 'string') {
         try {
-          cached = JSON.parse(cached);
+          cached = JSON.parse(cached) as unknown;
           isSerialized = true;
-        } catch (error) {
+        } catch {
           this.logger.debug(`反序列化失败: ${key}, 可能数据未被序列化`);
         }
       }
@@ -297,12 +297,12 @@ export class AdvancedCacheManager {
   /**
    * 按模式删除缓存
    */
-  async delPattern(pattern: string): Promise<void> {
+  delPattern(pattern: string): void {
     try {
       // 注意：这不是所有缓存存储都支持的操作
       // 在生产环境中，可能需要实现特定的清理逻辑
       this.logger.warn(`按模式删除缓存: ${pattern} - 此操作可能不被支持`);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(`按模式删除缓存失败: ${pattern}`, error);
     }
   }
@@ -368,10 +368,10 @@ export class AdvancedCacheManager {
   /**
    * 预热缓存
    */
-  async warmUp(
+  async warmUp<T>(
     strategy: CacheKeyStrategy,
-    paramsList: Record<string, any>[],
-    factory: (params: Record<string, any>) => Promise<any>,
+    paramsList: Record<string, unknown>[],
+    factory: (params: Record<string, unknown>) => Promise<T>,
   ): Promise<void> {
     this.logger.log(`开始预热缓存: ${strategy}, 参数数量: ${paramsList.length}`);
 
@@ -383,7 +383,7 @@ export class AdvancedCacheManager {
         try {
           const data = await factory(params);
           await this.set(key, data, strategy);
-        } catch (error) {
+        } catch (error: unknown) {
           this.logger.error(`预热缓存失败: ${key}`, error);
         }
       }
@@ -410,10 +410,10 @@ export class AdvancedCacheManager {
       }
 
       return { status: 'unhealthy', message: '缓存数据不匹配' };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         status: 'unhealthy',
-        message: `缓存健康检查失败: ${error.message}`,
+        message: `缓存健康检查失败: ${error instanceof Error ? error.message : '未知错误'}`,
       };
     }
   }
@@ -475,8 +475,8 @@ export class AdvancedCacheManager {
             resolve(decompressed.toString());
           }
         });
-      } catch (error) {
-        reject(error);
+      } catch (error: unknown) {
+        reject(error instanceof Error ? error : new Error(String(error)));
       }
     });
   }

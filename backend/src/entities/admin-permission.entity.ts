@@ -3,7 +3,6 @@ import {
   Column,
   PrimaryGeneratedColumn,
   ManyToMany,
-  JoinTable,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';

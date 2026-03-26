@@ -1,9 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Like } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Danmaku } from '../entities/danmaku.entity';
-import { MediaResource } from '../../entities/media-resource.entity';
-import { User } from '../../entities/user.entity';
 
 export interface CreateDanmakuDto {
   text: string;
@@ -11,6 +9,10 @@ export interface CreateDanmakuDto {
   type?: 'scroll' | 'top' | 'bottom';
   priority?: number;
 }
+
+export type DanmakuUpdateDto = Partial<CreateDanmakuDto> & {
+  isHighlighted?: boolean;
+};
 
 export interface DanmakuQueryDto {
   videoId?: string;
@@ -46,6 +48,47 @@ export interface DanmakuFilterDto {
   };
 }
 
+interface DanmakuContentAnalysis {
+  containsSensitive: boolean;
+  containsSpam: boolean;
+  containsEmojis: boolean;
+  keywords: string[];
+}
+
+interface DanmakuStatsRaw {
+  uniqueUsers?: string;
+  totalDanmaku?: string;
+  scrollDanmaku?: string;
+  topDanmaku?: string;
+  bottomDanmaku?: string;
+  highlightedDanmaku?: string;
+  normalDanmaku?: string;
+}
+
+export interface DanmakuStats {
+  uniqueUsers: number;
+  totalDanmaku: number;
+  scrollDanmaku: number;
+  topDanmaku: number;
+  bottomDanmaku: number;
+  highlightedDanmaku: number;
+  normalDanmaku: number;
+}
+
+interface ImportedDanmakuItem {
+  id?: string;
+  text?: string;
+  color?: string;
+  type?: 'scroll' | 'top' | 'bottom';
+  priority?: number;
+  isHighlighted?: boolean;
+  timestamp?: number;
+  userAgent?: string;
+  userId?: number;
+  mediaResourceId?: number;
+  videoId?: string;
+}
+
 @Injectable()
 export class DanmakuService {
   private readonly logger = new Logger(DanmakuService.name);
@@ -53,7 +96,6 @@ export class DanmakuService {
   constructor(
     @InjectRepository(Danmaku)
     private readonly danmakuRepository: Repository<Danmaku>,
-    private readonly dataSource: DataSource,
   ) {}
 
   // 创建弹幕
@@ -195,7 +237,7 @@ export class DanmakuService {
   }
 
   // 更新弹幕
-  async update(id: number, updateDto: Partial<CreateDanmakuDto>): Promise<Danmaku | null> {
+  async update(id: number, updateDto: DanmakuUpdateDto): Promise<Danmaku | null> {
     const danmaku = await this.findById(id);
     if (!danmaku) {
       this.logger.warn(`弹幕未找到: ${id}`);
@@ -293,7 +335,7 @@ export class DanmakuService {
   }
 
   // 统计弹幕数量
-  async getDanmakuStats(videoId?: string): Promise<any> {
+  async getDanmakuStats(videoId?: string): Promise<DanmakuStats> {
     const queryBuilder = this.danmakuRepository
       .createQueryBuilder('danmaku')
       .select([
@@ -311,11 +353,21 @@ export class DanmakuService {
       queryBuilder.andWhere('videoId = :videoId', { videoId });
     }
 
-    return await queryBuilder.getRawOne();
+    const stats = await queryBuilder.getRawOne<DanmakuStatsRaw>();
+
+    return {
+      uniqueUsers: this.parseCount(stats?.uniqueUsers),
+      totalDanmaku: this.parseCount(stats?.totalDanmaku),
+      scrollDanmaku: this.parseCount(stats?.scrollDanmaku),
+      topDanmaku: this.parseCount(stats?.topDanmaku),
+      bottomDanmaku: this.parseCount(stats?.bottomDanmaku),
+      highlightedDanmaku: this.parseCount(stats?.highlightedDanmaku),
+      normalDanmaku: this.parseCount(stats?.normalDanmaku),
+    };
   }
 
   // 应用查询过滤器
-  private applyFilters(queryBuilder: any, filters: DanmakuFilterDto) {
+  private applyFilters(queryBuilder: SelectQueryBuilder<Danmaku>, filters: DanmakuFilterDto): void {
     if (filters.text) {
       queryBuilder.andWhere('danmaku.text LIKE :text', { text: `%${filters.text}%` });
     }
@@ -393,7 +445,10 @@ export class DanmakuService {
   }
 
   // 应用查询参数
-  private applyQueryParams(queryBuilder: any, queryDto: DanmakuQueryDto) {
+  private applyQueryParams(
+    queryBuilder: SelectQueryBuilder<Danmaku>,
+    queryDto: DanmakuQueryDto,
+  ): void {
     const { limit = 50, offset = 0, sort = 'DESC', sortBy = 'createdAt' } = queryDto;
 
     queryBuilder.orderBy(`danmaku.${sortBy}`, sort).skip(offset).take(limit);
@@ -422,12 +477,12 @@ export class DanmakuService {
   }
 
   // 内容分析（用于自动过滤）
-  private analyzeContent(text: string) {
-    const filters = {
+  private analyzeContent(text: string): DanmakuContentAnalysis {
+    const filters: DanmakuContentAnalysis = {
       containsSensitive: false,
       containsSpam: false,
       containsEmojis: false,
-      keywords: [] as string[],
+      keywords: [],
     };
 
     // 敏感词检测（简单示例）
@@ -448,8 +503,7 @@ export class DanmakuService {
     filters.containsSpam = spamPatterns.some(pattern => pattern.test(text));
 
     // 表情符号检测
-    const emojiRegex =
-      /[\p{Emoji_Presentation}\p{Emoji}\u200D\uFE0F]|[\p{Emoji}\uFE0F\u200D\uFE0F]/gu;
+    const emojiRegex = /\p{Extended_Pictographic}/u;
     filters.containsEmojis = emojiRegex.test(text);
 
     // 关键词提取
@@ -460,7 +514,7 @@ export class DanmakuService {
   }
 
   // 导入弹幕数据
-  async importData(data: any[]): Promise<number> {
+  async importData(data: ImportedDanmakuItem[]): Promise<number> {
     let importedCount = 0;
     const batchSize = 100;
 
@@ -479,7 +533,7 @@ export class DanmakuService {
           timestamp: item.timestamp || Date.now(),
           userAgent: item.userAgent || 'imported',
         },
-        userId: item.userId || 1, // 默认用户
+        userId: item.userId || 1,
         mediaResourceId: item.mediaResourceId || 0,
         videoId: item.videoId || '',
       }));
@@ -490,5 +544,9 @@ export class DanmakuService {
 
     this.logger.log(`导入完成，共导入 ${importedCount} 条弹幕`);
     return importedCount;
+  }
+
+  private parseCount(value?: string): number {
+    return value ? parseInt(value, 10) : 0;
   }
 }

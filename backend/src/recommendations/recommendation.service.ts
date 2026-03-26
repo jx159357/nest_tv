@@ -34,10 +34,10 @@ export class RecommendationService {
       // 获取热门媒体资源
       const trendingMedia = await this.mediaResourceRepository.find({
         where: { isActive: true },
-        order: { 
+        order: {
           viewCount: 'DESC',
           rating: 'DESC',
-          createdAt: 'DESC'
+          createdAt: 'DESC',
         },
         take: limit,
       });
@@ -47,8 +47,8 @@ export class RecommendationService {
       this.logger.log(`缓存热门推荐: ${cacheKey}`);
 
       return trendingMedia;
-    } catch (error) {
-      this.logger.error(`获取热门推荐失败: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.error(`获取热门推荐失败: ${error instanceof Error ? error.message : '未知错误'}`);
       return [];
     }
   }
@@ -79,8 +79,8 @@ export class RecommendationService {
       this.logger.log(`缓存最新推荐: ${cacheKey}`);
 
       return latestMedia;
-    } catch (error) {
-      this.logger.error(`获取最新推荐失败: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.error(`获取最新推荐失败: ${error instanceof Error ? error.message : '未知错误'}`);
       return [];
     }
   }
@@ -101,7 +101,7 @@ export class RecommendationService {
 
       // 获取高分媒体资源
       const topRatedMedia = await this.mediaResourceRepository.find({
-        where: { 
+        where: {
           isActive: true,
           rating: 7.0,
         },
@@ -114,8 +114,8 @@ export class RecommendationService {
       this.logger.log(`缓存高分推荐: ${cacheKey}`);
 
       return topRatedMedia;
-    } catch (error) {
-      this.logger.error(`获取高分推荐失败: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.error(`获取高分推荐失败: ${error instanceof Error ? error.message : '未知错误'}`);
       return [];
     }
   }
@@ -127,8 +127,8 @@ export class RecommendationService {
     try {
       await this.cacheManager.clear();
       this.logger.log('清理推荐缓存完成');
-    } catch (error) {
-      this.logger.error(`清理推荐缓存失败: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.error(`清理推荐缓存失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   }
 }

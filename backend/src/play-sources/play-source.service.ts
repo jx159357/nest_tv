@@ -1,7 +1,7 @@
-import { Injectable, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { PlaySource, PlaySourceType, PlaySourceStatus } from '../entities/play-source.entity';
+import { PlaySource, PlaySourceStatus } from '../entities/play-source.entity';
 import { CreatePlaySourceDto } from './dtos/create-play-source.dto';
 import { UpdatePlaySourceDto } from './dtos/update-play-source.dto';
 import { PlaySourceQueryDto } from './dtos/play-source-query.dto';

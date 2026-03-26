@@ -1,16 +1,21 @@
-import { Injectable, NestMiddleware, ExecutionContext, HttpStatus } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { Injectable, NestMiddleware, HttpStatus } from '@nestjs/common';
+import { NextFunction, Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
+
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id?: number;
+  };
+}
 
 @Injectable()
 export class RateLimitMiddleware implements NestMiddleware {
   private readonly requestCounts = new Map<string, { count: number; resetTime: number }>();
 
-  constructor(private configService: ConfigService) {}
+  constructor(private readonly configService: ConfigService) {}
 
-  async use(context: ExecutionContext, next: () => Promise<void>) {
-    const request = context.switchToHttp().getRequest();
-    const response = context.switchToHttp().getResponse();
+  use(request: AuthenticatedRequest, response: Response, next: NextFunction): void {
+    this.cleanupExpiredCounters();
 
     // 获取客户端标识
     const clientId = this.getClientId(request);
@@ -60,12 +65,12 @@ export class RateLimitMiddleware implements NestMiddleware {
       response.setHeader('X-RateLimit-Reset', userRequests.resetTime.toString());
     }
 
-    await next();
+    next();
   }
 
-  private getClientId(request: Request): string {
+  private getClientId(request: AuthenticatedRequest): string {
     // 优先使用用户ID（已登录用户）
-    const userId = (request as any).user?.id;
+    const userId = request.user?.id;
     if (userId) {
       return `user_${userId}`;
     }
@@ -86,7 +91,7 @@ export class RateLimitMiddleware implements NestMiddleware {
   }
 
   // 定期清理过期的计数器
-  private cleanupExpiredCounters() {
+  private cleanupExpiredCounters(): void {
     const now = Date.now();
     for (const [clientId, data] of this.requestCounts.entries()) {
       if (now > data.resetTime) {

@@ -12,7 +12,7 @@ export class RequestLoggingMiddleware implements NestMiddleware {
 
   use(req: Request, res: Response, next: NextFunction): void {
     const startTime = Date.now();
-    const { method, originalUrl, ip, headers } = req;
+    const { method, originalUrl, headers } = req;
     const logger = this.logger; // 保存logger引用
 
     // 记录请求开始
@@ -24,9 +24,7 @@ export class RequestLoggingMiddleware implements NestMiddleware {
       timestamp: new Date().toISOString(),
     });
 
-    // 监听响应结束
-    const originalEnd = res.end;
-    res.end = function (chunk?: any, encoding?: any): any {
+    res.on('finish', () => {
       const responseTime = Date.now() - startTime;
       const { statusCode } = res;
 
@@ -43,9 +41,7 @@ export class RequestLoggingMiddleware implements NestMiddleware {
         // 如果记录日志失败，不中断正常流程
         console.error('Failed to log response:', error);
       }
-
-      return originalEnd.call(this, chunk, encoding);
-    };
+    });
 
     next();
   }

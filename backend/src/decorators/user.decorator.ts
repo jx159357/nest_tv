@@ -6,6 +6,7 @@ import { User as UserType } from '../entities/user.entity';
  * 从请求中提取当前用户信息
  */
 export const User = createParamDecorator((data: unknown, ctx: ExecutionContext): UserType => {
-  const request = ctx.switchToHttp().getRequest();
+  const request = ctx.switchToHttp().getRequest<{ user: UserType }>();
+  void data;
   return request.user;
 });

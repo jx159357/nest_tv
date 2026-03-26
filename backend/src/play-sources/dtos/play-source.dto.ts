@@ -1,13 +1,4 @@
-import {
-  IsNumber,
-  IsOptional,
-  IsString,
-  IsBoolean,
-  IsEnum,
-  IsUrl,
-  Min,
-  Max,
-} from 'class-validator';
+import { IsNumber, IsOptional, IsString, IsBoolean, IsEnum, IsUrl, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { PlaySourceType } from '../../entities/play-source.entity';
 

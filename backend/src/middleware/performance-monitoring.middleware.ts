@@ -19,9 +19,7 @@ export class PerformanceMonitoringMiddleware implements NestMiddleware {
     // 添加请求ID到请求头
     req.headers['x-request-id'] = requestId;
 
-    // 监听响应结束
-    const originalEnd = res.end;
-    res.end = function (chunk?: any, encoding?: string): Response {
+    res.on('finish', () => {
       const endTime = Date.now();
       const endMemory = process.memoryUsage();
       const responseTime = endTime - startTime;
@@ -38,9 +36,7 @@ export class PerformanceMonitoringMiddleware implements NestMiddleware {
         memoryUsage,
         timestamp: new Date().toISOString(),
       });
-
-      return originalEnd.call(res, chunk, encoding);
-    }.bind(this);
+    });
 
     next();
   }

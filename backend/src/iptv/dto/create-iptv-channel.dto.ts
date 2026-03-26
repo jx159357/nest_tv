@@ -1,13 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsString,
-  IsOptional,
-  IsBoolean,
-  IsNumber,
-  IsArray,
-  IsObject,
-  IsEnum,
-} from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsNumber, IsArray, IsObject } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateIPTVChannelDto {

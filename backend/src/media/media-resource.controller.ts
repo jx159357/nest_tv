@@ -25,7 +25,6 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RateLimitGuard, RateLimit } from '../common/guards/rate-limit.guard';
 import { CreateMediaResourceDto } from './dtos/create-media-resource.dto';
 import { UpdateMediaResourceDto } from './dtos/update-media-resource.dto';
-import { MediaResourceQueryDto } from './dtos/media-resource-query.dto';
 import {
   MediaListResponseDto,
   MediaDetailResponseDto,
@@ -128,8 +127,8 @@ export class MediaResourceController {
       page,
       pageSize,
       search,
-      type: type as any,
-      quality: quality as any,
+      type,
+      quality,
       minRating,
       maxRating,
       tags: tags ? tags : undefined,
@@ -491,8 +490,8 @@ export class MediaResourceController {
   @ApiResponse({ status: 200, description: '增加成功' })
   @ApiResponse({ status: 404, description: '影视资源不存在' })
   @ApiParam({ name: 'id', description: '影视资源ID' })
-  async incrementLikes(@Param('id') id: number) {
-    await this.mediaResourceService.incrementLikes(id);
+  incrementLikes(@Param('id') id: number) {
+    this.mediaResourceService.incrementLikes(id);
     return { message: '增加点赞数成功' };
   }
 
@@ -504,8 +503,8 @@ export class MediaResourceController {
   @ApiResponse({ status: 200, description: '减少成功' })
   @ApiResponse({ status: 404, description: '影视资源不存在' })
   @ApiParam({ name: 'id', description: '影视资源ID' })
-  async decrementLikes(@Param('id') id: number) {
-    await this.mediaResourceService.decrementLikes(id);
+  decrementLikes(@Param('id') id: number) {
+    this.mediaResourceService.decrementLikes(id);
     return { message: '减少点赞数成功' };
   }
 }

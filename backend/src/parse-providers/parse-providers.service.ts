@@ -1,11 +1,42 @@
-import { Injectable, HttpException, HttpStatus, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, In, Between, Not } from 'typeorm';
+import { FindOptionsWhere, Like, Repository } from 'typeorm';
 import { ParseProvider } from '../entities/parse-provider.entity';
 import { CreateParseProviderDto } from './dto/create-parse-provider.dto';
 import { UpdateParseProviderDto } from './dto/update-parse-provider.dto';
 import { ParseProviderQueryDto } from './dto/parse-provider-query.dto';
 import axios from 'axios';
+
+interface CategoryRow {
+  category?: string | null;
+}
+
+interface AverageSuccessRateRow {
+  avgSuccessRate?: number | string | null;
+}
+
+interface ParseProviderConfig extends Record<string, unknown> {
+  playUrlsPath?: string;
+  downloadUrlsPath?: string;
+  subtitleUrlsPath?: string;
+  metadataPath?: string;
+}
+
+interface TestProviderResult {
+  success: boolean;
+  message: string;
+  responseTime: number;
+  data?: unknown;
+}
+
+interface ParseVideoUrlResult {
+  success: boolean;
+  message: string;
+  playUrls?: string[];
+  downloadUrls?: string[];
+  subtitleUrls?: string[];
+  metadata?: unknown;
+}
 
 @Injectable()
 export class ParseProvidersService {
@@ -173,16 +204,20 @@ export class ParseProvidersService {
       .select('DISTINCT provider.category', 'category')
       .where('provider.isActive = :isActive', { isActive: true })
       .orderBy('provider.category', 'ASC')
-      .getRawMany();
+      .getRawMany<CategoryRow>();
 
-    return categories.map(item => item.category).filter(Boolean);
+    return categories
+      .map(item => item.category)
+      .filter(
+        (category): category is string => typeof category === 'string' && category.length > 0,
+      );
   }
 
   /**
    * 根据分类获取提供商
    */
   async getByCategory(category: string, activeOnly: boolean = true): Promise<ParseProvider[]> {
-    const where: any = { category };
+    const where: FindOptionsWhere<ParseProvider> = { category };
     if (activeOnly) {
       where.isActive = true;
     }
@@ -214,15 +249,7 @@ export class ParseProvidersService {
   /**
    * 测试解析提供商
    */
-  async testProvider(
-    id: number,
-    testUrl?: string,
-  ): Promise<{
-    success: boolean;
-    message: string;
-    responseTime: number;
-    data?: any;
-  }> {
+  async testProvider(id: number, testUrl?: string): Promise<TestProviderResult> {
     const provider = await this.findById(id);
 
     if (!provider.canMakeRequest()) {
@@ -237,12 +264,12 @@ export class ParseProvidersService {
 
     try {
       const testUrlToUse = testUrl || provider.baseUrl;
-      const headers = provider.getApiHeaders();
+      const headers = this.parseApiHeaders(provider);
 
-      const response = await axios({
+      const response = await axios<unknown>({
         method: provider.apiMethod || 'GET',
         url: provider.apiUrl || testUrlToUse,
-        headers: headers,
+        headers,
         timeout: 30000, // 30秒超时
       });
 
@@ -259,7 +286,7 @@ export class ParseProvidersService {
         responseTime,
         data: response.data,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       const responseTime = Date.now() - startTime;
 
       // 更新统计信息
@@ -268,7 +295,7 @@ export class ParseProvidersService {
 
       return {
         success: false,
-        message: `测试失败: ${error.message}`,
+        message: `测试失败: ${this.toError(error).message}`,
         responseTime,
       };
     }
@@ -277,17 +304,7 @@ export class ParseProvidersService {
   /**
    * 解析视频链接
    */
-  async parseVideoUrl(
-    id: number,
-    videoUrl: string,
-  ): Promise<{
-    success: boolean;
-    message: string;
-    playUrls?: string[];
-    downloadUrls?: string[];
-    subtitleUrls?: string[];
-    metadata?: any;
-  }> {
+  async parseVideoUrl(id: number, videoUrl: string): Promise<ParseVideoUrlResult> {
     const provider = await this.findById(id);
 
     if (!provider.canMakeRequest()) {
@@ -298,8 +315,8 @@ export class ParseProvidersService {
     }
 
     try {
-      const config = provider.getParseConfig();
-      const headers = provider.getApiHeaders();
+      const config = this.parseProviderConfig(provider);
+      const headers = this.parseApiHeaders(provider);
 
       // 构建解析请求
       const requestData = {
@@ -307,10 +324,10 @@ export class ParseProvidersService {
         ...config,
       };
 
-      const response = await axios({
+      const response = await axios<unknown>({
         method: provider.apiMethod || 'GET',
         url: provider.apiUrl || provider.baseUrl,
-        headers: headers,
+        headers,
         [provider.apiMethod === 'POST' ? 'data' : 'params']: requestData,
         timeout: 60000, // 60秒超时
       });
@@ -327,15 +344,16 @@ export class ParseProvidersService {
         message: '解析成功',
         ...result,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       // 更新统计信息
       provider.updateRequestStats(false);
       await this.parseProviderRepository.save(provider);
 
-      this.logger.error(`解析视频URL失败: ${videoUrl}`, error.stack);
+      const normalizedError = this.toError(error);
+      this.logger.error(`解析视频URL失败: ${videoUrl}`, normalizedError.stack);
       return {
         success: false,
-        message: `解析失败: ${error.message}`,
+        message: `解析失败: ${normalizedError.message}`,
       };
     }
   }
@@ -344,46 +362,40 @@ export class ParseProvidersService {
    * 解析提供商响应数据
    */
   private parseProviderResponse(
-    responseData: any,
-    config: any,
-  ): {
-    playUrls?: string[];
-    downloadUrls?: string[];
-    subtitleUrls?: string[];
-    metadata?: any;
-  } {
-    const result: any = {};
+    responseData: unknown,
+    config: ParseProviderConfig,
+  ): Omit<ParseVideoUrlResult, 'success' | 'message'> {
+    const playUrls = config.playUrlsPath
+      ? this.normalizeStringArray(this.extractDataByPath(responseData, config.playUrlsPath))
+      : undefined;
+    const downloadUrls = config.downloadUrlsPath
+      ? this.normalizeStringArray(this.extractDataByPath(responseData, config.downloadUrlsPath))
+      : undefined;
+    const subtitleUrls = config.subtitleUrlsPath
+      ? this.normalizeStringArray(this.extractDataByPath(responseData, config.subtitleUrlsPath))
+      : undefined;
+    const metadata = config.metadataPath
+      ? this.extractDataByPath(responseData, config.metadataPath)
+      : undefined;
 
-    // 根据配置解析响应数据
-    if (config.playUrlsPath) {
-      result.playUrls = this.extractDataByPath(responseData, config.playUrlsPath);
-    }
-
-    if (config.downloadUrlsPath) {
-      result.downloadUrls = this.extractDataByPath(responseData, config.downloadUrlsPath);
-    }
-
-    if (config.subtitleUrlsPath) {
-      result.subtitleUrls = this.extractDataByPath(responseData, config.subtitleUrlsPath);
-    }
-
-    if (config.metadataPath) {
-      result.metadata = this.extractDataByPath(responseData, config.metadataPath);
-    }
-
-    return result;
+    return {
+      playUrls,
+      downloadUrls,
+      subtitleUrls,
+      metadata,
+    };
   }
 
   /**
    * 根据路径提取数据
    */
-  private extractDataByPath(data: any, path: string): any {
+  private extractDataByPath(data: unknown, path: string): unknown {
     try {
       const pathParts = path.split('.');
-      let current = data;
+      let current: unknown = data;
 
       for (const part of pathParts) {
-        if (current && typeof current === 'object' && part in current) {
+        if (this.isRecord(current) && part in current) {
           current = current[part];
         } else {
           return null;
@@ -391,8 +403,8 @@ export class ParseProvidersService {
       }
 
       return current;
-    } catch (error) {
-      this.logger.warn(`提取数据失败，路径: ${path}`, error.stack);
+    } catch (error: unknown) {
+      this.logger.warn(`提取数据失败，路径: ${path}`, this.toError(error).stack);
       return null;
     }
   }
@@ -404,7 +416,7 @@ export class ParseProvidersService {
     category?: string,
     supportOnlinePlay: boolean = true,
   ): Promise<ParseProvider | null> {
-    const where: any = { isActive: true, supportOnlinePlay };
+    const where: FindOptionsWhere<ParseProvider> = { isActive: true, supportOnlinePlay };
     if (category) {
       where.category = category;
     }
@@ -456,9 +468,9 @@ export class ParseProvidersService {
       .createQueryBuilder('provider')
       .select('AVG(provider.successRate)', 'avgSuccessRate')
       .where('provider.isActive = :isActive', { isActive: true })
-      .getRawOne();
+      .getRawOne<AverageSuccessRateRow>();
 
-    const averageSuccessRate = averageSuccessRateResult.avgSuccessRate || 0;
+    const averageSuccessRate = this.parseNumericValue(averageSuccessRateResult?.avgSuccessRate);
 
     const topProviders = await this.parseProviderRepository.find({
       where: { isActive: true },
@@ -477,6 +489,77 @@ export class ParseProvidersService {
       averageSuccessRate: Math.round(averageSuccessRate),
       topProviders,
     };
+  }
+
+  private parseProviderConfig(provider: ParseProvider): ParseProviderConfig {
+    if (!provider.parseRule) {
+      return {};
+    }
+
+    try {
+      const parsedConfig: unknown = JSON.parse(provider.parseRule);
+      return this.isRecord(parsedConfig) ? (parsedConfig as ParseProviderConfig) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  private parseApiHeaders(provider: ParseProvider): Record<string, string> {
+    if (!provider.apiHeaders) {
+      return {};
+    }
+
+    try {
+      const parsedHeaders: unknown = JSON.parse(provider.apiHeaders);
+      if (!this.isRecord(parsedHeaders)) {
+        return {};
+      }
+
+      return Object.entries(parsedHeaders).reduce<Record<string, string>>(
+        (headers, [key, value]) => {
+          if (typeof value === 'string') {
+            headers[key] = value;
+          }
+          return headers;
+        },
+        {},
+      );
+    } catch {
+      return {};
+    }
+  }
+
+  private normalizeStringArray(value: unknown): string[] | undefined {
+    if (Array.isArray(value)) {
+      return value.filter((item): item is string => typeof item === 'string');
+    }
+
+    if (typeof value === 'string') {
+      return [value];
+    }
+
+    return undefined;
+  }
+
+  private parseNumericValue(value: number | string | null | undefined): number {
+    if (typeof value === 'number') {
+      return value;
+    }
+
+    if (typeof value === 'string') {
+      const parsedValue = Number(value);
+      return Number.isFinite(parsedValue) ? parsedValue : 0;
+    }
+
+    return 0;
+  }
+
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+  }
+
+  private toError(error: unknown): Error {
+    return error instanceof Error ? error : new Error(String(error));
   }
 
   /**

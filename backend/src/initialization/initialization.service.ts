@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { MediaResourceService } from '../media/media-resource.service';
+import { MediaQuality, MediaType } from '../entities/media-resource.entity';
 import { PlaySourceService } from '../play-sources/play-source.service';
 import { PlaySourceType } from '../entities/play-source.entity';
 import { Logger } from '@nestjs/common';
@@ -47,7 +48,7 @@ export class InitializationService implements OnModuleInit {
     }
 
     this.logger.log('开发环境：开始初始化示例播放源');
-    
+
     // 创建示例媒体资源用于演示
     let mediaResource = await this.mediaResourceService.findByTitle('示例影视资源');
 
@@ -55,8 +56,8 @@ export class InitializationService implements OnModuleInit {
       mediaResource = await this.mediaResourceService.create({
         title: '示例影视资源',
         description: '用于系统测试和演示的示例影视资源',
-        type: 'movie' as any,
-        quality: 'full_hd' as any,
+        type: MediaType.MOVIE,
+        quality: MediaQuality.FULL_HD,
         rating: 8.0,
         source: '系统示例',
       });

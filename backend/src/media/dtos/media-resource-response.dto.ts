@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { MediaResource } from '../../entities/media-resource.entity';
 
 export class MediaResourceDto {
   @ApiProperty({ description: '影视资源ID', example: 1 })
@@ -28,10 +27,16 @@ export class MediaResourceDto {
   @ApiProperty({ description: '影视标签', example: ['动作', '科幻'], isArray: true })
   tags?: string[];
 
-  @ApiProperty({ description: '影视封面URL', example: 'https://streaming-platform.com/covers/movie1.jpg' })
+  @ApiProperty({
+    description: '影视封面URL',
+    example: 'https://streaming-platform.com/covers/movie1.jpg',
+  })
   coverUrl?: string;
 
-  @ApiProperty({ description: '播放URL', example: 'https://streaming-platform.com/videos/movie1.mp4' })
+  @ApiProperty({
+    description: '播放URL',
+    example: 'https://streaming-platform.com/videos/movie1.mp4',
+  })
   playUrl?: string;
 
   @ApiProperty({ description: '影视时长（秒）', example: 8820 })

@@ -1,12 +1,41 @@
 import { Injectable, HttpException, HttpStatus, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, In, Between, Not } from 'typeorm';
+import { FindOptionsWhere, Like, Repository } from 'typeorm';
 import { IPTVChannel } from '../entities/iptv-channel.entity';
 import { CreateIPTVChannelDto } from './dto/create-iptv-channel.dto';
 import { UpdateIPTVChannelDto } from './dto/update-iptv-channel.dto';
 import { IPTVChannelQueryDto } from './dto/iptv-channel-query.dto';
 import axios from 'axios';
 import * as m3u8Parser from 'm3u8-parser';
+
+interface GroupRow {
+  group?: string | null;
+}
+
+interface M3UPlaylistAttributes {
+  'tvg-name'?: string;
+  'group-title'?: string;
+  'tvg-logo'?: string;
+  'tvg-language'?: string;
+  'tvg-country'?: string;
+  'tvg-id'?: string;
+  channelName?: string;
+}
+
+interface M3UPlaylist {
+  uri?: string;
+  attributes?: M3UPlaylistAttributes;
+}
+
+interface M3UManifest {
+  playlists?: M3UPlaylist[];
+}
+
+interface M3U8ParserInstance {
+  manifest: M3UManifest;
+  push(input: string): void;
+  end(): void;
+}
 
 @Injectable()
 export class IPTVService {
@@ -178,16 +207,18 @@ export class IPTVService {
       .select('DISTINCT iptv.group', 'group')
       .where('iptv.isActive = :isActive', { isActive: true })
       .orderBy('iptv.group', 'ASC')
-      .getRawMany();
+      .getRawMany<GroupRow>();
 
-    return groups.map(item => item.group);
+    return groups
+      .map(item => item.group)
+      .filter((group): group is string => typeof group === 'string' && group.length > 0);
   }
 
   /**
    * 根据分组获取频道
    */
   async getByGroup(group: string, activeOnly: boolean = true): Promise<IPTVChannel[]> {
-    const where: any = { group };
+    const where: FindOptionsWhere<IPTVChannel> = { group };
     if (activeOnly) {
       where.isActive = true;
     }
@@ -224,7 +255,7 @@ export class IPTVService {
       this.logger.log(`开始导入M3U播放列表: ${m3uUrl}`);
 
       // 下载M3U文件
-      const response = await axios.get(m3uUrl, {
+      const response = await axios.get<string>(m3uUrl, {
         timeout: 30000,
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -232,7 +263,8 @@ export class IPTVService {
       });
 
       const m3uContent = response.data;
-      const parser = new m3u8Parser.Parser();
+      const ParserCtor = (m3u8Parser as unknown as { Parser: new () => M3U8ParserInstance }).Parser;
+      const parser = new ParserCtor();
       parser.push(m3uContent);
       parser.end();
 
@@ -262,8 +294,8 @@ export class IPTVService {
             try {
               const channel = await this.create(channelData);
               channels.push(channel);
-            } catch (error) {
-              this.logger.warn(`导入频道失败: ${channelData.name}`, error);
+            } catch (error: unknown) {
+              this.logger.warn(`导入频道失败: ${channelData.name}`, this.toError(error).message);
             }
           }
         }
@@ -271,8 +303,8 @@ export class IPTVService {
 
       this.logger.log(`成功导入 ${channels.length} 个频道`);
       return channels;
-    } catch (error) {
-      this.logger.error(`导入M3U播放列表失败: ${m3uUrl}`, error.stack);
+    } catch (error: unknown) {
+      this.logger.error(`导入M3U播放列表失败: ${m3uUrl}`, this.toError(error).stack);
       throw new HttpException('导入M3U播放列表失败', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -300,7 +332,7 @@ export class IPTVService {
 
       await this.iptvChannelRepository.save(channel);
       return isValid;
-    } catch (error) {
+    } catch {
       channel.lastCheckedAt = new Date();
       channel.isActive = false;
       await this.iptvChannelRepository.save(channel);
@@ -360,5 +392,9 @@ export class IPTVService {
       order: { viewCount: 'DESC', name: 'ASC' },
       take: limit,
     });
+  }
+
+  private toError(error: unknown): Error {
+    return error instanceof Error ? error : new Error(String(error));
   }
 }

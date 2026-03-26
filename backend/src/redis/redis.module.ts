@@ -2,6 +2,43 @@ import { Global, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { createClient } from 'redis';
 
+type RedisEventHandler = (...args: unknown[]) => void;
+
+interface RedisClientFallback {
+  connect(): Promise<void>;
+  ping(): Promise<never>;
+  get(key: string): Promise<null>;
+  set(...args: unknown[]): Promise<void>;
+  del(...args: unknown[]): Promise<void>;
+  exists(...keys: string[]): Promise<number>;
+  keys(pattern: string): Promise<string[]>;
+  flushall(): Promise<void>;
+  quit(): Promise<void>;
+  on(event: string, handler: RedisEventHandler): void;
+  off(event: string, handler: RedisEventHandler): void;
+  once(event: string, handler: RedisEventHandler): void;
+  emit(event: string, ...args: unknown[]): boolean;
+}
+
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : '未知错误';
+
+const createFallbackRedisClient = (): RedisClientFallback => ({
+  connect: () => Promise.resolve(),
+  ping: () => Promise.reject(new Error('Redis不可用')),
+  get: () => Promise.resolve(null),
+  set: () => Promise.resolve(),
+  del: () => Promise.resolve(),
+  exists: () => Promise.resolve(0),
+  keys: () => Promise.resolve([]),
+  flushall: () => Promise.resolve(),
+  quit: () => Promise.resolve(),
+  on: () => undefined,
+  off: () => undefined,
+  once: () => undefined,
+  emit: () => false,
+});
+
 // Redis客户端提供者
 export const RedisClientProvider = {
   provide: 'REDIS_CLIENT',
@@ -24,8 +61,8 @@ export const RedisClientProvider = {
     });
 
     // 错误处理和监控
-    client.on('error', err => {
-      console.warn('Redis客户端错误:', err.message);
+    client.on('error', (err: unknown) => {
+      console.warn('Redis客户端错误:', getErrorMessage(err));
     });
 
     client.on('connect', () => {
@@ -49,24 +86,9 @@ export const RedisClientProvider = {
       await client.connect();
       console.log('Redis连接测试成功');
       return client;
-    } catch (error) {
-      console.warn('Redis连接失败，将使用内存缓存:', error.message);
-      // 返回一个模拟的Redis客户端
-      return {
-        connect: async () => {},
-        ping: async () => { throw new Error('Redis不可用'); },
-        get: async () => null,
-        set: async () => {},
-        del: async () => {},
-        exists: async () => 0,
-        keys: async () => [],
-        flushall: async () => {},
-        quit: async () => {},
-        on: () => {},
-        off: () => {},
-        once: () => {},
-        emit: () => {},
-      } as any;
+    } catch (error: unknown) {
+      console.warn('Redis连接失败，将使用内存缓存:', getErrorMessage(error));
+      return createFallbackRedisClient();
     }
   },
   inject: [ConfigService],
@@ -94,24 +116,9 @@ export const RedisCacheService = {
       await client.connect();
       console.log('Redis缓存服务连接成功');
       return client;
-    } catch (error) {
-      console.warn('Redis缓存服务连接失败，将使用内存缓存:', error.message);
-      // 返回一个模拟的Redis客户端
-      return {
-        connect: async () => {},
-        ping: async () => { throw new Error('Redis不可用'); },
-        get: async () => null,
-        set: async () => {},
-        del: async () => {},
-        exists: async () => 0,
-        keys: async () => [],
-        flushall: async () => {},
-        quit: async () => {},
-        on: () => {},
-        off: () => {},
-        once: () => {},
-        emit: () => {},
-      } as any;
+    } catch (error: unknown) {
+      console.warn('Redis缓存服务连接失败，将使用内存缓存:', getErrorMessage(error));
+      return createFallbackRedisClient();
     }
   },
   inject: [ConfigService],
@@ -139,24 +146,9 @@ export const RedisSessionProvider = {
       await client.connect();
       console.log('Redis会话服务连接成功');
       return client;
-    } catch (error) {
-      console.warn('Redis会话服务连接失败，将使用内存会话:', error.message);
-      // 返回一个模拟的Redis客户端
-      return {
-        connect: async () => {},
-        ping: async () => { throw new Error('Redis不可用'); },
-        get: async () => null,
-        set: async () => {},
-        del: async () => {},
-        exists: async () => 0,
-        keys: async () => [],
-        flushall: async () => {},
-        quit: async () => {},
-        on: () => {},
-        off: () => {},
-        once: () => {},
-        emit: () => {},
-      } as any;
+    } catch (error: unknown) {
+      console.warn('Redis会话服务连接失败，将使用内存会话:', getErrorMessage(error));
+      return createFallbackRedisClient();
     }
   },
   inject: [ConfigService],

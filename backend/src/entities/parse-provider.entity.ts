@@ -49,10 +49,10 @@ export class ParseProvider {
   successCount: number; // 成功次数
 
   @Column({ type: 'json', nullable: true })
-  config: any; // 扩展配置
+  config: Record<string, unknown> | null; // 扩展配置
 
   @Column({ type: 'json', nullable: true })
-  metadata?: any; // 扩展元数据
+  metadata?: Record<string, unknown> | null; // 扩展元数据
 
   @Column({ length: 50, nullable: true })
   category?: string; // 解析提供商分类
@@ -93,7 +93,7 @@ export class ParseProvider {
   /**
    * 获取解析提供商完整信息
    */
-  getProviderInfo(): any {
+  getProviderInfo(): Record<string, unknown> {
     return {
       id: this.id,
       name: this.name,
@@ -175,10 +175,10 @@ export class ParseProvider {
   /**
    * 获取解析配置
    */
-  getParseConfig(): any {
+  getParseConfig(): Record<string, unknown> | null {
     try {
-      return JSON.parse(this.parseRule);
-    } catch (error) {
+      return JSON.parse(this.parseRule) as Record<string, unknown>;
+    } catch {
       return null;
     }
   }
@@ -186,10 +186,10 @@ export class ParseProvider {
   /**
    * 获取API请求头
    */
-  getApiHeaders(): any {
+  getApiHeaders(): Record<string, unknown> {
     try {
-      return this.apiHeaders ? JSON.parse(this.apiHeaders) : {};
-    } catch (error) {
+      return this.apiHeaders ? (JSON.parse(this.apiHeaders) as Record<string, unknown>) : {};
+    } catch {
       return {};
     }
   }

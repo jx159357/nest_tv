@@ -1,13 +1,19 @@
-import { Injectable, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, In, Between, Not } from 'typeorm';
-import { MediaResource, MediaType, MediaQuality } from '../entities/media-resource.entity';
-import { User } from '../entities/user.entity';
+import { Like, Not, Repository } from 'typeorm';
+import { MediaResource } from '../entities/media-resource.entity';
 import { CreateMediaResourceDto } from './dtos/create-media-resource.dto';
 import { UpdateMediaResourceDto } from './dtos/update-media-resource.dto';
 import { MediaResourceQueryDto } from './dtos/media-resource-query.dto';
 import { CacheService } from '../common/cache/cache.service';
 import { Cacheable, CacheEvict } from '../common/decorators/cache.decorator';
+
+interface MediaStatisticsRow {
+  total: string;
+  type: string;
+  quality: string;
+  avgRating: string | null;
+}
 
 @Injectable()
 export class MediaResourceService {
@@ -283,7 +289,8 @@ export class MediaResourceService {
   /**
    * 增加点赞数
    */
-  async incrementLikes(id: number): Promise<void> {
+  incrementLikes(id: number): void {
+    void id;
     // 暂时没有likes字段，等需要时可以添加
     // await this.mediaResourceRepository.increment({ id }, 'likes', 1);
   }
@@ -291,7 +298,8 @@ export class MediaResourceService {
   /**
    * 减少点赞数
    */
-  async decrementLikes(id: number): Promise<void> {
+  decrementLikes(id: number): void {
+    void id;
     // 暂时没有likes字段，等需要时可以添加
     // await this.mediaResourceRepository.decrement({ id }, 'likes', 1);
   }
@@ -316,14 +324,7 @@ export class MediaResourceService {
         'avgRating',
       )
       .groupBy('mediaResource.type, mediaResource.quality')
-      .getRawMany<
-        Array<{
-          total: string;
-          type: string;
-          quality: string;
-          avgRating: string;
-        }>
-      >();
+      .getRawMany<MediaStatisticsRow>();
 
     // 处理统计数据
     let total = 0;
@@ -332,8 +333,8 @@ export class MediaResourceService {
     let ratingSum = 0;
     let ratingCount = 0;
 
-    statisticsQuery.forEach((stat: any) => {
-      const count = parseInt(stat.total);
+    statisticsQuery.forEach(stat => {
+      const count = parseInt(stat.total, 10);
       total += count;
 
       // 按类型统计

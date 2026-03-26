@@ -55,7 +55,7 @@ export class IPTVChannel {
   viewCount: number; // 观看次数
 
   @Column({ type: 'json', nullable: true })
-  metadata?: any; // 扩展元数据
+  metadata?: Record<string, unknown> | null; // 扩展元数据
 
   @Column({ type: 'date', nullable: true })
   expireDate?: Date; // 过期时间
@@ -111,7 +111,7 @@ export class IPTVChannel {
   /**
    * 获取频道完整信息
    */
-  getChannelInfo(): any {
+  getChannelInfo(): Record<string, unknown> {
     return {
       id: this.id,
       name: this.name,

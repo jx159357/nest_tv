@@ -15,11 +15,100 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import {
   DanmakuService,
   CreateDanmakuDto,
+  type DanmakuStats,
+  type DanmakuUpdateDto,
   type DanmakuQueryDto,
   type DanmakuFilterDto,
 } from '../services/danmaku.service';
 import { User } from '../../decorators/user.decorator';
 import { Danmaku } from '../entities/danmaku.entity';
+
+interface CurrentUser {
+  id: number;
+}
+
+interface DanmakuTrendsResponse {
+  videoId?: string;
+  mediaResourceId?: number;
+  interval: 'hour' | 'day' | 'week' | 'month';
+  startDate?: string;
+  endDate?: string;
+  message: string;
+  stats: DanmakuStats;
+}
+
+interface DanmakuLeaderboardResponse {
+  videoId?: string;
+  mediaResourceId?: number;
+  limit: number;
+  period: 'all' | 'day' | 'week' | 'month';
+  message: string;
+  leaderboard: unknown[];
+}
+
+interface DanmakuKeywordCloudResponse {
+  videoId?: string;
+  mediaResourceId?: number;
+  minFrequency: number;
+  limit: number;
+  message: string;
+  keywords: string[];
+}
+
+interface DanmakuRealtimeRoomInfoResponse {
+  videoId: string;
+  onlineUsers: number;
+  messageCount: number;
+  isActive: boolean;
+  lastActivity: null;
+  message: string;
+}
+
+interface DanmakuSuggestionItem {
+  text: string;
+  color: string;
+  type: Danmaku['type'];
+  priority: number;
+  score: number;
+}
+
+interface DanmakuSuggestionsResponse {
+  videoId?: string;
+  mediaResourceId?: number;
+  type: 'popular' | 'recent' | 'relevant';
+  limit: number;
+  suggestions: DanmakuSuggestionItem[];
+}
+
+interface DanmakuReportsResponse {
+  danmakuId: number;
+  reports: unknown[];
+  reportCount: number;
+  status: 'active';
+  message: string;
+}
+
+interface DanmakuFilterRulesResponse {
+  sensitiveWords: string[];
+  spamPatterns: string[];
+  level: 'medium';
+  autoBlock: boolean;
+  message: string;
+}
+
+interface DanmakuHealthStatusResponse {
+  status: 'healthy';
+  database: 'connected';
+  websocket: 'active';
+  performance: {
+    responseTime: 'normal';
+    memoryUsage: 'normal';
+    activeConnections: number;
+  };
+  lastUpdate: Date;
+  uptime: number;
+  message: string;
+}
 
 @ApiTags('弹幕系统')
 @Controller('danmaku')
@@ -35,7 +124,7 @@ export class DanmakuController {
   @ApiResponse({ status: 201, description: '弹幕发送成功', type: Danmaku })
   async createDanmaku(
     @Body() createDto: CreateDanmakuDto & { videoId: string; mediaResourceId: number },
-    @User() user: any,
+    @User() user: CurrentUser,
   ): Promise<Danmaku> {
     const { videoId, mediaResourceId, ...danmakuData } = createDto;
 
@@ -48,7 +137,7 @@ export class DanmakuController {
   @ApiOperation({ summary: '批量发送弹幕', description: '批量导入弹幕数据' })
   async createBulkDanmaku(
     @Body() createDtos: Array<CreateDanmakuDto & { videoId: string; mediaResourceId: number }>,
-    @User() user: any,
+    @User() user: CurrentUser,
   ): Promise<Danmaku[]> {
     const processedDtos = createDtos.map(dto => ({
       text: dto.text,
@@ -95,7 +184,6 @@ export class DanmakuController {
   async updateDanmaku(
     @Param('id') id: number,
     @Body() updateDto: Partial<CreateDanmakuDto>,
-    @User() user: any,
   ): Promise<Danmaku | null> {
     return await this.danmakuService.update(id, updateDto);
   }
@@ -107,7 +195,7 @@ export class DanmakuController {
   @ApiResponse({ status: 200, description: '删除成功' })
   async deleteDanmaku(
     @Param('id') id: number,
-    @User() user: any,
+    @User() user: CurrentUser,
   ): Promise<{ success: boolean; message: string }> {
     const success = await this.danmakuService.delete(id, user.id);
 
@@ -156,7 +244,10 @@ export class DanmakuController {
   // 获取用户弹幕历史
   @Get('user/me')
   @ApiOperation({ summary: '获取我的弹幕', description: '获取当前用户发送的弹幕历史' })
-  async getUserDanmaku(@User() user: any, @Query() query: DanmakuQueryDto): Promise<Danmaku[]> {
+  async getUserDanmaku(
+    @User() user: CurrentUser,
+    @Query() query: DanmakuQueryDto,
+  ): Promise<Danmaku[]> {
     const userId = user.id;
     const { limit, offset } = query;
 
@@ -191,7 +282,7 @@ export class DanmakuController {
     data: Array<{
       text: string;
       color?: string;
-      type?: string;
+      type?: 'scroll' | 'top' | 'bottom';
       priority?: number;
       timestamp?: number;
       userId?: number;
@@ -248,7 +339,7 @@ export class DanmakuController {
       endDate?: string;
       interval?: 'hour' | 'day' | 'week' | 'month';
     },
-  ): Promise<any> {
+  ): Promise<DanmakuTrendsResponse> {
     // 这里可以实现弹幕时间趋势分析
     // 例如：每小时的弹幕数量、热门词汇、情感分析等
 
@@ -269,7 +360,7 @@ export class DanmakuController {
   // 获取弹幕用户排行榜
   @Get('leaderboard/users')
   @ApiOperation({ summary: '弹幕用户排行榜', description: '按弹幕数量统计的用户排行榜' })
-  async getDanmakuUserLeaderboard(
+  getDanmakuUserLeaderboard(
     @Query()
     query: {
       videoId?: string;
@@ -277,7 +368,7 @@ export class DanmakuController {
       limit?: number;
       period?: 'all' | 'day' | 'week' | 'month';
     },
-  ): Promise<any> {
+  ): DanmakuLeaderboardResponse {
     // 这里可以实现用户弹幕排行榜
     // 例如：发送弹幕最多的用户、活跃度等
 
@@ -296,7 +387,7 @@ export class DanmakuController {
   // 获取弹幕关键词云
   @Get('keywords/cloud')
   @ApiOperation({ summary: '弹幕关键词云', description: '生成指定视频或媒体资源的弹幕关键词云' })
-  async getDanmakuKeywordCloud(
+  getDanmakuKeywordCloud(
     @Query()
     query: {
       videoId?: string;
@@ -304,7 +395,7 @@ export class DanmakuController {
       minFrequency?: number;
       limit?: number;
     },
-  ): Promise<any> {
+  ): DanmakuKeywordCloudResponse {
     // 这里可以实现弹幕关键词提取和词云生成
     // 例如：提取高频词汇、生成权重、过滤停用词等
 
@@ -323,7 +414,7 @@ export class DanmakuController {
   // 获取弹幕实时统计（WebSocket房间信息）
   @Get('realtime/rooms/:videoId')
   @ApiOperation({ summary: '实时房间信息', description: '获取指定视频的WebSocket弹幕房间信息' })
-  async getRealtimeRoomInfo(@Param('videoId') videoId: string): Promise<any> {
+  getRealtimeRoomInfo(@Param('videoId') videoId: string): DanmakuRealtimeRoomInfoResponse {
     // 这里应该与WebSocket网关集成，获取实时房间信息
     // 例如：在线用户数、消息统计等
 
@@ -348,7 +439,7 @@ export class DanmakuController {
       type?: 'popular' | 'recent' | 'relevant';
       limit?: number;
     },
-  ): Promise<any> {
+  ): Promise<DanmakuSuggestionsResponse> {
     // 这里可以实现弹幕建议系统
     // 例如：推荐热门弹幕、相关弹幕、智能建议等
 
@@ -377,11 +468,12 @@ export class DanmakuController {
   async setDanmakuHighlight(
     @Param('id') id: number,
     @Body() body: { isHighlighted: boolean },
-    @User() user: any,
   ): Promise<Danmaku | null> {
-    const danmaku = await this.danmakuService.update(id, {
+    const updateDto: DanmakuUpdateDto = {
       isHighlighted: body.isHighlighted,
-    } as any);
+    };
+
+    const danmaku = await this.danmakuService.update(id, updateDto);
 
     return danmaku;
   }
@@ -389,7 +481,7 @@ export class DanmakuController {
   // 获取弹幕举报信息
   @Get(':id/reports')
   @ApiOperation({ summary: '获取弹幕举报', description: '获取指定弹幕的举报信息' })
-  async getDanmakuReports(@Param('id') id: number): Promise<any> {
+  getDanmakuReports(@Param('id') id: number): DanmakuReportsResponse {
     // 这里可以实现弹幕举报系统
     // 例如：举报次数、举报原因、处理状态等
 
@@ -406,24 +498,23 @@ export class DanmakuController {
   @Post(':id/report')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '举报弹幕', description: '举报指定弹幕内容' })
-  async reportDanmaku(
+  reportDanmaku(
     @Param('id') id: number,
     @Body() body: { reason: string; description?: string },
-    @User() user: any,
-  ): Promise<{ success: boolean; message: string }> {
+  ): { success: boolean; message: string } {
     // 这里可以实现弹幕举报功能
     // 例如：保存举报记录、通知管理员、降低优先级等
 
     return {
       success: true,
-      message: `弹幕 ${id} 举报已提交，感谢您的反馈`,
+      message: `弹幕 ${id} 举报已提交，原因：${body.reason}`,
     };
   }
 
   // 获取弹幕敏感词过滤规则
   @Get('filter/rules')
   @ApiOperation({ summary: '获取过滤规则', description: '获取弹幕敏感词过滤规则' })
-  async getFilterRules(): Promise<any> {
+  getFilterRules(): DanmakuFilterRulesResponse {
     // 这里可以实现敏感词过滤规则管理
     // 例如：敏感词列表、过滤级别、自定义规则等
 
@@ -446,7 +537,7 @@ export class DanmakuController {
   // 更新弹幕过滤规则
   @Put('filter/rules')
   @ApiOperation({ summary: '更新过滤规则', description: '更新弹幕敏感词过滤规则' })
-  async updateFilterRules(
+  updateFilterRules(
     @Body()
     body: {
       sensitiveWords?: string[];
@@ -454,7 +545,7 @@ export class DanmakuController {
       level?: 'low' | 'medium' | 'high';
       autoBlock?: boolean;
     },
-  ): Promise<any> {
+  ): { success: boolean; message: string; updatedRules: typeof body } {
     // 这里可以实现过滤规则更新功能
     // 例如：添加/删除敏感词、更新过滤模式等
 
@@ -468,7 +559,7 @@ export class DanmakuController {
   // 获取弹幕系统健康状态
   @Get('health')
   @ApiOperation({ summary: '系统健康状态', description: '检查弹幕系统的健康状态' })
-  async getHealthStatus(): Promise<any> {
+  getHealthStatus(): DanmakuHealthStatusResponse {
     // 检查数据库连接、WebSocket状态、性能指标等
 
     return {

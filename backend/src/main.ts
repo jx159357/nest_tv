@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import type { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { RequestLoggingMiddleware } from './middleware/request-logging.middleware';
@@ -16,12 +17,14 @@ async function bootstrap() {
 
   // 安全的CORS配置
   const isProduction = process.env.NODE_ENV === 'production';
-  const allowedOrigins = isProduction
+  const allowedOrigins: string[] = isProduction
     ? process.env.ALLOWED_ORIGINS?.split(',') || ['https://streaming-platform.com']
     : ['http://localhost:3334', 'http://localhost:5173', 'http://127.0.0.1:5173'];
 
+  type CorsCallback = (error: Error | null, allow?: boolean) => void;
+
   app.enableCors({
-    origin: (origin, callback) => {
+    origin: (origin: string | undefined, callback: CorsCallback) => {
       // 允许开发环境和预定义的生产环境域名
       if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
         callback(null, true);
@@ -45,7 +48,8 @@ async function bootstrap() {
   });
 
   // 设置响应头以确保字符编码正确
-  app.use((req, res, next) => {
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    void req;
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     next();
@@ -62,22 +66,29 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
 
   // 设置自定义中间件来处理MIME类型
-  app.use('/api/swagger-ui.css', (req, res, next) => {
+  app.use('/api/swagger-ui.css', (req: Request, res: Response, next: NextFunction) => {
+    void req;
     res.setHeader('Content-Type', 'text/css; charset=utf-8');
     next();
   });
 
-  app.use('/api/swagger-ui-bundle.js', (req, res, next) => {
+  app.use('/api/swagger-ui-bundle.js', (req: Request, res: Response, next: NextFunction) => {
+    void req;
     res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
     next();
   });
 
-  app.use('/api/swagger-ui-standalone-preset.js', (req, res, next) => {
-    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-    next();
-  });
+  app.use(
+    '/api/swagger-ui-standalone-preset.js',
+    (req: Request, res: Response, next: NextFunction) => {
+      void req;
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      next();
+    },
+  );
 
-  app.use('/api/swagger-ui-init.js', (req, res, next) => {
+  app.use('/api/swagger-ui-init.js', (req: Request, res: Response, next: NextFunction) => {
+    void req;
     res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
     next();
   });
@@ -100,8 +111,9 @@ async function bootstrap() {
   const appLogger = app.get(AppLoggerService);
   const requestLoggingMiddleware = new RequestLoggingMiddleware(appLogger);
   const performanceMonitoringMiddleware = new PerformanceMonitoringMiddleware(appLogger);
+  const securityHeadersMiddleware = new SecurityHeadersMiddleware();
 
-  app.use(new SecurityHeadersMiddleware().use);
+  app.use(securityHeadersMiddleware.use.bind(securityHeadersMiddleware));
   app.use(requestLoggingMiddleware.use.bind(requestLoggingMiddleware));
   app.use(performanceMonitoringMiddleware.use.bind(performanceMonitoringMiddleware));
 
@@ -155,8 +167,9 @@ async function bootstrap() {
   try {
     port = await getAvailablePort(defaultPort);
     console.log(`✅ 端口 ${port} 可用`);
-  } catch (error) {
-    console.warn(`⚠️ 端口检测失败: ${error.message}`);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : '未知错误';
+    console.warn(`⚠️ 端口检测失败: ${errorMessage}`);
     console.log(`🔄 使用动态端口: ${defaultPort + Math.floor(Math.random() * 1000)}`);
     port = defaultPort + Math.floor(Math.random() * 1000);
   }
@@ -167,7 +180,7 @@ async function bootstrap() {
   console.log('📚 API Documentation: http://localhost:' + port + '/api');
 }
 
-bootstrap().catch(error => {
+bootstrap().catch((error: unknown) => {
   console.error('❌ Failed to start Nest TV Backend:', error);
   process.exit(1);
 });

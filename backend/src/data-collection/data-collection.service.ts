@@ -1,8 +1,7 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import { MediaResource, MediaType } from '../entities/media-resource.entity';
-import { PlaySource, PlaySourceType, PlaySourceStatus } from '../entities/play-source.entity';
+import { MediaType } from '../entities/media-resource.entity';
 
 export interface MediaData {
   title: string;
@@ -20,13 +19,24 @@ export interface MediaData {
   metadata?: any;
 }
 
+interface SourceSelectors {
+  title: string;
+  description: string;
+  poster: string;
+  rating: string;
+}
+
+interface CrawlerSourceConfig {
+  selectors: SourceSelectors;
+}
+
 export interface CrawlerSource {
   name: string;
   baseUrl: string;
   enabled: boolean;
   maxConcurrent: number;
   delay: number;
-  config: any;
+  config: CrawlerSourceConfig;
 }
 
 @Injectable()
@@ -95,7 +105,7 @@ export class DataCollectionService {
     this.logger.log(`开始爬取: ${url}`);
 
     try {
-      const response = await axios.get(url, {
+      const response = await axios.get<string>(url, {
         timeout: 10000,
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -134,9 +144,10 @@ export class DataCollectionService {
 
       this.logger.log(`爬取成功: ${title}`);
       return mediaData;
-    } catch (error) {
-      this.logger.error(`爬取失败: ${error.message}`, error.stack);
-      throw new HttpException(`爬取失败: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+    } catch (error: unknown) {
+      const errorMessage = this.toError(error).message;
+      this.logger.error(`爬取失败: ${errorMessage}`, this.toError(error).stack);
+      throw new HttpException(`爬取失败: ${errorMessage}`, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -155,24 +166,25 @@ export class DataCollectionService {
     const errors: string[] = [];
 
     // 使用Promise.allSettled来处理批量请求
-    const promises = urls.map(async (url, index) => {
+    const promises = urls.map((url, index) => {
       // 添加延迟以避免过于频繁的请求
       return new Promise<MediaData | null>(resolve => {
-        setTimeout(async () => {
-          try {
-            const result = this.crawlUrl(sourceName, url);
-            resolve(result);
-          } catch (error) {
-            errors.push(`${url}: ${error.message}`);
-            resolve(null);
-          }
+        setTimeout(() => {
+          void this.crawlUrl(sourceName, url)
+            .then(result => {
+              resolve(result);
+            })
+            .catch((error: unknown) => {
+              errors.push(`${url}: ${this.toError(error).message}`);
+              resolve(null);
+            });
         }, index * source.delay);
       });
     });
 
     const settledResults = await Promise.allSettled(promises);
 
-    settledResults.forEach((result, index) => {
+    settledResults.forEach(result => {
       if (result.status === 'fulfilled' && result.value) {
         results.push(result.value);
       }
@@ -205,7 +217,7 @@ export class DataCollectionService {
   /**
    * 获取热门资源URL
    */
-  async getPopularUrls(sourceName: string, limit: number = 20): Promise<string[]> {
+  getPopularUrls(sourceName: string, limit: number = 20): string[] {
     const source = this.getSource(sourceName);
     if (!source) {
       throw new Error(`爬虫源 ${sourceName} 不存在或已禁用`);
@@ -213,22 +225,14 @@ export class DataCollectionService {
 
     this.logger.log(`获取热门URL: ${sourceName}`);
 
-    try {
-      // 简化实现：返回占位URL
-      const urls = Array.from(
-        { length: limit },
-        (_, index) => `${source.baseUrl}/popular/${index + 1}`,
-      );
+    // 简化实现：返回占位URL
+    const urls = Array.from(
+      { length: limit },
+      (_, index) => `${source.baseUrl}/popular/${index + 1}`,
+    );
 
-      this.logger.log(`获取到 ${urls.length} 个热门URL`);
-      return urls;
-    } catch (error) {
-      this.logger.error(`获取热门URL失败: ${error.message}`, error.stack);
-      throw new HttpException(
-        `获取热门URL失败: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    this.logger.log(`获取到 ${urls.length} 个热门URL`);
+    return urls;
   }
 
   /**
@@ -266,12 +270,13 @@ export class DataCollectionService {
         message: '连接测试成功',
         responseTime,
       };
-    } catch (error) {
-      this.logger.error(`连接测试失败: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      const normalizedError = this.toError(error);
+      this.logger.error(`连接测试失败: ${normalizedError.message}`, normalizedError.stack);
 
       return {
         success: false,
-        message: `连接测试失败: ${error.message}`,
+        message: `连接测试失败: ${normalizedError.message}`,
       };
     }
   }
@@ -279,7 +284,7 @@ export class DataCollectionService {
   /**
    * 获取爬虫统计信息
    */
-  async getStatistics(): Promise<{
+  getStatistics(): {
     totalSources: number;
     enabledSources: number;
     sources: Array<{
@@ -288,7 +293,7 @@ export class DataCollectionService {
       lastCrawled?: Date;
       totalCrawled?: number;
     }>;
-  }> {
+  } {
     const totalSources = this.sources.length;
     const enabledSources = this.sources.filter(s => s.enabled).length;
 
@@ -310,7 +315,7 @@ export class DataCollectionService {
   /**
    * 提取下载链接
    */
-  private extractDownloadUrls($: any): string[] {
+  private extractDownloadUrls($: cheerio.CheerioAPI): string[] {
     const urls: string[] = [];
 
     // 查找常见的下载链接模式
@@ -322,5 +327,9 @@ export class DataCollectionService {
     });
 
     return [...new Set(urls)]; // 去重
+  }
+
+  private toError(error: unknown): Error {
+    return error instanceof Error ? error : new Error(String(error));
   }
 }
