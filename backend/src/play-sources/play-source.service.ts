@@ -7,6 +7,7 @@ import { PlaySource, PlaySourceStatus, PlaySourceType } from '../entities/play-s
 import { CreatePlaySourceDto } from './dtos/create-play-source.dto';
 import { UpdatePlaySourceDto } from './dtos/update-play-source.dto';
 import { PlaySourceQueryDto } from './dtos/play-source-query.dto';
+import { comparePlaySources, isPlaySourceFresh } from './play-source-ranking.util';
 
 @Injectable()
 export class PlaySourceService {
@@ -204,11 +205,15 @@ export class PlaySourceService {
   async validateRecentSources(
     limit: number = 50,
   ): Promise<{ checked: number; active: number; inactive: number }> {
-    const sources = await this.playSourceRepository.find({
-      where: { isActive: true },
-      order: { createdAt: 'DESC' },
-      take: limit,
-    });
+    const sources = await this.playSourceRepository
+      .createQueryBuilder('playSource')
+      .where('playSource.isActive = :isActive', { isActive: true })
+      .orderBy('CASE WHEN playSource.lastCheckedAt IS NULL THEN 0 ELSE 1 END', 'ASC')
+      .addOrderBy('playSource.lastCheckedAt', 'ASC')
+      .addOrderBy('playSource.priority', 'ASC')
+      .addOrderBy('playSource.createdAt', 'DESC')
+      .take(limit)
+      .getMany();
 
     let active = 0;
     let inactive = 0;
@@ -233,32 +238,45 @@ export class PlaySourceService {
    * 获取媒体资源的最佳播放源
    */
   async getBestPlaySource(mediaResourceId: number): Promise<PlaySource | null> {
-    const playSource = await this.playSourceRepository.findOne({
+    const sources = await this.playSourceRepository.find({
       where: {
         mediaResourceId,
-        status: PlaySourceStatus.ACTIVE,
-      },
-      order: {
-        priority: 'ASC',
+        isActive: true,
       },
     });
 
-    return playSource || null;
+    const orderedSources = this.sortPlaySources(sources).filter(
+      source => source.status !== PlaySourceStatus.ERROR,
+    );
+
+    for (const source of orderedSources) {
+      if (source.status === PlaySourceStatus.ACTIVE && isPlaySourceFresh(source)) {
+        return source;
+      }
+
+      const isValid = await this.validatePlaySource(source);
+      if (isValid) {
+        return source;
+      }
+    }
+
+    return null;
   }
 
   /**
    * 获取媒体资源的播放源列表
    */
   async getByMediaResource(mediaResourceId: number): Promise<PlaySource[]> {
-    return this.playSourceRepository.find({
+    const sources = await this.playSourceRepository.find({
       where: {
         mediaResourceId,
-        status: PlaySourceStatus.ACTIVE,
-      },
-      order: {
-        priority: 'ASC',
+        isActive: true,
       },
     });
+
+    return this.sortPlaySources(sources).filter(
+      source => source.status === PlaySourceStatus.ACTIVE && source.isActive,
+    );
   }
 
   private async validatePlaySource(playSource: PlaySource): Promise<boolean> {
@@ -308,5 +326,10 @@ export class PlaySourceService {
     } catch {
       return false;
     }
+  }
+
+  private sortPlaySources(sources: PlaySource[]): PlaySource[] {
+    const now = new Date();
+    return [...sources].sort((left, right) => comparePlaySources(left, right, now));
   }
 }

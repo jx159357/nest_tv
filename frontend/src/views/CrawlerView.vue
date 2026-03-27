@@ -25,6 +25,62 @@
         <p class="text-gray-600 mt-1">管理和监控影视资源爬虫任务</p>
       </div>
 
+      <div v-if="collectionStatistics" class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-medium text-gray-900">采集概览</h2>
+            <p class="mt-1 text-sm text-gray-600">基于真实入库媒体与播放源健康数据汇总</p>
+          </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3 xl:grid-cols-6">
+          <div class="rounded-lg bg-gray-50 p-4">
+            <div class="text-xs text-gray-500">启用来源 / 总来源</div>
+            <div class="mt-2 text-lg font-semibold text-gray-900">
+              {{ collectionStatistics.enabledSources }} / {{ collectionStatistics.totalSources }}
+            </div>
+          </div>
+          <div class="rounded-lg bg-gray-50 p-4">
+            <div class="text-xs text-gray-500">日采集来源 / 高质量来源</div>
+            <div class="mt-2 text-lg font-semibold text-gray-900">
+              {{ collectionStatistics.dailyEnabledSources }} /
+              {{ collectionStatistics.stableSources }}
+            </div>
+          </div>
+          <div class="rounded-lg bg-gray-50 p-4">
+            <div class="text-xs text-gray-500">已入库媒体 / 可用媒体</div>
+            <div class="mt-2 text-lg font-semibold text-gray-900">
+              {{ collectionStatistics.totalMedia }} / {{ collectionStatistics.activeMedia }}
+            </div>
+          </div>
+          <div class="rounded-lg bg-gray-50 p-4">
+            <div class="text-xs text-gray-500">播放源总量 / 活跃源</div>
+            <div class="mt-2 text-lg font-semibold text-gray-900">
+              {{ collectionStatistics.totalPlaySources }} /
+              {{ collectionStatistics.activePlaySources }}
+            </div>
+          </div>
+          <div class="rounded-lg bg-gray-50 p-4">
+            <div class="text-xs text-gray-500">近24h新增源</div>
+            <div class="mt-2 text-lg font-semibold text-gray-900">
+              {{ collectionStatistics.recentPlaySources24h }}
+            </div>
+          </div>
+          <div class="rounded-lg bg-gray-50 p-4">
+            <div class="text-xs text-gray-500">平均质量 / 平均可用率</div>
+            <div class="mt-2 text-lg font-semibold text-gray-900">
+              {{ collectionStatistics.averageQualityScore }} /
+              {{ collectionStatistics.averageActiveRate }}%
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-col gap-2 text-sm text-gray-600 md:flex-row md:gap-6">
+          <span>最近入库: {{ formatDateTime(collectionStatistics.latestCollectedAt) }}</span>
+          <span>最近校验: {{ formatDateTime(collectionStatistics.latestValidatedAt) }}</span>
+        </div>
+      </div>
+
       <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
         <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
@@ -93,6 +149,43 @@
           </button>
         </div>
 
+        <div
+          v-if="focusedSourceName"
+          class="mb-4 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-white to-rose-50 p-4 shadow-sm"
+        >
+          <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">
+                后台首页 · {{ getFocusOriginLabel() }}
+              </div>
+              <h3 class="mt-2 text-base font-semibold text-gray-900">
+                当前聚焦来源：{{ focusedSourceName }}
+              </h3>
+              <p class="mt-1 text-sm text-gray-600">
+                已自动定位到该来源卡片，并同步填入快速爬取目标，方便直接检查策略、采集与稳定性。
+              </p>
+              <p v-if="focusedSourceStats" class="mt-2 text-xs text-gray-500">
+                已入库 {{ focusedSourceStats.totalCrawled }} · 可用率 {{ focusedSourceStats.activeRate }}% · 质量分
+                {{ focusedSourceStats.qualityScore }}
+              </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <router-link
+                :to="buildAdminPlaySourcesLink(focusedSourceName)"
+                class="inline-flex items-center justify-center rounded-full border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100"
+              >
+                查看播放源
+              </router-link>
+              <button
+                class="inline-flex items-center justify-center rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                @click="clearFocusedSource"
+              >
+                查看全部来源
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div v-if="targetsLoading" class="text-center py-8">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
           <p class="mt-2 text-gray-500">加载中...</p>
@@ -105,8 +198,16 @@
           <div
             v-for="target in crawlerTargets"
             :key="target.name"
-            class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+            :id="getSourceCardId(target.name)"
+            :ref="element => setSourceCardRef(target.name, element)"
+            :class="getSourceCardClass(target.name)"
           >
+            <div
+              v-if="isFocusedSource(target.name)"
+              class="mb-3 inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700"
+            >
+              影院聚合焦点来源
+            </div>
             <div class="flex justify-between items-start">
               <div>
                 <h3 class="font-medium text-gray-900">{{ target.name }}</h3>
@@ -130,6 +231,14 @@
                   <p>
                     近24h新增源:
                     {{ getSourceHealth(target.name)?.recentPlaySources24h }}
+                  </p>
+                  <p>
+                    已入库媒体:
+                    {{ getCollectionSourceStats(target.name)?.totalCrawled || 0 }}
+                  </p>
+                  <p>
+                    最近入库:
+                    {{ formatDateTime(getCollectionSourceStats(target.name)?.lastCrawled) }}
                   </p>
                   <p class="text-[11px] text-gray-500">
                     {{ getSourceHealth(target.name)?.recommendation }}
@@ -502,10 +611,13 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, onMounted } from 'vue';
+  import { computed, nextTick, onMounted, ref, watch } from 'vue';
+  import { useRoute, useRouter } from 'vue-router';
   import {
     crawlerApi,
     type BatchCrawlResponse,
+    type CollectionSourceStatistics,
+    type CollectionStatistics,
     type CollectedSourceSummary,
     type CrawlerTarget,
     type CrawlResultResponse,
@@ -513,6 +625,13 @@
     type SourceHealthSummary,
   } from '@/api/crawler';
   import { schedulerApi, type DailySourceCollectionRunSummary } from '@/api/scheduler';
+  import {
+    matchesCrawlerAlertFilter,
+    type CrawlerAlertFilter,
+  } from '@/utils/collection-source-alerts';
+
+  const route = useRoute();
+  const router = useRouter();
 
   // 状态管理
   const crawlerTargets = ref<CrawlerTarget[]>([]);
@@ -529,9 +648,12 @@
   const crawlResult = ref<CrawlResultResponse | null>(null);
   const batchCrawlResult = ref<BatchCrawlResponse | null>(null);
   const dailySummary = ref<DailySourceCollectionRunSummary | null>(null);
+  const collectionStatistics = ref<CollectionStatistics | null>(null);
   const sourceCollectionResult = ref<CollectedSourceSummary | null>(null);
   const sourceHealthSummaries = ref<SourceHealthSummary[]>([]);
   const policyDrafts = ref<Record<string, SourcePolicyUpdatePayload>>({});
+  const focusedSourceName = ref('');
+  const sourceCardRefs = ref<Record<string, HTMLElement | null>>({});
 
   // 表单数据
   const quickCrawlForm = ref({
@@ -552,12 +674,10 @@
 
     try {
       const targets = await crawlerApi.getTargets();
-      if (targets.length > 0) {
-        crawlerTargets.value = targets.map(target => ({
-          ...target,
-          status: 'unknown', // 默认状态
-        }));
-      }
+      crawlerTargets.value = targets.map(target => ({
+        ...target,
+        status: 'unknown', // 默认状态
+      }));
     } catch (error) {
       console.error('加载爬虫目标失败:', error);
       crawlerTargets.value = [];
@@ -571,6 +691,16 @@
       dailySummary.value = await schedulerApi.getDailySourceCollectionSummary();
     } catch (error) {
       console.error('加载每日采集摘要失败:', error);
+    }
+  };
+
+  const loadCollectionStatistics = async () => {
+    try {
+      const response = await crawlerApi.getStatistics();
+      collectionStatistics.value = response.data || null;
+    } catch (error) {
+      console.error('加载采集概览失败:', error);
+      collectionStatistics.value = null;
     }
   };
 
@@ -591,8 +721,149 @@
     }
   };
 
+  const sourceHealthMap = computed(() => {
+    return new Map(sourceHealthSummaries.value.map(item => [item.name, item]));
+  });
+
+  const collectionSourceStatsMap = computed(() => {
+    return new Map(
+      (collectionStatistics.value?.sources || []).map(item => [item.name, item]),
+    );
+  });
+  const activeAlertFilter = computed<CrawlerAlertFilter | ''>(() => {
+    const value = typeof route.query.alertFilter === 'string' ? route.query.alertFilter : '';
+
+    return value === 'critical' || value === 'high' || value === 'stalled' || value === 'inactive'
+      ? value
+      : '';
+  });
+  const filteredCrawlerTargets = computed(() => {
+    if (focusedSourceName.value || !activeAlertFilter.value || !collectionStatistics.value) {
+      return crawlerTargets.value;
+    }
+
+    return crawlerTargets.value.filter(target => {
+      const sourceStats = collectionSourceStatsMap.value.get(target.name);
+      return sourceStats ? matchesCrawlerAlertFilter(sourceStats, activeAlertFilter.value) : false;
+    });
+  });
+
   const getSourceHealth = (targetName: string) => {
-    return sourceHealthSummaries.value.find(item => item.name === targetName);
+    return sourceHealthMap.value.get(targetName);
+  };
+
+  const getCollectionSourceStats = (targetName: string) => {
+    return collectionSourceStatsMap.value.get(targetName) || null;
+  };
+
+  const getSourceCardId = (targetName: string) => {
+    return `crawler-source-${encodeURIComponent(targetName)}`;
+  };
+
+  const setSourceCardRef = (targetName: string, element: unknown) => {
+    const rawElement =
+      element && typeof element === 'object' && '$el' in element
+        ? (element as { $el?: unknown }).$el
+        : element;
+
+    sourceCardRefs.value[targetName] = rawElement instanceof HTMLElement ? rawElement : null;
+  };
+
+  const isFocusedSource = (targetName: string) => {
+    return focusedSourceName.value === targetName;
+  };
+
+  const getSourceCardClass = (targetName: string) => {
+    return [
+      'rounded-2xl border p-4 transition-all duration-300',
+      isFocusedSource(targetName)
+        ? 'border-amber-300 bg-gradient-to-br from-amber-50 via-white to-rose-50 shadow-lg ring-2 ring-amber-200'
+        : 'border-gray-200 bg-white hover:shadow-md',
+    ];
+  };
+
+  const focusedSourceStats = computed<CollectionSourceStatistics | null>(() => {
+    if (!focusedSourceName.value) {
+      return null;
+    }
+
+    return getCollectionSourceStats(focusedSourceName.value);
+  });
+
+  const getFocusOriginLabel = () => {
+    return route.query.focus === 'attention' ? '待关注来源' : '重点来源';
+  };
+
+  const getAlertFilterLabel = () => {
+    const labelMap: Record<CrawlerAlertFilter, string> = {
+      critical: '立即止损来源',
+      high: '优先处理来源',
+      stalled: '入库停滞来源',
+      inactive: '无活跃源来源',
+    };
+
+    return activeAlertFilter.value ? labelMap[activeAlertFilter.value] : '来源过滤';
+  };
+
+  const applyRouteSourceFocus = async () => {
+    const sourceName = typeof route.query.source === 'string' ? route.query.source.trim() : '';
+    if (!sourceName) {
+      focusedSourceName.value = '';
+      return;
+    }
+
+    const matchedTarget = crawlerTargets.value.find(target => target.name === sourceName);
+    if (!matchedTarget) {
+      focusedSourceName.value = '';
+      return;
+    }
+
+    focusedSourceName.value = matchedTarget.name;
+    quickCrawlForm.value.targetName = matchedTarget.name;
+
+    await nextTick();
+    const sourceCardElement = sourceCardRefs.value[matchedTarget.name];
+    sourceCardElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  const clearFocusedSource = async () => {
+    focusedSourceName.value = '';
+
+    const nextQuery = { ...route.query };
+    delete nextQuery.source;
+    delete nextQuery.focus;
+
+    await router.replace({ query: nextQuery });
+  };
+
+  const clearAlertFilter = async () => {
+    const nextQuery = { ...route.query };
+    delete nextQuery.alertFilter;
+
+    await router.replace({ query: nextQuery });
+  };
+
+  const buildAdminPlaySourcesLink = (sourceName: string) => {
+    return {
+      name: 'admin-play-sources',
+      query: {
+        source: sourceName,
+        focus: route.query.focus === 'attention' ? 'attention' : 'top',
+      },
+    };
+  };
+
+  const formatDateTime = (value?: string | null) => {
+    if (!value) {
+      return '暂无';
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return '暂无';
+    }
+
+    return parsed.toLocaleString('zh-CN');
   };
 
   const getPolicyDraft = (targetName: string) => {
@@ -624,7 +895,9 @@
     refreshing.value = true;
     await loadCrawlerTargets();
     await loadDailySummary();
+    await loadCollectionStatistics();
     await loadSourceHealth();
+    await applyRouteSourceFocus();
     refreshing.value = false;
   };
 
@@ -633,6 +906,7 @@
       collectingSource.value = targetName;
       const response = await crawlerApi.collectPopularResources(targetName, 8);
       sourceCollectionResult.value = response.data || null;
+      await loadCollectionStatistics();
       await loadSourceHealth();
       await loadDailySummary();
     } catch (error) {
@@ -646,6 +920,8 @@
     try {
       dailyRunning.value = true;
       dailySummary.value = await schedulerApi.runDailySourceCollection();
+      await loadCollectionStatistics();
+      await loadSourceHealth();
     } catch (error) {
       console.error('手动触发每日采集失败:', error);
     } finally {
@@ -750,6 +1026,22 @@
   onMounted(() => {
     void loadCrawlerTargets();
     void loadDailySummary();
+    void loadCollectionStatistics();
     void loadSourceHealth();
   });
+
+  watch(
+    () => route.query.source,
+    () => {
+      void applyRouteSourceFocus();
+    },
+  );
+
+  watch(
+    crawlerTargets,
+    () => {
+      void applyRouteSourceFocus();
+    },
+    { deep: false },
+  );
 </script>

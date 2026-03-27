@@ -91,6 +91,41 @@ export interface SourceHealthSummary {
   latestCheckedAt: string | null;
 }
 
+export interface CollectionSourceStatistics {
+  name: string;
+  enabled: boolean;
+  dailyEnabled: boolean;
+  totalCrawled: number;
+  activeMedia: number;
+  totalPlaySources: number;
+  activePlaySources: number;
+  recentPlaySources24h: number;
+  activeRate: number;
+  qualityScore: number;
+  proxyMode: SourceCollectionPolicy['proxyMode'];
+  suggestedProxyMode: SourceCollectionPolicy['proxyMode'];
+  lastCrawled: string | null;
+  lastPlaySourceCreatedAt: string | null;
+  lastCheckedAt: string | null;
+}
+
+export interface CollectionStatistics {
+  totalSources: number;
+  enabledSources: number;
+  dailyEnabledSources: number;
+  stableSources: number;
+  totalMedia: number;
+  activeMedia: number;
+  totalPlaySources: number;
+  activePlaySources: number;
+  recentPlaySources24h: number;
+  averageActiveRate: number;
+  averageQualityScore: number;
+  latestCollectedAt: string | null;
+  latestValidatedAt: string | null;
+  sources: CollectionSourceStatistics[];
+}
+
 export interface CrawlerSource {
   name: string;
   baseUrl: string;
@@ -592,31 +627,94 @@ export class DataCollectionService {
   /**
    * 获取爬虫统计信息
    */
-  getStatistics(): {
-    totalSources: number;
-    enabledSources: number;
-    sources: Array<{
-      name: string;
-      enabled: boolean;
-      lastCrawled?: Date;
-      totalCrawled?: number;
-    }>;
-  } {
-    const totalSources = this.sources.length;
-    const enabledSources = this.sources.filter(s => s.enabled).length;
+  async getStatistics(): Promise<CollectionStatistics> {
+    const sources = this.sources;
+    const [sourceHealthSummaries, mediaSourceStatistics, totalMedia, activeMedia] = await Promise.all([
+      this.getSourceHealthSummaries(),
+      this.mediaResourceService.getSourceStatistics(sources.map(source => source.name)),
+      this.mediaResourceService.getTotalCount(),
+      this.mediaResourceService.getActiveCount(),
+    ]);
 
-    const sources = this.sources.map(source => ({
-      name: source.name,
-      enabled: source.enabled,
-      // 这里可以添加从数据库获取的统计信息
-      totalCrawled: Math.floor(Math.random() * 1000),
-      lastCrawled: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000),
-    }));
+    const sourceHealthMap = new Map(sourceHealthSummaries.map(summary => [summary.name, summary]));
+    const sourceStatistics: CollectionSourceStatistics[] = sources.map(source => {
+      const healthSummary = sourceHealthMap.get(source.name);
+      const mediaStatistics = mediaSourceStatistics[source.name];
+
+      return {
+        name: source.name,
+        enabled: source.enabled,
+        dailyEnabled: source.collectionPolicy.dailyEnabled,
+        totalCrawled: mediaStatistics?.total || 0,
+        activeMedia: mediaStatistics?.active || 0,
+        totalPlaySources: healthSummary?.totalPlaySources || 0,
+        activePlaySources: healthSummary?.activePlaySources || 0,
+        recentPlaySources24h: healthSummary?.recentPlaySources24h || 0,
+        activeRate: healthSummary?.activeRate || 0,
+        qualityScore: healthSummary?.qualityScore || 0,
+        proxyMode: source.collectionPolicy.proxyMode,
+        suggestedProxyMode:
+          healthSummary?.suggestedProxyMode || source.collectionPolicy.proxyMode,
+        lastCrawled: mediaStatistics?.latestCreatedAt || null,
+        lastPlaySourceCreatedAt: healthSummary?.latestCreatedAt || null,
+        lastCheckedAt: healthSummary?.latestCheckedAt || null,
+      };
+    });
+
+    const latestCollectedAt = this.getLatestTimestamp(
+      sourceStatistics.map(sourceStatistic => sourceStatistic.lastCrawled),
+    );
+    const latestValidatedAt = this.getLatestTimestamp(
+      sourceStatistics.map(sourceStatistic => sourceStatistic.lastCheckedAt),
+    );
+    const totalPlaySources = sourceStatistics.reduce(
+      (sum, sourceStatistic) => sum + sourceStatistic.totalPlaySources,
+      0,
+    );
+    const activePlaySources = sourceStatistics.reduce(
+      (sum, sourceStatistic) => sum + sourceStatistic.activePlaySources,
+      0,
+    );
+    const recentPlaySources24h = sourceStatistics.reduce(
+      (sum, sourceStatistic) => sum + sourceStatistic.recentPlaySources24h,
+      0,
+    );
+    const averageActiveRate =
+      sourceStatistics.length > 0
+        ? Math.round(
+            sourceStatistics.reduce(
+              (sum, sourceStatistic) => sum + sourceStatistic.activeRate,
+              0,
+            ) / sourceStatistics.length,
+          )
+        : 0;
+    const averageQualityScore =
+      sourceStatistics.length > 0
+        ? Math.round(
+            sourceStatistics.reduce(
+              (sum, sourceStatistic) => sum + sourceStatistic.qualityScore,
+              0,
+            ) / sourceStatistics.length,
+          )
+        : 0;
 
     return {
-      totalSources,
-      enabledSources,
-      sources,
+      totalSources: sources.length,
+      enabledSources: sources.filter(source => source.enabled).length,
+      dailyEnabledSources: sourceStatistics.filter(source => source.dailyEnabled).length,
+      stableSources: sourceStatistics.filter(source => source.qualityScore >= 80).length,
+      totalMedia,
+      activeMedia,
+      totalPlaySources,
+      activePlaySources,
+      recentPlaySources24h,
+      averageActiveRate,
+      averageQualityScore,
+      latestCollectedAt,
+      latestValidatedAt,
+      sources: sourceStatistics.sort(
+        (left, right) => right.qualityScore - left.qualityScore || right.activeRate - left.activeRate,
+      ),
     };
   }
 
@@ -966,5 +1064,18 @@ export class DataCollectionService {
 
   private toError(error: unknown): Error {
     return error instanceof Error ? error : new Error(String(error));
+  }
+
+  private getLatestTimestamp(values: Array<string | null | undefined>): string | null {
+    const timestamps = values
+      .filter((value): value is string => typeof value === 'string' && value.length > 0)
+      .map(value => new Date(value).getTime())
+      .filter(timestamp => !Number.isNaN(timestamp));
+
+    if (timestamps.length === 0) {
+      return null;
+    }
+
+    return new Date(Math.max(...timestamps)).toISOString();
   }
 }

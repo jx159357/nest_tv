@@ -7,12 +7,20 @@ import { UpdateMediaResourceDto } from './dtos/update-media-resource.dto';
 import { MediaResourceQueryDto } from './dtos/media-resource-query.dto';
 import { CacheService } from '../common/cache/cache.service';
 import { Cacheable, CacheEvict } from '../common/decorators/cache.decorator';
+import { comparePlaySources } from '../play-sources/play-source-ranking.util';
 
 interface MediaStatisticsRow {
   total: string;
   type: string;
   quality: string;
   avgRating: string | null;
+}
+
+interface MediaSourceStatisticsRow {
+  source: string | null;
+  total: string;
+  active: string;
+  latestCreatedAt: string | null;
 }
 
 @Injectable()
@@ -159,6 +167,13 @@ export class MediaResourceService {
 
     if (!mediaResource) {
       throw new NotFoundException(`影视资源ID ${id} 不存在`);
+    }
+
+    if (Array.isArray(mediaResource.playSources)) {
+      const now = new Date();
+      mediaResource.playSources = [...mediaResource.playSources].sort((left, right) =>
+        comparePlaySources(left, right, now),
+      );
     }
 
     return mediaResource;
@@ -376,6 +391,43 @@ export class MediaResourceService {
         isActive: true,
       },
     });
+  }
+
+  async getSourceStatistics(
+    sourceNames?: string[],
+  ): Promise<Record<string, { total: number; active: number; latestCreatedAt: string | null }>> {
+    const queryBuilder = this.mediaResourceRepository
+      .createQueryBuilder('mediaResource')
+      .select('mediaResource.source', 'source')
+      .addSelect('COUNT(*)', 'total')
+      .addSelect('SUM(CASE WHEN mediaResource.isActive = true THEN 1 ELSE 0 END)', 'active')
+      .addSelect('MAX(mediaResource.createdAt)', 'latestCreatedAt')
+      .where('mediaResource.source IS NOT NULL');
+
+    if (sourceNames && sourceNames.length > 0) {
+      queryBuilder.andWhere('mediaResource.source IN (:...sourceNames)', { sourceNames });
+    }
+
+    const rows = await queryBuilder
+      .groupBy('mediaResource.source')
+      .getRawMany<MediaSourceStatisticsRow>();
+
+    return rows.reduce<Record<string, { total: number; active: number; latestCreatedAt: string | null }>>(
+      (accumulator, row) => {
+        if (!row.source) {
+          return accumulator;
+        }
+
+        accumulator[row.source] = {
+          total: parseInt(row.total, 10) || 0,
+          active: parseInt(row.active, 10) || 0,
+          latestCreatedAt: row.latestCreatedAt ?? null,
+        };
+
+        return accumulator;
+      },
+      {},
+    );
   }
 
   /**

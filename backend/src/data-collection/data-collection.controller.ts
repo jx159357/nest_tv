@@ -201,8 +201,8 @@ export class DataCollectionController {
   @Get('statistics')
   @ApiOperation({ summary: '获取爬虫统计信息' })
   @ApiResponse({ status: 200, description: '获取成功' })
-  getStatistics() {
-    const statistics = this.dataCollectionService.getStatistics();
+  async getStatistics() {
+    const statistics = await this.dataCollectionService.getStatistics();
     return {
       success: true,
       data: statistics,

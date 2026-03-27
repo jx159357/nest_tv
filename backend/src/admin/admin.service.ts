@@ -103,21 +103,86 @@ export class AdminService {
     };
   }
 
-  async getPlaySources(page: number = 1, limit: number = 20, type?: string) {
+  async getPlaySources(
+    page: number = 1,
+    limit: number = 20,
+    type?: string,
+    source?: string,
+    search?: string,
+    status?: string,
+    sortBy?: string,
+    sortOrder: 'ASC' | 'DESC' = 'DESC',
+  ) {
     const queryBuilder = this.playSourceRepository
       .createQueryBuilder('playSource')
       .leftJoinAndSelect('playSource.mediaResource', 'mediaResource');
+
+    const sortFieldMap = {
+      createdAt: 'playSource.createdAt',
+      lastCheckedAt: 'playSource.lastCheckedAt',
+      priority: 'playSource.priority',
+    } as const;
+
+    const resolvedSortBy =
+      sortBy && sortBy in sortFieldMap ? sortFieldMap[sortBy as keyof typeof sortFieldMap] : undefined;
+    const resolvedSortOrder: 'ASC' | 'DESC' = sortOrder === 'ASC' ? 'ASC' : 'DESC';
 
     if (type) {
       queryBuilder.andWhere('playSource.type = :type', { type });
     }
 
+    if (status?.trim()) {
+      queryBuilder.andWhere('playSource.status = :status', {
+        status: status.trim(),
+      });
+    }
+
+    if (source?.trim()) {
+      queryBuilder.andWhere(
+        `(
+          playSource.sourceName LIKE :source
+          OR playSource.name LIKE :source
+          OR mediaResource.source LIKE :source
+        )`,
+        {
+          source: `%${source.trim()}%`,
+        },
+      );
+    }
+
+    if (search?.trim()) {
+      queryBuilder.andWhere(
+        `(
+          playSource.sourceName LIKE :search
+          OR playSource.name LIKE :search
+          OR playSource.url LIKE :search
+          OR playSource.providerName LIKE :search
+          OR mediaResource.title LIKE :search
+          OR mediaResource.source LIKE :search
+        )`,
+        {
+          search: `%${search.trim()}%`,
+        },
+      );
+    }
+
     const total = await queryBuilder.getCount();
-    const data = await queryBuilder
-      .orderBy('playSource.createdAt', 'DESC')
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getMany();
+
+    if (resolvedSortBy === sortFieldMap.lastCheckedAt) {
+      queryBuilder
+        .orderBy(
+          'CASE WHEN playSource.lastCheckedAt IS NULL THEN 0 ELSE 1 END',
+          resolvedSortOrder === 'ASC' ? 'ASC' : 'DESC',
+        )
+        .addOrderBy(resolvedSortBy, resolvedSortOrder)
+        .addOrderBy('playSource.createdAt', 'DESC');
+    } else if (resolvedSortBy) {
+      queryBuilder.orderBy(resolvedSortBy, resolvedSortOrder).addOrderBy('playSource.createdAt', 'DESC');
+    } else {
+      queryBuilder.orderBy('playSource.createdAt', 'DESC');
+    }
+
+    const data = await queryBuilder.skip((page - 1) * limit).take(limit).getMany();
 
     return {
       data,

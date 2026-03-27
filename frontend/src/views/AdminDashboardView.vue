@@ -145,6 +145,435 @@
       </div>
     </div>
 
+    <div
+      v-if="collectionLoading && !collectionStatistics"
+      class="rounded-2xl border border-slate-200 bg-white px-6 py-12 shadow-sm"
+    >
+      <div class="flex flex-col items-center justify-center text-center">
+        <div class="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-indigo-600"></div>
+        <p class="mt-3 text-sm text-slate-500">正在加载稳定源采集监控...</p>
+      </div>
+    </div>
+
+    <div
+      v-else-if="collectionStatistics"
+      class="overflow-hidden rounded-2xl bg-slate-950 shadow-xl ring-1 ring-slate-800"
+    >
+      <div class="bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.26),_transparent_36%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.18),_transparent_32%),linear-gradient(135deg,_rgba(15,23,42,0.98),_rgba(15,23,42,0.92))] p-6 text-white lg:p-8">
+        <div class="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+          <div class="max-w-2xl">
+            <span
+              class="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-slate-200"
+            >
+              稳定源采集监控
+            </span>
+            <h2 class="mt-4 text-2xl font-semibold leading-tight text-white">
+              每日自动采集的可用稳定播放源，现在也能在后台首页直接看到
+            </h2>
+            <p class="mt-3 text-sm leading-6 text-slate-300">
+              这里汇总真实来源、已入库媒体、播放源活跃度、平均质量分，以及最近一次入库和校验时间，方便持续盯住影视聚合平台的稳定供给。
+            </p>
+            <p v-if="collectionError" class="mt-3 text-xs text-amber-200/90">
+              {{ collectionError }}
+            </p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:min-w-[520px] xl:max-w-[560px]">
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+              <div class="text-xs text-slate-400">启用来源</div>
+              <div class="mt-2 text-2xl font-semibold text-white">
+                {{ collectionStatistics.enabledSources }}
+              </div>
+              <div class="mt-1 text-xs text-slate-400">
+                日采集 {{ collectionStatistics.dailyEnabledSources }} · 高质量
+                {{ collectionStatistics.stableSources }}
+              </div>
+            </div>
+
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+              <div class="text-xs text-slate-400">媒体入库</div>
+              <div class="mt-2 text-2xl font-semibold text-white">
+                {{ collectionStatistics.totalMedia }}
+              </div>
+              <div class="mt-1 text-xs text-slate-400">
+                活跃媒体 {{ collectionStatistics.activeMedia }}
+              </div>
+            </div>
+
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+              <div class="text-xs text-slate-400">播放源池</div>
+              <div class="mt-2 text-2xl font-semibold text-white">
+                {{ collectionStatistics.totalPlaySources }}
+              </div>
+              <div class="mt-1 text-xs text-slate-400">
+                活跃 {{ collectionStatistics.activePlaySources }} · 近24h
+                {{ collectionStatistics.recentPlaySources24h }}
+              </div>
+            </div>
+
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+              <div class="text-xs text-slate-400">综合质量</div>
+              <div class="mt-2 text-2xl font-semibold text-white">
+                {{ collectionStatistics.averageQualityScore }}
+              </div>
+              <div class="mt-1 text-xs text-slate-400">
+                平均可用率 {{ collectionStatistics.averageActiveRate }}%
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.9fr)]">
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h3 class="text-base font-medium text-white">采集概览</h3>
+                <p class="mt-1 text-sm text-slate-400">
+                  按真实采集来源、入库媒体、稳定播放源质量综合统计
+                </p>
+              </div>
+              <router-link
+                to="/crawler"
+                class="inline-flex items-center justify-center rounded-full border border-indigo-400/30 bg-indigo-500/10 px-4 py-2 text-sm font-medium text-indigo-100 transition hover:bg-indigo-500/20"
+              >
+                前往爬虫管理
+              </router-link>
+            </div>
+
+            <div class="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div class="rounded-xl border border-white/10 bg-slate-900/40 p-4">
+                <div class="text-xs text-slate-400">来源覆盖</div>
+                <div class="mt-2 text-sm text-slate-200">
+                  总来源 {{ collectionStatistics.totalSources }}，其中启用
+                  {{ collectionStatistics.enabledSources }} 个，参与每日采集
+                  {{ collectionStatistics.dailyEnabledSources }} 个。
+                </div>
+              </div>
+
+              <div class="rounded-xl border border-white/10 bg-slate-900/40 p-4">
+                <div class="text-xs text-slate-400">稳定性表现</div>
+                <div class="mt-2 text-sm text-slate-200">
+                  当前高质量来源 {{ collectionStatistics.stableSources }} 个，平均质量分
+                  {{ collectionStatistics.averageQualityScore }}，平均可用率
+                  {{ collectionStatistics.averageActiveRate }}%。
+                </div>
+              </div>
+
+              <div class="rounded-xl border border-white/10 bg-slate-900/40 p-4">
+                <div class="text-xs text-slate-400">最近入库</div>
+                <div class="mt-2 text-sm text-slate-200">
+                  {{ formatDateTime(collectionStatistics.latestCollectedAt) }}
+                </div>
+              </div>
+
+              <div class="rounded-xl border border-white/10 bg-slate-900/40 p-4">
+                <div class="text-xs text-slate-400">最近校验</div>
+                <div class="mt-2 text-sm text-slate-200">
+                  {{ formatDateTime(collectionStatistics.latestValidatedAt) }}
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 rounded-xl border border-white/10 bg-slate-900/50 p-4">
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <div class="text-xs text-slate-400">每日自动采集任务</div>
+                  <div class="mt-2 flex flex-wrap items-center gap-2">
+                    <span
+                      :class="[
+                        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1',
+                        getDailyStatusClass(dailySummary?.status),
+                      ]"
+                    >
+                      {{ getDailyStatusText(dailySummary?.status) }}
+                    </span>
+                    <span v-if="dailySummary" class="text-xs text-slate-400">
+                      {{ getTriggerText(dailySummary.trigger) }} ·
+                      {{ formatDateTime(dailySummary.completedAt || dailySummary.startedAt) }}
+                    </span>
+                  </div>
+                </div>
+                <div v-if="dailySummary?.durationMs" class="text-xs text-slate-400">
+                  耗时 {{ formatDuration(dailySummary.durationMs) }}
+                </div>
+              </div>
+
+              <div
+                v-if="dailySummaryLoading && !dailySummary"
+                class="mt-4 rounded-lg border border-dashed border-white/10 bg-slate-900/30 p-4 text-sm text-slate-400"
+              >
+                正在加载任务状态...
+              </div>
+
+              <div v-else-if="dailySummary" class="mt-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
+                <div class="rounded-lg border border-white/10 bg-slate-950/50 p-3">
+                  <div class="text-[11px] text-slate-500">总尝试</div>
+                  <div class="mt-2 text-lg font-semibold text-white">
+                    {{ dailySummary.totalAttempted }}
+                  </div>
+                </div>
+                <div class="rounded-lg border border-white/10 bg-slate-950/50 p-3">
+                  <div class="text-[11px] text-slate-500">新建媒体 / 播放源</div>
+                  <div class="mt-2 text-lg font-semibold text-white">
+                    {{ dailySummary.totalCreatedMedia }} / {{ dailySummary.totalCreatedPlaySources }}
+                  </div>
+                </div>
+                <div class="rounded-lg border border-white/10 bg-slate-950/50 p-3">
+                  <div class="text-[11px] text-slate-500">成功 / 失败</div>
+                  <div class="mt-2 text-lg font-semibold text-white">
+                    {{ dailySummary.totalSucceeded }} / {{ dailySummary.totalFailed }}
+                  </div>
+                </div>
+                <div class="rounded-lg border border-white/10 bg-slate-950/50 p-3">
+                  <div class="text-[11px] text-slate-500">校验通过</div>
+                  <div class="mt-2 text-lg font-semibold text-white">
+                    {{ dailySummary.validationSummary?.active || 0 }} /
+                    {{ dailySummary.validationSummary?.checked || 0 }}
+                  </div>
+                </div>
+              </div>
+
+              <div v-else class="mt-4 rounded-lg border border-dashed border-white/10 bg-slate-900/30 p-4 text-sm text-slate-400">
+                {{ dailySummaryError || '暂无每日自动采集执行记录。' }}
+              </div>
+
+              <p v-if="dailySummary?.message" class="mt-3 text-xs text-slate-400">
+                {{ dailySummary.message }}
+              </p>
+              <p v-if="dailySummaryError && dailySummary" class="mt-3 text-xs text-amber-200/90">
+                {{ dailySummaryError }}
+              </p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <h3 class="text-base font-medium text-white">重点来源</h3>
+                  <p class="mt-1 text-sm text-slate-400">按质量分和可用率排序</p>
+                </div>
+                <span class="text-xs text-slate-500">Top {{ topCollectionSources.length }}</span>
+              </div>
+
+              <div v-if="topCollectionSources.length > 0" class="mt-4 space-y-3">
+                <div
+                  v-for="source in topCollectionSources"
+                  :key="source.name"
+                  class="rounded-xl border border-white/10 bg-slate-900/40 p-4"
+                >
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="truncate text-sm font-medium text-white">{{ source.name }}</div>
+                      <div class="mt-1 text-xs text-slate-400">
+                        已入库 {{ source.totalCrawled }} · 活跃源 {{ source.activePlaySources }} /
+                        {{ source.totalPlaySources }}
+                      </div>
+                    </div>
+                    <span
+                      :class="[
+                        'inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1',
+                        getQualityBadgeClass(source.qualityScore),
+                      ]"
+                    >
+                      质量 {{ source.qualityScore }}
+                    </span>
+                  </div>
+
+                  <div class="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-300">
+                    <span>可用率 {{ source.activeRate }}%</span>
+                    <span>代理 {{ source.proxyMode }}</span>
+                    <span>最近入库 {{ formatDateTime(source.lastCrawled) }}</span>
+                  </div>
+
+                  <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <div class="text-[11px] text-slate-500">
+                      可直接跳转到策略页或播放源页做进一步排障
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                      <router-link
+                        :to="buildCrawlerSourceLink(source.name, 'top')"
+                        class="inline-flex items-center justify-center rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-100 transition hover:bg-indigo-500/20"
+                      >
+                        查看来源
+                      </router-link>
+                      <router-link
+                        :to="buildAdminPlaySourcesLink(source.name, 'top')"
+                        class="inline-flex items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-100 transition hover:bg-emerald-500/20"
+                      >
+                        排查播放源
+                      </router-link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                v-else
+                class="mt-4 rounded-xl border border-dashed border-white/10 bg-slate-900/30 p-4 text-sm text-slate-400"
+              >
+                暂无可展示的来源统计，等待采集任务产出真实数据。
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <router-link
+                :to="buildCrawlerAlertLink('critical')"
+                class="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 backdrop-blur-sm transition hover:bg-rose-500/15"
+              >
+                <div class="text-xs text-rose-200">立即止损</div>
+                <div class="mt-2 text-2xl font-semibold text-white">
+                  {{ attentionSummary.criticalCount }}
+                </div>
+                <div class="mt-1 text-[11px] text-rose-100/80">高风险来源</div>
+              </router-link>
+              <router-link
+                :to="buildCrawlerAlertLink('high')"
+                class="rounded-2xl border border-amber-400/20 bg-amber-500/10 p-4 backdrop-blur-sm transition hover:bg-amber-500/15"
+              >
+                <div class="text-xs text-amber-200">优先处理</div>
+                <div class="mt-2 text-2xl font-semibold text-white">
+                  {{ attentionSummary.highCount }}
+                </div>
+                <div class="mt-1 text-[11px] text-amber-100/80">中高风险来源</div>
+              </router-link>
+              <router-link
+                :to="buildCrawlerAlertLink('stalled')"
+                class="rounded-2xl border border-sky-400/20 bg-sky-500/10 p-4 backdrop-blur-sm transition hover:bg-sky-500/15"
+              >
+                <div class="text-xs text-sky-200">入库停滞</div>
+                <div class="mt-2 text-2xl font-semibold text-white">
+                  {{ attentionSummary.stalledIngestionCount }}
+                </div>
+                <div class="mt-1 text-[11px] text-sky-100/80">超过 7 天无新入库</div>
+              </router-link>
+              <router-link
+                :to="buildCrawlerAlertLink('inactive')"
+                class="rounded-2xl border border-fuchsia-400/20 bg-fuchsia-500/10 p-4 backdrop-blur-sm transition hover:bg-fuchsia-500/15"
+              >
+                <div class="text-xs text-fuchsia-200">无活跃源</div>
+                <div class="mt-2 text-2xl font-semibold text-white">
+                  {{ attentionSummary.noActiveSourcesCount }}
+                </div>
+                <div class="mt-1 text-[11px] text-fuchsia-100/80">已失去可播能力</div>
+              </router-link>
+            </div>
+
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <h3 class="text-base font-medium text-white">待关注来源</h3>
+                  <p class="mt-1 text-sm text-slate-400">筛出低质量、低可用率或缺少校验的来源</p>
+                </div>
+                <span class="text-xs text-slate-500">{{ attentionSummary.total }} 项</span>
+              </div>
+
+              <div v-if="attentionCollectionSources.length > 0" class="mt-4 space-y-3">
+                <div
+                  v-for="item in attentionCollectionSources"
+                  :key="item.source.name"
+                  class="rounded-xl border border-white/10 bg-slate-900/40 p-4"
+                >
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="truncate text-sm font-medium text-white">
+                        {{ item.source.name }}
+                      </div>
+                      <div class="mt-1 text-xs text-slate-400">
+                        质量 {{ item.source.qualityScore }} · 可用率 {{ item.source.activeRate }}%
+                      </div>
+                    </div>
+                    <span
+                      :class="[
+                        'inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1',
+                        getAttentionBadgeClass(item.severity),
+                      ]"
+                    >
+                      {{ getAttentionLabel(item.severity) }}
+                    </span>
+                  </div>
+
+                  <div class="mt-3 flex flex-wrap gap-2">
+                    <span
+                      :class="[
+                        'rounded-full px-2.5 py-1 text-[11px] font-medium',
+                        getAttentionScoreClass(item.score),
+                      ]"
+                    >
+                      风险分 {{ item.score }}
+                    </span>
+                    <span
+                      v-for="highlight in item.highlights"
+                      :key="highlight"
+                      class="rounded-full bg-white/5 px-2.5 py-1 text-[11px] text-slate-300 ring-1 ring-white/10"
+                    >
+                      {{ highlight }}
+                    </span>
+                  </div>
+
+                  <div class="mt-3 space-y-2 text-xs text-slate-300">
+                    <p v-for="reason in item.reasons" :key="reason">- {{ reason }}</p>
+                  </div>
+
+                  <div class="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-400">
+                    <span>最近入库 {{ formatDateTime(item.source.lastCrawled) }}</span>
+                    <span>最近校验 {{ formatDateTime(item.source.lastCheckedAt) }}</span>
+                  </div>
+
+                  <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <div class="text-[11px] text-slate-500">
+                      可定位到来源卡片，也可直接打开该来源的播放源列表
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                      <router-link
+                        :to="buildCrawlerSourceLink(item.source.name, 'attention')"
+                        class="inline-flex items-center justify-center rounded-full border border-amber-400/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-100 transition hover:bg-amber-500/20"
+                      >
+                        立即处理
+                      </router-link>
+                      <router-link
+                        :to="buildAdminPlaySourcesLink(item.source.name, 'attention')"
+                        class="inline-flex items-center justify-center rounded-full border border-rose-400/30 bg-rose-500/10 px-3 py-1.5 text-xs font-medium text-rose-100 transition hover:bg-rose-500/20"
+                      >
+                        查看源列表
+                      </router-link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                v-else
+                class="mt-4 rounded-xl border border-dashed border-emerald-400/20 bg-emerald-500/10 p-4 text-sm text-emerald-100"
+              >
+                当前没有需要优先关注的来源，稳定性表现良好。
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-else
+      class="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-5 text-amber-900 shadow-sm"
+    >
+      <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h3 class="text-base font-medium">稳定源采集监控暂不可用</h3>
+          <p class="mt-1 text-sm text-amber-800">
+            {{ collectionError || '当前未获取到真实采集统计数据。' }}
+          </p>
+        </div>
+        <router-link
+          to="/crawler"
+          class="inline-flex items-center justify-center rounded-full border border-amber-300 bg-white px-4 py-2 text-sm font-medium text-amber-900 transition hover:bg-amber-100"
+        >
+          打开爬虫管理
+        </router-link>
+      </div>
+    </div>
+
     <!-- 最近活动 -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- 最近管理活动 -->
@@ -276,8 +705,20 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, onMounted, onUnmounted } from 'vue';
+  import { computed, ref, onMounted, onUnmounted } from 'vue';
   import { adminApi } from '@/api/admin';
+  import {
+    crawlerApi,
+    type CollectionStatistics,
+  } from '@/api/crawler';
+  import { schedulerApi, type DailySourceCollectionRunSummary } from '@/api/scheduler';
+  import {
+    buildAttentionSourceItem,
+    compareAttentionSources,
+    getHoursSince,
+    type AttentionSourceItem,
+    type CrawlerAlertFilter,
+  } from '@/utils/collection-source-alerts';
 
   interface AdminLogItem {
     id?: number;
@@ -312,6 +753,39 @@
   const loading = ref(false);
   const health = ref<HealthStatus | null>(null);
   const healthLoading = ref(false);
+  const collectionStatistics = ref<CollectionStatistics | null>(null);
+  const collectionLoading = ref(false);
+  const collectionError = ref('');
+  const dailySummary = ref<DailySourceCollectionRunSummary | null>(null);
+  const dailySummaryLoading = ref(false);
+  const dailySummaryError = ref('');
+
+  const topCollectionSources = computed(() => collectionStatistics.value?.sources.slice(0, 4) ?? []);
+  const attentionCollectionCandidates = computed<AttentionSourceItem[]>(() => {
+    const sources = collectionStatistics.value?.sources ?? [];
+
+    return sources
+      .map(source => buildAttentionSourceItem(source))
+      .filter((item): item is AttentionSourceItem => item !== null)
+      .sort(compareAttentionSources);
+  });
+  const attentionCollectionSources = computed(() => attentionCollectionCandidates.value.slice(0, 4));
+  const attentionSummary = computed(() => {
+    const candidates = attentionCollectionCandidates.value;
+
+    return {
+      total: candidates.length,
+      criticalCount: candidates.filter(item => item.severity === 'critical').length,
+      highCount: candidates.filter(item => item.severity === 'high').length,
+      stalledIngestionCount: candidates.filter(item => {
+        const hoursSinceLastCrawled = getHoursSince(item.source.lastCrawled);
+        return item.source.dailyEnabled && (hoursSinceLastCrawled === null || hoursSinceLastCrawled >= 168);
+      }).length,
+      noActiveSourcesCount: candidates.filter(
+        item => item.source.totalPlaySources > 0 && item.source.activePlaySources === 0,
+      ).length,
+    };
+  });
 
   // 加载统计数据
   const loadStats = async () => {
@@ -335,6 +809,43 @@
       health.value = null;
     } finally {
       healthLoading.value = false;
+    }
+  };
+
+  const loadCollectionStatistics = async () => {
+    collectionLoading.value = true;
+    collectionError.value = '';
+
+    try {
+      const response = await crawlerApi.getStatistics();
+      if (response.data) {
+        collectionStatistics.value = response.data;
+      } else {
+        collectionError.value = '当前暂无真实采集统计结果。';
+      }
+    } catch (error) {
+      console.error('加载稳定源采集监控失败:', error);
+      collectionError.value = collectionStatistics.value
+        ? '统计刷新失败，当前显示最近一次成功结果。'
+        : '加载真实采集统计失败，请稍后重试。';
+    } finally {
+      collectionLoading.value = false;
+    }
+  };
+
+  const loadDailySummary = async () => {
+    dailySummaryLoading.value = true;
+    dailySummaryError.value = '';
+
+    try {
+      dailySummary.value = await schedulerApi.getDailySourceCollectionSummary();
+    } catch (error) {
+      console.error('加载每日采集任务状态失败:', error);
+      dailySummaryError.value = dailySummary.value
+        ? '任务状态刷新失败，当前显示最近一次成功结果。'
+        : '加载每日采集任务状态失败，请稍后重试。';
+    } finally {
+      dailySummaryLoading.value = false;
     }
   };
 
@@ -408,8 +919,141 @@
 
   // 格式化日期时间
   const formatDateTime = (timestamp?: string) => {
-    if (!timestamp) return '';
-    return new Date(timestamp).toLocaleString('zh-CN');
+    if (!timestamp) return '暂无';
+
+    const parsed = new Date(timestamp);
+    if (Number.isNaN(parsed.getTime())) {
+      return '暂无';
+    }
+
+    return parsed.toLocaleString('zh-CN');
+  };
+
+  const getQualityBadgeClass = (qualityScore: number) => {
+    if (qualityScore >= 85) {
+      return 'bg-emerald-500/15 text-emerald-100 ring-emerald-400/30';
+    }
+
+    if (qualityScore >= 70) {
+      return 'bg-amber-500/15 text-amber-100 ring-amber-400/30';
+    }
+
+    return 'bg-rose-500/15 text-rose-100 ring-rose-400/30';
+  };
+
+  const getDailyStatusText = (status?: DailySourceCollectionRunSummary['status']) => {
+    const statusTextMap: Record<DailySourceCollectionRunSummary['status'], string> = {
+      idle: '待运行',
+      running: '执行中',
+      success: '执行成功',
+      error: '执行异常',
+      skipped: '已跳过',
+    };
+
+    return status ? statusTextMap[status] : '待运行';
+  };
+
+  const getDailyStatusClass = (status?: DailySourceCollectionRunSummary['status']) => {
+    switch (status) {
+      case 'success':
+        return 'bg-emerald-500/15 text-emerald-100 ring-emerald-400/30';
+      case 'running':
+        return 'bg-sky-500/15 text-sky-100 ring-sky-400/30';
+      case 'skipped':
+        return 'bg-amber-500/15 text-amber-100 ring-amber-400/30';
+      case 'error':
+        return 'bg-rose-500/15 text-rose-100 ring-rose-400/30';
+      default:
+        return 'bg-slate-500/15 text-slate-100 ring-slate-400/30';
+    }
+  };
+
+  const getTriggerText = (trigger?: DailySourceCollectionRunSummary['trigger']) => {
+    return trigger === 'manual' ? '手动触发' : '定时触发';
+  };
+
+  const formatDuration = (durationMs?: number) => {
+    if (!durationMs || durationMs <= 0) {
+      return '0秒';
+    }
+
+    const totalSeconds = Math.max(1, Math.round(durationMs / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+
+    return minutes > 0 ? `${minutes}分${seconds}秒` : `${totalSeconds}秒`;
+  };
+
+  const getHoursSince = (timestamp?: string | null) => {
+    if (!timestamp) {
+      return null;
+    }
+
+    const parsed = new Date(timestamp).getTime();
+    if (Number.isNaN(parsed)) {
+      return null;
+    }
+
+    return (Date.now() - parsed) / (1000 * 60 * 60);
+  };
+
+  const getAttentionBadgeClass = (severity: AttentionSourceItem['severity']) => {
+    if (severity === 'critical') {
+      return 'bg-rose-500/20 text-rose-100 ring-rose-300/40';
+    }
+
+    return severity === 'high'
+      ? 'bg-amber-500/15 text-amber-100 ring-amber-400/30'
+      : 'bg-sky-500/15 text-sky-100 ring-sky-400/30';
+  };
+
+  const getAttentionLabel = (severity: AttentionSourceItem['severity']) => {
+    if (severity === 'critical') {
+      return '立即止损';
+    }
+
+    return severity === 'high' ? '优先处理' : '持续关注';
+  };
+
+  const getAttentionScoreClass = (score: number) => {
+    if (score >= 10) {
+      return 'bg-rose-500/15 text-rose-100';
+    }
+
+    if (score >= 6) {
+      return 'bg-amber-500/15 text-amber-100';
+    }
+
+    return 'bg-sky-500/15 text-sky-100';
+  };
+
+  const buildCrawlerAlertLink = (alertFilter: CrawlerAlertFilter) => {
+    return {
+      name: 'crawler',
+      query: {
+        alertFilter,
+      },
+    };
+  };
+
+  const buildCrawlerSourceLink = (sourceName: string, focus: 'top' | 'attention') => {
+    return {
+      name: 'crawler',
+      query: {
+        source: sourceName,
+        focus,
+      },
+    };
+  };
+
+  const buildAdminPlaySourcesLink = (sourceName: string, focus: 'top' | 'attention') => {
+    return {
+      name: 'admin-play-sources',
+      query: {
+        source: sourceName,
+        focus,
+      },
+    };
   };
 
   let statsInterval: ReturnType<typeof setInterval> | null = null;
@@ -419,10 +1063,14 @@
   onMounted(() => {
     void loadStats();
     void loadHealth();
+    void loadCollectionStatistics();
+    void loadDailySummary();
 
     // 定时刷新数据
     statsInterval = setInterval(() => {
       void loadStats();
+      void loadCollectionStatistics();
+      void loadDailySummary();
     }, 30000);
     healthInterval = setInterval(() => {
       void loadHealth();

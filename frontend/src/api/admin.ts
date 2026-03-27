@@ -74,7 +74,16 @@ export const adminApi = {
   getMedia: (params?: { page?: number; limit?: number; type?: string; search?: string }) =>
     ApiClient.get<AdminPaginatedResponse<MediaResource>>('/admin/media', { params }, false),
 
-  getPlaySources: (params?: { page?: number; limit?: number; type?: string }) =>
+  getPlaySources: (params?: {
+    page?: number;
+    limit?: number;
+    type?: string;
+    source?: string;
+    search?: string;
+    status?: string;
+    sortBy?: 'createdAt' | 'lastCheckedAt' | 'priority';
+    sortOrder?: 'ASC' | 'DESC';
+  }) =>
     ApiClient.get<AdminPaginatedResponse<PlaySource>>('/admin/play-sources', { params }, false),
 
   getWatchHistory: (params?: { page?: number; limit?: number; userId?: number }) =>

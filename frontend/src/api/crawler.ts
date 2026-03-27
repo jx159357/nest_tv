@@ -96,6 +96,47 @@ export interface SourcePolicyUpdatePayload {
   minimumPlayableUrls?: number;
 }
 
+export interface CollectionSourceStatistics {
+  name: string;
+  enabled: boolean;
+  dailyEnabled: boolean;
+  totalCrawled: number;
+  activeMedia: number;
+  totalPlaySources: number;
+  activePlaySources: number;
+  recentPlaySources24h: number;
+  activeRate: number;
+  qualityScore: number;
+  proxyMode: 'direct' | 'prefer-proxy' | 'proxy-required';
+  suggestedProxyMode: 'direct' | 'prefer-proxy' | 'proxy-required';
+  lastCrawled: string | null;
+  lastPlaySourceCreatedAt: string | null;
+  lastCheckedAt: string | null;
+}
+
+export interface CollectionStatistics {
+  totalSources: number;
+  enabledSources: number;
+  dailyEnabledSources: number;
+  stableSources: number;
+  totalMedia: number;
+  activeMedia: number;
+  totalPlaySources: number;
+  activePlaySources: number;
+  recentPlaySources24h: number;
+  averageActiveRate: number;
+  averageQualityScore: number;
+  latestCollectedAt: string | null;
+  latestValidatedAt: string | null;
+  sources: CollectionSourceStatistics[];
+}
+
+export interface StatisticsResponse {
+  success: boolean;
+  message: string;
+  data?: CollectionStatistics;
+}
+
 export const crawlerApi = {
   getTargets: async (): Promise<CrawlerTarget[]> => {
     const response = await ApiClient.get<{ success: boolean; data: CrawlerTarget[] }>(
@@ -125,6 +166,8 @@ export const crawlerApi = {
     ),
 
   getSourceHealth: () => ApiClient.get<SourceHealthSummary[]>('/data-collection/source-health'),
+
+  getStatistics: () => ApiClient.get<StatisticsResponse>('/data-collection/statistics'),
 
   updateSourcePolicy: (sourceName: string, payload: SourcePolicyUpdatePayload) =>
     ApiClient.patch<CrawlerTarget>(
