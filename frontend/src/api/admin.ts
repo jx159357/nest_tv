@@ -79,6 +79,7 @@ export const adminApi = {
     limit?: number;
     type?: string;
     source?: string;
+    sources?: string;
     search?: string;
     status?: string;
     sortBy?: 'createdAt' | 'lastCheckedAt' | 'priority';

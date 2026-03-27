@@ -412,22 +412,21 @@ export class MediaResourceService {
       .groupBy('mediaResource.source')
       .getRawMany<MediaSourceStatisticsRow>();
 
-    return rows.reduce<Record<string, { total: number; active: number; latestCreatedAt: string | null }>>(
-      (accumulator, row) => {
-        if (!row.source) {
-          return accumulator;
-        }
-
-        accumulator[row.source] = {
-          total: parseInt(row.total, 10) || 0,
-          active: parseInt(row.active, 10) || 0,
-          latestCreatedAt: row.latestCreatedAt ?? null,
-        };
-
+    return rows.reduce<
+      Record<string, { total: number; active: number; latestCreatedAt: string | null }>
+    >((accumulator, row) => {
+      if (!row.source) {
         return accumulator;
-      },
-      {},
-    );
+      }
+
+      accumulator[row.source] = {
+        total: parseInt(row.total, 10) || 0,
+        active: parseInt(row.active, 10) || 0,
+        latestCreatedAt: row.latestCreatedAt ?? null,
+      };
+
+      return accumulator;
+    }, {});
   }
 
   /**

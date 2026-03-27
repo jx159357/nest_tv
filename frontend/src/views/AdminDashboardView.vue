@@ -416,47 +416,103 @@
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
-              <router-link
-                :to="buildCrawlerAlertLink('critical')"
-                class="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 backdrop-blur-sm transition hover:bg-rose-500/15"
-              >
+            <div id="dashboard-alert-summary" class="grid grid-cols-2 gap-3">
+              <div class="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 backdrop-blur-sm">
                 <div class="text-xs text-rose-200">立即止损</div>
                 <div class="mt-2 text-2xl font-semibold text-white">
                   {{ attentionSummary.criticalCount }}
                 </div>
                 <div class="mt-1 text-[11px] text-rose-100/80">高风险来源</div>
-              </router-link>
-              <router-link
-                :to="buildCrawlerAlertLink('high')"
-                class="rounded-2xl border border-amber-400/20 bg-amber-500/10 p-4 backdrop-blur-sm transition hover:bg-amber-500/15"
-              >
+                <div class="mt-2 text-[11px] text-rose-100/70">
+                  {{ getAlertFilterRecommendedAction('critical').label }}
+                </div>
+                <div class="mt-4 flex flex-wrap gap-2">
+                  <router-link
+                    :to="buildCrawlerAlertLink('critical')"
+                    :class="getSummaryActionClass('critical', 'crawler', 'rose')"
+                  >
+                    {{ getSummaryActionLabel('critical', 'crawler', '来源视图') }}
+                  </router-link>
+                  <router-link
+                    :to="buildAdminPlaySourcesAlertLink('critical')"
+                    :class="getSummaryActionClass('critical', 'play-sources', 'rose')"
+                  >
+                    {{ getSummaryActionLabel('critical', 'play-sources', '播放源视图') }}
+                  </router-link>
+                </div>
+              </div>
+              <div class="rounded-2xl border border-amber-400/20 bg-amber-500/10 p-4 backdrop-blur-sm">
                 <div class="text-xs text-amber-200">优先处理</div>
                 <div class="mt-2 text-2xl font-semibold text-white">
                   {{ attentionSummary.highCount }}
                 </div>
                 <div class="mt-1 text-[11px] text-amber-100/80">中高风险来源</div>
-              </router-link>
-              <router-link
-                :to="buildCrawlerAlertLink('stalled')"
-                class="rounded-2xl border border-sky-400/20 bg-sky-500/10 p-4 backdrop-blur-sm transition hover:bg-sky-500/15"
-              >
+                <div class="mt-2 text-[11px] text-amber-100/70">
+                  {{ getAlertFilterRecommendedAction('high').label }}
+                </div>
+                <div class="mt-4 flex flex-wrap gap-2">
+                  <router-link
+                    :to="buildCrawlerAlertLink('high')"
+                    :class="getSummaryActionClass('high', 'crawler', 'amber')"
+                  >
+                    {{ getSummaryActionLabel('high', 'crawler', '来源视图') }}
+                  </router-link>
+                  <router-link
+                    :to="buildAdminPlaySourcesAlertLink('high')"
+                    :class="getSummaryActionClass('high', 'play-sources', 'amber')"
+                  >
+                    {{ getSummaryActionLabel('high', 'play-sources', '播放源视图') }}
+                  </router-link>
+                </div>
+              </div>
+              <div class="rounded-2xl border border-sky-400/20 bg-sky-500/10 p-4 backdrop-blur-sm">
                 <div class="text-xs text-sky-200">入库停滞</div>
                 <div class="mt-2 text-2xl font-semibold text-white">
                   {{ attentionSummary.stalledIngestionCount }}
                 </div>
                 <div class="mt-1 text-[11px] text-sky-100/80">超过 7 天无新入库</div>
-              </router-link>
-              <router-link
-                :to="buildCrawlerAlertLink('inactive')"
-                class="rounded-2xl border border-fuchsia-400/20 bg-fuchsia-500/10 p-4 backdrop-blur-sm transition hover:bg-fuchsia-500/15"
-              >
+                <div class="mt-2 text-[11px] text-sky-100/70">
+                  {{ getAlertFilterRecommendedAction('stalled').label }}
+                </div>
+                <div class="mt-4 flex flex-wrap gap-2">
+                  <router-link
+                    :to="buildCrawlerAlertLink('stalled')"
+                    :class="getSummaryActionClass('stalled', 'crawler', 'sky')"
+                  >
+                    {{ getSummaryActionLabel('stalled', 'crawler', '来源视图') }}
+                  </router-link>
+                  <router-link
+                    :to="buildAdminPlaySourcesAlertLink('stalled')"
+                    :class="getSummaryActionClass('stalled', 'play-sources', 'sky')"
+                  >
+                    {{ getSummaryActionLabel('stalled', 'play-sources', '播放源视图') }}
+                  </router-link>
+                </div>
+              </div>
+              <div class="rounded-2xl border border-fuchsia-400/20 bg-fuchsia-500/10 p-4 backdrop-blur-sm">
                 <div class="text-xs text-fuchsia-200">无活跃源</div>
                 <div class="mt-2 text-2xl font-semibold text-white">
                   {{ attentionSummary.noActiveSourcesCount }}
                 </div>
                 <div class="mt-1 text-[11px] text-fuchsia-100/80">已失去可播能力</div>
-              </router-link>
+                <div class="mt-2 text-[11px] text-fuchsia-100/70">
+                  {{ getAlertFilterRecommendedAction('inactive').label }}
+                </div>
+                <div class="mt-4 flex flex-wrap gap-2">
+                  <router-link
+                    :to="buildCrawlerAlertLink('inactive')"
+                    :class="getSummaryActionClass('inactive', 'crawler', 'fuchsia')"
+                  >
+                    {{ getSummaryActionLabel('inactive', 'crawler', '来源视图') }}
+                  </router-link>
+                  <router-link
+                    :to="buildAdminPlaySourcesAlertLink('inactive')"
+                    :class="getSummaryActionClass('inactive', 'play-sources', 'fuchsia')"
+                  >
+                    {{ getSummaryActionLabel('inactive', 'play-sources', '播放源视图') }}
+                  </router-link>
+                </div>
+              </div>
             </div>
 
             <div class="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
@@ -515,6 +571,16 @@
                     <p v-for="reason in item.reasons" :key="reason">- {{ reason }}</p>
                   </div>
 
+                  <div class="mt-4 rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div class="text-[11px] text-slate-400">建议动作</div>
+                    <div class="mt-2 text-sm font-medium text-white">
+                      {{ item.recommendedAction.label }}
+                    </div>
+                    <div class="mt-1 text-xs text-slate-300">
+                      {{ item.recommendedAction.description }}
+                    </div>
+                  </div>
+
                   <div class="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-400">
                     <span>最近入库 {{ formatDateTime(item.source.lastCrawled) }}</span>
                     <span>最近校验 {{ formatDateTime(item.source.lastCheckedAt) }}</span>
@@ -526,16 +592,32 @@
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                       <router-link
+                        v-if="item.recommendedAction.target === 'crawler'"
                         :to="buildCrawlerSourceLink(item.source.name, 'attention')"
                         class="inline-flex items-center justify-center rounded-full border border-amber-400/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-100 transition hover:bg-amber-500/20"
                       >
-                        立即处理
+                        先看来源策略
                       </router-link>
                       <router-link
+                        v-else
                         :to="buildAdminPlaySourcesLink(item.source.name, 'attention')"
                         class="inline-flex items-center justify-center rounded-full border border-rose-400/30 bg-rose-500/10 px-3 py-1.5 text-xs font-medium text-rose-100 transition hover:bg-rose-500/20"
                       >
-                        查看源列表
+                        先看播放源
+                      </router-link>
+                      <router-link
+                        v-if="item.recommendedAction.target === 'crawler'"
+                        :to="buildAdminPlaySourcesLink(item.source.name, 'attention')"
+                        class="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-white/10"
+                      >
+                        再看播放源
+                      </router-link>
+                      <router-link
+                        v-else
+                        :to="buildCrawlerSourceLink(item.source.name, 'attention')"
+                        class="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-white/10"
+                      >
+                        再看来源策略
                       </router-link>
                     </div>
                   </div>
@@ -715,7 +797,9 @@
   import {
     buildAttentionSourceItem,
     compareAttentionSources,
+    getAlertFilterRecommendedAction,
     getHoursSince,
+    type AlertActionTarget,
     type AttentionSourceItem,
     type CrawlerAlertFilter,
   } from '@/utils/collection-source-alerts';
@@ -984,19 +1068,6 @@
     return minutes > 0 ? `${minutes}分${seconds}秒` : `${totalSeconds}秒`;
   };
 
-  const getHoursSince = (timestamp?: string | null) => {
-    if (!timestamp) {
-      return null;
-    }
-
-    const parsed = new Date(timestamp).getTime();
-    if (Number.isNaN(parsed)) {
-      return null;
-    }
-
-    return (Date.now() - parsed) / (1000 * 60 * 60);
-  };
-
   const getAttentionBadgeClass = (severity: AttentionSourceItem['severity']) => {
     if (severity === 'critical') {
       return 'bg-rose-500/20 text-rose-100 ring-rose-300/40';
@@ -1034,6 +1105,48 @@
         alertFilter,
       },
     };
+  };
+
+  const buildAdminPlaySourcesAlertLink = (alertFilter: CrawlerAlertFilter) => {
+    return {
+      name: 'admin-play-sources',
+      query: {
+        alertFilter,
+      },
+    };
+  };
+
+  const getSummaryActionClass = (
+    alertFilter: CrawlerAlertFilter,
+    target: AlertActionTarget,
+    tone: 'rose' | 'amber' | 'sky' | 'fuchsia',
+  ) => {
+    const recommendedTarget = getAlertFilterRecommendedAction(alertFilter).target;
+    const isRecommended = recommendedTarget === target;
+
+    const recommendedClassMap = {
+      rose: 'border-rose-300/30 bg-white/10 text-white hover:bg-white/20',
+      amber: 'border-amber-300/30 bg-white/10 text-white hover:bg-white/20',
+      sky: 'border-sky-300/30 bg-white/10 text-white hover:bg-white/20',
+      fuchsia: 'border-fuchsia-300/30 bg-white/10 text-white hover:bg-white/20',
+    } as const;
+
+    return [
+      'inline-flex items-center justify-center rounded-full px-3 py-1.5 text-xs font-medium transition',
+      isRecommended
+        ? recommendedClassMap[tone]
+        : 'border border-white/10 bg-white/5 text-slate-100 hover:bg-white/10',
+    ];
+  };
+
+  const getSummaryActionLabel = (
+    alertFilter: CrawlerAlertFilter,
+    target: AlertActionTarget,
+    fallbackLabel: string,
+  ) => {
+    return getAlertFilterRecommendedAction(alertFilter).target === target
+      ? `建议 · ${fallbackLabel}`
+      : fallbackLabel;
   };
 
   const buildCrawlerSourceLink = (sourceName: string, focus: 'top' | 'attention') => {

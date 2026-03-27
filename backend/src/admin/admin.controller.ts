@@ -170,6 +170,7 @@ export class AdminController {
   @ApiQuery({ name: 'limit', required: false, type: Number, description: '每页数量' })
   @ApiQuery({ name: 'type', required: false, type: String, description: '类型筛选' })
   @ApiQuery({ name: 'source', required: false, type: String, description: '来源筛选' })
+  @ApiQuery({ name: 'sources', required: false, type: String, description: '多来源筛选，逗号分隔' })
   @ApiQuery({ name: 'search', required: false, type: String, description: '来源/媒体/链接搜索' })
   @ApiQuery({ name: 'status', required: false, type: String, description: '状态筛选' })
   @ApiQuery({ name: 'sortBy', required: false, type: String, description: '排序字段' })
@@ -180,6 +181,7 @@ export class AdminController {
     @Query('limit') limit: number = 20,
     @Query('type') type?: string,
     @Query('source') source?: string,
+    @Query('sources') sources?: string,
     @Query('search') search?: string,
     @Query('status') status?: string,
     @Query('sortBy') sortBy?: string,
@@ -190,6 +192,7 @@ export class AdminController {
       limit,
       type,
       source,
+      sources,
       search,
       status,
       sortBy,

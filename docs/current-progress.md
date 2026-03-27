@@ -3,15 +3,11 @@
 ## Current State
 
 - Frontend:
-  - `npm run type-check` passes.
-  - `npx vitest run` passes.
-  - `npm run build` passes.
+  - Re-ran `npm run type-check`, `npx vitest run`, and `npm run build`; all pass in the current workspace.
 - Backend:
-  - `npm run build` passes.
-  - `npx jest --runInBand` passes.
-  - `npx jest --config ./test/jest-e2e.json --runInBand` passes.
-  - `npm run lint:check` passes.
-  - Latest full snapshot: `0 errors + 0 warnings`.
+  - Re-ran `npm run build`, `npx jest --runInBand`, and `npx jest --config ./test/jest-e2e.json --runInBand`; all pass in the current workspace.
+  - Re-ran `npm run lint:check`; it now passes again after clearing the remaining Prettier line-ending debt.
+  - Latest full snapshot is back to `0 errors + 0 warnings`.
 
 ## High-Value Work Already Completed
 
@@ -162,4 +158,15 @@
 - Follow-up admin/play-source UX enhancement completed: `AdminPlaySourcesView` now embeds the focused source's health summary (quality score, active rate, recent ingestion/check timestamps, proxy guidance, recommendation), reducing context switching during source-level troubleshooting.
 - Follow-up admin/dashboard enhancement completed: `AdminDashboard` now applies a richer source risk model (quality, active rate, active-source count, stale validation, stalled ingestion, inactive media) and surfaces compact risk score/highlight tags for faster prioritization.
 - Follow-up admin/dashboard enhancement completed: `AdminDashboard` now shows first-screen alert summary cards (critical / high / stalled ingestion / zero-active-source counts) so operators can gauge the current source-risk landscape before drilling into details.
+- Follow-up admin/crawler UX enhancement completed: dashboard alert summary cards now deep-link into `CrawlerView` alert-filter views, and the shared frontend source-alert utility keeps dashboard/crawler risk logic aligned.
+- Follow-up admin/play-source UX enhancement completed: dashboard alert summary cards now also offer direct entry into `AdminPlaySourcesView` alert-filter views, so operators can jump straight from first-screen source-risk counts into play-source troubleshooting.
+- Follow-up admin/play-source UX enhancement completed: `AdminPlaySourcesView` alert-filter mode now includes a dashboard return link plus a collapsible matched-source list, keeping alert context visible during deeper troubleshooting.
+- Follow-up admin/crawler UX enhancement completed: `CrawlerView` alert-filter mode now mirrors the play-source view with a dashboard return link plus a collapsible matched-source list, keeping first-screen alert context intact while drilling into source strategy.
+- Follow-up admin/dashboard enhancement completed: each attention-source card now surfaces a recommended next action and prioritizes its primary CTA toward either source-strategy inspection or play-source troubleshooting.
+- Follow-up admin/dashboard enhancement completed: alert summary cards now visually prioritize their recommended default entry (source view vs play-source view) while still keeping the secondary path available.
+- Follow-up admin/crawler/play-source UX enhancement completed: alert banners in both `CrawlerView` and `AdminPlaySourcesView` now reuse the same recommended-entry language/priority as the dashboard, keeping action guidance consistent across the whole troubleshooting flow.
+- Follow-up admin/crawler UX enhancement completed: source cards inside `CrawlerView` now also surface recommended next actions and aligned CTA priority, so action guidance remains visible after drilling down from the dashboard.
+- Follow-up admin/play-source UX enhancement completed: `AdminPlaySourcesView` now mirrors that action guidance inside the focused source summary and the empty state, so operators still get a clear next step even after drilling all the way into source-level troubleshooting.
+- Follow-up admin/crawler UX enhancement completed: `CrawlerView` now extends the same action guidance into empty states and source-collection/quick-crawl result summaries, so operators still get a next-step recommendation after running source actions.
+- Follow-up backend lint cleanup completed: normalized the remaining Prettier line endings in `data-collection`, `play-source`, and `media-resource` backend files, restoring `backend npm run lint:check` to green.
 - Avoid reverting the staged removals under `backend/dist` and `.env.production`; those are intentional index cleanups.

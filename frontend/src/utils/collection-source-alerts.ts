@@ -2,6 +2,7 @@ import type { CollectionSourceStatistics } from '@/api/crawler';
 
 export type AttentionSeverity = 'critical' | 'high' | 'medium';
 export type CrawlerAlertFilter = 'critical' | 'high' | 'stalled' | 'inactive';
+export type AlertActionTarget = 'crawler' | 'play-sources';
 
 export interface AttentionSourceItem {
   source: CollectionSourceStatistics;
@@ -9,7 +10,46 @@ export interface AttentionSourceItem {
   score: number;
   reasons: string[];
   highlights: string[];
+  recommendedAction: {
+    target: AlertActionTarget;
+    label: string;
+    description: string;
+  };
 }
+
+export const getAlertFilterRecommendedAction = (filter: CrawlerAlertFilter) => {
+  const actionMap: Record<
+    CrawlerAlertFilter,
+    {
+      target: AlertActionTarget;
+      label: string;
+      description: string;
+    }
+  > = {
+    critical: {
+      target: 'play-sources',
+      label: '建议先看播放源视图',
+      description: '高风险来源通常先要确认失效链接和活跃源恢复情况。',
+    },
+    high: {
+      target: 'crawler',
+      label: '建议先看来源视图',
+      description: '优先处理往往需要先确认采集链路和来源质量是否异常。',
+    },
+    stalled: {
+      target: 'crawler',
+      label: '建议先看来源视图',
+      description: '入库停滞通常优先排查采集策略、页面结构和抓取链路。',
+    },
+    inactive: {
+      target: 'play-sources',
+      label: '建议先看播放源视图',
+      description: '无活跃源时优先检查播放链接本身的失效和校验结果。',
+    },
+  };
+
+  return actionMap[filter];
+};
 
 export const getHoursSince = (timestamp?: string | null) => {
   if (!timestamp) {
@@ -105,12 +145,41 @@ export const buildAttentionSourceItem = (
     return null;
   }
 
+  const needsCrawlerInvestigation =
+    (source.dailyEnabled && source.totalCrawled === 0) ||
+    (source.dailyEnabled && (!source.lastCrawled || (hoursSinceLastCrawled ?? 0) >= 168)) ||
+    source.qualityScore < 70 ||
+    (source.activeMedia === 0 && source.totalCrawled > 0);
+
+  const needsPlaySourceInvestigation =
+    (source.totalPlaySources > 0 && source.activePlaySources === 0) ||
+    source.activeRate < 50 ||
+    (source.totalPlaySources > 0 && (hoursSinceLastChecked === null || hoursSinceLastChecked >= 72));
+
+  const recommendedAction =
+    needsPlaySourceInvestigation &&
+    (!needsCrawlerInvestigation ||
+      source.activePlaySources === 0 ||
+      source.activeRate < 35 ||
+      (hoursSinceLastChecked ?? 0) >= 168)
+      ? {
+          target: 'play-sources' as const,
+          label: '优先排查播放源',
+          description: '先检查失效链接、校验时效和活跃源恢复情况。',
+        }
+      : {
+          target: 'crawler' as const,
+          label: '优先检查来源策略',
+          description: '先核查采集链路、入库停滞和来源抓取质量。',
+        };
+
   return {
     source,
     reasons: reasons.slice(0, 3),
     highlights: highlights.slice(0, 3),
     score,
     severity: score >= 10 ? 'critical' : score >= 6 ? 'high' : 'medium',
+    recommendedAction,
   };
 };
 

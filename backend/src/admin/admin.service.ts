@@ -108,6 +108,7 @@ export class AdminService {
     limit: number = 20,
     type?: string,
     source?: string,
+    sources?: string,
     search?: string,
     status?: string,
     sortBy?: string,
@@ -124,7 +125,9 @@ export class AdminService {
     } as const;
 
     const resolvedSortBy =
-      sortBy && sortBy in sortFieldMap ? sortFieldMap[sortBy as keyof typeof sortFieldMap] : undefined;
+      sortBy && sortBy in sortFieldMap
+        ? sortFieldMap[sortBy as keyof typeof sortFieldMap]
+        : undefined;
     const resolvedSortOrder: 'ASC' | 'DESC' = sortOrder === 'ASC' ? 'ASC' : 'DESC';
 
     if (type) {
@@ -148,6 +151,17 @@ export class AdminService {
           source: `%${source.trim()}%`,
         },
       );
+    }
+
+    const sourceNames = sources
+      ?.split(',')
+      .map(item => item.trim())
+      .filter(item => item.length > 0);
+
+    if (sourceNames && sourceNames.length > 0) {
+      queryBuilder.andWhere('mediaResource.source IN (:...sourceNames)', {
+        sourceNames,
+      });
     }
 
     if (search?.trim()) {
@@ -177,12 +191,17 @@ export class AdminService {
         .addOrderBy(resolvedSortBy, resolvedSortOrder)
         .addOrderBy('playSource.createdAt', 'DESC');
     } else if (resolvedSortBy) {
-      queryBuilder.orderBy(resolvedSortBy, resolvedSortOrder).addOrderBy('playSource.createdAt', 'DESC');
+      queryBuilder
+        .orderBy(resolvedSortBy, resolvedSortOrder)
+        .addOrderBy('playSource.createdAt', 'DESC');
     } else {
       queryBuilder.orderBy('playSource.createdAt', 'DESC');
     }
 
-    const data = await queryBuilder.skip((page - 1) * limit).take(limit).getMany();
+    const data = await queryBuilder
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
 
     return {
       data,

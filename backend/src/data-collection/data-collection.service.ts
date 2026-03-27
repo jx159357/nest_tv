@@ -629,12 +629,13 @@ export class DataCollectionService {
    */
   async getStatistics(): Promise<CollectionStatistics> {
     const sources = this.sources;
-    const [sourceHealthSummaries, mediaSourceStatistics, totalMedia, activeMedia] = await Promise.all([
-      this.getSourceHealthSummaries(),
-      this.mediaResourceService.getSourceStatistics(sources.map(source => source.name)),
-      this.mediaResourceService.getTotalCount(),
-      this.mediaResourceService.getActiveCount(),
-    ]);
+    const [sourceHealthSummaries, mediaSourceStatistics, totalMedia, activeMedia] =
+      await Promise.all([
+        this.getSourceHealthSummaries(),
+        this.mediaResourceService.getSourceStatistics(sources.map(source => source.name)),
+        this.mediaResourceService.getTotalCount(),
+        this.mediaResourceService.getActiveCount(),
+      ]);
 
     const sourceHealthMap = new Map(sourceHealthSummaries.map(summary => [summary.name, summary]));
     const sourceStatistics: CollectionSourceStatistics[] = sources.map(source => {
@@ -653,8 +654,7 @@ export class DataCollectionService {
         activeRate: healthSummary?.activeRate || 0,
         qualityScore: healthSummary?.qualityScore || 0,
         proxyMode: source.collectionPolicy.proxyMode,
-        suggestedProxyMode:
-          healthSummary?.suggestedProxyMode || source.collectionPolicy.proxyMode,
+        suggestedProxyMode: healthSummary?.suggestedProxyMode || source.collectionPolicy.proxyMode,
         lastCrawled: mediaStatistics?.latestCreatedAt || null,
         lastPlaySourceCreatedAt: healthSummary?.latestCreatedAt || null,
         lastCheckedAt: healthSummary?.latestCheckedAt || null,
@@ -682,10 +682,8 @@ export class DataCollectionService {
     const averageActiveRate =
       sourceStatistics.length > 0
         ? Math.round(
-            sourceStatistics.reduce(
-              (sum, sourceStatistic) => sum + sourceStatistic.activeRate,
-              0,
-            ) / sourceStatistics.length,
+            sourceStatistics.reduce((sum, sourceStatistic) => sum + sourceStatistic.activeRate, 0) /
+              sourceStatistics.length,
           )
         : 0;
     const averageQualityScore =
@@ -713,7 +711,8 @@ export class DataCollectionService {
       latestCollectedAt,
       latestValidatedAt,
       sources: sourceStatistics.sort(
-        (left, right) => right.qualityScore - left.qualityScore || right.activeRate - left.activeRate,
+        (left, right) =>
+          right.qualityScore - left.qualityScore || right.activeRate - left.activeRate,
       ),
     };
   }

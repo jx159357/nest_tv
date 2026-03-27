@@ -47,6 +47,76 @@
     </div>
 
     <div
+      v-else-if="activeAlertFilter"
+      class="overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-rose-950 shadow-lg ring-1 ring-slate-800"
+    >
+      <div class="flex flex-col gap-4 px-6 py-5 text-white lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <div class="inline-flex items-center rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-rose-100">
+            后台首页 · 告警汇总
+          </div>
+          <h2 class="mt-3 text-xl font-semibold">当前告警视图：{{ alertFilterLabel }}</h2>
+          <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+            已根据首页告警小卡筛出匹配来源的播放源列表，适合快速处理异常源、入库停滞源或失去活跃播放能力的来源。
+          </p>
+          <p class="mt-2 text-xs text-slate-400">
+            当前命中 {{ alertFilteredSourceNames.length }} 个来源。
+          </p>
+          <p v-if="alertFilterRecommendation" class="mt-2 text-xs text-rose-100/90">
+            {{ alertFilterRecommendation.label }} · {{ alertFilterRecommendation.description }}
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <router-link
+            :to="{ name: 'admin-dashboard', hash: '#dashboard-alert-summary' }"
+            class="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+          >
+            回到首页告警区
+          </router-link>
+          <router-link
+            :to="{ name: 'crawler', query: { alertFilter: activeAlertFilter } }"
+            :class="getAlertActionClass('crawler')"
+          >
+            {{ getAlertActionLabel('crawler', '来源视图') }}
+          </router-link>
+          <router-link
+            :to="{ name: 'admin-play-sources', query: { alertFilter: activeAlertFilter } }"
+            :class="getAlertActionClass('play-sources')"
+          >
+            {{ getAlertActionLabel('play-sources', '当前播放源视图') }}
+          </router-link>
+          <button
+            class="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+            @click="resetFilters"
+          >
+            查看全部播放源
+          </button>
+        </div>
+      </div>
+
+      <div
+        v-if="alertFilteredSourceNames.length > 0"
+        class="border-t border-white/10 px-6 py-4 text-sm text-slate-300"
+      >
+        <details class="group">
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-white">
+            <span>查看当前命中来源列表（{{ alertFilteredSourceNames.length }}）</span>
+            <span class="text-xs text-slate-400 transition group-open:rotate-180">⌄</span>
+          </summary>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <span
+              v-for="sourceName in alertFilteredSourceNames"
+              :key="sourceName"
+              class="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-200"
+            >
+              {{ sourceName }}
+            </span>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <div
       v-if="focusedSourceName"
       class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]"
     >
@@ -137,6 +207,33 @@
         <div v-else-if="focusedSourceHealth || focusedSourceCollectionStats" class="mt-4 space-y-3">
           <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
             {{ focusedSourceHealth?.recommendation || defaultSourceRecommendation }}
+          </div>
+
+          <div
+            v-if="focusedSourceAttentionItem"
+            class="rounded-2xl border border-amber-100 bg-amber-50/70 p-4 text-sm text-amber-900"
+          >
+            <div class="text-xs text-amber-700">建议动作</div>
+            <div class="mt-2 font-medium text-gray-900">
+              {{ focusedSourceAttentionItem.recommendedAction.label }}
+            </div>
+            <div class="mt-1 text-[13px] text-gray-600">
+              {{ focusedSourceAttentionItem.recommendedAction.description }}
+            </div>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <router-link
+                :to="buildCrawlerLink()"
+                :class="getFocusedSourceActionClass('crawler')"
+              >
+                {{ getFocusedSourceActionLabel('crawler', '来源策略') }}
+              </router-link>
+              <router-link
+                :to="{ name: 'admin-play-sources', query: { source: focusedSourceName, focus: route.query.focus || 'top' } }"
+                :class="getFocusedSourceActionClass('play-sources')"
+              >
+                {{ getFocusedSourceActionLabel('play-sources', '当前播放源视图') }}
+              </router-link>
+            </div>
           </div>
 
           <div class="rounded-2xl border border-amber-100 bg-amber-50/80 p-4 text-sm text-amber-800">
@@ -332,6 +429,30 @@
             <p class="mt-2 text-sm leading-6 text-gray-500">
               可以尝试放宽来源或搜索关键词，或者返回爬虫页继续检查采集策略和来源可用性。
             </p>
+            <p
+              v-if="focusedSourceAttentionItem"
+              class="mt-3 rounded-2xl border border-amber-100 bg-amber-50/80 p-4 text-left text-sm text-amber-900"
+            >
+              <span class="block text-xs text-amber-700">建议动作</span>
+              <span class="mt-1 block font-medium text-gray-900">
+                {{ focusedSourceAttentionItem.recommendedAction.label }}
+              </span>
+              <span class="mt-1 block text-[13px] text-gray-600">
+                {{ focusedSourceAttentionItem.recommendedAction.description }}
+              </span>
+            </p>
+            <p
+              v-else-if="alertFilterRecommendation"
+              class="mt-3 rounded-2xl border border-rose-100 bg-rose-50/80 p-4 text-left text-sm text-rose-900"
+            >
+              <span class="block text-xs text-rose-700">告警建议</span>
+              <span class="mt-1 block font-medium text-gray-900">
+                {{ alertFilterRecommendation.label }}
+              </span>
+              <span class="mt-1 block text-[13px] text-gray-600">
+                {{ alertFilterRecommendation.description }}
+              </span>
+            </p>
             <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
               <button
                 class="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
@@ -342,9 +463,23 @@
               <router-link
                 v-if="focusedSourceName"
                 :to="buildCrawlerLink()"
-                class="rounded-full border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100"
+                :class="getFocusedSourceActionClass('crawler')"
               >
-                查看来源策略
+                {{ getFocusedSourceActionLabel('crawler', '查看来源策略') }}
+              </router-link>
+              <router-link
+                v-if="focusedSourceAttentionItem"
+                :to="{ name: 'admin-play-sources', query: { source: focusedSourceName, focus: route.query.focus || 'top' } }"
+                :class="getFocusedSourceActionClass('play-sources')"
+              >
+                {{ getFocusedSourceActionLabel('play-sources', '保持播放源视图') }}
+              </router-link>
+              <router-link
+                v-else-if="alertFilterRecommendation"
+                :to="{ name: 'crawler', query: { alertFilter: activeAlertFilter } }"
+                :class="getAlertActionClass('crawler')"
+              >
+                {{ getAlertActionLabel('crawler', '来源视图') }}
               </router-link>
             </div>
           </div>
@@ -445,6 +580,14 @@
     type CollectionSourceStatistics,
     type SourceHealthSummary,
   } from '@/api/crawler';
+  import {
+    buildAttentionSourceItem,
+    getAlertFilterRecommendedAction,
+    matchesCrawlerAlertFilter,
+    type AlertActionTarget,
+    type AttentionSourceItem,
+    type CrawlerAlertFilter,
+  } from '@/utils/collection-source-alerts';
   import type { PlaySource } from '@/types/media';
 
   const route = useRoute();
@@ -465,13 +608,27 @@
   const focusedSourceCollectionStats = ref<CollectionSourceStatistics | null>(null);
   const sourceContextLoading = ref(false);
   const sourceContextError = ref('');
+  const alertFilteredSourceNames = ref<string[]>([]);
 
   const appliedType = computed(() => normalizeQueryValue(route.query.type));
   const focusedSourceName = computed(() => normalizeQueryValue(route.query.source));
   const appliedSearch = computed(() => normalizeQueryValue(route.query.search));
   const appliedStatus = computed(() => normalizeQueryValue(route.query.status));
+  const activeAlertFilter = computed<CrawlerAlertFilter | ''>(() => {
+    const value = normalizeQueryValue(route.query.alertFilter);
+
+    return value === 'critical' || value === 'high' || value === 'stalled' || value === 'inactive'
+      ? value
+      : '';
+  });
   const hasActiveFilters = computed(() =>
-    Boolean(appliedType.value || focusedSourceName.value || appliedSearch.value || appliedStatus.value),
+    Boolean(
+      appliedType.value ||
+        focusedSourceName.value ||
+        appliedSearch.value ||
+        appliedStatus.value ||
+        activeAlertFilter.value,
+    ),
   );
   const focusOriginLabel = computed(() =>
     route.query.focus === 'attention' ? '待关注来源' : '重点来源',
@@ -592,6 +749,24 @@
     const activeOption = quickFilterOptions.find(option => option.key === activeQuickFilterKey.value);
     return activeOption?.label || '自定义组合';
   });
+  const alertFilterLabel = computed(() => {
+    const labelMap: Record<CrawlerAlertFilter, string> = {
+      critical: '立即止损来源',
+      high: '优先处理来源',
+      stalled: '入库停滞来源',
+      inactive: '无活跃源来源',
+    };
+
+    return activeAlertFilter.value ? labelMap[activeAlertFilter.value] : '';
+  });
+  const alertFilterRecommendation = computed(() => {
+    return activeAlertFilter.value ? getAlertFilterRecommendedAction(activeAlertFilter.value) : null;
+  });
+  const focusedSourceAttentionItem = computed<AttentionSourceItem | null>(() => {
+    return focusedSourceCollectionStats.value
+      ? buildAttentionSourceItem(focusedSourceCollectionStats.value)
+      : null;
+  });
   const sourceHealthTone = computed(() => {
     const qualityScore = focusedSourceHealth.value?.qualityScore ?? 0;
 
@@ -667,6 +842,10 @@
       nextQuery.focus = route.query.focus;
     }
 
+    if (activeAlertFilter.value) {
+      nextQuery.alertFilter = activeAlertFilter.value;
+    }
+
     return nextQuery;
   };
 
@@ -685,6 +864,10 @@
         limit: 10,
         type: type.value || undefined,
         source: source.value || undefined,
+        sources:
+          !source.value && alertFilteredSourceNames.value.length > 0
+            ? alertFilteredSourceNames.value.join(',')
+            : undefined,
         search: search.value || undefined,
         status: status.value || undefined,
         sortBy: parsedSort.sortBy,
@@ -741,6 +924,25 @@
     }
   };
 
+  const loadAlertFilteredSourceNames = async () => {
+    const alertFilter = activeAlertFilter.value;
+
+    if (focusedSourceName.value || !alertFilter) {
+      alertFilteredSourceNames.value = [];
+      return;
+    }
+
+    try {
+      const response = await crawlerApi.getStatistics();
+      alertFilteredSourceNames.value = (response.data?.sources || [])
+        .filter(source => matchesCrawlerAlertFilter(source, alertFilter))
+        .map(source => source.name);
+    } catch (error) {
+      console.error('加载告警来源筛选失败:', error);
+      alertFilteredSourceNames.value = [];
+    }
+  };
+
   const applyFilters = async () => {
     await updateRouteQuery(1);
   };
@@ -786,6 +988,7 @@
 
   const refreshPlaySources = async () => {
     syncFiltersFromRoute();
+    await loadAlertFilteredSourceNames();
     await loadPlaySources(page.value);
     await loadFocusedSourceContext();
   };
@@ -799,6 +1002,36 @@
         ? 'bg-white text-slate-900 shadow-sm'
         : 'border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10',
     ];
+  };
+
+  const getAlertActionClass = (target: AlertActionTarget) => {
+    return [
+      'inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-medium transition',
+      alertFilterRecommendation.value?.target === target
+        ? 'border border-rose-300/30 bg-rose-500/10 text-rose-100 hover:bg-rose-500/20'
+        : 'border border-white/10 bg-white/5 text-white hover:bg-white/10',
+    ];
+  };
+
+  const getAlertActionLabel = (target: AlertActionTarget, fallbackLabel: string) => {
+    return alertFilterRecommendation.value?.target === target
+      ? `建议 · ${fallbackLabel}`
+      : fallbackLabel;
+  };
+
+  const getFocusedSourceActionClass = (target: AlertActionTarget) => {
+    return [
+      'inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-medium transition',
+      focusedSourceAttentionItem.value?.recommendedAction.target === target
+        ? 'border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
+        : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50',
+    ];
+  };
+
+  const getFocusedSourceActionLabel = (target: AlertActionTarget, fallbackLabel: string) => {
+    return focusedSourceAttentionItem.value?.recommendedAction.target === target
+      ? `建议 · ${fallbackLabel}`
+      : fallbackLabel;
   };
 
   const buildCrawlerLink = () => {
@@ -879,6 +1112,14 @@
     () => focusedSourceName.value,
     () => {
       void loadFocusedSourceContext();
+    },
+    { immediate: true },
+  );
+
+  watch(
+    () => activeAlertFilter.value,
+    () => {
+      void loadAlertFilteredSourceNames();
     },
     { immediate: true },
   );
