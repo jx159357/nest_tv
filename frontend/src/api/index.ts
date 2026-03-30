@@ -241,5 +241,6 @@ export { playSourceApi } from './playSource';
 export { authApi } from './auth';
 export { recommendationsApi } from './recommendations';
 export { torrentApi } from './torrent';
+export { iptvApi } from './iptv';
 
 export default ApiClient;

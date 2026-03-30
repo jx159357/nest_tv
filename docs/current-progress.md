@@ -21,6 +21,8 @@
   - trending recommendations
   - top-rated recommendations
   - recommendation page now shows preference profile, reasoned personalized cards, and latest-release shelf
+- IPTV surfaces are now wired to live backend data:
+  - frontend now includes a dedicated IPTV page with stats, group filtering, search, channel detail, validation, and M3U import flow
 - Admin management is partially activated with real data:
   - admin dashboard uses live backend stats and health data
   - admin users list uses real `/admin/users`
@@ -120,7 +122,7 @@
   - `backend/src/iptv/dto/create-iptv-channel.dto.ts`
 - Current highest-value backend files:
   - No remaining backend lint hotspots.
-  - Next product-facing expansion can target remaining admin placeholders, IPTV surfaces, or deeper download / torrent workflows.
+  - Next product-facing expansion can target remaining admin placeholders or deeper download / torrent workflows.
 
 ## Suggested Next Steps
 
@@ -186,5 +188,6 @@
 - Follow-up source-quality enhancement completed: source quality scoring now blends availability, freshness, extraction coverage, inventory, and validation recency, while crawler/dashboard attention views surface extraction coverage and recent-media freshness for faster diagnosis.
 - Follow-up recommendation enhancement completed: personalized recommendations now use a richer recency-aware preference profile with explainable reason tags, RecommendationController exposes detailed recommendation/profile endpoints, and RecommendationsView now shows preference insights plus latest-release recommendations.
 - Follow-up torrent UX enhancement completed: frontend now exposes a dedicated magnet page with search, popular/latest shelves, magnet parsing, info/health detail panels, and linked-media entry, finally making the existing backend torrent endpoints directly usable.
+- Follow-up IPTV enhancement completed: frontend now exposes a dedicated IPTV page with channel stats, group/search filters, detail drill-down, availability validation, and M3U import flow on top of the existing backend IPTV module.
 - Follow-up backend lint cleanup completed: normalized the remaining Prettier line endings in `data-collection`, `play-source`, and `media-resource` backend files, restoring `backend npm run lint:check` to green.
 - Avoid reverting the staged removals under `backend/dist` and `.env.production`; those are intentional index cleanups.

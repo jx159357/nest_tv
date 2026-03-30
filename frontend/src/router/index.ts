@@ -13,6 +13,7 @@ const PlaySourcesView = () => import('../views/PlaySourcesView.vue');
 const WatchHistoryView = () => import('../views/WatchHistoryView.vue');
 const RecommendationsView = () => import('../views/RecommendationsView.vue');
 const TorrentView = () => import('../views/TorrentView.vue');
+const IPTVView = () => import('../views/IPTVView.vue');
 const AdminLayout = () => import('../layouts/AdminLayout.vue');
 const AdminDashboardView = () => import('../views/AdminDashboardView.vue');
 const AdminUsersView = () => import('../views/AdminUsersView.vue');
@@ -113,6 +114,16 @@ const routes: RouteRecordRaw[] = [
     component: TorrentView,
     meta: {
       title: '磁力资源 - Nest TV',
+      requiresAuth: true,
+      preload: false,
+    },
+  },
+  {
+    path: '/iptv',
+    name: 'iptv',
+    component: IPTVView,
+    meta: {
+      title: 'IPTV - Nest TV',
       requiresAuth: true,
       preload: false,
     },

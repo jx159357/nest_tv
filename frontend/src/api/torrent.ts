@@ -56,7 +56,8 @@ export interface TorrentSearchResponse {
 }
 
 export const torrentApi = {
-  getInfo: (hash: string) => ApiClient.get<TorrentInfoResult>(`/torrent/info/${hash}`, undefined, false),
+  getInfo: (hash: string) =>
+    ApiClient.get<TorrentInfoResult>(`/torrent/info/${hash}`, undefined, false),
 
   getHealth: (hash: string) =>
     ApiClient.get<TorrentHealthResult>(`/torrent/health/${hash}`, undefined, false),
