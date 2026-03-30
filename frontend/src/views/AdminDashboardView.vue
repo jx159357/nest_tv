@@ -343,6 +343,188 @@
               <p v-if="dailySummaryError && dailySummary" class="mt-3 text-xs text-amber-200/90">
                 {{ dailySummaryError }}
               </p>
+
+              <div class="mt-4 rounded-xl border border-white/10 bg-slate-900/50 p-4">
+                <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <div class="text-xs text-slate-400">任务结果看板</div>
+                    <div class="mt-2 text-sm text-slate-200">
+                      汇总最近几次每日采集执行结果，便于判断稳定性、失败趋势和异常来源。
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <button
+                      class="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      :disabled="taskDashboardLoading || isTaskRunPending"
+                      @click="loadTaskDashboard"
+                    >
+                      刷新看板
+                    </button>
+                    <button
+                      class="inline-flex items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-xs font-medium text-emerald-100 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      :disabled="isTaskRunPending"
+                      @click="triggerDailyCollectionRun"
+                    >
+                      {{ isTaskRunPending ? '任务执行中...' : '手动执行一次' }}
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  v-if="taskDashboardLoading && !taskDashboard"
+                  class="mt-4 rounded-lg border border-dashed border-white/10 bg-slate-900/30 p-4 text-sm text-slate-400"
+                >
+                  正在加载任务结果看板...
+                </div>
+
+                <template v-else-if="taskDashboard">
+                  <div class="mt-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
+                    <div class="rounded-lg border border-white/10 bg-slate-950/50 p-3">
+                      <div class="text-[11px] text-slate-500">近期待执行次数</div>
+                      <div class="mt-2 text-lg font-semibold text-white">{{ taskMetrics.totalRuns }}</div>
+                      <div class="mt-1 text-[11px] text-slate-400">
+                        定时 {{ taskMetrics.scheduledRuns }} · 手动 {{ taskMetrics.manualRuns }}
+                      </div>
+                    </div>
+                    <div class="rounded-lg border border-white/10 bg-slate-950/50 p-3">
+                      <div class="text-[11px] text-slate-500">成功率</div>
+                      <div class="mt-2 text-lg font-semibold text-white">{{ taskMetrics.successRate }}%</div>
+                      <div class="mt-1 text-[11px] text-slate-400">
+                        成功 {{ taskMetrics.successfulRuns }} · 异常 {{ taskMetrics.errorRuns }}
+                      </div>
+                    </div>
+                    <div class="rounded-lg border border-white/10 bg-slate-950/50 p-3">
+                      <div class="text-[11px] text-slate-500">平均耗时</div>
+                      <div class="mt-2 text-lg font-semibold text-white">
+                        {{ formatDuration(taskMetrics.averageDurationMs) }}
+                      </div>
+                      <div class="mt-1 text-[11px] text-slate-400">
+                        平均尝试 {{ taskMetrics.averageAttempted }} 条
+                      </div>
+                    </div>
+                    <div class="rounded-lg border border-white/10 bg-slate-950/50 p-3">
+                      <div class="text-[11px] text-slate-500">连续失败</div>
+                      <div class="mt-2 text-lg font-semibold text-white">{{ taskMetrics.failureStreak }}</div>
+                      <div class="mt-1 text-[11px] text-slate-400">
+                        最近成功 {{ formatDateTime(taskMetrics.lastSuccessAt) }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)]">
+                    <div class="rounded-xl border border-white/10 bg-slate-950/40 p-4">
+                      <div class="flex items-center justify-between gap-3">
+                        <div>
+                          <div class="text-xs text-slate-400">最近任务结果</div>
+                          <div class="mt-1 text-sm text-slate-200">
+                            保留最近 {{ recentTaskRuns.length }} 次执行快照
+                          </div>
+                        </div>
+                      </div>
+
+                      <div v-if="recentTaskRuns.length > 0" class="mt-4 space-y-3">
+                        <div
+                          v-for="run in recentTaskRuns"
+                          :key="run.id"
+                          class="rounded-lg border border-white/10 bg-slate-900/40 p-4"
+                        >
+                          <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                              <div class="flex flex-wrap items-center gap-2">
+                                <span
+                                  :class="[
+                                    'inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium ring-1',
+                                    getDailyStatusClass(run.status),
+                                  ]"
+                                >
+                                  {{ getDailyStatusText(run.status) }}
+                                </span>
+                                <span class="text-xs text-slate-400">
+                                  {{ getTriggerText(run.trigger) }} ·
+                                  {{ formatDateTime(run.completedAt || run.startedAt) }}
+                                </span>
+                              </div>
+                              <div class="mt-2 text-xs text-slate-500">
+                                {{ run.message || '本次任务未返回额外说明。' }}
+                              </div>
+                            </div>
+                            <div class="text-xs text-slate-400">
+                              {{ formatDuration(run.durationMs) }}
+                            </div>
+                          </div>
+                          <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-300 md:grid-cols-4">
+                            <div>尝试 {{ run.totalAttempted }}</div>
+                            <div>成功/失败 {{ run.totalSucceeded }} / {{ run.totalFailed }}</div>
+                            <div>新建媒体 {{ run.totalCreatedMedia }}</div>
+                            <div>新建播放源 {{ run.totalCreatedPlaySources }}</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        v-else
+                        class="mt-4 rounded-lg border border-dashed border-white/10 bg-slate-900/30 p-4 text-sm text-slate-400"
+                      >
+                        暂无任务历史记录。
+                      </div>
+                    </div>
+
+                    <div class="rounded-xl border border-white/10 bg-slate-950/40 p-4">
+                      <div class="text-xs text-slate-400">异常来源聚焦</div>
+                      <div class="mt-1 text-sm text-slate-200">
+                        汇总最近任务中反复失败或报错的来源，便于优先排查。
+                      </div>
+
+                      <div v-if="taskIssueSources.length > 0" class="mt-4 space-y-3">
+                        <div
+                          v-for="issue in taskIssueSources"
+                          :key="issue.sourceName"
+                          class="rounded-lg border border-white/10 bg-slate-900/40 p-4"
+                        >
+                          <div class="flex items-start justify-between gap-3">
+                            <div>
+                              <div class="text-sm font-medium text-white">{{ issue.sourceName }}</div>
+                              <div class="mt-1 text-xs text-slate-400">
+                                命中 {{ issue.affectedRuns }} 次 · 失败 {{ issue.totalFailed }} · 报错 {{ issue.totalErrors }}
+                              </div>
+                            </div>
+                            <span
+                              :class="[
+                                'inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium ring-1',
+                                getDailyStatusClass(issue.latestStatus),
+                              ]"
+                            >
+                              {{ getDailyStatusText(issue.latestStatus) }}
+                            </span>
+                          </div>
+                          <div class="mt-2 text-xs text-slate-400">
+                            最近触发 {{ formatDateTime(issue.latestRunAt) }}
+                          </div>
+                          <div v-if="issue.latestError" class="mt-2 text-xs text-amber-200/90">
+                            {{ issue.latestError }}
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        v-else
+                        class="mt-4 rounded-lg border border-dashed border-white/10 bg-slate-900/30 p-4 text-sm text-slate-400"
+                      >
+                        最近任务暂无持续性异常来源。
+                      </div>
+                    </div>
+                  </div>
+                </template>
+
+                <div
+                  v-else
+                  class="mt-4 rounded-lg border border-dashed border-white/10 bg-slate-900/30 p-4 text-sm text-slate-400"
+                >
+                  {{ taskDashboardError || '暂无任务看板数据。' }}
+                </div>
+
+                <p v-if="taskDashboardError && taskDashboard" class="mt-3 text-xs text-amber-200/90">
+                  {{ taskDashboardError }}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -382,6 +564,8 @@
 
                   <div class="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-300">
                     <span>可用率 {{ source.activeRate }}%</span>
+                    <span>提取 {{ source.extractionCoverage }}%</span>
+                    <span>近 7 天新增 {{ source.recentMedia7d }}</span>
                     <span>代理 {{ source.proxyMode }}</span>
                     <span>最近入库 {{ formatDateTime(source.lastCrawled) }}</span>
                   </div>
@@ -536,7 +720,7 @@
                         {{ item.source.name }}
                       </div>
                       <div class="mt-1 text-xs text-slate-400">
-                        质量 {{ item.source.qualityScore }} · 可用率 {{ item.source.activeRate }}%
+                        质量 {{ item.source.qualityScore }} · 可用率 {{ item.source.activeRate }}% · 提取 {{ item.source.extractionCoverage }}%
                       </div>
                     </div>
                     <span
@@ -793,7 +977,13 @@
     crawlerApi,
     type CollectionStatistics,
   } from '@/api/crawler';
-  import { schedulerApi, type DailySourceCollectionRunSummary } from '@/api/scheduler';
+  import {
+    schedulerApi,
+    type DailySourceCollectionDashboardSummary,
+    type DailySourceCollectionIssueSource,
+    type DailySourceCollectionRunRecord,
+    type DailySourceCollectionRunSummary,
+  } from '@/api/scheduler';
   import {
     buildAttentionSourceItem,
     compareAttentionSources,
@@ -843,8 +1033,37 @@
   const dailySummary = ref<DailySourceCollectionRunSummary | null>(null);
   const dailySummaryLoading = ref(false);
   const dailySummaryError = ref('');
+  const taskDashboard = ref<DailySourceCollectionDashboardSummary | null>(null);
+  const taskDashboardLoading = ref(false);
+  const taskDashboardError = ref('');
+  const taskActionLoading = ref(false);
 
   const topCollectionSources = computed(() => collectionStatistics.value?.sources.slice(0, 4) ?? []);
+  const recentTaskRuns = computed<DailySourceCollectionRunRecord[]>(() => taskDashboard.value?.history ?? []);
+  const taskIssueSources = computed<DailySourceCollectionIssueSource[]>(() =>
+    taskDashboard.value?.issueSources ?? [],
+  );
+  const taskMetrics = computed(() =>
+    taskDashboard.value?.metrics ?? {
+      totalRuns: 0,
+      successfulRuns: 0,
+      errorRuns: 0,
+      skippedRuns: 0,
+      manualRuns: 0,
+      scheduledRuns: 0,
+      successRate: 0,
+      averageDurationMs: 0,
+      averageAttempted: 0,
+      averageCreatedMedia: 0,
+      averageCreatedPlaySources: 0,
+      lastSuccessAt: undefined,
+      lastErrorAt: undefined,
+      failureStreak: 0,
+    },
+  );
+  const isTaskRunPending = computed(
+    () => taskActionLoading.value || dailySummary.value?.status === 'running',
+  );
   const attentionCollectionCandidates = computed<AttentionSourceItem[]>(() => {
     const sources = collectionStatistics.value?.sources ?? [];
 
@@ -917,6 +1136,7 @@
     }
   };
 
+  
   const loadDailySummary = async () => {
     dailySummaryLoading.value = true;
     dailySummaryError.value = '';
@@ -930,6 +1150,44 @@
         : '加载每日采集任务状态失败，请稍后重试。';
     } finally {
       dailySummaryLoading.value = false;
+    }
+  };
+
+  const loadTaskDashboard = async () => {
+    taskDashboardLoading.value = true;
+    taskDashboardError.value = '';
+
+    try {
+      taskDashboard.value = await schedulerApi.getDailySourceCollectionDashboard();
+      dailySummary.value = taskDashboard.value.current;
+    } catch (error) {
+      console.error('加载任务结果看板失败:', error);
+      taskDashboardError.value = taskDashboard.value
+        ? '任务看板刷新失败，当前保留最近一次成功结果。'
+        : '加载任务看板失败，请稍后重试。';
+    } finally {
+      taskDashboardLoading.value = false;
+    }
+  };
+
+  const triggerDailyCollectionRun = async () => {
+    if (isTaskRunPending.value) {
+      return;
+    }
+
+    taskActionLoading.value = true;
+    taskDashboardError.value = '';
+    dailySummaryError.value = '';
+
+    try {
+      dailySummary.value = await schedulerApi.runDailySourceCollection();
+      await loadTaskDashboard();
+    } catch (error) {
+      console.error('手动触发每日采集任务失败:', error);
+      taskDashboardError.value =
+        error instanceof Error ? error.message : '手动触发每日采集任务失败，请稍后重试。';
+    } finally {
+      taskActionLoading.value = false;
     }
   };
 
@@ -1178,12 +1436,13 @@
     void loadHealth();
     void loadCollectionStatistics();
     void loadDailySummary();
+    void loadTaskDashboard();
 
-    // 定时刷新数据
     statsInterval = setInterval(() => {
       void loadStats();
       void loadCollectionStatistics();
       void loadDailySummary();
+      void loadTaskDashboard();
     }, 30000);
     healthInterval = setInterval(() => {
       void loadHealth();

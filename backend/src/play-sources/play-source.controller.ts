@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Param,
   Body,
@@ -221,6 +222,7 @@ export class PlaySourceController {
    * 验证播放源有效性
    */
   @Put(':id/validate')
+  @Patch(':id/validate')
   @ApiOperation({ summary: '验证播放源有效性' })
   @ApiResponse({ status: 200, description: '验证成功' })
   @ApiResponse({ status: 404, description: '播放源不存在' })

@@ -21,6 +21,12 @@ interface MediaSourceStatisticsRow {
   total: string;
   active: string;
   latestCreatedAt: string | null;
+  recentCreated7d: string;
+  withPoster: string;
+  withBackdrop: string;
+  withDuration: string;
+  withEpisodeCount: string;
+  withDownloadUrls: string;
 }
 
 @Injectable()
@@ -393,15 +399,54 @@ export class MediaResourceService {
     });
   }
 
-  async getSourceStatistics(
-    sourceNames?: string[],
-  ): Promise<Record<string, { total: number; active: number; latestCreatedAt: string | null }>> {
+  async getSourceStatistics(sourceNames?: string[]): Promise<
+    Record<
+      string,
+      {
+        total: number;
+        active: number;
+        latestCreatedAt: string | null;
+        recentCreated7d: number;
+        withPoster: number;
+        withBackdrop: number;
+        withDuration: number;
+        withEpisodeCount: number;
+        withDownloadUrls: number;
+      }
+    >
+  > {
+    const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const queryBuilder = this.mediaResourceRepository
       .createQueryBuilder('mediaResource')
       .select('mediaResource.source', 'source')
       .addSelect('COUNT(*)', 'total')
       .addSelect('SUM(CASE WHEN mediaResource.isActive = true THEN 1 ELSE 0 END)', 'active')
       .addSelect('MAX(mediaResource.createdAt)', 'latestCreatedAt')
+      .addSelect(
+        'SUM(CASE WHEN mediaResource.createdAt >= :since7d THEN 1 ELSE 0 END)',
+        'recentCreated7d',
+      )
+      .addSelect(
+        "SUM(CASE WHEN mediaResource.poster IS NOT NULL AND mediaResource.poster <> '' THEN 1 ELSE 0 END)",
+        'withPoster',
+      )
+      .addSelect(
+        "SUM(CASE WHEN mediaResource.backdrop IS NOT NULL AND mediaResource.backdrop <> '' THEN 1 ELSE 0 END)",
+        'withBackdrop',
+      )
+      .addSelect(
+        'SUM(CASE WHEN mediaResource.duration IS NOT NULL AND mediaResource.duration > 0 THEN 1 ELSE 0 END)',
+        'withDuration',
+      )
+      .addSelect(
+        'SUM(CASE WHEN mediaResource.episodeCount IS NOT NULL AND mediaResource.episodeCount > 0 THEN 1 ELSE 0 END)',
+        'withEpisodeCount',
+      )
+      .addSelect(
+        "SUM(CASE WHEN mediaResource.downloadUrls IS NOT NULL AND mediaResource.downloadUrls <> '' THEN 1 ELSE 0 END)",
+        'withDownloadUrls',
+      )
+      .setParameter('since7d', since7d)
       .where('mediaResource.source IS NOT NULL');
 
     if (sourceNames && sourceNames.length > 0) {
@@ -413,7 +458,20 @@ export class MediaResourceService {
       .getRawMany<MediaSourceStatisticsRow>();
 
     return rows.reduce<
-      Record<string, { total: number; active: number; latestCreatedAt: string | null }>
+      Record<
+        string,
+        {
+          total: number;
+          active: number;
+          latestCreatedAt: string | null;
+          recentCreated7d: number;
+          withPoster: number;
+          withBackdrop: number;
+          withDuration: number;
+          withEpisodeCount: number;
+          withDownloadUrls: number;
+        }
+      >
     >((accumulator, row) => {
       if (!row.source) {
         return accumulator;
@@ -423,6 +481,12 @@ export class MediaResourceService {
         total: parseInt(row.total, 10) || 0,
         active: parseInt(row.active, 10) || 0,
         latestCreatedAt: row.latestCreatedAt ?? null,
+        recentCreated7d: parseInt(row.recentCreated7d, 10) || 0,
+        withPoster: parseInt(row.withPoster, 10) || 0,
+        withBackdrop: parseInt(row.withBackdrop, 10) || 0,
+        withDuration: parseInt(row.withDuration, 10) || 0,
+        withEpisodeCount: parseInt(row.withEpisodeCount, 10) || 0,
+        withDownloadUrls: parseInt(row.withDownloadUrls, 10) || 0,
       };
 
       return accumulator;

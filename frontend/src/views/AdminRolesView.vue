@@ -1,130 +1,151 @@
 <template>
   <div class="space-y-6">
-    <!-- 页面标题 -->
-    <div class="flex justify-between items-center">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">角色权限管理</h1>
-        <p class="mt-2 text-gray-600">管理系统角色和权限分配</p>
+        <p class="mt-2 text-gray-600">
+          维护后台角色、权限字典，以及角色与权限码之间的分配关系。
+        </p>
       </div>
-      <div class="flex space-x-3">
+      <div class="flex flex-wrap gap-3">
         <button
-          class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          @click="showCreateRole = true"
+          class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+          @click="openCreateRole"
         >
-          创建角色
+          新建角色
         </button>
         <button
-          class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-          @click="showCreatePermission = true"
+          class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+          @click="openCreatePermission"
         >
-          创建权限
+          新建权限
         </button>
       </div>
     </div>
 
-    <!-- Tab切换 -->
-    <div class="border-b border-gray-200">
-      <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-        <button
-          :class="[
-            activeTab === 'roles'
-              ? 'border-indigo-500 text-indigo-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-            'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm',
-          ]"
-          @click="activeTab = 'roles'"
-        >
-          角色管理
-        </button>
-        <button
-          :class="[
-            activeTab === 'permissions'
-              ? 'border-indigo-500 text-indigo-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-            'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm',
-          ]"
-          @click="activeTab = 'permissions'"
-        >
-          权限管理
-        </button>
-      </nav>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="text-sm text-slate-500">角色总数</div>
+        <div class="mt-3 text-3xl font-semibold text-slate-900">{{ roles.length }}</div>
+        <div class="mt-2 text-xs text-slate-500">启用 {{ activeRoleCount }} / 停用 {{ inactiveRoleCount }}</div>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="text-sm text-slate-500">权限总数</div>
+        <div class="mt-3 text-3xl font-semibold text-slate-900">{{ permissions.length }}</div>
+        <div class="mt-2 text-xs text-slate-500">
+          启用 {{ activePermissionCount }} / 停用 {{ inactivePermissionCount }}
+        </div>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="text-sm text-slate-500">角色权限映射</div>
+        <div class="mt-3 text-3xl font-semibold text-slate-900">{{ assignedPermissionCount }}</div>
+        <div class="mt-2 text-xs text-slate-500">已分配到角色的权限码数量</div>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="text-sm text-slate-500">当前视图</div>
+        <div class="mt-3 text-xl font-semibold text-slate-900">
+          {{ activeTab === 'roles' ? '角色管理' : '权限字典' }}
+        </div>
+        <div class="mt-2 text-xs text-slate-500">创建、编辑、启停均已接通真实后台接口</div>
+      </div>
     </div>
 
-    <!-- 角色管理 -->
-    <div v-show="activeTab === 'roles'" class="space-y-6">
-      <!-- 角色列表 -->
-      <div class="bg-white shadow rounded-lg overflow-hidden">
-        <div v-if="rolesLoading" class="text-center py-12">
-          <div
-            class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"
-          ></div>
-          <p class="mt-4 text-gray-500">加载角色列表...</p>
+    <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div class="border-b border-slate-200 px-6 pt-4">
+        <div class="flex flex-wrap gap-6">
+          <button
+            :class="getTabClass('roles')"
+            @click="activeTab = 'roles'"
+          >
+            角色管理
+          </button>
+          <button
+            :class="getTabClass('permissions')"
+            @click="activeTab = 'permissions'"
+          >
+            权限管理
+          </button>
+        </div>
+      </div>
+
+      <div v-if="notice" class="px-6 pt-4">
+        <div
+          :class="[
+            'rounded-xl border px-4 py-3 text-sm',
+            notice.type === 'success'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+              : 'border-rose-200 bg-rose-50 text-rose-700',
+          ]"
+        >
+          {{ notice.message }}
+        </div>
+      </div>
+
+      <div v-if="pageError" class="px-6 pt-4">
+        <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {{ pageError }}
+        </div>
+      </div>
+
+      <div v-if="activeTab === 'roles'" class="p-6">
+        <div v-if="rolesLoading" class="py-16 text-center text-sm text-slate-500">角色列表加载中...</div>
+        <div v-else-if="roles.length === 0" class="py-16 text-center text-sm text-slate-500">
+          暂无角色数据，先创建一个角色吧。
         </div>
         <div v-else class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+          <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
               <tr>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  角色名称
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  描述
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  权限数量
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  状态
-                </th>
-                <th
-                  class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  操作
-                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">角色</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">描述</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">权限</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">状态</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">更新时间</th>
+                <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-500">操作</th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="divide-y divide-slate-200 bg-white">
               <tr v-for="role in roles" :key="role.id">
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900">{{ role.name }}</div>
+                <td class="px-4 py-4 text-sm text-slate-900">
+                  <div class="font-medium">{{ role.name }}</div>
+                  <div class="mt-1 text-xs text-slate-500">ID {{ role.id }}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm text-gray-500">{{ role.description || '无描述' }}</div>
+                <td class="px-4 py-4 text-sm text-slate-600">
+                  {{ role.description || '暂无描述' }}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span
-                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                  >
-                    {{ (role.permissions || []).length }} 个权限
+                <td class="px-4 py-4 text-sm text-slate-600">
+                  <div class="font-medium text-slate-900">{{ role.permissions?.length || 0 }} 项</div>
+                  <div class="mt-2 flex flex-wrap gap-2">
+                    <span
+                      v-for="code in getRolePermissionPreview(role)"
+                      :key="`${role.id}-${code}`"
+                      class="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600"
+                    >
+                      {{ resolvePermissionLabel(code) }}
+                    </span>
+                    <span
+                      v-if="(role.permissions?.length || 0) > 3"
+                      class="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600"
+                    >
+                      +{{ (role.permissions?.length || 0) - 3 }}
+                    </span>
+                  </div>
+                </td>
+                <td class="px-4 py-4 text-sm">
+                  <span :class="getStatusClass(role.isActive)">
+                    {{ role.isActive ? '启用中' : '已停用' }}
                   </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span
-                    :class="[
-                      'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                      role.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800',
-                    ]"
-                  >
-                    {{ role.isActive ? '启用' : '禁用' }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    class="text-indigo-600 hover:text-indigo-900 mr-3"
-                    @click="editRole(role)"
-                  >
+                <td class="px-4 py-4 text-sm text-slate-600">{{ formatDate(role.updatedAt) }}</td>
+                <td class="px-4 py-4 text-right text-sm font-medium">
+                  <button class="mr-3 text-indigo-600 hover:text-indigo-800" @click="openEditRole(role)">
                     编辑
                   </button>
-                  <button class="text-red-600 hover:text-red-900" @click="deleteRole(role)">
-                    删除
+                  <button
+                    :class="role.isActive ? 'text-amber-600 hover:text-amber-800' : 'text-emerald-600 hover:text-emerald-800'"
+                    @click="toggleRoleStatus(role)"
+                  >
+                    {{ role.isActive ? '停用' : '启用' }}
                   </button>
                 </td>
               </tr>
@@ -132,105 +153,55 @@
           </table>
         </div>
       </div>
-    </div>
 
-    <!-- 权限管理 -->
-    <div v-show="activeTab === 'permissions'" class="space-y-6">
-      <!-- 权限列表 -->
-      <div class="bg-white shadow rounded-lg overflow-hidden">
-        <div v-if="permissionsLoading" class="text-center py-12">
-          <div
-            class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"
-          ></div>
-          <p class="mt-4 text-gray-500">加载权限列表...</p>
+      <div v-else class="p-6">
+        <div v-if="permissionsLoading" class="py-16 text-center text-sm text-slate-500">权限列表加载中...</div>
+        <div v-else-if="permissions.length === 0" class="py-16 text-center text-sm text-slate-500">
+          暂无权限数据，先创建一个权限吧。
         </div>
         <div v-else class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+          <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
               <tr>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  权限代码
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  权限名称
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  资源
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  操作
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  状态
-                </th>
-                <th
-                  class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  操作
-                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">权限代码</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">名称与描述</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">资源 / 动作</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">状态</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">更新时间</th>
+                <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-500">操作</th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="divide-y divide-slate-200 bg-white">
               <tr v-for="permission in permissions" :key="permission.id">
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900 font-mono">
-                    {{ permission.code }}
-                  </div>
+                <td class="px-4 py-4 text-sm text-slate-900">
+                  <div class="font-mono font-medium">{{ permission.code }}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm text-gray-900">{{ permission.name }}</div>
-                  <div v-if="permission.description" class="text-sm text-gray-500 mt-1">
-                    {{ permission.description }}
-                  </div>
+                <td class="px-4 py-4 text-sm text-slate-600">
+                  <div class="font-medium text-slate-900">{{ permission.name }}</div>
+                  <div class="mt-1 text-xs text-slate-500">{{ permission.description || '暂无描述' }}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span
-                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
-                  >
-                    {{ permission.resource || '通用' }}
+                <td class="px-4 py-4 text-sm text-slate-600">
+                  <div>{{ permission.resource || '通用资源' }}</div>
+                  <div class="mt-1 text-xs text-slate-500">{{ permission.action || '未指定动作' }}</div>
+                </td>
+                <td class="px-4 py-4 text-sm">
+                  <span :class="getStatusClass(permission.isActive)">
+                    {{ permission.isActive ? '启用中' : '已停用' }}
                   </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span
-                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800"
-                  >
-                    {{ permission.action || '无' }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span
-                    :class="[
-                      'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                      permission.isActive
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800',
-                    ]"
-                  >
-                    {{ permission.isActive ? '启用' : '禁用' }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td class="px-4 py-4 text-sm text-slate-600">{{ formatDate(permission.updatedAt) }}</td>
+                <td class="px-4 py-4 text-right text-sm font-medium">
                   <button
-                    class="text-indigo-600 hover:text-indigo-900 mr-3"
-                    @click="editPermission(permission)"
+                    class="mr-3 text-indigo-600 hover:text-indigo-800"
+                    @click="openEditPermission(permission)"
                   >
                     编辑
                   </button>
                   <button
-                    class="text-red-600 hover:text-red-900"
-                    @click="deletePermission(permission)"
+                    :class="permission.isActive ? 'text-amber-600 hover:text-amber-800' : 'text-emerald-600 hover:text-emerald-800'"
+                    @click="togglePermissionStatus(permission)"
                   >
-                    删除
+                    {{ permission.isActive ? '停用' : '启用' }}
                   </button>
                 </td>
               </tr>
@@ -241,322 +212,516 @@
     </div>
   </div>
 
-  <!-- 创建角色弹窗 -->
   <div
-    v-if="showCreateRole"
-    class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+    v-if="showRoleModal"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
   >
-    <div class="relative min-h-screen flex items-center justify-center p-4">
-      <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full">
-        <div class="px-6 py-4 border-b border-gray-200">
-          <h3 class="text-lg font-medium text-gray-900">创建角色</h3>
+    <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
+      <div class="border-b border-slate-200 px-6 py-4">
+        <h2 class="text-lg font-semibold text-slate-900">{{ roleModalTitle }}</h2>
+        <p class="mt-1 text-sm text-slate-500">角色名唯一，权限分配使用启用中的权限码。</p>
+      </div>
+      <form class="space-y-4 px-6 py-5" @submit.prevent="saveRole">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-slate-700">角色名</label>
+          <input
+            v-model="roleForm.name"
+            type="text"
+            required
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-indigo-200 focus:ring"
+            placeholder="例如：content_admin"
+          />
         </div>
-        <form class="px-6 py-4 space-y-4" @submit.prevent="createRole">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">角色名称 *</label>
-            <input
-              v-model="newRole.name"
-              type="text"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="如：content_admin"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">角色描述</label>
-            <textarea
-              v-model="newRole.description"
-              rows="3"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="角色职责描述"
-            ></textarea>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">权限列表</label>
-            <select
-              v-model="newRole.permissions"
-              multiple
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        <div>
+          <label class="mb-1 block text-sm font-medium text-slate-700">角色描述</label>
+          <textarea
+            v-model="roleForm.description"
+            rows="3"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-indigo-200 focus:ring"
+            placeholder="描述该角色的职责范围"
+          />
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-slate-700">权限列表</label>
+          <select
+            v-model="roleForm.permissions"
+            multiple
+            class="h-48 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-indigo-200 focus:ring"
+          >
+            <option
+              v-for="permission in selectablePermissions"
+              :key="permission.id"
+              :value="permission.code"
             >
-              <option
-                v-for="permission in permissions"
-                :key="permission.id"
-                :value="permission.code"
-              >
-                {{ permission.name }} ({{ permission.code }})
-              </option>
-            </select>
-            <p class="text-xs text-gray-500 mt-1">按住 Ctrl/Cmd 键多选</p>
-          </div>
-        </form>
-        <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3 rounded-b-lg">
+              {{ permission.name }} ({{ permission.code }})
+            </option>
+          </select>
+          <p class="mt-1 text-xs text-slate-500">按住 Ctrl / Cmd 可多选。</p>
+        </div>
+        <label class="flex items-center gap-2 text-sm text-slate-600">
+          <input v-model="roleForm.isActive" type="checkbox" class="rounded border-slate-300" />
+          保存后保持角色为启用状态
+        </label>
+        <div class="flex justify-end gap-3 border-t border-slate-200 pt-4">
           <button
             type="button"
-            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            @click="showCreateRole = false"
+            class="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+            @click="closeRoleModal"
           >
             取消
           </button>
           <button
             type="submit"
-            class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            @click="createRole"
+            class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+            :disabled="savingRole"
           >
-            创建
+            {{ savingRole ? '保存中...' : roleForm.id ? '保存修改' : '创建角色' }}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   </div>
 
-  <!-- 创建权限弹窗 -->
   <div
-    v-if="showCreatePermission"
-    class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+    v-if="showPermissionModal"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
   >
-    <div class="relative min-h-screen flex items-center justify-center p-4">
-      <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full">
-        <div class="px-6 py-4 border-b border-gray-200">
-          <h3 class="text-lg font-medium text-gray-900">创建权限</h3>
+    <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
+      <div class="border-b border-slate-200 px-6 py-4">
+        <h2 class="text-lg font-semibold text-slate-900">{{ permissionModalTitle }}</h2>
+        <p class="mt-1 text-sm text-slate-500">停用权限后，会自动从角色权限码中移除。</p>
+      </div>
+      <form class="space-y-4 px-6 py-5" @submit.prevent="savePermission">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">权限代码</label>
+            <input
+              v-model="permissionForm.code"
+              type="text"
+              required
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-indigo-200 focus:ring"
+              placeholder="例如：media_update"
+            />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">权限名称</label>
+            <input
+              v-model="permissionForm.name"
+              type="text"
+              required
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-indigo-200 focus:ring"
+              placeholder="例如：更新媒体"
+            />
+          </div>
         </div>
-        <form class="px-6 py-4 space-y-4" @submit.prevent="createPermission">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-slate-700">权限描述</label>
+          <textarea
+            v-model="permissionForm.description"
+            rows="3"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-indigo-200 focus:ring"
+            placeholder="补充说明该权限的用途"
+          />
+        </div>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">权限代码 *</label>
-            <input
-              v-model="newPermission.code"
-              type="text"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="如：user_create"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">权限名称 *</label>
-            <input
-              v-model="newPermission.name"
-              type="text"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="如：创建用户"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">权限描述</label>
-            <textarea
-              v-model="newPermission.description"
-              rows="3"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="权限功能描述"
-            ></textarea>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">关联资源</label>
+            <label class="mb-1 block text-sm font-medium text-slate-700">关联资源</label>
             <select
-              v-model="newPermission.resource"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              v-model="permissionForm.resource"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-indigo-200 focus:ring"
             >
-              <option value="">无</option>
+              <option value="">通用资源</option>
               <option value="user">用户</option>
               <option value="media">媒体</option>
               <option value="play_source">播放源</option>
               <option value="watch_history">观看历史</option>
               <option value="recommendation">推荐</option>
-              <option value="admin">管理</option>
+              <option value="admin">后台管理</option>
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">操作类型</label>
+            <label class="mb-1 block text-sm font-medium text-slate-700">动作</label>
             <select
-              v-model="newPermission.action"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              v-model="permissionForm.action"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-indigo-200 focus:ring"
             >
-              <option value="">无</option>
-              <option value="create">创建</option>
-              <option value="read">读取</option>
-              <option value="update">更新</option>
-              <option value="delete">删除</option>
-              <option value="export">导出</option>
-              <option value="import">导入</option>
+              <option value="">未指定</option>
+              <option value="create">create</option>
+              <option value="read">read</option>
+              <option value="update">update</option>
+              <option value="delete">delete</option>
+              <option value="manage">manage</option>
             </select>
           </div>
-        </form>
-        <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3 rounded-b-lg">
+        </div>
+        <label class="flex items-center gap-2 text-sm text-slate-600">
+          <input v-model="permissionForm.isActive" type="checkbox" class="rounded border-slate-300" />
+          保存后保持权限为启用状态
+        </label>
+        <div class="flex justify-end gap-3 border-t border-slate-200 pt-4">
           <button
             type="button"
-            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            @click="showCreatePermission = false"
+            class="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+            @click="closePermissionModal"
           >
             取消
           </button>
           <button
             type="submit"
-            class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-            @click="createPermission"
+            class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+            :disabled="savingPermission"
           >
-            创建
+            {{ savingPermission ? '保存中...' : permissionForm.id ? '保存修改' : '创建权限' }}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   </div>
 </template>
 
-<script setup>
-  import { ref, onMounted } from 'vue';
-  import { useAuthStore } from '@/stores/auth';
+<script setup lang="ts">
+  import { computed, onMounted, ref } from 'vue';
+  import {
+    adminApi,
+    type AdminPermissionItem,
+    type AdminPermissionPayload,
+    type AdminRoleItem,
+    type AdminRolePayload,
+  } from '@/api/admin';
 
-  const authStore = useAuthStore();
+  type TabKey = 'roles' | 'permissions';
+  type NoticeType = 'success' | 'error';
 
-  // 状态管理
-  const activeTab = ref('roles');
-  const roles = ref([]);
-  const permissions = ref([]);
+  interface NoticeState {
+    type: NoticeType;
+    message: string;
+  }
+
+  interface RoleFormState {
+    id: number | null;
+    name: string;
+    description: string;
+    permissions: string[];
+    isActive: boolean;
+  }
+
+  interface PermissionFormState {
+    id: number | null;
+    code: string;
+    name: string;
+    description: string;
+    resource: string;
+    action: string;
+    isActive: boolean;
+  }
+
+  const activeTab = ref<TabKey>('roles');
+  const roles = ref<AdminRoleItem[]>([]);
+  const permissions = ref<AdminPermissionItem[]>([]);
   const rolesLoading = ref(false);
   const permissionsLoading = ref(false);
+  const savingRole = ref(false);
+  const savingPermission = ref(false);
+  const pageError = ref<string | null>(null);
+  const notice = ref<NoticeState | null>(null);
 
-  // 弹窗状态
-  const showCreateRole = ref(false);
-  const showCreatePermission = ref(false);
+  const showRoleModal = ref(false);
+  const showPermissionModal = ref(false);
+  const roleForm = ref<RoleFormState>(createEmptyRoleForm());
+  const permissionForm = ref<PermissionFormState>(createEmptyPermissionForm());
 
-  // 新建角色表单
-  const newRole = ref({
-    name: '',
-    description: '',
-    permissions: [],
+  const activeRoleCount = computed(() => roles.value.filter(role => role.isActive).length);
+  const inactiveRoleCount = computed(() => roles.value.length - activeRoleCount.value);
+  const activePermissionCount = computed(
+    () => permissions.value.filter(permission => permission.isActive).length,
+  );
+  const inactivePermissionCount = computed(
+    () => permissions.value.length - activePermissionCount.value,
+  );
+  const assignedPermissionCount = computed(() =>
+    roles.value.reduce((count, role) => count + (role.permissions?.length || 0), 0),
+  );
+  const permissionLookup = computed(() => {
+    return new Map(permissions.value.map(permission => [permission.code, permission.name]));
   });
-
-  // 新建权限表单
-  const newPermission = ref({
-    code: '',
-    name: '',
-    description: '',
-    resource: '',
-    action: '',
+  const selectablePermissions = computed(() => {
+    return permissions.value.filter(
+      permission => permission.isActive || roleForm.value.permissions.includes(permission.code),
+    );
   });
+  const roleModalTitle = computed(() => (roleForm.value.id ? '编辑角色' : '新建角色'));
+  const permissionModalTitle = computed(() =>
+    permissionForm.value.id ? '编辑权限' : '新建权限',
+  );
 
-  // 加载角色列表
+  function createEmptyRoleForm(): RoleFormState {
+    return {
+      id: null,
+      name: '',
+      description: '',
+      permissions: [],
+      isActive: true,
+    };
+  }
+
+  function createEmptyPermissionForm(): PermissionFormState {
+    return {
+      id: null,
+      code: '',
+      name: '',
+      description: '',
+      resource: '',
+      action: '',
+      isActive: true,
+    };
+  }
+
+  const getErrorMessage = (error: unknown, fallback: string) => {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'response' in error &&
+      error.response &&
+      typeof error.response === 'object' &&
+      'data' in error.response &&
+      error.response.data &&
+      typeof error.response.data === 'object' &&
+      'message' in error.response.data
+    ) {
+      const message = error.response.data.message;
+      if (Array.isArray(message)) {
+        return message.join('；');
+      }
+      if (typeof message === 'string') {
+        return message;
+      }
+    }
+
+    return error instanceof Error ? error.message : fallback;
+  };
+
+  const setNotice = (type: NoticeType, message: string) => {
+    notice.value = { type, message };
+  };
+
+  const clearMessages = () => {
+    pageError.value = null;
+    notice.value = null;
+  };
+
   const loadRoles = async () => {
     rolesLoading.value = true;
     try {
-      const response = await authStore.api.get('/admin/roles');
-      roles.value = response.data;
-    } catch (error) {
-      console.error('加载角色失败:', error);
+      roles.value = await adminApi.getRoles();
+    } catch (error: unknown) {
+      pageError.value = getErrorMessage(error, '加载角色列表失败');
     } finally {
       rolesLoading.value = false;
     }
   };
 
-  // 加载权限列表
   const loadPermissions = async () => {
     permissionsLoading.value = true;
     try {
-      const response = await authStore.api.get('/admin/permissions');
-      permissions.value = response.data;
-    } catch (error) {
-      console.error('加载权限失败:', error);
+      permissions.value = await adminApi.getPermissions();
+    } catch (error: unknown) {
+      pageError.value = getErrorMessage(error, '加载权限列表失败');
     } finally {
       permissionsLoading.value = false;
     }
   };
 
-  // 创建角色
-  const createRole = async () => {
-    if (!newRole.value.name.trim()) {
-      alert('请输入角色名称');
+  const reloadPermissionAndRoleData = async () => {
+    await Promise.all([loadRoles(), loadPermissions()]);
+  };
+
+  const openCreateRole = () => {
+    clearMessages();
+    roleForm.value = createEmptyRoleForm();
+    showRoleModal.value = true;
+  };
+
+  const openEditRole = (role: AdminRoleItem) => {
+    clearMessages();
+    roleForm.value = {
+      id: role.id,
+      name: role.name,
+      description: role.description || '',
+      permissions: [...(role.permissions || [])],
+      isActive: role.isActive,
+    };
+    showRoleModal.value = true;
+  };
+
+  const closeRoleModal = () => {
+    showRoleModal.value = false;
+    roleForm.value = createEmptyRoleForm();
+  };
+
+  const saveRole = async () => {
+    if (!roleForm.value.name.trim()) {
+      setNotice('error', '请先填写角色名');
       return;
     }
 
+    savingRole.value = true;
     try {
-      const response = await authStore.api.post('/admin/roles', {
-        name: newRole.value.name,
-        description: newRole.value.description,
-        permissions: newRole.value.permissions,
-      });
+      const payload: AdminRolePayload = {
+        name: roleForm.value.name.trim(),
+        description: roleForm.value.description.trim() || undefined,
+        permissions: roleForm.value.permissions,
+        isActive: roleForm.value.isActive,
+      };
 
-      // 重置表单
-      newRole.value = { name: '', description: '', permissions: [] };
-      showCreateRole.value = false;
+      if (roleForm.value.id) {
+        await adminApi.updateRole(roleForm.value.id, payload);
+        setNotice('success', `角色“${payload.name}”已更新`);
+      } else {
+        await adminApi.createRole(payload);
+        setNotice('success', `角色“${payload.name}”已创建`);
+      }
 
-      // 重新加载列表
+      closeRoleModal();
       await loadRoles();
-    } catch (error) {
-      console.error('创建角色失败:', error);
-      alert('创建角色失败：' + (error.response?.data?.message || error.message));
+    } catch (error: unknown) {
+      setNotice('error', getErrorMessage(error, '保存角色失败'));
+    } finally {
+      savingRole.value = false;
     }
   };
 
-  // 创建权限
-  const createPermission = async () => {
-    if (!newPermission.value.code.trim() || !newPermission.value.name.trim()) {
-      alert('请填写权限代码和名称');
+  const toggleRoleStatus = async (role: AdminRoleItem) => {
+    const nextStatus = !role.isActive;
+    const actionLabel = nextStatus ? '启用' : '停用';
+
+    if (!window.confirm(`确定要${actionLabel}角色“${role.name}”吗？`)) {
       return;
     }
 
     try {
-      const response = await authStore.api.post('/admin/permissions', {
-        code: newPermission.value.code,
-        name: newPermission.value.name,
-        description: newPermission.value.description,
-        resource: newPermission.value.resource || undefined,
-        action: newPermission.value.action || undefined,
-      });
-
-      // 重置表单
-      newPermission.value = { code: '', name: '', description: '', resource: '', action: '' };
-      showCreatePermission.value = false;
-
-      // 重新加载列表
-      await loadPermissions();
-    } catch (error) {
-      console.error('创建权限失败:', error);
-      alert('创建权限失败：' + (error.response?.data?.message || error.message));
-    }
-  };
-
-  // 编辑角色（待实现）
-  const editRole = role => {
-    alert('编辑角色功能待实现');
-  };
-
-  // 删除角色（待实现）
-  const deleteRole = async role => {
-    if (!confirm(`确定要删除角色 "${role.name}" 吗？`)) {
-      return;
-    }
-
-    try {
-      await authStore.api.delete(`/admin/roles/${role.id}`);
+      await adminApi.updateRole(role.id, { isActive: nextStatus });
+      setNotice('success', `角色“${role.name}”已${actionLabel}`);
       await loadRoles();
-    } catch (error) {
-      console.error('删除角色失败:', error);
-      alert('删除角色失败');
+    } catch (error: unknown) {
+      setNotice('error', getErrorMessage(error, `${actionLabel}角色失败`));
     }
   };
 
-  // 编辑权限（待实现）
-  const editPermission = permission => {
-    alert('编辑权限功能待实现');
+  const openCreatePermission = () => {
+    clearMessages();
+    permissionForm.value = createEmptyPermissionForm();
+    showPermissionModal.value = true;
   };
 
-  // 删除权限（待实现）
-  const deletePermission = async permission => {
-    if (!confirm(`确定要删除权限 "${permission.name}" 吗？`)) {
+  const openEditPermission = (permission: AdminPermissionItem) => {
+    clearMessages();
+    permissionForm.value = {
+      id: permission.id,
+      code: permission.code,
+      name: permission.name,
+      description: permission.description || '',
+      resource: permission.resource || '',
+      action: permission.action || '',
+      isActive: permission.isActive,
+    };
+    showPermissionModal.value = true;
+  };
+
+  const closePermissionModal = () => {
+    showPermissionModal.value = false;
+    permissionForm.value = createEmptyPermissionForm();
+  };
+
+  const savePermission = async () => {
+    if (!permissionForm.value.code.trim() || !permissionForm.value.name.trim()) {
+      setNotice('error', '请先填写权限代码和名称');
+      return;
+    }
+
+    savingPermission.value = true;
+    try {
+      const payload: AdminPermissionPayload = {
+        code: permissionForm.value.code.trim(),
+        name: permissionForm.value.name.trim(),
+        description: permissionForm.value.description.trim() || undefined,
+        resource: permissionForm.value.resource || undefined,
+        action: permissionForm.value.action || undefined,
+        isActive: permissionForm.value.isActive,
+      };
+
+      if (permissionForm.value.id) {
+        await adminApi.updatePermission(permissionForm.value.id, payload);
+        setNotice('success', `权限“${payload.name}”已更新`);
+      } else {
+        await adminApi.createPermission(payload);
+        setNotice('success', `权限“${payload.name}”已创建`);
+      }
+
+      closePermissionModal();
+      await reloadPermissionAndRoleData();
+    } catch (error: unknown) {
+      setNotice('error', getErrorMessage(error, '保存权限失败'));
+    } finally {
+      savingPermission.value = false;
+    }
+  };
+
+  const togglePermissionStatus = async (permission: AdminPermissionItem) => {
+    const nextStatus = !permission.isActive;
+    const actionLabel = nextStatus ? '启用' : '停用';
+
+    if (!window.confirm(`确定要${actionLabel}权限“${permission.name}”吗？`)) {
       return;
     }
 
     try {
-      await authStore.api.delete(`/admin/permissions/${permission.id}`);
-      await loadPermissions();
-    } catch (error) {
-      console.error('删除权限失败:', error);
-      alert('删除权限失败');
+      await adminApi.updatePermission(permission.id, { isActive: nextStatus });
+      setNotice('success', `权限“${permission.name}”已${actionLabel}`);
+      await reloadPermissionAndRoleData();
+    } catch (error: unknown) {
+      setNotice('error', getErrorMessage(error, `${actionLabel}权限失败`));
     }
   };
 
-  // 组件挂载时加载数据
+  const getRolePermissionPreview = (role: AdminRoleItem) => {
+    return (role.permissions || []).slice(0, 3);
+  };
+
+  const resolvePermissionLabel = (code: string) => {
+    return permissionLookup.value.get(code) || code;
+  };
+
+  const formatDate = (value?: string | null) => {
+    if (!value) {
+      return '—';
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return '—';
+    }
+
+    return parsed.toLocaleString('zh-CN');
+  };
+
+  const getTabClass = (tab: TabKey) => {
+    return [
+      'border-b-2 px-1 pb-3 text-sm font-medium transition',
+      activeTab.value === tab
+        ? 'border-indigo-500 text-indigo-600'
+        : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700',
+    ];
+  };
+
+  const getStatusClass = (isActive: boolean) => {
+    return [
+      'rounded-full px-2.5 py-1 text-xs font-medium',
+      isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600',
+    ];
+  };
+
   onMounted(() => {
-    loadRoles();
-    loadPermissions();
+    clearMessages();
+    void reloadPermissionAndRoleData();
   });
 </script>

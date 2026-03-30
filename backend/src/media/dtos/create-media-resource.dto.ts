@@ -80,6 +80,14 @@ export class CreateMediaResourceDto {
   @IsNumber()
   episodeCount?: number;
 
+  @ApiProperty({ description: '鏃堕暱锛堝垎閽燂級', required: false })
+  @IsOptional()
+  @IsNumber()
+  duration?: number;
+
+  @ApiProperty({ description: '鎵╁睍鍏冩暟鎹?', required: false })
+  @IsOptional()
+  metadata?: Record<string, unknown>;
   @ApiProperty({ description: '下载链接', required: false })
   @IsOptional()
   @IsArray()

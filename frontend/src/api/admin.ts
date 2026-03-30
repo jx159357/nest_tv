@@ -43,6 +43,44 @@ export interface AdminLogItem {
   user?: Pick<User, 'id' | 'username' | 'email'>;
 }
 
+export interface AdminRoleItem {
+  id: number;
+  name: string;
+  description?: string;
+  permissions?: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminRolePayload {
+  name: string;
+  description?: string;
+  permissions?: string[];
+  isActive?: boolean;
+}
+
+export interface AdminPermissionItem {
+  id: number;
+  code: string;
+  name: string;
+  description?: string;
+  resource?: string;
+  action?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminPermissionPayload {
+  code: string;
+  name: string;
+  description?: string;
+  resource?: string;
+  action?: string;
+  isActive?: boolean;
+}
+
 export interface AdminWatchHistoryItem {
   id: number;
   currentTime: number;
@@ -73,6 +111,22 @@ export const adminApi = {
 
   getMedia: (params?: { page?: number; limit?: number; type?: string; search?: string }) =>
     ApiClient.get<AdminPaginatedResponse<MediaResource>>('/admin/media', { params }, false),
+
+  getRoles: () => ApiClient.get<AdminRoleItem[]>('/admin/roles', undefined, false),
+
+  createRole: (payload: AdminRolePayload) =>
+    ApiClient.post<AdminRoleItem>('/admin/roles', payload),
+
+  updateRole: (id: number, payload: Partial<AdminRolePayload>) =>
+    ApiClient.patch<AdminRoleItem>(`/admin/roles/${id}`, payload),
+
+  getPermissions: () => ApiClient.get<AdminPermissionItem[]>('/admin/permissions', undefined, false),
+
+  createPermission: (payload: AdminPermissionPayload) =>
+    ApiClient.post<AdminPermissionItem>('/admin/permissions', payload),
+
+  updatePermission: (id: number, payload: Partial<AdminPermissionPayload>) =>
+    ApiClient.patch<AdminPermissionItem>(`/admin/permissions/${id}`, payload),
 
   getPlaySources: (params?: {
     page?: number;

@@ -169,6 +169,18 @@ export class ParseProvidersService {
     return parseProvider;
   }
 
+  async findByName(name: string, activeOnly: boolean = true): Promise<ParseProvider | null> {
+    const queryBuilder = this.parseProviderRepository
+      .createQueryBuilder('provider')
+      .where('provider.name = :name', { name });
+
+    if (activeOnly) {
+      queryBuilder.andWhere('provider.isActive = :isActive', { isActive: true });
+    }
+
+    return queryBuilder.getOne();
+  }
+
   /**
    * 更新解析提供商
    */

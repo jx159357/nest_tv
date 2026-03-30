@@ -19,6 +19,24 @@ export class RecommendationController {
     return this.recommendationService.getPersonalizedRecommendations(userId, limit);
   }
 
+  @Get('personalized-detailed')
+  @ApiOperation({ summary: '获取带推荐理由的个性化推荐' })
+  @ApiResponse({ status: 200, description: '成功获取带理由的个性化推荐' })
+  @ApiQuery({ name: 'limit', required: false, description: '返回数量限制' })
+  async getPersonalizedDetailed(
+    @GetCurrentUserId() userId: number,
+    @Query('limit') limit: number = 10,
+  ) {
+    return this.recommendationService.getPersonalizedRecommendationItems(userId, limit);
+  }
+
+  @Get('profile')
+  @ApiOperation({ summary: '获取推荐偏好画像' })
+  @ApiResponse({ status: 200, description: '成功获取推荐偏好画像' })
+  async getRecommendationProfile(@GetCurrentUserId() userId: number) {
+    return this.recommendationService.getRecommendationProfile(userId);
+  }
+
   @Get('trending')
   @ApiOperation({ summary: '获取热门推荐' })
   @ApiResponse({ status: 200, description: '成功获取热门推荐', type: [MediaResource] })

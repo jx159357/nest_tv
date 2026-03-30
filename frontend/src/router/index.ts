@@ -12,9 +12,11 @@ const CrawlerView = () => import('../views/CrawlerView.vue');
 const PlaySourcesView = () => import('../views/PlaySourcesView.vue');
 const WatchHistoryView = () => import('../views/WatchHistoryView.vue');
 const RecommendationsView = () => import('../views/RecommendationsView.vue');
+const TorrentView = () => import('../views/TorrentView.vue');
 const AdminLayout = () => import('../layouts/AdminLayout.vue');
 const AdminDashboardView = () => import('../views/AdminDashboardView.vue');
 const AdminUsersView = () => import('../views/AdminUsersView.vue');
+const AdminRolesView = () => import('../views/AdminRolesView.vue');
 const AdminMediaView = () => import('../views/AdminMediaView.vue');
 const AdminPlaySourcesView = () => import('../views/AdminPlaySourcesView.vue');
 const AdminWatchHistoryView = () => import('../views/AdminWatchHistoryView.vue');
@@ -106,6 +108,16 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/torrent',
+    name: 'torrent',
+    component: TorrentView,
+    meta: {
+      title: '磁力资源 - Nest TV',
+      requiresAuth: true,
+      preload: false,
+    },
+  },
+  {
     path: '/search',
     redirect: to => ({ path: '/', query: to.query }),
   },
@@ -147,7 +159,7 @@ const routes: RouteRecordRaw[] = [
         name: 'admin-dashboard',
         component: AdminDashboardView,
         meta: {
-          title: '仪表板 - Nest TV',
+          title: '仪表盘 - Nest TV',
           requiresAuth: true,
           requiresAdmin: true,
         },
@@ -158,6 +170,16 @@ const routes: RouteRecordRaw[] = [
         component: AdminUsersView,
         meta: {
           title: '用户管理 - Nest TV',
+          requiresAuth: true,
+          requiresAdmin: true,
+        },
+      },
+      {
+        path: 'roles',
+        name: 'admin-roles',
+        component: AdminRolesView,
+        meta: {
+          title: '角色权限管理 - Nest TV',
           requiresAuth: true,
           requiresAdmin: true,
         },

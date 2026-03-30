@@ -61,6 +61,7 @@ export interface PlaySource {
   channelLogo?: string;
   providerName?: string;
   magnetInfo?: any;
+  validationInfo?: any;
   webDiskInfo?: any;
   episodeNumber?: number;
   createdAt: Date;
@@ -127,6 +128,7 @@ export interface PlaySourceCreateData {
   channelLogo?: string;
   providerName?: string;
   magnetInfo?: any;
+  validationInfo?: any;
   webDiskInfo?: any;
   episodeNumber?: number;
 }
@@ -149,6 +151,7 @@ export interface PlaySourceUpdateData {
   channelLogo?: string;
   providerName?: string;
   magnetInfo?: any;
+  validationInfo?: any;
   webDiskInfo?: any;
   episodeNumber?: number;
 }

@@ -1,6 +1,6 @@
 import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { AdminRole } from '../entities/admin-role.entity';
 import { AdminPermission } from '../entities/admin-permission.entity';
 import { AdminLog } from '../entities/admin-log.entity';
@@ -8,6 +8,12 @@ import { User } from '../entities/user.entity';
 import { MediaResource } from '../entities/media-resource.entity';
 import { PlaySource } from '../entities/play-source.entity';
 import { WatchHistory } from '../entities/watch-history.entity';
+import {
+  CreatePermissionDto,
+  CreateRoleDto,
+  UpdatePermissionDto,
+  UpdateRoleDto,
+} from './dto/create-admin.dto';
 
 /**
  * 后台管理服务
@@ -33,6 +39,42 @@ export class AdminService {
     @InjectRepository(WatchHistory)
     private watchHistoryRepository: Repository<WatchHistory>,
   ) {}
+
+  /**
+   * Record admin action log
+   */
+  async logAction(
+    action: string,
+    resource: string,
+    metadata: Record<string, unknown> = {},
+    roleId: number,
+    userId?: number,
+    status: 'success' | 'error' | 'warning' = 'success',
+    description?: string,
+    errorMessage?: string,
+    requestInfo?: Record<string, unknown>,
+  ): Promise<AdminLog> {
+    try {
+      const adminLog = this.adminLogRepository.create({
+        action,
+        resource,
+        metadata,
+        roleId,
+        userId,
+        status,
+        description,
+        errorMessage,
+        requestInfo,
+      });
+
+      const savedLog = await this.adminLogRepository.save(adminLog);
+      this.logger.log(`Admin action logged: ${action} on ${resource}`);
+      return savedLog;
+    } catch (error) {
+      this.logger.error('Failed to log admin action:', error);
+      throw error;
+    }
+  }
 
   async getUsers(page: number = 1, limit: number = 20, search?: string) {
     const queryBuilder = this.userRepository
@@ -238,71 +280,98 @@ export class AdminService {
     };
   }
 
-  /**
-   * 记录管理操作日志
-   */
-  async logAction(
-    action: string,
-    resource: string,
-    metadata: Record<string, unknown> = {},
-    roleId: number,
-    userId?: number,
-    status: 'success' | 'error' | 'warning' = 'success',
-    description?: string,
-    errorMessage?: string,
-    requestInfo?: Record<string, unknown>,
-  ): Promise<AdminLog> {
-    try {
-      const adminLog = this.adminLogRepository.create({
-        action,
-        resource,
-        metadata,
-        roleId,
-        userId,
-        status,
-        description,
-        errorMessage,
-        requestInfo,
-      });
+  private normalizePermissionCodes(permissionCodes?: string[]) {
+    return [
+      ...new Set((permissionCodes || []).map(code => code.trim()).filter(code => code.length > 0)),
+    ];
+  }
 
-      const savedLog = await this.adminLogRepository.save(adminLog);
-      this.logger.log(`Admin action logged: ${action} on ${resource}`);
-      return savedLog;
-    } catch (error) {
-      this.logger.error('Failed to log admin action:', error);
-      throw error;
+  private normalizeOptionalText(value?: string) {
+    const normalized = value?.trim();
+    return normalized ? normalized : undefined;
+  }
+
+  private async ensurePermissionCodesExist(permissionCodes?: string[]) {
+    const normalizedCodes = this.normalizePermissionCodes(permissionCodes);
+
+    if (normalizedCodes.length === 0) {
+      return normalizedCodes;
+    }
+
+    const permissions = await this.adminPermissionRepository.find({
+      where: {
+        code: In(normalizedCodes),
+        isActive: true,
+      },
+    });
+
+    const existingCodes = new Set(permissions.map(permission => permission.code));
+    const missingCodes = normalizedCodes.filter(code => !existingCodes.has(code));
+
+    if (missingCodes.length > 0) {
+      throw new HttpException(
+        `Unknown or inactive permissions: ${missingCodes.join(', ')}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return normalizedCodes;
+  }
+
+  private async syncRolesForPermissionCode(previousCode: string, nextCode?: string) {
+    const roles = await this.adminRoleRepository.find();
+    const rolesToSave: AdminRole[] = [];
+
+    for (const role of roles) {
+      const currentPermissions = this.normalizePermissionCodes(role.permissions);
+      if (!currentPermissions.includes(previousCode)) {
+        continue;
+      }
+
+      role.permissions = nextCode
+        ? [...new Set(currentPermissions.map(code => (code === previousCode ? nextCode : code)))]
+        : currentPermissions.filter(code => code !== previousCode);
+      rolesToSave.push(role);
+    }
+
+    if (rolesToSave.length > 0) {
+      await this.adminRoleRepository.save(rolesToSave);
     }
   }
 
   /**
-   * 创建角色
+   * Create role
    */
-  async createRole(createRoleDto: {
-    name: string;
-    description?: string;
-    permissions?: string[];
-  }): Promise<AdminRole> {
+  async createRole(createRoleDto: CreateRoleDto): Promise<AdminRole> {
     try {
-      // 检查角色名是否已存在
+      const roleName = createRoleDto.name.trim();
+      if (!roleName) {
+        throw new HttpException('Role name is required', HttpStatus.BAD_REQUEST);
+      }
+
       const existingRole = await this.adminRoleRepository.findOne({
-        where: { name: createRoleDto.name },
+        where: { name: roleName },
       });
 
       if (existingRole) {
-        throw new HttpException('角色名已存在', HttpStatus.BAD_REQUEST);
+        throw new HttpException('Role name already exists', HttpStatus.BAD_REQUEST);
       }
 
-      const role = this.adminRoleRepository.create(createRoleDto);
+      const role = this.adminRoleRepository.create({
+        name: roleName,
+        description: this.normalizeOptionalText(createRoleDto.description),
+        permissions: await this.ensurePermissionCodesExist(createRoleDto.permissions),
+      });
       const savedRole = await this.adminRoleRepository.save(role);
 
       await this.logAction(
         'create',
         'admin_role',
         { roleId: savedRole.id, roleName: savedRole.name },
-        1, // 假设系统管理员角色ID为1
+        1,
         undefined,
         'success',
-        `创建角色: ${savedRole.name}`,
+        `Create role: ${savedRole.name}`,
       );
 
       return savedRole;
@@ -313,13 +382,12 @@ export class AdminService {
   }
 
   /**
-   * 获取所有角色
+   * Fetch all roles
    */
   async findAllRoles(): Promise<AdminRole[]> {
     try {
       return await this.adminRoleRepository.find({
-        where: { isActive: true },
-        order: { createdAt: 'DESC' },
+        order: { isActive: 'DESC', updatedAt: 'DESC' },
       });
     } catch (error) {
       this.logger.error('Failed to fetch roles:', error);
@@ -328,26 +396,84 @@ export class AdminService {
   }
 
   /**
-   * 创建权限
+   * Update role
    */
-  async createPermission(createPermissionDto: {
-    code: string;
-    name: string;
-    description?: string;
-    resource?: string;
-    action?: string;
-  }): Promise<AdminPermission> {
+  async updateRole(id: number, updateRoleDto: UpdateRoleDto): Promise<AdminRole> {
     try {
-      // 检查权限代码是否已存在
+      const role = await this.adminRoleRepository.findOne({ where: { id } });
+      if (!role) {
+        throw new HttpException('Role not found', HttpStatus.NOT_FOUND);
+      }
+
+      const nextName = updateRoleDto.name !== undefined ? updateRoleDto.name.trim() : role.name;
+      if (!nextName) {
+        throw new HttpException('Role name is required', HttpStatus.BAD_REQUEST);
+      }
+
+      if (nextName !== role.name) {
+        const existingRole = await this.adminRoleRepository.findOne({ where: { name: nextName } });
+        if (existingRole && existingRole.id !== role.id) {
+          throw new HttpException('Role name already exists', HttpStatus.BAD_REQUEST);
+        }
+      }
+
+      role.name = nextName;
+      if (updateRoleDto.description !== undefined) {
+        role.description = this.normalizeOptionalText(updateRoleDto.description);
+      }
+      if (updateRoleDto.permissions !== undefined) {
+        role.permissions = await this.ensurePermissionCodesExist(updateRoleDto.permissions);
+      }
+      if (updateRoleDto.isActive !== undefined) {
+        role.isActive = updateRoleDto.isActive;
+      }
+
+      const savedRole = await this.adminRoleRepository.save(role);
+
+      await this.logAction(
+        'update',
+        'admin_role',
+        { roleId: savedRole.id, roleName: savedRole.name },
+        1,
+        undefined,
+        'success',
+        `Update role: ${savedRole.name}`,
+      );
+
+      return savedRole;
+    } catch (error) {
+      this.logger.error('Failed to update role:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create permission
+   */
+  async createPermission(createPermissionDto: CreatePermissionDto): Promise<AdminPermission> {
+    try {
+      const permissionCode = createPermissionDto.code.trim();
+      const permissionName = createPermissionDto.name.trim();
+
+      if (!permissionCode || !permissionName) {
+        throw new HttpException('Permission code and name are required', HttpStatus.BAD_REQUEST);
+      }
+
       const existingPermission = await this.adminPermissionRepository.findOne({
-        where: { code: createPermissionDto.code },
+        where: { code: permissionCode },
       });
 
       if (existingPermission) {
-        throw new HttpException('权限代码已存在', HttpStatus.BAD_REQUEST);
+        throw new HttpException('Permission code already exists', HttpStatus.BAD_REQUEST);
       }
 
-      const permission = this.adminPermissionRepository.create(createPermissionDto);
+      const permission = this.adminPermissionRepository.create({
+        code: permissionCode,
+        name: permissionName,
+        description: this.normalizeOptionalText(createPermissionDto.description),
+        resource: this.normalizeOptionalText(createPermissionDto.resource),
+        action: this.normalizeOptionalText(createPermissionDto.action),
+      });
       const savedPermission = await this.adminPermissionRepository.save(permission);
 
       await this.logAction(
@@ -357,7 +483,7 @@ export class AdminService {
         1,
         undefined,
         'success',
-        `创建权限: ${savedPermission.name}`,
+        `Create permission: ${savedPermission.name}`,
       );
 
       return savedPermission;
@@ -368,13 +494,12 @@ export class AdminService {
   }
 
   /**
-   * 获取所有权限
+   * Fetch all permissions
    */
   async findAllPermissions(): Promise<AdminPermission[]> {
     try {
       return await this.adminPermissionRepository.find({
-        where: { isActive: true },
-        order: { resource: 'ASC', action: 'ASC' },
+        order: { isActive: 'DESC', resource: 'ASC', action: 'ASC', updatedAt: 'DESC' },
       });
     } catch (error) {
       this.logger.error('Failed to fetch permissions:', error);
@@ -383,8 +508,77 @@ export class AdminService {
   }
 
   /**
-   * 获取系统统计数据
+   * Update permission
    */
+  async updatePermission(
+    id: number,
+    updatePermissionDto: UpdatePermissionDto,
+  ): Promise<AdminPermission> {
+    try {
+      const permission = await this.adminPermissionRepository.findOne({ where: { id } });
+      if (!permission) {
+        throw new HttpException('Permission not found', HttpStatus.NOT_FOUND);
+      }
+
+      const previousCode = permission.code;
+      const nextCode =
+        updatePermissionDto.code !== undefined ? updatePermissionDto.code.trim() : permission.code;
+      const nextName =
+        updatePermissionDto.name !== undefined ? updatePermissionDto.name.trim() : permission.name;
+      const nextIsActive = updatePermissionDto.isActive ?? permission.isActive;
+
+      if (!nextCode || !nextName) {
+        throw new HttpException('Permission code and name are required', HttpStatus.BAD_REQUEST);
+      }
+
+      if (nextCode !== previousCode) {
+        const existingPermission = await this.adminPermissionRepository.findOne({
+          where: { code: nextCode },
+        });
+
+        if (existingPermission && existingPermission.id !== permission.id) {
+          throw new HttpException('Permission code already exists', HttpStatus.BAD_REQUEST);
+        }
+      }
+
+      permission.code = nextCode;
+      permission.name = nextName;
+      if (updatePermissionDto.description !== undefined) {
+        permission.description = this.normalizeOptionalText(updatePermissionDto.description);
+      }
+      if (updatePermissionDto.resource !== undefined) {
+        permission.resource = this.normalizeOptionalText(updatePermissionDto.resource);
+      }
+      if (updatePermissionDto.action !== undefined) {
+        permission.action = this.normalizeOptionalText(updatePermissionDto.action);
+      }
+      permission.isActive = nextIsActive;
+
+      const savedPermission = await this.adminPermissionRepository.save(permission);
+
+      if (previousCode !== nextCode) {
+        await this.syncRolesForPermissionCode(previousCode, nextIsActive ? nextCode : undefined);
+      } else if (!nextIsActive) {
+        await this.syncRolesForPermissionCode(previousCode);
+      }
+
+      await this.logAction(
+        'update',
+        'admin_permission',
+        { permissionId: savedPermission.id, permissionCode: savedPermission.code },
+        1,
+        undefined,
+        'success',
+        `Update permission: ${savedPermission.name}`,
+      );
+
+      return savedPermission;
+    } catch (error) {
+      this.logger.error('Failed to update permission:', error);
+      throw error;
+    }
+  }
+
   async getSystemStats(): Promise<{
     userCount: number;
     mediaCount: number;

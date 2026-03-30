@@ -20,6 +20,7 @@
   - personalized recommendations from watch history
   - trending recommendations
   - top-rated recommendations
+  - recommendation page now shows preference profile, reasoned personalized cards, and latest-release shelf
 - Admin management is partially activated with real data:
   - admin dashboard uses live backend stats and health data
   - admin users list uses real `/admin/users`
@@ -27,6 +28,8 @@
   - admin play sources list uses real `/admin/play-sources`
   - admin watch history uses real `/admin/watch-history`
   - admin logs uses real `/admin/logs`
+  - admin roles/permissions page is now routed and backed by real `/admin/roles` + `/admin/permissions` create/update flows
+  - admin dashboard now includes a scheduled-task result dashboard with recent run history, failure-source focus, and manual daily collection trigger
 - Admin backend placeholders reduced further:
   - backend admin controller now returns real paginated data for users / media / play sources / watch history
 - Crawler persistence is improved:
@@ -39,10 +42,11 @@
   - source-level collection policy now exists (`dailyEnabled`, `dailyLimit`, `proxyMode`)
   - scheduler exposes last-run summary and manual trigger endpoints for observability/debugging
   - source-level `proxyMode` is now applied to collection requests (`direct` / `prefer-proxy` / `proxy-required`)
+  - proxy execution is now scoped by request stage (`discovery`, `detail`, `connectivity-check`), so sources only use proxies where truly needed
 - source health summaries are now available for UI/dashboard consumption (active rate, recent additions, latest checks)
 - source quality scoring and recommended proxy mode are now computed from real play-source health data
 - daily scheduler now prioritizes stronger sources first and dynamically reduces fetch volume for lower-quality sources
-- crawler UI now shows source quality score, suggested proxy mode, and runtime-editable source collection policy controls
+- crawler UI now shows source quality score, suggested proxy mode, runtime-editable source collection policy controls, and finer quality diagnostics such as extraction coverage / recent media freshness
 - data-collection detail extraction is richer now:
   - source selectors support director / actors / genres / releaseDate / downloadUrls
   - collected media data now carries more structured metadata before persistence
@@ -50,9 +54,15 @@
 - Torrent aggregation is improved:
   - backend `torrent` endpoints now read real magnet play sources from the database instead of returning random placeholder data
   - supported operations now include local magnet parsing, info lookup, health summary, search, popular, and latest
+- Play-source validation is deeper now:
+  - direct/stream sources use richer HTTP probing with playlist detection and content-type inspection
+  - parser sources now verify through real parse providers and probe the resolved downstream URL
+  - magnet sources now persist parsed infoHash / tracker metadata during validation
+  - validation details are stored on play sources for admin troubleshooting and surfaced in `AdminPlaySourcesView`
 - Frontend crawler management is improved:
   - `CrawlerView` now uses a dedicated API client instead of placeholder/nonexistent store methods
   - crawl results now surface persistence feedback such as created media ID and created/skipped play source counts
+  - quick-crawl results now also surface extracted backdrop / duration and compact extraction diagnostics
 - Deployment foundation repaired:
   - Dockerfiles rewritten
   - compose files unified
@@ -110,18 +120,15 @@
   - `backend/src/iptv/dto/create-iptv-channel.dto.ts`
 - Current highest-value backend files:
   - No remaining backend lint hotspots.
-  - Next product-facing expansion can target remaining admin placeholders, torrent placeholders, or richer recommendation algorithms.
+  - Next product-facing expansion can target remaining admin placeholders, IPTV surfaces, or deeper download / torrent workflows.
 
 ## Suggested Next Steps
 
 1. Re-run backend unit tests and e2e tests after the lint cleanup milestone.
 2. Continue product work from the remaining placeholders:
-   - frontend remaining admin views (`roles` and related permission management polish)
-   - richer recommendation UX and algorithm tuning
-   - crawler/data-collection source quality and extraction depth
-   - scheduled task observability / task result dashboard
-   - play source validation depth (stream probing, parser verification, magnet metadata enrichment)
-   - source-specific proxy execution policy (only where truly needed)
+
+
+
 3. Re-run:
    - `backend npm run lint:check`
    - `backend npm run build`
@@ -168,5 +175,16 @@
 - Follow-up admin/crawler UX enhancement completed: source cards inside `CrawlerView` now also surface recommended next actions and aligned CTA priority, so action guidance remains visible after drilling down from the dashboard.
 - Follow-up admin/play-source UX enhancement completed: `AdminPlaySourcesView` now mirrors that action guidance inside the focused source summary and the empty state, so operators still get a clear next step even after drilling all the way into source-level troubleshooting.
 - Follow-up admin/crawler UX enhancement completed: `CrawlerView` now extends the same action guidance into empty states and source-collection/quick-crawl result summaries, so operators still get a next-step recommendation after running source actions.
+- Follow-up admin enhancement completed: `AdminRolesView` is now actually routed and backed by real role/permission create + update flows via `adminApi`, so role dictionaries and permission assignments can be maintained without placeholder alerts or missing routes.
+- Follow-up backend integrity enhancement completed: updating or disabling a permission now synchronizes role permission-code arrays, preventing stale references after permission changes.
+- Follow-up scheduler observability enhancement completed: `DailySourceCollectionService` now keeps recent in-memory run history plus aggregated task metrics / issue-source summaries, and `SchedulerController` exposes a dedicated dashboard endpoint for admin consumption.
+- Follow-up admin/dashboard enhancement completed: `AdminDashboard` now embeds a scheduled-task result dashboard with recent run snapshots, aggregated success metrics, failure-source focus, refresh, and manual trigger controls for the daily collection job.
+- Follow-up play-source validation enhancement completed: direct/stream probing now records richer HTTP validation details, parser-type sources verify via real parse providers plus resolved URL probing, and magnet validation now persists parsed metadata for later troubleshooting.
+- Follow-up admin/play-source UX enhancement completed: `AdminPlaySourcesView` now shows a compact validation summary under each source URL, making parser/magnet/http probe results visible without opening raw payloads.
+- Follow-up data-collection extraction enhancement completed: repeated crawls can now enrich existing media records with richer backdrop / episodeCount / duration / metadata signals instead of only syncing missing play sources, and quick-crawl results now expose those extraction diagnostics.
+- Follow-up proxy-policy enhancement completed: source collection policy now controls proxy usage separately for discovery, detail crawling, and connectivity checks, and CrawlerView exposes those stage-level toggles so proxy-required mode only applies where it is explicitly needed.
+- Follow-up source-quality enhancement completed: source quality scoring now blends availability, freshness, extraction coverage, inventory, and validation recency, while crawler/dashboard attention views surface extraction coverage and recent-media freshness for faster diagnosis.
+- Follow-up recommendation enhancement completed: personalized recommendations now use a richer recency-aware preference profile with explainable reason tags, RecommendationController exposes detailed recommendation/profile endpoints, and RecommendationsView now shows preference insights plus latest-release recommendations.
+- Follow-up torrent UX enhancement completed: frontend now exposes a dedicated magnet page with search, popular/latest shelves, magnet parsing, info/health detail panels, and linked-media entry, finally making the existing backend torrent endpoints directly usable.
 - Follow-up backend lint cleanup completed: normalized the remaining Prettier line endings in `data-collection`, `play-source`, and `media-resource` backend files, restoring `backend npm run lint:check` to green.
 - Avoid reverting the staged removals under `backend/dist` and `.env.production`; those are intentional index cleanups.

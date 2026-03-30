@@ -1,19 +1,31 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import axios from 'axios';
+import axios, { type AxiosResponse, type RawAxiosResponseHeaders } from 'axios';
 import magnetUri from 'magnet-uri';
+import { ParseProvidersService } from '../parse-providers/parse-providers.service';
 import { PlaySource, PlaySourceStatus, PlaySourceType } from '../entities/play-source.entity';
 import { CreatePlaySourceDto } from './dtos/create-play-source.dto';
 import { UpdatePlaySourceDto } from './dtos/update-play-source.dto';
 import { PlaySourceQueryDto } from './dtos/play-source-query.dto';
 import { comparePlaySources, isPlaySourceFresh } from './play-source-ranking.util';
 
+interface PlaySourceValidationResult {
+  isValid: boolean;
+  message: string;
+  validationInfo: Record<string, unknown>;
+  format?: string;
+  resolution?: string;
+  providerName?: string;
+  magnetInfo?: Record<string, unknown>;
+}
+
 @Injectable()
 export class PlaySourceService {
   constructor(
     @InjectRepository(PlaySource)
     private playSourceRepository: Repository<PlaySource>,
+    private parseProvidersService: ParseProvidersService,
   ) {}
 
   async getSourceHealthSummary(sourceName: string): Promise<{
@@ -78,23 +90,12 @@ export class PlaySourceService {
     };
   }
 
-  /**
-   * 创建播放源
-   */
   async create(createPlaySourceDto: CreatePlaySourceDto): Promise<PlaySource> {
     const playSource = this.playSourceRepository.create(createPlaySourceDto);
-
-    // 简化处理：直接设置为活跃状态
     playSource.status = PlaySourceStatus.ACTIVE;
-
-    const result = await this.playSourceRepository.save(playSource);
-
-    return result;
+    return this.playSourceRepository.save(playSource);
   }
 
-  /**
-   * 获取播放源列表（支持筛选和分页）
-   */
   async findAll(queryDto: PlaySourceQueryDto): Promise<{
     data: PlaySource[];
     total: number;
@@ -108,7 +109,6 @@ export class PlaySourceService {
       .createQueryBuilder('playSource')
       .leftJoinAndSelect('playSource.mediaResource', 'mediaResource');
 
-    // 筛选条件
     if (mediaResourceId) {
       queryBuilder.andWhere('playSource.mediaResourceId = :mediaResourceId', { mediaResourceId });
     }
@@ -117,10 +117,7 @@ export class PlaySourceService {
       queryBuilder.andWhere('playSource.type = :type', { type });
     }
 
-    // 获取总数
     const total = await queryBuilder.getCount();
-
-    // 分页查询
     const skip = (page - 1) * pageSize;
     const data = await queryBuilder
       .orderBy('playSource.priority', 'ASC')
@@ -129,29 +126,21 @@ export class PlaySourceService {
       .take(pageSize)
       .getMany();
 
-    const totalPages = Math.ceil(total / pageSize);
-
     return {
       data,
       total,
       page,
       pageSize,
-      totalPages,
+      totalPages: Math.ceil(total / pageSize),
     };
   }
 
-  /**
-   * 根据名称查找播放源
-   */
   async findByName(name: string): Promise<PlaySource | null> {
     return this.playSourceRepository.findOne({
       where: { sourceName: name },
     });
   }
 
-  /**
-   * 根据ID获取播放源
-   */
   async findById(id: number): Promise<PlaySource> {
     const playSource = await this.playSourceRepository.findOne({
       where: { id },
@@ -159,46 +148,35 @@ export class PlaySourceService {
     });
 
     if (!playSource) {
-      throw new NotFoundException(`播放源ID ${id} 不存在`);
+      throw new NotFoundException(`Play source ${id} not found`);
     }
 
     return playSource;
   }
 
-  /**
-   * 更新播放源
-   */
   async update(id: number, updatePlaySourceDto: UpdatePlaySourceDto): Promise<PlaySource> {
     const playSource = await this.findById(id);
-
     Object.assign(playSource, updatePlaySourceDto);
-
     return this.playSourceRepository.save(playSource);
   }
 
-  /**
-   * 删除播放源
-   */
   async remove(id: number): Promise<void> {
     const playSource = await this.findById(id);
-
     await this.playSourceRepository.remove(playSource);
   }
 
-  /**
-   * 验证播放源有效性
-   */
   async validate(id: number): Promise<{
     isValid: boolean;
-    message?: string;
+    message: string;
+    details: Record<string, unknown>;
   }> {
     const playSource = await this.findById(id);
-
-    const isValid = await this.validatePlaySource(playSource);
+    const result = await this.validatePlaySource(playSource);
 
     return {
-      isValid,
-      message: isValid ? '播放源有效' : '播放源不可用',
+      isValid: result.isValid,
+      message: result.message,
+      details: result.validationInfo,
     };
   }
 
@@ -219,11 +197,11 @@ export class PlaySourceService {
     let inactive = 0;
 
     for (const source of sources) {
-      const isValid = await this.validatePlaySource(source);
-      if (isValid) {
-        active++;
+      const result = await this.validatePlaySource(source);
+      if (result.isValid) {
+        active += 1;
       } else {
-        inactive++;
+        inactive += 1;
       }
     }
 
@@ -234,9 +212,6 @@ export class PlaySourceService {
     };
   }
 
-  /**
-   * 获取媒体资源的最佳播放源
-   */
   async getBestPlaySource(mediaResourceId: number): Promise<PlaySource | null> {
     const sources = await this.playSourceRepository.find({
       where: {
@@ -254,8 +229,8 @@ export class PlaySourceService {
         return source;
       }
 
-      const isValid = await this.validatePlaySource(source);
-      if (isValid) {
+      const result = await this.validatePlaySource(source);
+      if (result.isValid) {
         return source;
       }
     }
@@ -263,9 +238,6 @@ export class PlaySourceService {
     return null;
   }
 
-  /**
-   * 获取媒体资源的播放源列表
-   */
   async getByMediaResource(mediaResourceId: number): Promise<PlaySource[]> {
     const sources = await this.playSourceRepository.find({
       where: {
@@ -279,53 +251,390 @@ export class PlaySourceService {
     );
   }
 
-  private async validatePlaySource(playSource: PlaySource): Promise<boolean> {
-    const isValid = await this.checkPlaySourceAvailability(playSource);
+  private async validatePlaySource(playSource: PlaySource): Promise<PlaySourceValidationResult> {
+    const result = await this.checkPlaySourceAvailability(playSource);
 
-    playSource.status = isValid ? PlaySourceStatus.ACTIVE : PlaySourceStatus.ERROR;
-    playSource.isActive = isValid;
+    playSource.status = result.isValid ? PlaySourceStatus.ACTIVE : PlaySourceStatus.ERROR;
+    playSource.isActive = result.isValid;
     playSource.lastCheckedAt = new Date();
-    await this.playSourceRepository.save(playSource);
+    playSource.validationInfo = {
+      ...result.validationInfo,
+      checkedAt: playSource.lastCheckedAt.toISOString(),
+    };
 
-    return isValid;
+    if (result.providerName) {
+      playSource.providerName = result.providerName;
+    }
+    if (result.format) {
+      playSource.format = result.format;
+    }
+    if (result.resolution) {
+      playSource.resolution = playSource.resolution || result.resolution;
+    }
+    if (result.magnetInfo) {
+      playSource.magnetInfo = {
+        ...(this.isRecord(playSource.magnetInfo) ? playSource.magnetInfo : {}),
+        ...result.magnetInfo,
+      };
+    }
+
+    await this.playSourceRepository.save(playSource);
+    return result;
   }
 
-  private async checkPlaySourceAvailability(playSource: PlaySource): Promise<boolean> {
-    if (playSource.type === PlaySourceType.MAGNET) {
-      try {
-        const parsed = magnetUri.decode(playSource.url);
-        return Boolean(parsed.infoHash || parsed.xt);
-      } catch {
-        return false;
+  private async checkPlaySourceAvailability(
+    playSource: PlaySource,
+  ): Promise<PlaySourceValidationResult> {
+    switch (playSource.type) {
+      case PlaySourceType.MAGNET:
+        return this.validateMagnetSource(playSource);
+      case PlaySourceType.PARSER:
+        return this.validateParserSource(playSource);
+      default:
+        return this.validateHttpSource(playSource.url, playSource.type);
+    }
+  }
+
+  private validateMagnetSource(playSource: PlaySource): PlaySourceValidationResult {
+    try {
+      const parsed = magnetUri.decode(playSource.url) as unknown as Record<string, unknown>;
+      const infoHash = this.extractMagnetInfoHash(parsed);
+      const trackers = this.normalizeStringArray(parsed.announce || parsed.tr || []);
+      const webSeeds = this.normalizeStringArray(parsed.urlList || parsed.ws || []);
+      const displayName =
+        (typeof parsed.name === 'string' && parsed.name) ||
+        (typeof parsed.dn === 'string' && parsed.dn) ||
+        playSource.name ||
+        undefined;
+
+      if (!infoHash) {
+        return {
+          isValid: false,
+          message: 'Magnet source is missing infoHash.',
+          validationInfo: {
+            strategy: 'magnet',
+            reason: 'missing_info_hash',
+          },
+        };
       }
+
+      return {
+        isValid: true,
+        message: 'Magnet source parsed successfully.',
+        validationInfo: {
+          strategy: 'magnet',
+          infoHash,
+          trackerCount: trackers.length,
+          webSeedCount: webSeeds.length,
+          displayName,
+        },
+        format: 'magnet',
+        magnetInfo: {
+          infoHash,
+          displayName,
+          trackers,
+          trackerCount: trackers.length,
+          webSeeds,
+          webSeedCount: webSeeds.length,
+        },
+      };
+    } catch (error: unknown) {
+      return {
+        isValid: false,
+        message: error instanceof Error ? error.message : 'Invalid magnet source.',
+        validationInfo: {
+          strategy: 'magnet',
+          reason: 'decode_failed',
+        },
+      };
+    }
+  }
+
+  private async validateParserSource(playSource: PlaySource): Promise<PlaySourceValidationResult> {
+    const provider = playSource.providerName
+      ? await this.parseProvidersService.findByName(playSource.providerName)
+      : await this.parseProvidersService.getBestProvider(undefined, true);
+
+    if (!provider) {
+      return {
+        isValid: false,
+        message: 'No active parse provider is available for this source.',
+        validationInfo: {
+          strategy: 'parser',
+          reason: 'provider_unavailable',
+        },
+      };
     }
 
+    const parsedResult = await this.parseProvidersService.parseVideoUrl(
+      provider.id,
+      playSource.url,
+    );
+    const playUrls = this.normalizeStringArray(parsedResult.playUrls || []);
+    const downloadUrls = this.normalizeStringArray(parsedResult.downloadUrls || []);
+    const subtitleUrls = this.normalizeStringArray(parsedResult.subtitleUrls || []);
+    const candidateUrl = playUrls[0] || downloadUrls[0];
+
+    if (!parsedResult.success || !candidateUrl) {
+      return {
+        isValid: false,
+        message: parsedResult.message || 'Parser did not return any usable URL.',
+        validationInfo: {
+          strategy: 'parser',
+          providerName: provider.name,
+          providerId: provider.id,
+          playUrlCount: playUrls.length,
+          downloadUrlCount: downloadUrls.length,
+          subtitleUrlCount: subtitleUrls.length,
+          reason: 'empty_parse_result',
+        },
+        providerName: provider.name,
+      };
+    }
+
+    const downstreamValidation = await this.validateHttpSource(candidateUrl, PlaySourceType.STREAM);
+
+    return {
+      isValid: downstreamValidation.isValid,
+      message: downstreamValidation.isValid
+        ? `Parser validation succeeded via provider ${provider.name}.`
+        : `Parser resolved a URL but downstream probe failed: ${downstreamValidation.message}`,
+      validationInfo: {
+        strategy: 'parser',
+        providerName: provider.name,
+        providerId: provider.id,
+        playUrlCount: playUrls.length,
+        downloadUrlCount: downloadUrls.length,
+        subtitleUrlCount: subtitleUrls.length,
+        resolvedUrl: candidateUrl,
+        parserMessage: parsedResult.message,
+        ...downstreamValidation.validationInfo,
+      },
+      format: downstreamValidation.format,
+      resolution: downstreamValidation.resolution,
+      providerName: provider.name,
+    };
+  }
+
+  private async validateHttpSource(
+    url: string,
+    sourceType: PlaySourceType,
+  ): Promise<PlaySourceValidationResult> {
+    const extension = this.getFileExtension(url);
+    const requestHeaders = this.buildProbeHeaders();
+    const looksLikePlaylist = extension === 'm3u8';
+
     try {
-      const headResponse = await axios.head(playSource.url, {
+      const headResponse = await axios.head(url, {
         timeout: 8000,
+        headers: requestHeaders,
+        maxRedirects: 5,
         validateStatus: status => status >= 200 && status < 500,
       });
 
-      if (headResponse.status < 400) {
-        return true;
+      const headDetails = this.extractHttpProbeDetails(headResponse, 'head', sourceType, url);
+      if (headResponse.status < 400 && this.isSuccessfulMediaProbe(headDetails)) {
+        return {
+          isValid: true,
+          message: 'HTTP HEAD probe succeeded.',
+          validationInfo: headDetails,
+          format: this.detectFormat(extension, headDetails.contentType),
+        };
       }
     } catch {
-      // ignore and fallback to GET probe
+      // ignore and continue with GET probes
     }
 
     try {
-      const getResponse = await axios.get(playSource.url, {
-        timeout: 8000,
+      if (looksLikePlaylist) {
+        const playlistResponse = await axios.get<string>(url, {
+          timeout: 10000,
+          headers: requestHeaders,
+          responseType: 'text',
+          maxRedirects: 5,
+          validateStatus: status => status >= 200 && status < 500,
+        });
+        const playlistBody = typeof playlistResponse.data === 'string' ? playlistResponse.data : '';
+        const playlistValid = playlistResponse.status < 400 && playlistBody.includes('#EXTM3U');
+        const details = {
+          ...this.extractHttpProbeDetails(playlistResponse, 'playlist-get', sourceType, url),
+          playlistSignature: playlistBody.includes('#EXTM3U'),
+        };
+
+        return {
+          isValid: playlistValid,
+          message: playlistValid ? 'Playlist probe succeeded.' : 'Playlist probe failed.',
+          validationInfo: details,
+          format: 'm3u8',
+        };
+      }
+
+      const getResponse = await axios.get<ArrayBuffer>(url, {
+        timeout: 10000,
         headers: {
+          ...requestHeaders,
           Range: 'bytes=0-1',
         },
+        responseType: 'arraybuffer',
+        maxRedirects: 5,
         validateStatus: status => status >= 200 && status < 500,
       });
 
-      return getResponse.status < 400;
-    } catch {
-      return false;
+      const details = this.extractHttpProbeDetails(getResponse, 'range-get', sourceType, url);
+      const isValid = getResponse.status < 400;
+
+      return {
+        isValid,
+        message: isValid ? 'Range probe succeeded.' : 'Range probe failed.',
+        validationInfo: details,
+        format: this.detectFormat(extension, details.contentType),
+      };
+    } catch (error: unknown) {
+      return {
+        isValid: false,
+        message: error instanceof Error ? error.message : 'HTTP probe failed.',
+        validationInfo: {
+          strategy: 'http',
+          method: 'range-get',
+          sourceType,
+          originalUrl: url,
+          reason: error instanceof Error ? error.message : 'request_failed',
+        },
+      };
     }
+  }
+
+  private extractHttpProbeDetails(
+    response: AxiosResponse<unknown>,
+    method: string,
+    sourceType: PlaySourceType,
+    originalUrl: string,
+  ) {
+    const headers = response.headers as RawAxiosResponseHeaders;
+    const contentType = this.getHeaderValue(headers, 'content-type');
+    const contentLength = this.parseContentLength(this.getHeaderValue(headers, 'content-length'));
+    const acceptRanges = this.getHeaderValue(headers, 'accept-ranges');
+    const finalUrl = this.extractFinalUrl(response) || originalUrl;
+
+    return {
+      strategy: 'http',
+      method,
+      sourceType,
+      originalUrl,
+      finalUrl,
+      statusCode: response.status,
+      contentType,
+      contentLength,
+      acceptRanges,
+    };
+  }
+
+  private isSuccessfulMediaProbe(details: Record<string, unknown>) {
+    const contentType = typeof details.contentType === 'string' ? details.contentType : '';
+    const finalUrl = typeof details.finalUrl === 'string' ? details.finalUrl : '';
+    const extension = this.getFileExtension(finalUrl);
+
+    return (
+      contentType.includes('video/') ||
+      contentType.includes('audio/') ||
+      contentType.includes('application/vnd.apple.mpegurl') ||
+      contentType.includes('application/x-mpegurl') ||
+      contentType.includes('application/octet-stream') ||
+      extension === 'm3u8' ||
+      extension === 'mp4' ||
+      extension === 'mkv' ||
+      extension === 'flv' ||
+      extension === 'avi'
+    );
+  }
+
+  private detectFormat(extension?: string, contentType?: unknown) {
+    const normalizedContentType = typeof contentType === 'string' ? contentType.toLowerCase() : '';
+
+    if (extension) {
+      return extension;
+    }
+
+    if (normalizedContentType.includes('mpegurl')) {
+      return 'm3u8';
+    }
+    if (normalizedContentType.includes('mp4')) {
+      return 'mp4';
+    }
+    if (normalizedContentType.includes('webm')) {
+      return 'webm';
+    }
+    if (normalizedContentType.includes('x-matroska')) {
+      return 'mkv';
+    }
+
+    return undefined;
+  }
+
+  private getFileExtension(url: string) {
+    try {
+      const pathname = new URL(url).pathname;
+      const match = pathname.match(/\.([a-z0-9]+)$/i);
+      return match?.[1]?.toLowerCase();
+    } catch {
+      const match = url.match(/\.([a-z0-9]+)(?:\?|$)/i);
+      return match?.[1]?.toLowerCase();
+    }
+  }
+
+  private extractMagnetInfoHash(parsed: Record<string, unknown>) {
+    const directInfoHash = typeof parsed.infoHash === 'string' ? parsed.infoHash : undefined;
+    if (directInfoHash) {
+      return directInfoHash;
+    }
+
+    const xt = typeof parsed.xt === 'string' ? parsed.xt : undefined;
+    if (!xt) {
+      return undefined;
+    }
+
+    const match = xt.match(/urn:btih:([a-zA-Z0-9]+)/i);
+    return match?.[1];
+  }
+
+  private normalizeStringArray(value: unknown): string[] {
+    if (Array.isArray(value)) {
+      return value.filter((item): item is string => typeof item === 'string' && item.length > 0);
+    }
+    if (typeof value === 'string' && value.length > 0) {
+      return [value];
+    }
+    return [];
+  }
+
+  private buildProbeHeaders() {
+    return {
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      Accept: '*/*',
+    };
+  }
+
+  private getHeaderValue(headers: RawAxiosResponseHeaders, key: string) {
+    const value = headers[key] || headers[key.toLowerCase()];
+    return Array.isArray(value) ? value[0] : value;
+  }
+
+  private parseContentLength(value: unknown) {
+    if (typeof value !== 'string') {
+      return undefined;
+    }
+    const parsed = parseInt(value, 10);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  private extractFinalUrl(response: AxiosResponse<unknown>) {
+    const request = response.request as { res?: { responseUrl?: string } } | undefined;
+    return request?.res?.responseUrl;
+  }
+
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
   }
 
   private sortPlaySources(sources: PlaySource[]): PlaySource[] {

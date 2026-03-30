@@ -155,7 +155,9 @@
         >
           <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <div class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">
+              <div
+                class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700"
+              >
                 后台首页 · {{ getFocusOriginLabel() }}
               </div>
               <h3 class="mt-2 text-base font-semibold text-gray-900">
@@ -165,8 +167,13 @@
                 已自动定位到该来源卡片，并同步填入快速爬取目标，方便直接检查策略、采集与稳定性。
               </p>
               <p v-if="focusedSourceStats" class="mt-2 text-xs text-gray-500">
-                已入库 {{ focusedSourceStats.totalCrawled }} · 可用率 {{ focusedSourceStats.activeRate }}% · 质量分
+                已入库 {{ focusedSourceStats.totalCrawled }} · 可用率
+                {{ focusedSourceStats.activeRate }}% · 质量分
                 {{ focusedSourceStats.qualityScore }}
+              </p>
+              <p v-if="focusedSourceStats" class="mt-1 text-xs text-gray-500">
+                提取覆盖 {{ focusedSourceStats.extractionCoverage }}% · 近 7 天新增
+                {{ focusedSourceStats.recentMedia7d }}
               </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
@@ -192,7 +199,9 @@
         >
           <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <div class="inline-flex items-center rounded-full bg-rose-100 px-2.5 py-1 text-xs font-medium text-rose-700">
+              <div
+                class="inline-flex items-center rounded-full bg-rose-100 px-2.5 py-1 text-xs font-medium text-rose-700"
+              >
                 后台首页 · 告警汇总
               </div>
               <h3 class="mt-2 text-base font-semibold text-gray-900">
@@ -242,7 +251,9 @@
             class="mt-4 border-t border-rose-200 pt-4 text-sm text-gray-600"
           >
             <details class="group">
-              <summary class="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-gray-900">
+              <summary
+                class="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-gray-900"
+              >
                 <span>查看当前命中来源列表（{{ filteredCrawlerTargets.length }}）</span>
                 <span class="text-xs text-gray-400 transition group-open:rotate-180">⌄</span>
               </summary>
@@ -300,6 +311,16 @@
                   <p>
                     当前代理: {{ getSourceHealth(target.name)?.proxyMode }} · 建议代理:
                     {{ getSourceHealth(target.name)?.suggestedProxyMode }}
+                  </p>
+                  <p>
+                    代理范围: {{ formatProxyTargets(getSourceHealth(target.name)) }}
+                  </p>
+                  <p>
+                    提取覆盖: {{ getSourceHealth(target.name)?.extractionCoverage }}% · 近 7 天新增:
+                    {{ getSourceHealth(target.name)?.recentMedia7d }}
+                  </p>
+                  <p class="text-[11px] text-gray-500">
+                    分数组成: {{ formatQualityBreakdown(getSourceHealth(target.name)?.qualityBreakdown) }}
                   </p>
                   <p>
                     近24h新增源:
@@ -371,6 +392,32 @@
                           <option value="prefer-proxy">prefer-proxy</option>
                           <option value="proxy-required">proxy-required</option>
                         </select>
+                      </label>
+                    </div>
+                    <div class="grid grid-cols-1 gap-2 md:grid-cols-3">
+                      <label class="flex items-center gap-2">
+                        <input
+                          v-model="getPolicyDraft(target.name).proxyForDiscovery"
+                          type="checkbox"
+                          class="h-4 w-4 rounded border-gray-300"
+                        />
+                        <span>列表发现走代理</span>
+                      </label>
+                      <label class="flex items-center gap-2">
+                        <input
+                          v-model="getPolicyDraft(target.name).proxyForDetail"
+                          type="checkbox"
+                          class="h-4 w-4 rounded border-gray-300"
+                        />
+                        <span>详情抓取走代理</span>
+                      </label>
+                      <label class="flex items-center gap-2">
+                        <input
+                          v-model="getPolicyDraft(target.name).proxyForConnectivityCheck"
+                          type="checkbox"
+                          class="h-4 w-4 rounded border-gray-300"
+                        />
+                        <span>连通检测走代理</span>
                       </label>
                     </div>
                     <label class="flex items-center gap-2">
@@ -453,7 +500,10 @@
         >
           <div class="mx-auto max-w-md">
             <p>当前过滤条件下没有匹配来源，可返回查看全部来源或刷新后重试。</p>
-            <p v-if="getAlertFilterRecommendation()" class="mt-3 rounded-2xl border border-rose-100 bg-rose-50/80 p-4 text-left text-sm text-rose-900">
+            <p
+              v-if="getAlertFilterRecommendation()"
+              class="mt-3 rounded-2xl border border-rose-100 bg-rose-50/80 p-4 text-left text-sm text-rose-900"
+            >
               <span class="block text-xs text-rose-700">建议动作</span>
               <span class="mt-1 block font-medium text-gray-900">
                 {{ getAlertFilterRecommendation()?.label }}
@@ -506,10 +556,15 @@
           >
             <div class="text-xs text-blue-600">建议动作</div>
             <div class="mt-2 text-sm font-medium text-gray-900">
-              {{ getSourceAttentionItem(sourceCollectionResult.sourceName)?.recommendedAction.label }}
+              {{
+                getSourceAttentionItem(sourceCollectionResult.sourceName)?.recommendedAction.label
+              }}
             </div>
             <div class="mt-1 text-xs text-gray-600">
-              {{ getSourceAttentionItem(sourceCollectionResult.sourceName)?.recommendedAction.description }}
+              {{
+                getSourceAttentionItem(sourceCollectionResult.sourceName)?.recommendedAction
+                  .description
+              }}
             </div>
             <div class="mt-3 flex flex-wrap gap-2">
               <router-link
@@ -522,7 +577,13 @@
                 :to="buildAdminPlaySourcesLink(sourceCollectionResult.sourceName, 'attention')"
                 :class="getSourceActionClass(sourceCollectionResult.sourceName, 'play-sources')"
               >
-                {{ getSourceActionLabel(sourceCollectionResult.sourceName, 'play-sources', '播放源排障') }}
+                {{
+                  getSourceActionLabel(
+                    sourceCollectionResult.sourceName,
+                    'play-sources',
+                    '播放源排障',
+                  )
+                }}
               </router-link>
             </div>
           </div>
@@ -625,6 +686,19 @@
             <div v-if="crawlResult.data.description" class="mt-3">
               <p class="font-medium">简介:</p>
               <p class="text-gray-700 mt-1">{{ crawlResult.data.description }}</p>
+            </div>
+
+            <div
+              v-if="getCrawlExtractionSummary()"
+              class="mt-3 rounded-lg border border-blue-100 bg-blue-50/70 p-3 text-sm text-blue-800"
+            >
+              <div class="font-medium">提取摘要</div>
+              <div class="mt-1 text-xs text-blue-700">
+                可播链接 {{ getCrawlExtractionSummary()?.playableUrlCount || 0 }} · 字段命中
+                {{ getCrawlExtractionSummary()?.extractedFieldCount || 0 }} · 背景图
+                {{ getCrawlExtractionSummary()?.hasBackdrop ? '已提取' : '缺失' }} · 时长
+                {{ getCrawlExtractionSummary()?.hasDuration ? '已提取' : '缺失' }}
+              </div>
             </div>
 
             <div v-if="crawlResult.data.genres && crawlResult.data.genres.length > 0" class="mt-3">
@@ -900,6 +974,9 @@
           dailyEnabled: item.dailyEnabled,
           dailyLimit: item.dailyLimit,
           proxyMode: item.proxyMode,
+          proxyForDiscovery: item.proxyForDiscovery,
+          proxyForDetail: item.proxyForDetail,
+          proxyForConnectivityCheck: item.proxyForConnectivityCheck,
           requirePlayableUrls: item.requirePlayableUrls,
           minimumPlayableUrls: item.minimumPlayableUrls,
         };
@@ -914,9 +991,7 @@
   });
 
   const collectionSourceStatsMap = computed(() => {
-    return new Map(
-      (collectionStatistics.value?.sources || []).map(item => [item.name, item]),
-    );
+    return new Map((collectionStatistics.value?.sources || []).map(item => [item.name, item]));
   });
   const sourceAttentionMap = computed(() => {
     return new Map<string, AttentionSourceItem>(
@@ -1008,7 +1083,9 @@
   };
 
   const getAlertFilterRecommendation = () => {
-    return activeAlertFilter.value ? getAlertFilterRecommendedAction(activeAlertFilter.value) : null;
+    return activeAlertFilter.value
+      ? getAlertFilterRecommendedAction(activeAlertFilter.value)
+      : null;
   };
 
   const getAlertActionClass = (target: AlertActionTarget) => {
@@ -1126,10 +1203,55 @@
         dailyEnabled: true,
         dailyLimit: 8,
         proxyMode: 'direct',
+        proxyForDiscovery: false,
+        proxyForDetail: false,
+        proxyForConnectivityCheck: false,
         requirePlayableUrls: true,
         minimumPlayableUrls: 1,
       }
     );
+  };
+
+  const formatProxyTargets = (
+    item?: {
+      proxyForDiscovery?: boolean;
+      proxyForDetail?: boolean;
+      proxyForConnectivityCheck?: boolean;
+    } | null,
+  ) => {
+    if (!item) {
+      return '默认直连';
+    }
+
+    const targets = [
+      item.proxyForDiscovery ? '列表' : '',
+      item.proxyForDetail ? '详情' : '',
+      item.proxyForConnectivityCheck ? '检测' : '',
+    ].filter(Boolean);
+
+    return targets.length > 0 ? targets.join(' / ') : '默认直连';
+  };
+
+  const formatQualityBreakdown = (
+    breakdown?: {
+      availability: number;
+      freshness: number;
+      extraction: number;
+      inventory: number;
+      validation: number;
+    } | null,
+  ) => {
+    if (!breakdown) {
+      return '暂无';
+    }
+
+    return [
+      `可用 ${breakdown.availability}`,
+      `新鲜 ${breakdown.freshness}`,
+      `提取 ${breakdown.extraction}`,
+      `库存 ${breakdown.inventory}`,
+      `校验 ${breakdown.validation}`,
+    ].join(' / ');
   };
 
   const saveSourcePolicy = async (targetName: string) => {
@@ -1267,6 +1389,13 @@
   };
 
   // 清除爬取结果
+
+  const getCrawlExtractionSummary = () => {
+    const metadata = crawlResult.value?.data?.metadata as
+      | { extractionSummary?: Record<string, unknown> }
+      | undefined;
+    return metadata?.extractionSummary;
+  };
   const clearCrawlResult = () => {
     crawlResult.value = null;
   };

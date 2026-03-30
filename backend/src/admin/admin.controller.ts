@@ -1,9 +1,25 @@
-import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { AdminRole } from '../entities/admin-role.entity';
 import { AdminPermission } from '../entities/admin-permission.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import {
+  CreatePermissionDto,
+  CreateRoleDto,
+  UpdatePermissionDto,
+  UpdateRoleDto,
+} from './dto/create-admin.dto';
 
 /**
  * 后台管理控制器
@@ -14,16 +30,6 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @UseGuards(JwtAuthGuard)
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
-
-  /**
-   * 获取系统统计数据
-   */
-  @Get('stats')
-  @ApiOperation({ summary: '获取系统统计数据' })
-  @ApiResponse({ status: 200, description: '成功获取系统统计数据' })
-  async getSystemStats() {
-    return await this.adminService.getSystemStats();
-  }
 
   /**
    * 创建角色
@@ -45,9 +51,7 @@ export class AdminController {
     },
   })
   @ApiResponse({ status: 201, description: '角色创建成功', type: AdminRole })
-  async createRole(
-    @Body() createRoleDto: { name: string; description?: string; permissions?: string[] },
-  ) {
+  async createRole(@Body() createRoleDto: CreateRoleDto) {
     return await this.adminService.createRole(createRoleDto);
   }
 
@@ -59,6 +63,16 @@ export class AdminController {
   @ApiResponse({ status: 200, description: '成功获取角色列表', type: [AdminRole] })
   async findAllRoles(): Promise<AdminRole[]> {
     return await this.adminService.findAllRoles();
+  }
+
+  /**
+   * 更新角色
+   */
+  @Patch('roles/:id')
+  @ApiOperation({ summary: '更新角色' })
+  @ApiResponse({ status: 200, description: '角色更新成功', type: AdminRole })
+  async updateRole(@Param('id', ParseIntPipe) id: number, @Body() updateRoleDto: UpdateRoleDto) {
+    return await this.adminService.updateRole(id, updateRoleDto);
   }
 
   /**
@@ -79,16 +93,7 @@ export class AdminController {
     },
   })
   @ApiResponse({ status: 201, description: '权限创建成功', type: AdminPermission })
-  async createPermission(
-    @Body()
-    createPermissionDto: {
-      code: string;
-      name: string;
-      description?: string;
-      resource?: string;
-      action?: string;
-    },
-  ) {
+  async createPermission(@Body() createPermissionDto: CreatePermissionDto) {
     return await this.adminService.createPermission(createPermissionDto);
   }
 
@@ -102,6 +107,18 @@ export class AdminController {
     return await this.adminService.findAllPermissions();
   }
 
+  /**
+   * 更新权限
+   */
+  @Patch('permissions/:id')
+  @ApiOperation({ summary: '更新权限' })
+  @ApiResponse({ status: 200, description: '权限更新成功', type: AdminPermission })
+  async updatePermission(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updatePermissionDto: UpdatePermissionDto,
+  ) {
+    return await this.adminService.updatePermission(id, updatePermissionDto);
+  }
   /**
    * 获取管理日志
    */

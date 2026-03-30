@@ -1,11 +1,43 @@
 import ApiClient from './index';
 import type { MediaResource } from '@/types/media';
 
+export interface RecommendationProfilePreference {
+  key: string;
+  score: number;
+}
+
+export interface RecommendationProfile {
+  strategy: 'history-based' | 'fallback-trending';
+  totalWatched: number;
+  completedCount: number;
+  recentWatchCount: number;
+  averageCompletionRate: number;
+  favoriteTypes: RecommendationProfilePreference[];
+  favoriteGenres: RecommendationProfilePreference[];
+  favoriteDirectors: RecommendationProfilePreference[];
+}
+
+export interface PersonalizedRecommendationItem {
+  media: MediaResource;
+  score: number;
+  reasons: string[];
+}
+
 export const recommendationsApi = {
   getPersonalized: (limit = 8) => {
     return ApiClient.get<MediaResource[]>('/recommendations/personalized', {
       params: { limit },
     });
+  },
+
+  getPersonalizedDetailed: (limit = 8) => {
+    return ApiClient.get<PersonalizedRecommendationItem[]>('/recommendations/personalized-detailed', {
+      params: { limit },
+    });
+  },
+
+  getProfile: () => {
+    return ApiClient.get<RecommendationProfile>('/recommendations/profile');
   },
 
   getTrending: (limit = 8) => {

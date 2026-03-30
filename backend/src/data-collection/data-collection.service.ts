@@ -1,7 +1,8 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import axios, { AxiosRequestConfig } from 'axios';
 import * as cheerio from 'cheerio';
-import { MediaType } from '../entities/media-resource.entity';
+import { MediaResource, MediaType } from '../entities/media-resource.entity';
+import { UpdateMediaResourceDto } from '../media/dtos/update-media-resource.dto';
 import { MediaResourceService } from '../media/media-resource.service';
 import { PlaySourceService } from '../play-sources/play-source.service';
 import { PlaySourceType } from '../entities/play-source.entity';
@@ -21,7 +22,9 @@ export interface MediaData {
   rating: number;
   source: string;
   downloadUrls?: string[];
-  metadata?: any;
+  episodeCount?: number;
+  duration?: number;
+  metadata?: Record<string, unknown>;
 }
 
 interface SourceSelectors {
@@ -33,6 +36,9 @@ interface SourceSelectors {
   actors?: string;
   genres?: string;
   releaseDate?: string;
+  backdrop?: string;
+  episodeCount?: string;
+  duration?: string;
   downloadUrls?: string;
 }
 
@@ -46,6 +52,9 @@ export interface SourceCollectionPolicy {
   dailyEnabled: boolean;
   dailyLimit: number;
   proxyMode: 'direct' | 'prefer-proxy' | 'proxy-required';
+  proxyForDiscovery: boolean;
+  proxyForDetail: boolean;
+  proxyForConnectivityCheck: boolean;
   requirePlayableUrls: boolean;
   minimumPlayableUrls: number;
 }
@@ -77,10 +86,22 @@ export interface SourceHealthSummary {
   dailyEnabled: boolean;
   dailyLimit: number;
   proxyMode: SourceCollectionPolicy['proxyMode'];
+  proxyForDiscovery: boolean;
+  proxyForDetail: boolean;
+  proxyForConnectivityCheck: boolean;
   requirePlayableUrls: boolean;
   minimumPlayableUrls: number;
   suggestedProxyMode: SourceCollectionPolicy['proxyMode'];
   qualityScore: number;
+  extractionCoverage: number;
+  recentMedia7d: number;
+  qualityBreakdown: {
+    availability: number;
+    freshness: number;
+    extraction: number;
+    inventory: number;
+    validation: number;
+  };
   recommendation: string;
   totalPlaySources: number;
   activePlaySources: number;
@@ -102,12 +123,26 @@ export interface CollectionSourceStatistics {
   recentPlaySources24h: number;
   activeRate: number;
   qualityScore: number;
+  extractionCoverage: number;
+  recentMedia7d: number;
+  qualityBreakdown: {
+    availability: number;
+    freshness: number;
+    extraction: number;
+    inventory: number;
+    validation: number;
+  };
   proxyMode: SourceCollectionPolicy['proxyMode'];
+  proxyForDiscovery: boolean;
+  proxyForDetail: boolean;
+  proxyForConnectivityCheck: boolean;
   suggestedProxyMode: SourceCollectionPolicy['proxyMode'];
   lastCrawled: string | null;
   lastPlaySourceCreatedAt: string | null;
   lastCheckedAt: string | null;
 }
+
+type ProxyRequestPurpose = 'discovery' | 'detail' | 'connectivity';
 
 export interface CollectionStatistics {
   totalSources: number;
@@ -184,6 +219,9 @@ export class DataCollectionService {
         dailyEnabled: true,
         dailyLimit: 6,
         proxyMode: 'prefer-proxy',
+        proxyForDiscovery: false,
+        proxyForDetail: true,
+        proxyForConnectivityCheck: false,
         requirePlayableUrls: false,
         minimumPlayableUrls: 0,
       },
@@ -214,6 +252,9 @@ export class DataCollectionService {
         dailyEnabled: true,
         dailyLimit: 10,
         proxyMode: 'direct',
+        proxyForDiscovery: false,
+        proxyForDetail: false,
+        proxyForConnectivityCheck: false,
         requirePlayableUrls: true,
         minimumPlayableUrls: 1,
       },
@@ -221,7 +262,7 @@ export class DataCollectionService {
   ];
 
   /**
-   * 获取所有可用的爬虫源
+   * 鑾峰彇鎵€鏈夊彲鐢ㄧ殑鐖櫕婧?
    */
   getSources(): CrawlerSource[] {
     return this.sources.filter(source => source.enabled);
@@ -237,31 +278,49 @@ export class DataCollectionService {
 
   async getSourceHealthSummaries(): Promise<SourceHealthSummary[]> {
     const sources = this.getSources();
+    const mediaSourceStatistics = await this.mediaResourceService.getSourceStatistics(
+      sources.map(source => source.name),
+    );
 
     const summaries = await Promise.all(
       sources.map(async source => {
         const summary = await this.playSourceService.getSourceHealthSummary(source.name);
+        const mediaStatistics = mediaSourceStatistics[source.name];
+        const qualityBreakdown = this.calculateSourceQualityBreakdown(
+          summary.totalPlaySources,
+          summary.activeRate,
+          summary.recentPlaySources24h,
+          summary.latestCheckedAt,
+          mediaStatistics,
+        );
+        const extractionCoverage = this.calculateExtractionCoverage(mediaStatistics);
+
         return {
           name: source.name,
           baseUrl: source.baseUrl,
           dailyEnabled: source.collectionPolicy.dailyEnabled,
           dailyLimit: source.collectionPolicy.dailyLimit,
           proxyMode: source.collectionPolicy.proxyMode,
+          proxyForDiscovery: source.collectionPolicy.proxyForDiscovery,
+          proxyForDetail: source.collectionPolicy.proxyForDetail,
+          proxyForConnectivityCheck: source.collectionPolicy.proxyForConnectivityCheck,
           requirePlayableUrls: source.collectionPolicy.requirePlayableUrls,
           minimumPlayableUrls: source.collectionPolicy.minimumPlayableUrls,
           suggestedProxyMode: this.getSuggestedProxyMode(
             summary.activeRate,
             summary.recentPlaySources24h,
           ),
-          qualityScore: this.calculateSourceQualityScore(
-            summary.totalPlaySources,
-            summary.activeRate,
-            summary.recentPlaySources24h,
-          ),
+          qualityScore: this.calculateSourceQualityScore(qualityBreakdown),
+          extractionCoverage,
+          recentMedia7d: mediaStatistics?.recentCreated7d || 0,
+          qualityBreakdown,
           recommendation: this.getSourceRecommendation(
             summary.totalPlaySources,
             summary.activeRate,
             summary.recentPlaySources24h,
+            extractionCoverage,
+            summary.latestCheckedAt,
+            mediaStatistics?.recentCreated7d || 0,
           ),
           totalPlaySources: summary.totalPlaySources,
           activePlaySources: summary.activePlaySources,
@@ -274,21 +333,98 @@ export class DataCollectionService {
       }),
     );
 
-    return summaries.sort(
-      (a, b) => b.activeRate - a.activeRate || b.totalPlaySources - a.totalPlaySources,
-    );
+    return summaries.sort((a, b) => b.qualityScore - a.qualityScore || b.activeRate - a.activeRate);
   }
 
-  private calculateSourceQualityScore(
+  private calculateSourceQualityBreakdown(
     totalPlaySources: number,
     activeRate: number,
     recentPlaySources24h: number,
-  ): number {
-    const activityScore = Math.min(recentPlaySources24h * 8, 25);
-    const activeScore = Math.min(activeRate * 0.6, 60);
-    const inventoryScore = Math.min(totalPlaySources * 1.5, 15);
+    latestCheckedAt?: string | null,
+    mediaStatistics?: {
+      total: number;
+      active: number;
+      latestCreatedAt: string | null;
+      recentCreated7d: number;
+      withPoster: number;
+      withBackdrop: number;
+      withDuration: number;
+      withEpisodeCount: number;
+      withDownloadUrls: number;
+    },
+  ) {
+    const availability = Math.min(activeRate * 0.45, 45);
+    const freshness = Math.min(
+      recentPlaySources24h * 4 + (mediaStatistics?.recentCreated7d || 0) * 2,
+      20,
+    );
+    const extraction = this.calculateExtractionCoverage(mediaStatistics) * 0.2;
+    const inventory = Math.min(totalPlaySources * 1.2, 15);
+    const validation = this.calculateValidationFreshnessScore(latestCheckedAt);
 
-    return Math.round(activityScore + activeScore + inventoryScore);
+    return {
+      availability: Math.round(availability),
+      freshness: Math.round(freshness),
+      extraction: Math.round(extraction),
+      inventory: Math.round(inventory),
+      validation: Math.round(validation),
+    };
+  }
+
+  private calculateSourceQualityScore(breakdown: {
+    availability: number;
+    freshness: number;
+    extraction: number;
+    inventory: number;
+    validation: number;
+  }): number {
+    return (
+      breakdown.availability +
+      breakdown.freshness +
+      breakdown.extraction +
+      breakdown.inventory +
+      breakdown.validation
+    );
+  }
+
+  private calculateExtractionCoverage(mediaStatistics?: {
+    total: number;
+    withPoster: number;
+    withBackdrop: number;
+    withDuration: number;
+    withEpisodeCount: number;
+    withDownloadUrls: number;
+  }) {
+    const total = mediaStatistics?.total || 0;
+    if (total === 0) {
+      return 0;
+    }
+
+    const weightedCoverage =
+      ((mediaStatistics?.withPoster || 0) / total) * 0.2 +
+      ((mediaStatistics?.withBackdrop || 0) / total) * 0.2 +
+      ((mediaStatistics?.withDuration || 0) / total) * 0.2 +
+      ((mediaStatistics?.withEpisodeCount || 0) / total) * 0.1 +
+      ((mediaStatistics?.withDownloadUrls || 0) / total) * 0.3;
+
+    return Math.round(weightedCoverage * 100);
+  }
+
+  private calculateValidationFreshnessScore(latestCheckedAt?: string | null) {
+    const hoursSinceLastChecked = this.getHoursSince(latestCheckedAt);
+    if (hoursSinceLastChecked === null) {
+      return 0;
+    }
+    if (hoursSinceLastChecked <= 24) {
+      return 10;
+    }
+    if (hoursSinceLastChecked <= 72) {
+      return 7;
+    }
+    if (hoursSinceLastChecked <= 168) {
+      return 4;
+    }
+    return 1;
   }
 
   private getSuggestedProxyMode(
@@ -310,9 +446,26 @@ export class DataCollectionService {
     totalPlaySources: number,
     activeRate: number,
     recentPlaySources24h: number,
+    extractionCoverage: number,
+    latestCheckedAt?: string | null,
+    recentMedia7d: number = 0,
   ): string {
     if (totalPlaySources === 0) {
       return '尚未沉淀可用播放源，建议优先排查抓取规则并考虑启用代理';
+    }
+
+    const hoursSinceLastChecked = this.getHoursSince(latestCheckedAt);
+
+    if (extractionCoverage < 45) {
+      return '来源提取覆盖偏低，建议优先排查详情页选择器、图片提取与时长/剧集信号是否失效';
+    }
+
+    if (recentMedia7d === 0 && recentPlaySources24h === 0) {
+      return '来源近期缺少新增内容，建议优先检查列表发现阶段、分页入口和站点更新频率';
+    }
+
+    if (hoursSinceLastChecked !== null && hoursSinceLastChecked > 168) {
+      return '来源最近一周缺少有效校验，建议优先恢复稳定性检测并确认活跃播放源是否仍可用';
     }
 
     if (activeRate >= 80 && recentPlaySources24h > 0) {
@@ -320,10 +473,23 @@ export class DataCollectionService {
     }
 
     if (activeRate >= 50) {
-      return '来源中等稳定，建议优先代理并继续观察新增源质量';
+      return '来源中等稳定，建议持续观察新增内容与提取覆盖变化';
     }
 
-    return '来源波动较大，建议强制代理、降低频率并优先排查抓取规则';
+    return '来源波动较大，建议降低采集频率并优先排查列表与详情抓取链路';
+  }
+
+  private getHoursSince(timestamp?: string | null) {
+    if (!timestamp) {
+      return null;
+    }
+
+    const parsed = new Date(timestamp).getTime();
+    if (Number.isNaN(parsed)) {
+      return null;
+    }
+
+    return (Date.now() - parsed) / (1000 * 60 * 60);
   }
 
   /**
@@ -343,6 +509,10 @@ export class DataCollectionService {
       ...source.collectionPolicy,
       ...updates,
       dailyLimit: Math.max(updates.dailyLimit ?? source.collectionPolicy.dailyLimit, 1),
+      proxyForDiscovery: updates.proxyForDiscovery ?? source.collectionPolicy.proxyForDiscovery,
+      proxyForDetail: updates.proxyForDetail ?? source.collectionPolicy.proxyForDetail,
+      proxyForConnectivityCheck:
+        updates.proxyForConnectivityCheck ?? source.collectionPolicy.proxyForConnectivityCheck,
       minimumPlayableUrls: Math.max(
         updates.minimumPlayableUrls ?? source.collectionPolicy.minimumPlayableUrls,
         0,
@@ -350,7 +520,7 @@ export class DataCollectionService {
     };
 
     this.logger.log(
-      `更新数据源策略: ${name}, dailyEnabled=${source.collectionPolicy.dailyEnabled}, dailyLimit=${source.collectionPolicy.dailyLimit}, proxyMode=${source.collectionPolicy.proxyMode}`,
+      `更新数据源策略: ${name}, dailyEnabled=${source.collectionPolicy.dailyEnabled}, dailyLimit=${source.collectionPolicy.dailyLimit}, proxyMode=${source.collectionPolicy.proxyMode}, proxyForDiscovery=${source.collectionPolicy.proxyForDiscovery}, proxyForDetail=${source.collectionPolicy.proxyForDetail}, proxyForConnectivityCheck=${source.collectionPolicy.proxyForConnectivityCheck}`,
     );
 
     return source;
@@ -373,7 +543,7 @@ export class DataCollectionService {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         },
-        ...this.buildRequestConfig(source, url),
+        ...this.buildRequestConfig(source, url, 'detail'),
       });
 
       const $ = cheerio.load(response.data);
@@ -382,18 +552,32 @@ export class DataCollectionService {
       // 提取数据
       const title = $(selectors.title).text().trim();
       const description = $(selectors.description).text().trim();
-      const poster = $(selectors.poster).attr('src');
+      const poster = this.extractImageUrl($, selectors.poster, source.baseUrl);
+      const backdrop =
+        this.extractImageUrl($, selectors.backdrop, source.baseUrl) ||
+        this.extractBackdropFallback($, source.baseUrl, poster);
       const ratingText = $(selectors.rating).text().trim();
       const director = this.extractFirstText($, selectors.director);
       const actors = this.extractJoinedText($, selectors.actors);
       const genres = this.extractTextList($, selectors.genres);
       const releaseDate = this.extractDate($, selectors.releaseDate);
+      const pageText = $.root().text();
+      const downloadUrls = this.extractDownloadUrls($, selectors.downloadUrls);
+      const episodeCount = this.extractEpisodeCount(
+        $,
+        selectors.episodeCount,
+        title,
+        description,
+        pageText,
+        downloadUrls.length,
+      );
+      const duration = this.extractDurationMinutes($, selectors.duration, pageText);
 
-      // 解析评分
+      // 瑙ｆ瀽璇勫垎
       const rating = ratingText ? parseFloat(ratingText) || 0 : 0;
 
       if (!title) {
-        throw new Error('无法获取标题');
+        throw new Error('鏃犳硶鑾峰彇鏍囬');
       }
 
       const mediaData: MediaData = {
@@ -406,11 +590,33 @@ export class DataCollectionService {
         releaseDate,
         rating,
         source: sourceName,
-        poster: poster ? new URL(poster, source.baseUrl).href : undefined,
-        downloadUrls: this.extractDownloadUrls($, selectors.downloadUrls),
+        poster,
+        backdrop,
+        downloadUrls,
+        episodeCount,
+        duration,
         metadata: {
           crawledAt: new Date().toISOString(),
           originalUrl: url,
+          extractionVersion: 2,
+          extractionSummary: {
+            playableUrlCount: downloadUrls.length,
+            extractedFieldCount: [
+              title,
+              description,
+              director,
+              actors,
+              releaseDate?.toISOString(),
+              poster,
+              backdrop,
+              episodeCount,
+              duration,
+              ...(genres || []),
+            ].filter(value => Boolean(value)).length,
+            hasBackdrop: Boolean(backdrop),
+            hasEpisodeCount: typeof episodeCount === 'number',
+            hasDuration: typeof duration === 'number',
+          },
         },
       };
 
@@ -502,7 +708,7 @@ export class DataCollectionService {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
       },
-      ...this.buildRequestConfig(source, source.baseUrl),
+      ...this.buildRequestConfig(source, source.baseUrl, 'discovery'),
     });
 
     const $ = cheerio.load(response.data);
@@ -602,7 +808,7 @@ export class DataCollectionService {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         },
-        ...this.buildRequestConfig(source, source.baseUrl),
+        ...this.buildRequestConfig(source, source.baseUrl, 'connectivity'),
       });
       const responseTime = Date.now() - startTime;
 
@@ -653,7 +859,19 @@ export class DataCollectionService {
         recentPlaySources24h: healthSummary?.recentPlaySources24h || 0,
         activeRate: healthSummary?.activeRate || 0,
         qualityScore: healthSummary?.qualityScore || 0,
+        extractionCoverage: healthSummary?.extractionCoverage || 0,
+        recentMedia7d: mediaStatistics?.recentCreated7d || 0,
+        qualityBreakdown: healthSummary?.qualityBreakdown || {
+          availability: 0,
+          freshness: 0,
+          extraction: 0,
+          inventory: 0,
+          validation: 0,
+        },
         proxyMode: source.collectionPolicy.proxyMode,
+        proxyForDiscovery: source.collectionPolicy.proxyForDiscovery,
+        proxyForDetail: source.collectionPolicy.proxyForDetail,
+        proxyForConnectivityCheck: source.collectionPolicy.proxyForConnectivityCheck,
         suggestedProxyMode: healthSummary?.suggestedProxyMode || source.collectionPolicy.proxyMode,
         lastCrawled: mediaStatistics?.latestCreatedAt || null,
         lastPlaySourceCreatedAt: healthSummary?.latestCreatedAt || null,
@@ -752,12 +970,12 @@ export class DataCollectionService {
 
   private extractUrlsFromText(text: string): string[] {
     const patterns = [
-      /magnet:\?[^\s"'<>]+/gi,
-      /thunder:\/\/[^\s"'<>]+/gi,
-      /ed2k:\/\/[^\s"'<>]+/gi,
-      /ftp:\/\/[^\s"'<>]+/gi,
-      /https?:\/\/[^\s"'<>]+\.m3u8[^\s"'<>]*/gi,
-      /https?:\/\/[^\s"'<>]+\.(mp4|mkv|avi|mov|flv)(\?[^\s"'<>]*)?/gi,
+      /全(\\d+)\\u96c6/,
+      /共(\\d+)\\u96c6/,
+      /(\\d+)\\u96c6全/,
+      /更新至\\s*(\\d+)\\u96c6/,
+      /第\\s*(\\d+)\\u96c6/,
+      /(\\d+)\\s*(?:episodes?|eps?)/i,
     ];
 
     const urls = new Set<string>();
@@ -819,6 +1037,156 @@ export class DataCollectionService {
     const text = $(selector).first().text().trim();
     return text || undefined;
   }
+  private extractImageUrl(
+    $: cheerio.CheerioAPI,
+    selector: string | undefined,
+    baseUrl: string,
+  ): string | undefined {
+    if (!selector) {
+      return undefined;
+    }
+
+    const rawValue = $(selector).first().attr('src') || $(selector).first().attr('content');
+    if (!rawValue) {
+      return undefined;
+    }
+
+    try {
+      return new URL(rawValue, baseUrl).toString();
+    } catch {
+      return undefined;
+    }
+  }
+
+  private extractBackdropFallback(
+    $: cheerio.CheerioAPI,
+    baseUrl: string,
+    poster?: string,
+  ): string | undefined {
+    const fallbackSelectors = [
+      'meta[property="og:image"]',
+      'meta[name="twitter:image"]',
+      '.backdrop img',
+      '.banner img',
+      '.poster img',
+    ];
+
+    for (const selector of fallbackSelectors) {
+      const imageUrl = this.extractImageUrl($, selector, baseUrl);
+      if (imageUrl && imageUrl !== poster) {
+        return imageUrl;
+      }
+    }
+
+    return poster;
+  }
+
+  private extractEpisodeCount(
+    $: cheerio.CheerioAPI,
+    selector: string | undefined,
+    title: string,
+    description: string,
+    pageText: string,
+    downloadUrlCount: number,
+  ): number | undefined {
+    const candidateTexts = [
+      this.extractFirstText($, selector),
+      title,
+      description,
+      pageText,
+    ].filter((value): value is string => typeof value === 'string' && value.length > 0);
+
+    const patterns = [
+      /全(\\d+)\\u96c6/,
+      /共(\\d+)\\u96c6/,
+      /(\\d+)\\u96c6全/,
+      /更新至\\s*(\\d+)\\u96c6/,
+      /第\\s*(\\d+)\\u96c6/,
+      /(\\d+)\\s*(?:episodes?|eps?)/i,
+    ];
+
+    for (const text of candidateTexts) {
+      for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (!match) {
+          continue;
+        }
+
+        const parsed = parseInt(match[1], 10);
+        if (Number.isFinite(parsed) && parsed > 0) {
+          return parsed;
+        }
+      }
+    }
+
+    return downloadUrlCount > 1 ? downloadUrlCount : undefined;
+  }
+
+  private extractDurationMinutes(
+    $: cheerio.CheerioAPI,
+    selector: string | undefined,
+    pageText: string,
+  ): number | undefined {
+    const candidateText = [this.extractFirstText($, selector), pageText]
+      .filter((value): value is string => typeof value === 'string' && value.length > 0)
+      .join(' ');
+
+    const hourMinuteMatch = candidateText.match(
+      /(\\d+)\\s*(?:小时|\\u5c0f\\u65f6)\\s*(\\d+)\\s*(?:分|分钟|\\u5206)/,
+    );
+    if (hourMinuteMatch) {
+      return parseInt(hourMinuteMatch[1], 10) * 60 + parseInt(hourMinuteMatch[2], 10);
+    }
+
+    const minuteMatch = candidateText.match(
+      /(?:片长|时长|单集片长|\\u7247\\u957f|\\u65f6\\u957f)?\\s*(\\d{2,3})\\s*(?:分钟|\\u5206\\u949f)/,
+    );
+    if (minuteMatch) {
+      const parsed = parseInt(minuteMatch[1], 10);
+      return Number.isFinite(parsed) ? parsed : undefined;
+    }
+
+    return undefined;
+  }
+
+  private mergeUniqueStrings(
+    currentValues?: string[] | null,
+    incomingValues?: string[] | null,
+  ): string[] {
+    const values = [...(currentValues || []), ...(incomingValues || [])]
+      .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+      .map(value => value.trim());
+
+    return [...new Set(values)];
+  }
+
+  private mergeMetadata(
+    currentMetadata?: Record<string, unknown> | null,
+    incomingMetadata?: Record<string, unknown> | null,
+  ) {
+    return {
+      ...(currentMetadata || {}),
+      ...(incomingMetadata || {}),
+      extractionHistory: [
+        ...(((currentMetadata || {}).extractionHistory as
+          | Array<Record<string, unknown>>
+          | undefined) || []),
+        incomingMetadata || {},
+      ].slice(-5),
+    };
+  }
+
+  private pickLongerText(currentValue?: string, incomingValue?: string) {
+    if (!incomingValue) {
+      return currentValue;
+    }
+
+    if (!currentValue) {
+      return incomingValue;
+    }
+
+    return incomingValue.length > currentValue.length ? incomingValue : currentValue;
+  }
 
   private extractJoinedText($: cheerio.CheerioAPI, selector?: string): string | undefined {
     const values = this.extractTextList($, selector);
@@ -848,8 +1216,8 @@ export class DataCollectionService {
     }
 
     const normalizedText = text
-      .replace(/[年月]/g, '-')
-      .replace(/日/g, '')
+      .replace(/[\u5e74\u6708]/g, '-')
+      .replace(/\u65e5/g, '')
       .trim();
     const parsedDate = new Date(normalizedText);
     return Number.isNaN(parsedDate.getTime()) ? undefined : parsedDate;
@@ -858,19 +1226,19 @@ export class DataCollectionService {
   private inferMediaType(title: string, genres: string[] = []): MediaType {
     const combinedText = `${title} ${genres.join(' ')}`.toLowerCase();
 
-    if (combinedText.includes('纪录')) {
+    if (combinedText.includes('绾綍')) {
       return MediaType.DOCUMENTARY;
     }
 
-    if (combinedText.includes('综艺')) {
+    if (combinedText.includes('缁艰壓')) {
       return MediaType.VARIETY;
     }
 
-    if (combinedText.includes('动漫') || combinedText.includes('动画')) {
+    if (combinedText.includes('鍔ㄦ极') || combinedText.includes('鍔ㄧ敾')) {
       return MediaType.ANIME;
     }
 
-    if (combinedText.includes('电视剧') || combinedText.includes('剧集')) {
+    if (combinedText.includes('鐢佃鍓?') || combinedText.includes('鍓ч泦')) {
       return MediaType.TV_SERIES;
     }
 
@@ -884,9 +1252,10 @@ export class DataCollectionService {
     const existingMedia = await this.mediaResourceService.findByTitle(mediaData.title);
 
     if (existingMedia) {
-      const syncResult = await this.syncPlaySources(existingMedia.id, mediaData, sourceName);
+      const updatedMedia = await this.enrichExistingMedia(existingMedia, mediaData);
+      const syncResult = await this.syncPlaySources(updatedMedia.id, mediaData, sourceName);
       return {
-        mediaResourceId: existingMedia.id,
+        mediaResourceId: updatedMedia.id,
         created: false,
         playSourceCount: syncResult.created,
         skippedPlaySources: syncResult.skipped,
@@ -905,6 +1274,9 @@ export class DataCollectionService {
       backdrop: mediaData.backdrop,
       rating: mediaData.rating,
       source: mediaData.source,
+      episodeCount: mediaData.episodeCount,
+      duration: mediaData.duration,
+      metadata: mediaData.metadata,
       downloadUrls: mediaData.downloadUrls,
     });
 
@@ -915,6 +1287,39 @@ export class DataCollectionService {
       playSourceCount: syncResult.created,
       skippedPlaySources: syncResult.skipped,
     };
+  }
+
+  private async enrichExistingMedia(existingMedia: MediaResource, mediaData: MediaData) {
+    const mergedDownloadUrls = this.mergeUniqueStrings(
+      existingMedia.downloadUrls,
+      mediaData.downloadUrls,
+    );
+    const mergedGenres = this.mergeUniqueStrings(existingMedia.genres, mediaData.genres);
+    const mergedMetadata = this.mergeMetadata(
+      (existingMedia.metadata || undefined) as Record<string, unknown> | undefined,
+      mediaData.metadata,
+    );
+
+    const updatePayload: UpdateMediaResourceDto = {
+      description:
+        this.pickLongerText(existingMedia.description, mediaData.description) ??
+        existingMedia.description,
+      director: existingMedia.director || mediaData.director,
+      actors: existingMedia.actors || mediaData.actors,
+      genres: mergedGenres.length > 0 ? mergedGenres : existingMedia.genres,
+      releaseDate: existingMedia.releaseDate || mediaData.releaseDate,
+      poster: existingMedia.poster || mediaData.poster,
+      backdrop: existingMedia.backdrop || mediaData.backdrop,
+      rating: existingMedia.rating || mediaData.rating,
+      source: existingMedia.source || mediaData.source,
+      episodeCount:
+        Math.max(existingMedia.episodeCount || 0, mediaData.episodeCount || 0) || undefined,
+      duration: existingMedia.duration || mediaData.duration,
+      metadata: mergedMetadata,
+      downloadUrls: mergedDownloadUrls.length > 0 ? mergedDownloadUrls : existingMedia.downloadUrls,
+    };
+
+    return this.mediaResourceService.update(existingMedia.id, updatePayload);
   }
 
   private async syncPlaySources(
@@ -1019,10 +1424,11 @@ export class DataCollectionService {
   private buildRequestConfig(
     source: CrawlerSource,
     targetUrl: string,
+    purpose: ProxyRequestPurpose,
   ): Pick<AxiosRequestConfig, 'proxy'> {
     const proxyMode = source.collectionPolicy.proxyMode;
 
-    if (proxyMode === 'direct') {
+    if (proxyMode === 'direct' || !this.shouldUseProxyForRequest(source, purpose)) {
       return {};
     }
 
@@ -1031,17 +1437,29 @@ export class DataCollectionService {
 
     if (!proxy) {
       if (proxyMode === 'proxy-required') {
-        throw new Error(`数据源 ${source.name} 要求代理，但当前没有可用代理`);
+        throw new Error(`数据源 ${source.name} 的 ${purpose} 请求要求代理，但当前没有可用代理`);
       }
 
-      this.logger.warn(`数据源 ${source.name} 未找到可用代理，回退到直连模式`);
+      this.logger.warn(`数据源 ${source.name} 的 ${purpose} 请求未找到可用代理，回退到直连模式`);
       return {};
     }
 
-    this.logger.log(`数据源 ${source.name} 使用代理 ${proxy.host}:${proxy.port}`);
+    this.logger.log(`数据源 ${source.name} 的 ${purpose} 请求使用代理 ${proxy.host}:${proxy.port}`);
     return {
       proxy: this.createAxiosProxyConfig(proxy),
     };
+  }
+
+  private shouldUseProxyForRequest(source: CrawlerSource, purpose: ProxyRequestPurpose): boolean {
+    switch (purpose) {
+      case 'discovery':
+        return source.collectionPolicy.proxyForDiscovery;
+      case 'connectivity':
+        return source.collectionPolicy.proxyForConnectivityCheck;
+      case 'detail':
+      default:
+        return source.collectionPolicy.proxyForDetail;
+    }
   }
 
   private createAxiosProxyConfig(proxy: ProxyInfo): AxiosProxyConfig {

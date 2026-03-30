@@ -1,7 +1,8 @@
-import { IsString, IsOptional, IsArray } from 'class-validator';
+import { PartialType } from '@nestjs/swagger';
+import { IsArray, IsBoolean, IsOptional, IsString } from 'class-validator';
 
 /**
- * 创建角色DTO
+ * 创建角色 DTO
  */
 export class CreateRoleDto {
   @IsString()
@@ -17,8 +18,14 @@ export class CreateRoleDto {
   permissions?: string[];
 }
 
+export class UpdateRoleDto extends PartialType(CreateRoleDto) {
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
 /**
- * 创建权限DTO
+ * 创建权限 DTO
  */
 export class CreatePermissionDto {
   @IsString()
@@ -38,4 +45,10 @@ export class CreatePermissionDto {
   @IsOptional()
   @IsString()
   action?: string;
+}
+
+export class UpdatePermissionDto extends PartialType(CreatePermissionDto) {
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }

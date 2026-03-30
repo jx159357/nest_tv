@@ -25,8 +25,11 @@ export interface CrawlResultData {
   genres?: string[];
   releaseDate?: string;
   episodeCount?: number;
+  duration?: number;
   poster?: string;
+  backdrop?: string;
   downloadUrls?: string[];
+  metadata?: Record<string, unknown>;
 }
 
 export interface CrawlResultResponse {
@@ -74,10 +77,22 @@ export interface SourceHealthSummary {
   dailyEnabled: boolean;
   dailyLimit: number;
   proxyMode: 'direct' | 'prefer-proxy' | 'proxy-required';
+  proxyForDiscovery: boolean;
+  proxyForDetail: boolean;
+  proxyForConnectivityCheck: boolean;
   requirePlayableUrls: boolean;
   minimumPlayableUrls: number;
   suggestedProxyMode: 'direct' | 'prefer-proxy' | 'proxy-required';
   qualityScore: number;
+  extractionCoverage: number;
+  recentMedia7d: number;
+  qualityBreakdown: {
+    availability: number;
+    freshness: number;
+    extraction: number;
+    inventory: number;
+    validation: number;
+  };
   recommendation: string;
   totalPlaySources: number;
   activePlaySources: number;
@@ -92,6 +107,9 @@ export interface SourcePolicyUpdatePayload {
   dailyEnabled?: boolean;
   dailyLimit?: number;
   proxyMode?: 'direct' | 'prefer-proxy' | 'proxy-required';
+  proxyForDiscovery?: boolean;
+  proxyForDetail?: boolean;
+  proxyForConnectivityCheck?: boolean;
   requirePlayableUrls?: boolean;
   minimumPlayableUrls?: number;
 }
@@ -107,7 +125,19 @@ export interface CollectionSourceStatistics {
   recentPlaySources24h: number;
   activeRate: number;
   qualityScore: number;
+  extractionCoverage: number;
+  recentMedia7d: number;
+  qualityBreakdown: {
+    availability: number;
+    freshness: number;
+    extraction: number;
+    inventory: number;
+    validation: number;
+  };
   proxyMode: 'direct' | 'prefer-proxy' | 'proxy-required';
+  proxyForDiscovery: boolean;
+  proxyForDetail: boolean;
+  proxyForConnectivityCheck: boolean;
   suggestedProxyMode: 'direct' | 'prefer-proxy' | 'proxy-required';
   lastCrawled: string | null;
   lastPlaySourceCreatedAt: string | null;

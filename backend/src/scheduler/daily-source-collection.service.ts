@@ -31,10 +31,51 @@ export interface DailySourceCollectionRunSummary {
   message?: string;
 }
 
+export interface DailySourceCollectionRunRecord extends DailySourceCollectionRunSummary {
+  id: string;
+}
+
+export interface DailySourceCollectionDashboardMetrics {
+  totalRuns: number;
+  successfulRuns: number;
+  errorRuns: number;
+  skippedRuns: number;
+  manualRuns: number;
+  scheduledRuns: number;
+  successRate: number;
+  averageDurationMs: number;
+  averageAttempted: number;
+  averageCreatedMedia: number;
+  averageCreatedPlaySources: number;
+  lastSuccessAt?: string;
+  lastErrorAt?: string;
+  failureStreak: number;
+}
+
+export interface DailySourceCollectionIssueSource {
+  sourceName: string;
+  affectedRuns: number;
+  totalFailed: number;
+  totalErrors: number;
+  latestStatus: DailySourceCollectionRunSummary['status'];
+  latestRunAt?: string;
+  latestError?: string;
+}
+
+export interface DailySourceCollectionDashboardSummary {
+  current: DailySourceCollectionRunSummary;
+  history: DailySourceCollectionRunRecord[];
+  metrics: DailySourceCollectionDashboardMetrics;
+  issueSources: DailySourceCollectionIssueSource[];
+}
+
 @Injectable()
 export class DailySourceCollectionService {
   private readonly logger = new Logger(DailySourceCollectionService.name);
+  private readonly historyLimit = 12;
   private isRunning = false;
+  private runSequence = 0;
+  private runHistory: DailySourceCollectionRunRecord[] = [];
   private lastRunSummary: DailySourceCollectionRunSummary = {
     status: 'idle',
     trigger: 'manual',
@@ -46,7 +87,7 @@ export class DailySourceCollectionService {
     totalCreatedPlaySources: 0,
     totalSkippedPlaySources: 0,
     sourceSummaries: [],
-    message: '尚未执行每日播放源采集任务',
+    message: 'No daily source collection run has been executed yet.',
   };
 
   constructor(
@@ -61,12 +102,110 @@ export class DailySourceCollectionService {
   }
 
   getLastRunSummary(): DailySourceCollectionRunSummary {
-    return { ...this.lastRunSummary, sourceSummaries: [...this.lastRunSummary.sourceSummaries] };
+    return this.cloneRunSummary(this.lastRunSummary);
+  }
+
+  getRunHistory(limit = 8): DailySourceCollectionRunRecord[] {
+    return this.runHistory.slice(0, limit).map(record => this.cloneRunRecord(record));
+  }
+
+  getDashboardSummary(limit = 8): DailySourceCollectionDashboardSummary {
+    const history = this.getRunHistory(limit);
+    const totalRuns = history.length;
+    const successfulRuns = history.filter(run => run.status === 'success').length;
+    const errorRuns = history.filter(run => run.status === 'error').length;
+    const skippedRuns = history.filter(run => run.status === 'skipped').length;
+    const manualRuns = history.filter(run => run.trigger === 'manual').length;
+    const scheduledRuns = history.filter(run => run.trigger === 'scheduled').length;
+    const finishedRuns = history.filter(run => typeof run.durationMs === 'number');
+    const lastSuccessAt = history.find(run => run.status === 'success')?.completedAt;
+    const lastErrorAt = history.find(run => run.status === 'error')?.completedAt;
+
+    let failureStreak = 0;
+    for (const run of history) {
+      if (run.status !== 'error') {
+        break;
+      }
+      failureStreak += 1;
+    }
+
+    const issueSourceMap = new Map<string, DailySourceCollectionIssueSource>();
+    for (const run of history) {
+      for (const summary of run.sourceSummaries) {
+        if (summary.failed <= 0 && summary.errors.length === 0) {
+          continue;
+        }
+
+        const existing = issueSourceMap.get(summary.sourceName);
+        if (!existing) {
+          issueSourceMap.set(summary.sourceName, {
+            sourceName: summary.sourceName,
+            affectedRuns: 1,
+            totalFailed: summary.failed,
+            totalErrors: summary.errors.length,
+            latestStatus: run.status,
+            latestRunAt: run.completedAt || run.startedAt,
+            latestError: summary.errors[0],
+          });
+          continue;
+        }
+
+        existing.affectedRuns += 1;
+        existing.totalFailed += summary.failed;
+        existing.totalErrors += summary.errors.length;
+      }
+    }
+
+    return {
+      current: this.getLastRunSummary(),
+      history,
+      metrics: {
+        totalRuns,
+        successfulRuns,
+        errorRuns,
+        skippedRuns,
+        manualRuns,
+        scheduledRuns,
+        successRate: totalRuns > 0 ? Math.round((successfulRuns / totalRuns) * 100) : 0,
+        averageDurationMs:
+          finishedRuns.length > 0
+            ? Math.round(
+                finishedRuns.reduce((sum, run) => sum + (run.durationMs || 0), 0) /
+                  finishedRuns.length,
+              )
+            : 0,
+        averageAttempted:
+          totalRuns > 0
+            ? Math.round(history.reduce((sum, run) => sum + run.totalAttempted, 0) / totalRuns)
+            : 0,
+        averageCreatedMedia:
+          totalRuns > 0
+            ? Math.round(history.reduce((sum, run) => sum + run.totalCreatedMedia, 0) / totalRuns)
+            : 0,
+        averageCreatedPlaySources:
+          totalRuns > 0
+            ? Math.round(
+                history.reduce((sum, run) => sum + run.totalCreatedPlaySources, 0) / totalRuns,
+              )
+            : 0,
+        lastSuccessAt,
+        lastErrorAt,
+        failureStreak,
+      },
+      issueSources: [...issueSourceMap.values()]
+        .sort(
+          (left, right) =>
+            right.affectedRuns - left.affectedRuns ||
+            right.totalErrors - left.totalErrors ||
+            right.totalFailed - left.totalFailed,
+        )
+        .slice(0, 6),
+    };
   }
 
   async runCollection(trigger: 'scheduled' | 'manual'): Promise<DailySourceCollectionRunSummary> {
     if (!this.isCollectionEnabled()) {
-      this.lastRunSummary = {
+      return this.finalizeRun({
         status: 'skipped',
         trigger,
         startedAt: new Date().toISOString(),
@@ -80,15 +219,14 @@ export class DailySourceCollectionService {
         totalCreatedPlaySources: 0,
         totalSkippedPlaySources: 0,
         sourceSummaries: [],
-        message: '已通过配置禁用每日播放源采集任务',
-      };
-      return this.getLastRunSummary();
+        message: 'Daily source collection is disabled by configuration.',
+      });
     }
 
     if (this.isRunning) {
       return {
         ...this.getLastRunSummary(),
-        message: '每日播放源采集任务正在运行中',
+        message: 'Daily source collection is already running.',
       };
     }
 
@@ -103,8 +241,8 @@ export class DailySourceCollectionService {
     });
 
     if (orderedSources.length === 0) {
-      this.logger.log('没有启用的数据采集源，跳过每日播放源采集任务');
-      this.lastRunSummary = {
+      this.logger.log('No enabled collection sources were found, skipping daily collection run.');
+      return this.finalizeRun({
         status: 'skipped',
         trigger,
         startedAt: startedAt.toISOString(),
@@ -118,9 +256,8 @@ export class DailySourceCollectionService {
         totalCreatedPlaySources: 0,
         totalSkippedPlaySources: 0,
         sourceSummaries: [],
-        message: '没有启用的数据采集源，已跳过任务',
-      };
-      return this.getLastRunSummary();
+        message: 'No enabled collection sources were available for this run.',
+      });
     }
 
     this.isRunning = true;
@@ -136,10 +273,10 @@ export class DailySourceCollectionService {
       totalCreatedPlaySources: 0,
       totalSkippedPlaySources: 0,
       sourceSummaries: [],
-      message: `开始执行每日播放源采集任务，数据源数量: ${orderedSources.length}`,
+      message: `Daily collection started for ${orderedSources.length} sources.`,
     };
 
-    this.logger.log(`开始每日播放源采集任务，数据源数量: ${orderedSources.length}`);
+    this.logger.log(`Starting daily source collection for ${orderedSources.length} sources.`);
 
     let totalAttempted = 0;
     let totalSucceeded = 0;
@@ -152,14 +289,15 @@ export class DailySourceCollectionService {
 
     try {
       for (const source of orderedSources) {
+        const effectiveDailyLimit = this.getEffectivePerSourceLimit(
+          source.collectionPolicy.dailyLimit,
+          healthMap.get(source.name)?.qualityScore,
+        );
+
         try {
-          const perSourceLimit = this.getEffectivePerSourceLimit(
-            source.collectionPolicy.dailyLimit,
-            healthMap.get(source.name)?.qualityScore,
-          );
           const summary = await this.dataCollectionService.collectPopularResources(
             source.name,
-            perSourceLimit,
+            effectiveDailyLimit,
           );
 
           sourceSummaries.push(summary);
@@ -172,13 +310,31 @@ export class DailySourceCollectionService {
           totalSkippedPlaySources += summary.skippedPlaySources;
 
           if (summary.errors.length > 0) {
-            this.logger.warn(`${source.name} 采集出现错误: ${summary.errors.join('; ')}`);
+            this.logger.warn(
+              `${source.name} collection returned errors: ${summary.errors.join('; ')}`,
+            );
           }
         } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : 'Unknown error';
           this.logger.error(
-            `${source.name} 每日播放源采集失败: ${error instanceof Error ? error.message : '未知错误'}`,
+            `${source.name} daily collection failed: ${message}`,
             error instanceof Error ? error.stack : undefined,
           );
+
+          sourceSummaries.push({
+            sourceName: source.name,
+            effectiveDailyLimit,
+            attempted: 0,
+            succeeded: 0,
+            failed: 1,
+            skippedNoPlayableUrls: 0,
+            createdMedia: 0,
+            createdPlaySources: 0,
+            skippedPlaySources: 0,
+            urls: [],
+            errors: [message],
+          });
+          totalFailed += 1;
         }
       }
 
@@ -189,13 +345,13 @@ export class DailySourceCollectionService {
       const durationMs = Date.now() - startedAt.getTime();
 
       this.logger.log(
-        `每日播放源采集完成: 尝试 ${totalAttempted}，成功 ${totalSucceeded}，失败 ${totalFailed}，` +
-          `因无可播链接跳过 ${totalSkippedNoPlayableUrls}，新建媒体 ${totalCreatedMedia}，` +
-          `新建播放源 ${totalCreatedPlaySources}，跳过重复 ${totalSkippedPlaySources}；` +
-          `校验播放源 ${validationSummary.checked}，有效 ${validationSummary.active}，失效 ${validationSummary.inactive}`,
+        `Daily source collection completed: attempted ${totalAttempted}, succeeded ${totalSucceeded}, failed ${totalFailed}, ` +
+          `skipped-no-playable ${totalSkippedNoPlayableUrls}, created-media ${totalCreatedMedia}, ` +
+          `created-play-sources ${totalCreatedPlaySources}, skipped-play-sources ${totalSkippedPlaySources}, ` +
+          `validated ${validationSummary.checked} recent sources.`,
       );
 
-      this.lastRunSummary = {
+      return this.finalizeRun({
         status: 'success',
         trigger,
         startedAt: startedAt.toISOString(),
@@ -210,10 +366,16 @@ export class DailySourceCollectionService {
         totalSkippedPlaySources,
         sourceSummaries,
         validationSummary,
-        message: '每日播放源采集任务执行完成',
-      };
+        message: 'Daily source collection finished successfully.',
+      });
     } catch (error: unknown) {
-      this.lastRunSummary = {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Daily source collection run failed: ${message}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+
+      return this.finalizeRun({
         status: 'error',
         trigger,
         startedAt: startedAt.toISOString(),
@@ -227,16 +389,41 @@ export class DailySourceCollectionService {
         totalCreatedPlaySources,
         totalSkippedPlaySources,
         sourceSummaries,
-        message: error instanceof Error ? error.message : '未知错误',
-      };
-      this.logger.error(
-        `每日播放源采集任务执行失败: ${error instanceof Error ? error.message : '未知错误'}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+        message,
+      });
     } finally {
       this.isRunning = false;
     }
+  }
 
+  private cloneRunSummary(
+    summary: DailySourceCollectionRunSummary,
+  ): DailySourceCollectionRunSummary {
+    return {
+      ...summary,
+      sourceSummaries: summary.sourceSummaries.map(sourceSummary => ({
+        ...sourceSummary,
+        urls: [...sourceSummary.urls],
+        errors: [...sourceSummary.errors],
+      })),
+      validationSummary: summary.validationSummary ? { ...summary.validationSummary } : undefined,
+    };
+  }
+
+  private cloneRunRecord(record: DailySourceCollectionRunRecord): DailySourceCollectionRunRecord {
+    return {
+      ...this.cloneRunSummary(record),
+      id: record.id,
+    };
+  }
+
+  private finalizeRun(summary: DailySourceCollectionRunSummary) {
+    this.lastRunSummary = this.cloneRunSummary(summary);
+    this.runHistory.unshift({
+      ...this.cloneRunSummary(summary),
+      id: `${Date.now()}-${this.runSequence++}`,
+    });
+    this.runHistory = this.runHistory.slice(0, this.historyLimit);
     return this.getLastRunSummary();
   }
 

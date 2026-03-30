@@ -65,6 +65,9 @@ export class DataCollectionController {
       dailyEnabled?: boolean;
       dailyLimit?: number;
       proxyMode?: 'direct' | 'prefer-proxy' | 'proxy-required';
+      proxyForDiscovery?: boolean;
+      proxyForDetail?: boolean;
+      proxyForConnectivityCheck?: boolean;
       requirePlayableUrls?: boolean;
       minimumPlayableUrls?: number;
     },

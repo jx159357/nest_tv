@@ -95,6 +95,16 @@ export const buildAttentionSourceItem = (
     score += 2;
   }
 
+  if (source.extractionCoverage < 40) {
+    reasons.push(`提取覆盖偏低（${source.extractionCoverage}%）`);
+    highlights.push(`提取 ${source.extractionCoverage}%`);
+    score += 3;
+  } else if (source.extractionCoverage < 60) {
+    reasons.push(`提取覆盖待提升（${source.extractionCoverage}%）`);
+    highlights.push(`提取 ${source.extractionCoverage}%`);
+    score += 2;
+  }
+
   if (source.activeRate < 35) {
     reasons.push(`可用率偏低（${source.activeRate}%）`);
     highlights.push(`可用率 ${source.activeRate}%`);
@@ -134,6 +144,12 @@ export const buildAttentionSourceItem = (
     reasons.push('近期没有采集入库记录');
     highlights.push('无入库');
     score += 3;
+  }
+
+  if (source.dailyEnabled && source.recentMedia7d === 0 && source.totalCrawled > 0) {
+    reasons.push('最近 7 天没有新增媒体');
+    highlights.push('7d 0 新增');
+    score += 2;
   }
 
   if (source.activeMedia === 0 && source.totalCrawled > 0) {

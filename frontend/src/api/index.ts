@@ -240,5 +240,6 @@ export { mediaApi } from './media';
 export { playSourceApi } from './playSource';
 export { authApi } from './auth';
 export { recommendationsApi } from './recommendations';
+export { torrentApi } from './torrent';
 
 export default ApiClient;

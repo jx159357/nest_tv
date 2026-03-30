@@ -523,6 +523,9 @@
                     {{ item.sourceName || item.name || '未命名播放源' }}
                   </div>
                   <div class="line-clamp-1 text-xs text-gray-500">{{ item.url }}</div>
+                  <div v-if="getValidationSummary(item)" class="mt-1 line-clamp-2 text-xs text-gray-400">
+                    {{ getValidationSummary(item) }}
+                  </div>
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-600">
                   <div>{{ item.mediaResource?.title || `#${item.mediaResourceId}` }}</div>
@@ -1055,6 +1058,43 @@
       default:
         return 'rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700';
     }
+  };
+
+  const getValidationSummary = (item: PlaySource) => {
+    const validation = item.validationInfo as Record<string, unknown> | undefined;
+    if (!validation) {
+      if (item.type === 'magnet' && item.magnetInfo?.infoHash) {
+        return `磁力 infoHash: ${item.magnetInfo.infoHash}`;
+      }
+      return '';
+    }
+
+    const strategy = typeof validation.strategy === 'string' ? validation.strategy : '';
+    const message = typeof validation.message === 'string' ? validation.message : '';
+    const contentType = typeof validation.contentType === 'string' ? validation.contentType : '';
+    const providerName =
+      typeof validation.providerName === 'string' ? validation.providerName : item.providerName || '';
+    const infoHash = typeof validation.infoHash === 'string' ? validation.infoHash : item.magnetInfo?.infoHash;
+
+    if (strategy === 'parser') {
+      const playUrlCount = typeof validation.playUrlCount === 'number' ? validation.playUrlCount : 0;
+      return ['解析器 ' + (providerName || '未指定'), 'playUrls ' + playUrlCount, message]
+        .filter(Boolean)
+        .join(' · ');
+    }
+
+    if (strategy === 'magnet') {
+      return ['磁力 ' + (infoHash || '未知 hash'), message].filter(Boolean).join(' · ');
+    }
+
+    if (strategy === 'http') {
+      const statusCode = typeof validation.statusCode === 'number' ? validation.statusCode : '';
+      return [statusCode ? 'HTTP ' + statusCode : '', contentType, message]
+        .filter(Boolean)
+        .join(' · ');
+    }
+
+    return message;
   };
 
   const getPlaySourceRowClass = (item: PlaySource) => {
