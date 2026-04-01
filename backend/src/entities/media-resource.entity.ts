@@ -15,6 +15,7 @@ import { WatchHistory } from './watch-history.entity';
 import { PlaySource } from './play-source.entity';
 import { Recommendation } from './recommendation.entity';
 import { IPTVChannel } from './iptv-channel.entity';
+import { DownloadTask } from './download-task.entity';
 
 /**
  * 影视分类枚举
@@ -149,4 +150,8 @@ export class MediaResource {
   // 关联IPTV频道（多对多）
   @ManyToMany(() => IPTVChannel, iptvChannel => iptvChannel.mediaResources)
   iptvChannels: IPTVChannel[];
+
+  // 关联下载任务（一对多）
+  @OneToMany(() => DownloadTask, downloadTask => downloadTask.mediaResource)
+  downloadTasks: DownloadTask[];
 }

@@ -14,7 +14,7 @@ export const mediaApi = {
 
   // 根据ID获取媒体资源详情
   getMediaById: (id: string) => {
-    return ApiClient.get<MediaResource>(`/media/${id}`, undefined, false); // 不使用缓存
+    return ApiClient.get<MediaResource>(`/media/${id}`, undefined, false); // 不使用缓�?
   },
 
   // 创建媒体资源
@@ -46,14 +46,14 @@ export const mediaApi = {
     });
   },
 
-  // 获取最新媒体资源
+  // 获取最新媒体资�?
   getLatestMedia: (limit?: number, params?: MediaQueryParams) => {
     return ApiClient.get<MediaResource[]>('/media/latest', {
       params: { limit, ...params },
     });
   },
 
-  // 获取高评分媒体资源
+  // ��ȡ������ý����Դ
   getTopRatedMedia: (limit?: number, minRating?: number, params?: MediaQueryParams) => {
     return ApiClient.get<MediaResource[]>('/recommendations/top-rated', {
       params: { limit, minRating, ...params },
@@ -94,14 +94,14 @@ export const mediaApi = {
     return ApiClient.post<void>(`/media/${mediaId}/favorites`);
   },
 
-  // 获取用户收藏的媒体资源
+  // 获取用户收藏的媒体资�?
   getFavorites: (params?: MediaQueryParams) => {
-    return ApiClient.get<PaginatedResponse<MediaResource>>('/media/favorites', { params });
+    return ApiClient.get<PaginatedResponse<MediaResource>>('/media/favorites', { params }, false);
   },
 
   // 获取观看历史
   getWatchHistory: (params?: MediaQueryParams) => {
-    return ApiClient.get<MediaResource[]>('/watch-history', { params });
+    return ApiClient.get<MediaResource[]>('/watch-history', { params }, false);
   },
 
   // 获取统计信息
@@ -111,3 +111,5 @@ export const mediaApi = {
 
   clearCache: () => undefined,
 };
+
+

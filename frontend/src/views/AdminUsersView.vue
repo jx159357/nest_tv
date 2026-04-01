@@ -11,11 +11,11 @@
           type="text"
           class="w-64 rounded-lg border border-gray-300 px-3 py-2 text-sm"
           placeholder="搜索用户名 / 邮箱 / 昵称"
-          @keyup.enter="loadUsers(1)"
+          @keyup.enter="applyFilters(1)"
         />
         <button
           class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          @click="loadUsers(1)"
+          @click="applyFilters(1)"
         >
           搜索
         </button>
@@ -67,6 +67,12 @@
                 <td class="px-4 py-3 text-sm text-gray-900">
                   <div class="font-medium">{{ item.nickname || item.username }}</div>
                   <div class="text-xs text-gray-500">@{{ item.username }}</div>
+                  <router-link
+                    :to="{ name: 'admin-download-tasks', query: { userId: String(item.id) } }"
+                    class="mt-2 inline-flex text-xs text-indigo-600 hover:text-indigo-700"
+                  >
+                    查看下载任务
+                  </router-link>
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-600">{{ item.email }}</td>
                 <td class="px-4 py-3 text-sm text-gray-600">{{ item.role }}</td>
@@ -95,7 +101,7 @@
             <button
               :disabled="page <= 1"
               class="rounded border px-3 py-1 disabled:opacity-50"
-              @click="loadUsers(page - 1)"
+              @click="applyFilters(page - 1)"
             >
               上一页
             </button>
@@ -103,7 +109,7 @@
             <button
               :disabled="page >= totalPages"
               class="rounded border px-3 py-1 disabled:opacity-50"
-              @click="loadUsers(page + 1)"
+              @click="applyFilters(page + 1)"
             >
               下一页
             </button>
@@ -115,10 +121,13 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue';
+  import { ref, watch } from 'vue';
+  import { useRoute, useRouter } from 'vue-router';
   import { adminApi } from '@/api/admin';
   import type { User } from '@/types/user';
 
+  const route = useRoute();
+  const router = useRouter();
   const users = ref<User[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
@@ -126,6 +135,36 @@
   const page = ref(1);
   const totalPages = ref(1);
   const total = ref(0);
+
+  const readSingleQuery = (value: unknown) => (Array.isArray(value) ? value[0] : value);
+
+  const syncFiltersFromRoute = () => {
+    const queryPage = Number(readSingleQuery(route.query.page));
+    const querySearch = readSingleQuery(route.query.search);
+
+    page.value = Number.isFinite(queryPage) && queryPage > 0 ? queryPage : 1;
+    search.value = typeof querySearch === 'string' ? querySearch : '';
+  };
+
+  const buildUsersQuery = (nextPage = 1) => {
+    const query: Record<string, string> = {};
+
+    if (nextPage > 1) {
+      query.page = String(nextPage);
+    }
+    if (search.value.trim()) {
+      query.search = search.value.trim();
+    }
+
+    return query;
+  };
+
+  const applyFilters = async (nextPage = 1) => {
+    await router.replace({
+      name: 'admin-users',
+      query: buildUsersQuery(nextPage),
+    });
+  };
 
   const loadUsers = async (nextPage = page.value) => {
     loading.value = true;
@@ -142,6 +181,12 @@
       page.value = response.page;
       total.value = response.total;
       totalPages.value = Math.max(response.totalPages, 1);
+      if (response.page !== nextPage) {
+        await router.replace({
+          name: 'admin-users',
+          query: buildUsersQuery(response.page),
+        });
+      }
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : '加载用户列表失败';
     } finally {
@@ -157,7 +202,12 @@
     return new Date(value).toLocaleString('zh-CN');
   };
 
-  onMounted(() => {
-    void loadUsers();
-  });
+  watch(
+    () => route.query,
+    () => {
+      syncFiltersFromRoute();
+      void loadUsers(page.value);
+    },
+    { immediate: true },
+  );
 </script>

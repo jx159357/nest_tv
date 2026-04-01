@@ -77,6 +77,36 @@ CREATE TABLE IF NOT EXISTS watch_history (
   UNIQUE KEY unique_user_media_episode (userId, mediaResourceId, episodeNumber)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 创建下载任务表
+CREATE TABLE IF NOT EXISTS download_tasks (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  clientId VARCHAR(80) NOT NULL,
+  userId INT NOT NULL,
+  mediaResourceId INT NULL,
+  url TEXT NOT NULL,
+  type ENUM('direct', 'torrent', 'magnet') DEFAULT 'direct',
+  status ENUM('pending', 'downloading', 'paused', 'completed', 'error', 'cancelled') DEFAULT 'pending',
+  progress INT DEFAULT 0,
+  speed BIGINT DEFAULT 0,
+  downloaded BIGINT DEFAULT 0,
+  total BIGINT DEFAULT 0,
+  fileName VARCHAR(255) NOT NULL,
+  filePath VARCHAR(500) NULL,
+  sourceLabel VARCHAR(120) NULL,
+  handler ENUM('browser', 'system') DEFAULT 'browser',
+  launchCount INT DEFAULT 0,
+  lastLaunchedAt DATETIME NULL,
+  completedAt DATETIME NULL,
+  error TEXT NULL,
+  metadata JSON NULL,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (mediaResourceId) REFERENCES media_resources(id) ON DELETE SET NULL,
+  UNIQUE KEY unique_user_clientId (userId, clientId),
+  INDEX idx_download_task_status (userId, status),
+  INDEX idx_download_task_updated (userId, updatedAt)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- 创建推荐表
 CREATE TABLE IF NOT EXISTS recommendations (
   id INT PRIMARY KEY AUTO_INCREMENT,

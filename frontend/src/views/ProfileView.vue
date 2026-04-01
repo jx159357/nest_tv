@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <!-- å¯¼èˆªæ  -->
+    <!-- å¯¼èˆªæ ?-->
     <nav class="bg-white shadow-sm">
       <div class="container-responsive">
         <div class="flex justify-between h-16">
@@ -11,7 +11,7 @@
           <div class="flex items-center space-x-4">
             <router-link to="/" class="text-gray-700 hover:text-gray-900"> é¦–é¡µ </router-link>
             <button class="text-gray-700 hover:text-gray-900" @click="handleLogout">
-              é€€å‡ºç™»å½•
+              é€€å‡ºç™»å½?
             </button>
           </div>
         </div>
@@ -47,7 +47,7 @@
                 <span class="text-gray-900">{{ formatDate(authStore.user?.createdAt) }}</span>
               </div>
               <div v-if="authStore.user?.lastLoginAt" class="flex justify-between text-sm">
-                <span class="text-gray-600">æœ€åç™»å½•:</span>
+                <span class="text-gray-600">æœ€åç™»å½?</span>
                 <span class="text-gray-900">{{ formatDate(authStore.user?.lastLoginAt) }}</span>
               </div>
               <div class="pt-4">
@@ -68,7 +68,7 @@
           <div class="card-responsive">
             <h2 class="text-xl font-bold text-gray-900 mb-6">è§‚çœ‹ç»Ÿè®¡</h2>
 
-            <div v-if="statsLoading" class="text-center py-4">åŠ è½½ä¸­...</div>
+            <div v-if="statsLoading" class="text-center py-4">åŠ è½½ä¸?..</div>
 
             <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div class="text-center">
@@ -78,14 +78,14 @@
 
               <div class="text-center">
                 <div class="text-3xl font-bold text-green-600">{{ userStats.completed }}</div>
-                <div class="text-sm text-gray-600 mt-1">å·²çœ‹å®Œ</div>
+                <div class="text-sm text-gray-600 mt-1">ÒÑ¿´Íê</div>
               </div>
 
               <div class="text-center">
                 <div class="text-3xl font-bold text-blue-600">
                   {{ formatWatchTime(userStats.totalWatchTime) }}
                 </div>
-                <div class="text-sm text-gray-600 mt-1">æ€»è§‚çœ‹æ—¶é•¿</div>
+                <div class="text-sm text-gray-600 mt-1">×Ü¹Û¿´Ê±³¤</div>
               </div>
             </div>
           </div>
@@ -102,14 +102,14 @@
               </router-link>
             </div>
 
-            <div v-if="continueLoading" class="text-center py-4">åŠ è½½ä¸­...</div>
+            <div v-if="continueLoading" class="text-center py-4">åŠ è½½ä¸?..</div>
 
             <div v-else-if="continueWatching.length > 0" class="space-y-4">
               <div
                 v-for="item in continueWatching"
                 :key="item.id"
                 class="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
-                @click="goToWatch(item.mediaResource.id)"
+                @click="goToWatch(item)"
               >
                 <div class="flex-shrink-0">
                   <img
@@ -139,19 +139,19 @@
               </div>
             </div>
 
-            <div v-else class="text-center py-8 text-gray-500">æš‚æ— ç»§ç»­è§‚çœ‹çš„å†…å®¹</div>
+            <div v-else class="text-center py-8 text-gray-500">ÔİÎŞ¼ÌĞø¹Û¿´µÄÄÚÈİ</div>
           </div>
 
-          <!-- å·²çœ‹å®Œ -->
+          <!-- å·²çœ‹å®?-->
           <div class="card-responsive">
             <div class="flex justify-between items-center mb-6">
-              <h2 class="text-xl font-bold text-gray-900">å·²çœ‹å®Œ</h2>
+              <h2 class="text-xl font-bold text-gray-900">ÒÑ¿´Íê</h2>
               <router-link to="/completed" class="text-indigo-600 hover:text-indigo-500 text-sm">
                 æŸ¥çœ‹å…¨éƒ¨
               </router-link>
             </div>
 
-            <div v-if="completedLoading" class="text-center py-4">åŠ è½½ä¸­...</div>
+            <div v-if="completedLoading" class="text-center py-4">åŠ è½½ä¸?..</div>
 
             <div v-else-if="completed.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div
@@ -181,7 +181,7 @@
                       {{ item.mediaResource.title }}
                     </h3>
                     <div class="text-sm text-gray-600">
-                      {{ item.mediaResource.rating.toFixed(1) }} åˆ†
+                      {{ formatRating(item.mediaResource.rating) }} åˆ?
                     </div>
                   </div>
                 </div>
@@ -240,7 +240,7 @@
       });
       continueWatching.value = continueResponse;
 
-      // åŠ è½½å·²çœ‹å®Œåˆ—è¡¨
+      // ¼ÓÔØÒÑ¿´ÍêÁĞ±í
       const completedResponse = await watchHistoryApi.getCompleted(authStore.user.id, { limit: 4 });
       completed.value = completedResponse.data || [];
     } catch (error) {
@@ -263,6 +263,10 @@
     return date.toLocaleDateString('zh-CN');
   };
 
+  const formatRating = rating => {
+    return typeof rating === 'number' && Number.isFinite(rating) ? rating.toFixed(1) : '¡ª';
+  };
+
   const formatProgress = (currentTime, duration) => {
     if (!currentTime || !duration) return '0%';
     const percentage = Math.round((currentTime / duration) * 100);
@@ -282,7 +286,18 @@
     }
   };
 
-  const goToWatch = mediaId => {
+  const goToWatch = item => {
+    const mediaId = item?.mediaResource?.id;
+    if (!mediaId) {
+      return;
+    }
+
+    const currentTime = Number(item?.currentTime || 0);
+    if (currentTime > 0) {
+      router.push(`/watch/${mediaId}?time=${currentTime}`);
+      return;
+    }
+
     router.push(`/watch/${mediaId}`);
   };
 
@@ -299,3 +314,9 @@
     loadUserProfile();
   });
 </script>
+
+
+
+
+
+

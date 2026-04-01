@@ -24,10 +24,14 @@ export interface ParsedMagnetResult {
 
 export interface TorrentInfoResult {
   infoHash: string;
+  magnetUri: string;
   name: string;
   size: string | number | null;
   files: Array<{ name: string; size?: number }>;
   announce: string[];
+  urlList: string[];
+  keywords: string[];
+  exactSources: string[];
   relatedSourcesCount: number;
   linkedMedia: Array<{
     id: number;
@@ -93,10 +97,14 @@ export class TorrentService {
 
     return {
       infoHash: normalizedHash,
+      magnetUri: primarySource.url,
       name: parsed.name || primarySource.sourceName || linkedMedia[0]?.title || normalizedHash,
       size: magnetInfo?.size ?? null,
       files: magnetInfo?.files ?? [],
       announce: parsed.announce,
+      urlList: parsed.urlList,
+      keywords: parsed.keywords,
+      exactSources: parsed.exactSources,
       relatedSourcesCount: sources.length,
       linkedMedia,
     };

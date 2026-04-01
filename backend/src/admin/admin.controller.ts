@@ -8,40 +8,53 @@ import {
   Post,
   Query,
   UseGuards,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBody } from '@nestjs/swagger';
-import { AdminService } from './admin.service';
-import { AdminRole } from '../entities/admin-role.entity';
-import { AdminPermission } from '../entities/admin-permission.entity';
+import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AdminPermission } from '../entities/admin-permission.entity';
+import { AdminRole } from '../entities/admin-role.entity';
+import { AdminRoleGuard } from './admin-role.guard';
+import { AdminService } from './admin.service';
 import {
   CreatePermissionDto,
   CreateRoleDto,
   UpdatePermissionDto,
   UpdateRoleDto,
 } from './dto/create-admin.dto';
+import {
+  AdminDownloadTasksQueryDto,
+  AdminLogsQueryDto,
+  AdminMediaQueryDto,
+  AdminPlaySourcesQueryDto,
+  AdminSortOrderQuery,
+  AdminUsersQueryDto,
+  AdminWatchHistoryQueryDto,
+} from './dto/admin-query.dto';
 
-/**
- * 后台管理控制器
- * 提供系统管理、用户管理、内容管理等API接口
- */
-@ApiTags('后台管理')
+@ApiTags('admin')
 @Controller('admin')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, AdminRoleGuard)
+@UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  /**
-   * 创建角色
-   */
+  @Get('stats')
+  @ApiOperation({ summary: 'Get system stats' })
+  @ApiResponse({ status: 200, description: 'System stats loaded successfully' })
+  async getSystemStats() {
+    return await this.adminService.getSystemStats();
+  }
+
   @Post('roles')
-  @ApiOperation({ summary: '创建角色' })
+  @ApiOperation({ summary: 'Create role' })
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
         name: { type: 'string', example: 'content_admin' },
-        description: { type: 'string', example: '内容管理员' },
+        description: { type: 'string', example: 'Content administrator' },
         permissions: {
           type: 'array',
           items: { type: 'string' },
@@ -50,160 +63,139 @@ export class AdminController {
       },
     },
   })
-  @ApiResponse({ status: 201, description: '角色创建成功', type: AdminRole })
+  @ApiResponse({ status: 201, description: 'Role created successfully', type: AdminRole })
   async createRole(@Body() createRoleDto: CreateRoleDto) {
     return await this.adminService.createRole(createRoleDto);
   }
 
-  /**
-   * 获取所有角色
-   */
   @Get('roles')
-  @ApiOperation({ summary: '获取所有角色' })
-  @ApiResponse({ status: 200, description: '成功获取角色列表', type: [AdminRole] })
+  @ApiOperation({ summary: 'Get all roles' })
+  @ApiResponse({ status: 200, description: 'Role list loaded successfully', type: [AdminRole] })
   async findAllRoles(): Promise<AdminRole[]> {
     return await this.adminService.findAllRoles();
   }
 
-  /**
-   * 更新角色
-   */
   @Patch('roles/:id')
-  @ApiOperation({ summary: '更新角色' })
-  @ApiResponse({ status: 200, description: '角色更新成功', type: AdminRole })
+  @ApiOperation({ summary: 'Update role' })
+  @ApiResponse({ status: 200, description: 'Role updated successfully', type: AdminRole })
   async updateRole(@Param('id', ParseIntPipe) id: number, @Body() updateRoleDto: UpdateRoleDto) {
     return await this.adminService.updateRole(id, updateRoleDto);
   }
 
-  /**
-   * 创建权限
-   */
   @Post('permissions')
-  @ApiOperation({ summary: '创建权限' })
+  @ApiOperation({ summary: 'Create permission' })
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
         code: { type: 'string', example: 'user_create' },
-        name: { type: 'string', example: '创建用户' },
-        description: { type: 'string', example: '允许创建新用户' },
+        name: { type: 'string', example: 'Create user' },
+        description: { type: 'string', example: 'Allows creating new users' },
         resource: { type: 'string', example: 'user' },
         action: { type: 'string', example: 'create' },
       },
     },
   })
-  @ApiResponse({ status: 201, description: '权限创建成功', type: AdminPermission })
+  @ApiResponse({
+    status: 201,
+    description: 'Permission created successfully',
+    type: AdminPermission,
+  })
   async createPermission(@Body() createPermissionDto: CreatePermissionDto) {
     return await this.adminService.createPermission(createPermissionDto);
   }
 
-  /**
-   * 获取所有权限
-   */
   @Get('permissions')
-  @ApiOperation({ summary: '获取所有权限' })
-  @ApiResponse({ status: 200, description: '成功获取权限列表', type: [AdminPermission] })
+  @ApiOperation({ summary: 'Get all permissions' })
+  @ApiResponse({
+    status: 200,
+    description: 'Permission list loaded successfully',
+    type: [AdminPermission],
+  })
   async findAllPermissions(): Promise<AdminPermission[]> {
     return await this.adminService.findAllPermissions();
   }
 
-  /**
-   * 更新权限
-   */
   @Patch('permissions/:id')
-  @ApiOperation({ summary: '更新权限' })
-  @ApiResponse({ status: 200, description: '权限更新成功', type: AdminPermission })
+  @ApiOperation({ summary: 'Update permission' })
+  @ApiResponse({
+    status: 200,
+    description: 'Permission updated successfully',
+    type: AdminPermission,
+  })
   async updatePermission(
     @Param('id', ParseIntPipe) id: number,
     @Body() updatePermissionDto: UpdatePermissionDto,
   ) {
     return await this.adminService.updatePermission(id, updatePermissionDto);
   }
-  /**
-   * 获取管理日志
-   */
+
   @Get('logs')
-  @ApiOperation({ summary: '获取管理操作日志' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: '页码' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: '每页数量' })
-  @ApiQuery({ name: 'action', required: false, type: String, description: '操作类型筛选' })
-  @ApiQuery({ name: 'resource', required: false, type: String, description: '资源类型筛选' })
-  @ApiQuery({ name: 'status', required: false, type: String, description: '状态筛选' })
-  @ApiQuery({ name: 'roleId', required: false, type: Number, description: '角色ID筛选' })
-  @ApiResponse({ status: 200, description: '成功获取管理日志' })
-  async getAdminLogs(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
-    @Query('action') action?: string,
-    @Query('resource') resource?: string,
-    @Query('status') status?: 'success' | 'error' | 'warning',
-    @Query('roleId') roleId?: number,
-  ) {
-    const filters = { action, resource, status, roleId };
-    return await this.adminService.getAdminLogs(page, limit, filters);
+  @ApiOperation({ summary: 'Get admin logs' })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Page size' })
+  @ApiQuery({ name: 'action', required: false, type: String, description: 'Action filter' })
+  @ApiQuery({ name: 'resource', required: false, type: String, description: 'Resource filter' })
+  @ApiQuery({ name: 'status', required: false, type: String, description: 'Status filter' })
+  @ApiQuery({ name: 'roleId', required: false, type: Number, description: 'Role id filter' })
+  @ApiResponse({ status: 200, description: 'Admin log list loaded successfully' })
+  async getAdminLogs(@Query() queryDto: AdminLogsQueryDto) {
+    const { page = 1, limit = 20, action, resource, status, roleId } = queryDto;
+    return await this.adminService.getAdminLogs(page, limit, { action, resource, status, roleId });
   }
 
-  /**
-   * 获取用户管理列表
-   */
   @Get('users')
-  @ApiOperation({ summary: '获取用户管理列表' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: '页码' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: '每页数量' })
-  @ApiQuery({ name: 'search', required: false, type: String, description: '搜索关键词' })
-  @ApiResponse({ status: 200, description: '成功获取用户列表' })
-  getUsers(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
-    @Query('search') search?: string,
-  ) {
+  @ApiOperation({ summary: 'Get users' })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Page size' })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Search keyword' })
+  @ApiResponse({ status: 200, description: 'User list loaded successfully' })
+  getUsers(@Query() queryDto: AdminUsersQueryDto) {
+    const { page = 1, limit = 20, search } = queryDto;
     return this.adminService.getUsers(page, limit, search);
   }
 
-  /**
-   * 获取媒体资源管理列表
-   */
   @Get('media')
-  @ApiOperation({ summary: '获取媒体资源管理列表' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: '页码' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: '每页数量' })
-  @ApiQuery({ name: 'type', required: false, type: String, description: '类型筛选' })
-  @ApiResponse({ status: 200, description: '成功获取媒体资源列表' })
-  getMedia(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
-    @Query('type') type?: string,
-    @Query('search') search?: string,
-  ) {
+  @ApiOperation({ summary: 'Get media list' })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Page size' })
+  @ApiQuery({ name: 'type', required: false, type: String, description: 'Media type filter' })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Search keyword' })
+  @ApiResponse({ status: 200, description: 'Media list loaded successfully' })
+  getMedia(@Query() queryDto: AdminMediaQueryDto) {
+    const { page = 1, limit = 20, type, search } = queryDto;
     return this.adminService.getMedia(page, limit, type, search);
   }
 
-  /**
-   * 获取播放源管理列表
-   */
   @Get('play-sources')
-  @ApiOperation({ summary: '获取播放源管理列表' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: '页码' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: '每页数量' })
-  @ApiQuery({ name: 'type', required: false, type: String, description: '类型筛选' })
-  @ApiQuery({ name: 'source', required: false, type: String, description: '来源筛选' })
-  @ApiQuery({ name: 'sources', required: false, type: String, description: '多来源筛选，逗号分隔' })
-  @ApiQuery({ name: 'search', required: false, type: String, description: '来源/媒体/链接搜索' })
-  @ApiQuery({ name: 'status', required: false, type: String, description: '状态筛选' })
-  @ApiQuery({ name: 'sortBy', required: false, type: String, description: '排序字段' })
-  @ApiQuery({ name: 'sortOrder', required: false, type: String, description: '排序方向' })
-  @ApiResponse({ status: 200, description: '成功获取播放源列表' })
-  getPlaySources(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
-    @Query('type') type?: string,
-    @Query('source') source?: string,
-    @Query('sources') sources?: string,
-    @Query('search') search?: string,
-    @Query('status') status?: string,
-    @Query('sortBy') sortBy?: string,
-    @Query('sortOrder') sortOrder?: 'ASC' | 'DESC',
-  ) {
+  @ApiOperation({ summary: 'Get play sources' })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Page size' })
+  @ApiQuery({ name: 'type', required: false, type: String, description: 'Source type filter' })
+  @ApiQuery({ name: 'source', required: false, type: String, description: 'Source label filter' })
+  @ApiQuery({
+    name: 'sources',
+    required: false,
+    type: String,
+    description: 'Comma separated sources',
+  })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Search keyword' })
+  @ApiQuery({ name: 'status', required: false, type: String, description: 'Source status filter' })
+  @ApiQuery({ name: 'sortBy', required: false, type: String, description: 'Sort field' })
+  @ApiQuery({ name: 'sortOrder', required: false, type: String, description: 'Sort order' })
+  @ApiResponse({ status: 200, description: 'Play source list loaded successfully' })
+  getPlaySources(@Query() queryDto: AdminPlaySourcesQueryDto) {
+    const {
+      page = 1,
+      limit = 20,
+      type,
+      source,
+      sources,
+      search,
+      status,
+      sortBy,
+      sortOrder,
+    } = queryDto;
     return this.adminService.getPlaySources(
       page,
       limit,
@@ -213,33 +205,65 @@ export class AdminController {
       search,
       status,
       sortBy,
-      sortOrder,
+      sortOrder as AdminSortOrderQuery | undefined,
     );
   }
 
-  /**
-   * 获取观看历史管理列表
-   */
   @Get('watch-history')
-  @ApiOperation({ summary: '获取观看历史管理列表' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: '页码' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: '每页数量' })
-  @ApiQuery({ name: 'userId', required: false, type: Number, description: '用户ID筛选' })
-  @ApiResponse({ status: 200, description: '成功获取观看历史列表' })
-  getWatchHistory(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
-    @Query('userId') userId?: number,
-  ) {
+  @ApiOperation({ summary: 'Get watch history' })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Page size' })
+  @ApiQuery({ name: 'userId', required: false, type: Number, description: 'User id filter' })
+  @ApiResponse({ status: 200, description: 'Watch history loaded successfully' })
+  getWatchHistory(@Query() queryDto: AdminWatchHistoryQueryDto) {
+    const { page = 1, limit = 20, userId } = queryDto;
     return this.adminService.getWatchHistory(page, limit, userId);
   }
 
-  /**
-   * 系统健康检查
-   */
+  @Get('download-tasks')
+  @ApiOperation({ summary: 'Get download tasks' })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Page size' })
+  @ApiQuery({ name: 'status', required: false, type: String, description: 'Task status filter' })
+  @ApiQuery({ name: 'type', required: false, type: String, description: 'Task type filter' })
+  @ApiQuery({ name: 'userId', required: false, type: Number, description: 'User id filter' })
+  @ApiQuery({
+    name: 'mediaResourceId',
+    required: false,
+    type: Number,
+    description: 'Media id filter',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'File/source/url/user search',
+  })
+  @ApiResponse({ status: 200, description: 'Download task list loaded successfully' })
+  getDownloadTasks(@Query() queryDto: AdminDownloadTasksQueryDto) {
+    const {
+      page = 1,
+      limit = 20,
+      status,
+      type,
+      userId,
+      mediaResourceId,
+      search,
+    } = queryDto;
+    return this.adminService.getDownloadTasks(
+      page,
+      limit,
+      status,
+      type,
+      userId,
+      mediaResourceId,
+      search,
+    );
+  }
+
   @Get('health')
-  @ApiOperation({ summary: '系统健康检查' })
-  @ApiResponse({ status: 200, description: '系统状态正常' })
+  @ApiOperation({ summary: 'Health check' })
+  @ApiResponse({ status: 200, description: 'System is healthy' })
   healthCheck() {
     return {
       status: 'ok',

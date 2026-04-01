@@ -362,6 +362,7 @@
   import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { useAuthStore } from '@/stores/auth';
+  import { useDownloadsStore } from '@/stores/downloads';
   import { mediaApi, playSourceApi } from '@/api';
   import VideoPlayer from '@/components/ui/VideoPlayer.vue';
   import LocalVideoUpload from '@/components/ui/LocalVideoUpload.vue';
@@ -379,6 +380,7 @@
   const route = useRoute();
   const router = useRouter();
   const authStore = useAuthStore();
+  const downloadsStore = useDownloadsStore();
 
   // 视频播放器引用
   const videoPlayerRef = ref<InstanceType<typeof VideoPlayer> | null>(null);
@@ -711,17 +713,28 @@
 
   // 下载视频
   const downloadVideo = () => {
-    if (currentPlaySource.value?.downloadUrls?.length) {
-      const downloadUrl = currentPlaySource.value.downloadUrls[0];
-    } else if (media.value?.downloadUrls?.length) {
-      const downloadUrl = media.value.downloadUrls[0];
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = media.value?.title || 'video';
-      link.click();
-    } else {
+    const downloadUrl =
+      currentPlaySource.value?.downloadUrls?.[0] || media.value?.downloadUrls?.[0] || '';
+
+    if (!downloadUrl || !media.value) {
       alert('该视频不支持下载');
+      return;
     }
+
+    const task = downloadsStore.enqueueTask({
+      url: downloadUrl,
+      fileName: media.value.title || 'video',
+      sourceLabel: currentPlaySource.value?.sourceName || media.value.source || '旧版播放页',
+      mediaResourceId: media.value.id,
+      metadata: {
+        title: media.value.title,
+        description: media.value.description,
+        duration: media.value.duration,
+      },
+    });
+
+    downloadsStore.startTask(task.id);
+    alert(`已加入下载任务：${task.fileName}`);
   };
 
   // 格式化试看时间

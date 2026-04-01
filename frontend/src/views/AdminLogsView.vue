@@ -11,19 +11,19 @@
           type="text"
           class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
           placeholder="操作类型，如 create"
-          @keyup.enter="loadLogs(1)"
+          @keyup.enter="applyFilters(1)"
         />
         <input
           v-model="resource"
           type="text"
           class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
           placeholder="资源类型，如 media"
-          @keyup.enter="loadLogs(1)"
+          @keyup.enter="applyFilters(1)"
         />
         <select
           v-model="status"
           class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-          @change="loadLogs(1)"
+          @change="applyFilters(1)"
         >
           <option value="">全部状态</option>
           <option value="success">success</option>
@@ -32,7 +32,7 @@
         </select>
         <button
           class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          @click="loadLogs(1)"
+          @click="applyFilters(1)"
         >
           搜索
         </button>
@@ -140,7 +140,7 @@
             <button
               :disabled="page <= 1"
               class="rounded border px-3 py-1 disabled:opacity-50"
-              @click="loadLogs(page - 1)"
+              @click="applyFilters(page - 1)"
             >
               上一页
             </button>
@@ -148,7 +148,7 @@
             <button
               :disabled="page >= totalPages"
               class="rounded border px-3 py-1 disabled:opacity-50"
-              @click="loadLogs(page + 1)"
+              @click="applyFilters(page + 1)"
             >
               下一页
             </button>
@@ -160,10 +160,13 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onMounted, ref } from 'vue';
+  import { computed, ref, watch } from 'vue';
+  import { useRoute, useRouter } from 'vue-router';
   import { adminApi } from '@/api/admin';
   import type { AdminLogItem } from '@/api/admin';
 
+  const route = useRoute();
+  const router = useRouter();
   const logs = ref<AdminLogItem[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
@@ -176,6 +179,49 @@
 
   const errorCount = computed(() => logs.value.filter(log => log.status === 'error').length);
   const warningCount = computed(() => logs.value.filter(log => log.status === 'warning').length);
+
+  const readSingleQuery = (value: unknown) => (Array.isArray(value) ? value[0] : value);
+
+  const syncFiltersFromRoute = () => {
+    const queryPage = Number(readSingleQuery(route.query.page));
+    const queryAction = readSingleQuery(route.query.action);
+    const queryResource = readSingleQuery(route.query.resource);
+    const queryStatus = readSingleQuery(route.query.status);
+
+    page.value = Number.isFinite(queryPage) && queryPage > 0 ? queryPage : 1;
+    action.value = typeof queryAction === 'string' ? queryAction : '';
+    resource.value = typeof queryResource === 'string' ? queryResource : '';
+    status.value =
+      queryStatus === 'success' || queryStatus === 'warning' || queryStatus === 'error'
+        ? queryStatus
+        : '';
+  };
+
+  const buildLogsQuery = (nextPage = 1) => {
+    const query: Record<string, string> = {};
+
+    if (nextPage > 1) {
+      query.page = String(nextPage);
+    }
+    if (action.value.trim()) {
+      query.action = action.value.trim();
+    }
+    if (resource.value.trim()) {
+      query.resource = resource.value.trim();
+    }
+    if (status.value) {
+      query.status = status.value;
+    }
+
+    return query;
+  };
+
+  const applyFilters = async (nextPage = 1) => {
+    await router.replace({
+      name: 'admin-logs',
+      query: buildLogsQuery(nextPage),
+    });
+  };
 
   const loadLogs = async (nextPage = page.value) => {
     loading.value = true;
@@ -194,6 +240,12 @@
       page.value = response.page;
       total.value = response.total;
       totalPages.value = Math.max(response.totalPages, 1);
+      if (response.page !== nextPage) {
+        await router.replace({
+          name: 'admin-logs',
+          query: buildLogsQuery(response.page),
+        });
+      }
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : '加载系统日志失败';
     } finally {
@@ -206,9 +258,14 @@
     return new Date(value).toLocaleString('zh-CN');
   };
 
-  onMounted(() => {
-    void loadLogs();
-  });
+  watch(
+    () => route.query,
+    () => {
+      syncFiltersFromRoute();
+      void loadLogs(page.value);
+    },
+    { immediate: true },
+  );
 </script>
 
 <style scoped>

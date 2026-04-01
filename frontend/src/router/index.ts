@@ -8,10 +8,12 @@ const RegisterView = () => import('../views/RegisterView.vue');
 const MediaDetailView = () => import('../views/MediaDetailView.vue');
 const WatchView = () => import('../views/WatchView.vue');
 const ProfileView = () => import('../views/ProfileView.vue');
+const FavoritesView = () => import('../views/FavoritesView.vue');
 const CrawlerView = () => import('../views/CrawlerView.vue');
 const PlaySourcesView = () => import('../views/PlaySourcesView.vue');
 const WatchHistoryView = () => import('../views/WatchHistoryView.vue');
 const RecommendationsView = () => import('../views/RecommendationsView.vue');
+const DownloadsView = () => import('../views/DownloadsView.vue');
 const TorrentView = () => import('../views/TorrentView.vue');
 const IPTVView = () => import('../views/IPTVView.vue');
 const AdminLayout = () => import('../layouts/AdminLayout.vue');
@@ -20,6 +22,7 @@ const AdminUsersView = () => import('../views/AdminUsersView.vue');
 const AdminRolesView = () => import('../views/AdminRolesView.vue');
 const AdminMediaView = () => import('../views/AdminMediaView.vue');
 const AdminPlaySourcesView = () => import('../views/AdminPlaySourcesView.vue');
+const AdminDownloadTasksView = () => import('../views/AdminDownloadTasksView.vue');
 const AdminWatchHistoryView = () => import('../views/AdminWatchHistoryView.vue');
 const AdminLogsView = () => import('../views/AdminLogsView.vue');
 // const SettingsView = () => import('../views/SettingsView.vue'); // 暂时注释，文件不存在
@@ -89,6 +92,16 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/favorites',
+    name: 'favorites',
+    component: FavoritesView,
+    meta: {
+      title: '我的收藏 - Nest TV',
+      requiresAuth: true,
+      preload: false,
+    },
+  },
+  {
     path: '/watch-history',
     name: 'watch-history',
     component: WatchHistoryView,
@@ -106,6 +119,16 @@ const routes: RouteRecordRaw[] = [
       title: '推荐内容 - Nest TV',
       requiresAuth: true,
       preload: true, // 推荐内容预加载
+    },
+  },
+  {
+    path: '/downloads',
+    name: 'downloads',
+    component: DownloadsView,
+    meta: {
+      title: '下载任务 - Nest TV',
+      requiresAuth: true,
+      preload: false,
     },
   },
   {
@@ -133,16 +156,26 @@ const routes: RouteRecordRaw[] = [
     redirect: to => ({ path: '/', query: to.query }),
   },
   {
-    path: '/favorites',
-    redirect: '/watch-history',
-  },
-  {
     path: '/continue-watching',
-    redirect: '/watch-history',
+    redirect: () => ({
+      name: 'watch-history',
+      query: {
+        isCompleted: 'false',
+        sortBy: 'updatedAt',
+        sortOrder: 'DESC',
+      },
+    }),
   },
   {
     path: '/completed',
-    redirect: '/watch-history',
+    redirect: () => ({
+      name: 'watch-history',
+      query: {
+        isCompleted: 'true',
+        sortBy: 'updatedAt',
+        sortOrder: 'DESC',
+      },
+    }),
   },
   // {
   //   path: '/settings',
@@ -211,6 +244,16 @@ const routes: RouteRecordRaw[] = [
         component: AdminPlaySourcesView,
         meta: {
           title: '播放源管理 - Nest TV',
+          requiresAuth: true,
+          requiresAdmin: true,
+        },
+      },
+      {
+        path: 'download-tasks',
+        name: 'admin-download-tasks',
+        component: AdminDownloadTasksView,
+        meta: {
+          title: '下载任务管理 - Nest TV',
           requiresAuth: true,
           requiresAdmin: true,
         },

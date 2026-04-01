@@ -65,7 +65,7 @@
           <div class="flex items-end space-x-2">
             <button
               class="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              @click="loadWatchHistory"
+              @click="applyFilters()"
             >
               搜索
             </button>
@@ -210,7 +210,7 @@
           <button
             :disabled="pagination.page <= 1"
             class="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            @click="goToPage(pagination.page - 1)"
+            @click="applyFilters(pagination.page - 1)"
           >
             上一页
           </button>
@@ -223,14 +223,14 @@
                 ? 'border-indigo-500 bg-indigo-50 text-indigo-600'
                 : 'border-gray-300 text-gray-700 hover:bg-gray-50',
             ]"
-            @click="goToPage(page)"
+            @click="typeof page === 'number' ? applyFilters(page) : undefined"
           >
             {{ page }}
           </button>
           <button
             :disabled="pagination.page >= pagination.totalPages"
             class="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            @click="goToPage(pagination.page + 1)"
+            @click="applyFilters(pagination.page + 1)"
           >
             下一页
           </button>
@@ -241,11 +241,12 @@
 </template>
 
 <script setup>
-  import { ref, onMounted } from 'vue';
-  import { useRouter } from 'vue-router';
+  import { ref, watch } from 'vue';
+  import { useRoute, useRouter } from 'vue-router';
   import { useAuthStore } from '@/stores/auth';
   import { watchHistoryApi } from '@/api/watchHistory';
 
+  const route = useRoute();
   const router = useRouter();
   const authStore = useAuthStore();
 
@@ -268,8 +269,53 @@
     sortOrder: 'DESC',
   });
 
+  const readSingleQuery = value => (Array.isArray(value) ? value[0] : value);
+
+  const syncFiltersFromRoute = () => {
+    const queryPage = Number(readSingleQuery(route.query.page));
+    const queryIsCompleted = readSingleQuery(route.query.isCompleted);
+    const querySortBy = readSingleQuery(route.query.sortBy);
+    const querySortOrder = readSingleQuery(route.query.sortOrder);
+
+    pagination.value.page = Number.isFinite(queryPage) && queryPage > 0 ? queryPage : 1;
+    filters.value = {
+      isCompleted:
+        queryIsCompleted === 'true' ? true : queryIsCompleted === 'false' ? false : '',
+      sortBy:
+        querySortBy === 'createdAt' || querySortBy === 'currentTime' || querySortBy === 'updatedAt'
+          ? querySortBy
+          : 'updatedAt',
+      sortOrder: querySortOrder === 'ASC' ? 'ASC' : 'DESC',
+    };
+  };
+
+  const buildWatchHistoryQuery = (nextPage = 1) => {
+    const query = {
+      sortBy: filters.value.sortBy,
+      sortOrder: filters.value.sortOrder,
+    };
+
+    if (nextPage > 1) {
+      query.page = String(nextPage);
+    }
+    if (filters.value.isCompleted === true) {
+      query.isCompleted = 'true';
+    } else if (filters.value.isCompleted === false) {
+      query.isCompleted = 'false';
+    }
+
+    return query;
+  };
+
+  const applyFilters = async (nextPage = 1) => {
+    await router.replace({
+      name: 'watch-history',
+      query: buildWatchHistoryQuery(nextPage),
+    });
+  };
+
   // 加载观看历史
-  const loadWatchHistory = async () => {
+  const loadWatchHistory = async (nextPage = pagination.value.page) => {
     if (!authStore.user?.id) {
       await authStore.fetchUserProfile();
     }
@@ -280,7 +326,7 @@
 
     try {
       const params = {
-        page: pagination.value.page,
+        page: nextPage,
         limit: pagination.value.limit,
         ...filters.value,
       };
@@ -309,6 +355,12 @@
           total: response.total,
           totalPages: response.totalPages,
         };
+        if (response.page !== nextPage) {
+          await router.replace({
+            name: 'watch-history',
+            query: buildWatchHistoryQuery(response.page),
+          });
+        }
       } else {
         watchHistory.value = [];
         pagination.value = {
@@ -333,15 +385,13 @@
       sortBy: 'updatedAt',
       sortOrder: 'DESC',
     };
-    pagination.value.page = 1;
-    loadWatchHistory();
+    void applyFilters(1);
   };
 
   // 分页导航
   const goToPage = page => {
     if (page >= 1 && page <= pagination.value.totalPages) {
-      pagination.value.page = page;
-      loadWatchHistory();
+      void applyFilters(page);
     }
   };
 
@@ -414,7 +464,7 @@
     try {
       deletingId.value = id;
       await watchHistoryApi.deleteWatchHistory(String(id));
-      loadWatchHistory(); // 重新加载数据
+      await loadWatchHistory(pagination.value.page);
     } catch (error) {
       console.error('删除观看历史失败:', error);
     } finally {
@@ -423,7 +473,12 @@
   };
 
   // 组件挂载时加载数据
-  onMounted(() => {
-    loadWatchHistory();
-  });
+  watch(
+    () => route.query,
+    () => {
+      syncFiltersFromRoute();
+      void loadWatchHistory(pagination.value.page);
+    },
+    { immediate: true },
+  );
 </script>

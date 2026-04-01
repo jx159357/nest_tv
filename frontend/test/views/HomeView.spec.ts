@@ -1,17 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { mount, flushPromises } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import HomeView from '@/views/HomeView.vue';
 
-const { routerPush, mediaStore } = vi.hoisted(() => ({
+const { routerPush, routeState, mediaStore } = vi.hoisted(() => ({
   routerPush: vi.fn(),
+  routeState: {
+    query: {} as Record<string, string>,
+  },
   mediaStore: {
     fetchPopularMedia: vi.fn(),
     fetchLatestMedia: vi.fn(),
     fetchTopRatedMedia: vi.fn(),
+    searchMedia: vi.fn(),
   },
 }));
 
 vi.mock('vue-router', () => ({
+  useRoute: () => routeState,
   useRouter: () => ({
     push: routerPush,
   }),
@@ -51,21 +56,21 @@ vi.mock('@/components/EmptyState.vue', () => ({
 describe('HomeView', () => {
   beforeEach(() => {
     routerPush.mockReset();
+    routeState.query = {};
     mediaStore.fetchPopularMedia.mockReset();
     mediaStore.fetchLatestMedia.mockReset();
     mediaStore.fetchTopRatedMedia.mockReset();
+    mediaStore.searchMedia.mockReset();
 
     mediaStore.fetchPopularMedia.mockResolvedValue([]);
     mediaStore.fetchLatestMedia.mockResolvedValue([]);
     mediaStore.fetchTopRatedMedia.mockResolvedValue([]);
+    mediaStore.searchMedia.mockResolvedValue({ data: [] });
   });
 
-  const mountView = () =>
-    mount(HomeView, {
-      global: {},
-    });
+  const mountView = () => mount(HomeView);
 
-  it('loads home media lists on mount', async () => {
+  it('loads home media lists on mount when there is no search query', async () => {
     mediaStore.fetchPopularMedia.mockResolvedValue([{ id: 1, title: '热门视频', rating: 8.8 }]);
     mediaStore.fetchLatestMedia.mockResolvedValue([{ id: 2, title: '最新视频', rating: 8.2 }]);
     mediaStore.fetchTopRatedMedia.mockResolvedValue([{ id: 3, title: '高评分视频', rating: 9.6 }]);
@@ -102,5 +107,19 @@ describe('HomeView', () => {
     await wrapper.get('.media-card').trigger('click');
 
     expect(routerPush).toHaveBeenCalledWith('/media/42');
+  });
+
+  it('loads search results when route query q is present', async () => {
+    routeState.query = { q: '星际穿越' };
+    mediaStore.searchMedia.mockResolvedValue({
+      data: [{ id: 9, title: '星际穿越', rating: 9.1 }],
+    });
+
+    const wrapper = mountView();
+    await flushPromises();
+
+    expect(mediaStore.searchMedia).toHaveBeenCalledWith('星际穿越', { page: 1, limit: 12 });
+    expect(wrapper.text()).toContain('搜索结果');
+    expect(wrapper.text()).toContain('星际穿越');
   });
 });

@@ -184,6 +184,20 @@
                 <span class="font-medium text-slate-900">关键字：</span
                 >{{ parsedMagnet.keywords.join(' / ') || '无' }}
               </div>
+              <div class="flex flex-wrap gap-2 pt-1">
+                <button
+                  class="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white hover:bg-indigo-700"
+                  @click="queueParsedMagnetTask"
+                >
+                  加入下载任务
+                </button>
+                <RouterLink
+                  to="/downloads"
+                  class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                >
+                  查看下载任务
+                </RouterLink>
+              </div>
             </div>
           </div>
         </div>
@@ -323,11 +337,23 @@
                   复制 Hash
                 </button>
                 <button
+                  class="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                  @click="queueSelectedTorrentTask"
+                >
+                  加入下载任务
+                </button>
+                <button
                   class="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
                   @click="openMagnetInClient"
                 >
                   启动本地客户端
                 </button>
+                <RouterLink
+                  to="/downloads"
+                  class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                >
+                  查看下载任务
+                </RouterLink>
               </div>
               <div class="mt-3 text-xs text-slate-500">
                 Tracker {{ selectedInfo.announce.length }} · Web Seed
@@ -412,10 +438,12 @@
     type TorrentInfoResult,
     type TorrentListItem,
   } from '@/api/torrent';
+  import { useDownloadsStore } from '@/stores/downloads';
 
   const keyword = ref('');
   const category = ref('');
   const magnetInput = ref('');
+  const downloadsStore = useDownloadsStore();
 
   const searchResults = ref<TorrentListItem[]>([]);
   const searchPagination = ref({ page: 1, totalPages: 1, total: 0, pageSize: 10 });
@@ -449,6 +477,161 @@
 
     return parsed.toLocaleString('zh-CN');
   };
+  const recordRecentAction = (infoHash: string, action: string) => {
+    recentActions.value = [
+      {
+        infoHash,
+        action,
+        timestamp: new Date().toISOString(),
+      },
+      ...recentActions.value,
+    ].slice(0, 8);
+  };
+
+  const getSelectedMagnetUri = () => {
+    if (!selectedInfo.value) {
+      return '';
+    }
+
+    if (selectedInfo.value.magnetUri) {
+      return selectedInfo.value.magnetUri;
+    }
+
+    const segments = [`magnet:?xt=urn:btih:${selectedInfo.value.infoHash}`];
+    if (selectedInfo.value.name) {
+      segments.push(`dn=${encodeURIComponent(selectedInfo.value.name)}`);
+    }
+
+    selectedInfo.value.announce.forEach(item => {
+      segments.push(`tr=${encodeURIComponent(item)}`);
+    });
+
+    selectedInfo.value.urlList.forEach(item => {
+      segments.push(`ws=${encodeURIComponent(item)}`);
+    });
+
+    return segments.join('&');
+  };
+
+  const queueMagnetTask = (options: {
+    magnetUri: string;
+    name: string;
+    infoHash: string;
+    sourceLabel: string;
+    mediaResourceId?: number | null;
+    autoStart?: boolean;
+  }) => {
+    if (!options.magnetUri) {
+      actionMessage.value = '当前磁力链接不可用';
+      return null;
+    }
+
+    const task = downloadsStore.enqueueTask({
+      url: options.magnetUri,
+      fileName: options.name || options.infoHash,
+      type: 'magnet',
+      sourceLabel: options.sourceLabel,
+      mediaResourceId: options.mediaResourceId,
+      metadata: {
+        title: options.name,
+        description: `InfoHash: ${options.infoHash}`,
+      },
+    });
+
+    if (options.autoStart) {
+      downloadsStore.startTask(task.id);
+    }
+
+    actionMessage.value = options.autoStart
+      ? `已加入下载任务并尝试启动本地客户端：${task.fileName}`
+      : `已加入下载任务：${task.fileName}`;
+    recordRecentAction(options.infoHash, options.autoStart ? '启动本地客户端' : '加入下载任务');
+    return task;
+  };
+
+  const copyText = async (value: string, successMessage: string, action: string, infoHash: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      actionMessage.value = successMessage;
+      recordRecentAction(infoHash, action);
+    } catch {
+      actionMessage.value = '复制失败，请手动处理';
+    }
+  };
+
+  const copyMagnetUri = async () => {
+    if (!selectedInfo.value) {
+      actionMessage.value = '请先选择一个磁力资源';
+      return;
+    }
+
+    await copyText(
+      getSelectedMagnetUri(),
+      'Magnet 链接已复制到剪贴板。',
+      '复制 Magnet',
+      selectedInfo.value.infoHash,
+    );
+  };
+
+  const copyInfoHash = async () => {
+    if (!selectedInfo.value) {
+      actionMessage.value = '请先选择一个磁力资源';
+      return;
+    }
+
+    await copyText(
+      selectedInfo.value.infoHash,
+      'InfoHash 已复制到剪贴板。',
+      '复制 Hash',
+      selectedInfo.value.infoHash,
+    );
+  };
+
+  const queueSelectedTorrentTask = () => {
+    if (!selectedInfo.value) {
+      actionMessage.value = '请先选择一个磁力资源';
+      return;
+    }
+
+    queueMagnetTask({
+      magnetUri: getSelectedMagnetUri(),
+      name: selectedInfo.value.name || selectedInfo.value.infoHash,
+      infoHash: selectedInfo.value.infoHash,
+      sourceLabel: '磁力资源页',
+      mediaResourceId: selectedInfo.value.linkedMedia[0]?.id ?? null,
+    });
+  };
+
+  const queueParsedMagnetTask = () => {
+    if (!parsedMagnet.value || !magnetInput.value.trim()) {
+      actionMessage.value = '请先解析一个 magnet 链接';
+      return;
+    }
+
+    queueMagnetTask({
+      magnetUri: magnetInput.value.trim(),
+      name: parsedMagnet.value.name || parsedMagnet.value.infoHash,
+      infoHash: parsedMagnet.value.infoHash,
+      sourceLabel: '磁力解析',
+    });
+  };
+
+  const openMagnetInClient = () => {
+    if (!selectedInfo.value) {
+      actionMessage.value = '请先选择一个磁力资源';
+      return;
+    }
+
+    queueMagnetTask({
+      magnetUri: getSelectedMagnetUri(),
+      name: selectedInfo.value.name || selectedInfo.value.infoHash,
+      infoHash: selectedInfo.value.infoHash,
+      sourceLabel: '磁力资源页',
+      mediaResourceId: selectedInfo.value.linkedMedia[0]?.id ?? null,
+      autoStart: true,
+    });
+  };
+
 
   const formatSize = (value?: string | number | null) => {
     if (value === null || value === undefined || value === '') {
@@ -586,3 +769,4 @@
     void loadLatestTorrents();
   });
 </script>
+

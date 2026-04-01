@@ -18,10 +18,14 @@ export interface TorrentLinkedMedia {
 
 export interface TorrentInfoResult {
   infoHash: string;
+  magnetUri: string;
   name: string;
   size: string | number | null;
   files: Array<{ name: string; size?: number }>;
   announce: string[];
+  urlList: string[];
+  keywords: string[];
+  exactSources: string[];
   relatedSourcesCount: number;
   linkedMedia: TorrentLinkedMedia[];
 }

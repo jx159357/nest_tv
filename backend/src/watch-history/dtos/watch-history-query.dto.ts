@@ -1,40 +1,52 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsOptional, IsEnum, Min, Max } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsBoolean, IsIn, IsNumber, IsOptional, Max, Min } from 'class-validator';
 
 export class WatchHistoryQueryDto {
-  @ApiProperty({ description: '页码', default: 1 })
+  @ApiProperty({ description: 'Page number', default: 1 })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @Min(1)
   page?: number = 1;
 
-  @ApiProperty({ description: '每页数量', default: 10 })
+  @ApiProperty({ description: 'Page size', default: 10 })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @Min(1)
   @Max(100)
   limit?: number = 10;
 
-  @ApiProperty({ description: '用户ID', required: false })
+  @ApiProperty({ description: 'User id', required: false })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   userId?: number;
 
-  @ApiProperty({ description: '影视资源ID', required: false })
+  @ApiProperty({ description: 'Media resource id', required: false })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   mediaResourceId?: number;
 
-  @ApiProperty({ description: '是否已看完', required: false })
+  @ApiProperty({ description: 'Completed status', required: false })
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return value;
+  })
+  @IsBoolean()
   isCompleted?: boolean;
 
-  @ApiProperty({ description: '排序字段', default: 'updatedAt' })
+  @ApiProperty({ description: 'Sort field', default: 'updatedAt' })
   @IsOptional()
+  @IsIn(['updatedAt', 'createdAt', 'currentTime'])
   sortBy?: string = 'updatedAt';
 
-  @ApiProperty({ description: '排序方式', enum: ['ASC', 'DESC'], default: 'DESC' })
+  @ApiProperty({ description: 'Sort order', enum: ['ASC', 'DESC'], default: 'DESC' })
   @IsOptional()
-  @IsEnum(['ASC', 'DESC'])
+  @IsIn(['ASC', 'DESC'])
   sortOrder?: 'ASC' | 'DESC' = 'DESC';
 }

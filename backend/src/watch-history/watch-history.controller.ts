@@ -23,6 +23,7 @@ import { GetCurrentUserId } from '../decorators/current-user.decorator';
 
 @ApiTags('观看历史')
 @Controller('watch-history')
+@UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 export class WatchHistoryController {
   constructor(private readonly watchHistoryService: WatchHistoryService) {}
 
@@ -100,10 +101,12 @@ export class WatchHistoryController {
   @ApiResponse({ status: 200, description: '成功获取用户观看历史' })
   async findMyHistory(
     @GetCurrentUserId() userId: number,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
+    @Query() queryDto: WatchHistoryQueryDto,
   ) {
-    return await this.watchHistoryService.findByUserId(userId, page, limit);
+    return await this.watchHistoryService.findAll({
+      ...queryDto,
+      userId,
+    });
   }
 
   @Get('user/me/continue')

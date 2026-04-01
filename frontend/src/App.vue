@@ -29,7 +29,7 @@
       }
 
       // 如果已登录，获取用户信息
-      if (authStore.token) {
+      if (authStore.token && !authStore.user) {
         await authStore.fetchUserProfile();
       }
     } catch (error) {

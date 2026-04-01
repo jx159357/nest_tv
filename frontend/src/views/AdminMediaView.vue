@@ -11,12 +11,12 @@
           type="text"
           class="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm"
           placeholder="搜索标题 / 描述"
-          @keyup.enter="loadMedia(1)"
+          @keyup.enter="applyFilters(1)"
         />
         <select
           v-model="type"
           class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-          @change="loadMedia(1)"
+          @change="applyFilters(1)"
         >
           <option value="">全部类型</option>
           <option value="movie">电影</option>
@@ -27,7 +27,7 @@
         </select>
         <button
           class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          @click="loadMedia(1)"
+          @click="applyFilters(1)"
         >
           搜索
         </button>
@@ -86,6 +86,12 @@
                   <div class="line-clamp-1 text-xs text-gray-500">
                     {{ item.description || '暂无描述' }}
                   </div>
+                  <router-link
+                    :to="{ name: 'admin-download-tasks', query: { mediaResourceId: String(item.id) } }"
+                    class="mt-2 inline-flex text-xs text-indigo-600 hover:text-indigo-700"
+                  >
+                    查看下载任务
+                  </router-link>
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-600">{{ item.type }}</td>
                 <td class="px-4 py-3 text-sm text-gray-600">{{ item.quality }}</td>
@@ -115,7 +121,7 @@
             <button
               :disabled="page <= 1"
               class="rounded border px-3 py-1 disabled:opacity-50"
-              @click="loadMedia(page - 1)"
+              @click="applyFilters(page - 1)"
             >
               上一页
             </button>
@@ -123,7 +129,7 @@
             <button
               :disabled="page >= totalPages"
               class="rounded border px-3 py-1 disabled:opacity-50"
-              @click="loadMedia(page + 1)"
+              @click="applyFilters(page + 1)"
             >
               下一页
             </button>
@@ -135,10 +141,13 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue';
+  import { ref, watch } from 'vue';
+  import { useRoute, useRouter } from 'vue-router';
   import { adminApi } from '@/api/admin';
   import type { MediaResource } from '@/types/media';
 
+  const route = useRoute();
+  const router = useRouter();
   const mediaList = ref<MediaResource[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
@@ -147,6 +156,41 @@
   const page = ref(1);
   const totalPages = ref(1);
   const total = ref(0);
+
+  const readSingleQuery = (value: unknown) => (Array.isArray(value) ? value[0] : value);
+
+  const syncFiltersFromRoute = () => {
+    const queryPage = Number(readSingleQuery(route.query.page));
+    const querySearch = readSingleQuery(route.query.search);
+    const queryType = readSingleQuery(route.query.type);
+
+    page.value = Number.isFinite(queryPage) && queryPage > 0 ? queryPage : 1;
+    search.value = typeof querySearch === 'string' ? querySearch : '';
+    type.value = typeof queryType === 'string' ? queryType : '';
+  };
+
+  const buildMediaQuery = (nextPage = 1) => {
+    const query: Record<string, string> = {};
+
+    if (nextPage > 1) {
+      query.page = String(nextPage);
+    }
+    if (search.value.trim()) {
+      query.search = search.value.trim();
+    }
+    if (type.value) {
+      query.type = type.value;
+    }
+
+    return query;
+  };
+
+  const applyFilters = async (nextPage = 1) => {
+    await router.replace({
+      name: 'admin-media',
+      query: buildMediaQuery(nextPage),
+    });
+  };
 
   const loadMedia = async (nextPage = page.value) => {
     loading.value = true;
@@ -164,6 +208,12 @@
       page.value = response.page;
       total.value = response.total;
       totalPages.value = Math.max(response.totalPages, 1);
+      if (response.page !== nextPage) {
+        await router.replace({
+          name: 'admin-media',
+          query: buildMediaQuery(response.page),
+        });
+      }
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : '加载媒体列表失败';
     } finally {
@@ -179,9 +229,14 @@
     return new Date(value).toLocaleString('zh-CN');
   };
 
-  onMounted(() => {
-    void loadMedia();
-  });
+  watch(
+    () => route.query,
+    () => {
+      syncFiltersFromRoute();
+      void loadMedia(page.value);
+    },
+    { immediate: true },
+  );
 </script>
 
 <style scoped>

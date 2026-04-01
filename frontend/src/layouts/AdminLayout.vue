@@ -1,9 +1,8 @@
 <template>
   <div class="admin-layout">
-    <!-- ä¾§è¾¹æ  -->
-    <aside class="admin-layout__sidebar">
+    <aside class="admin-layout__sidebar" :class="{ 'admin-layout__sidebar--open': sidebarOpen }">
       <div class="admin-layout__sidebar-header">
-        <h2 class="admin-layout__sidebar-title">ç®¡ç†åå°</h2>
+        <h2 class="admin-layout__sidebar-title">¹ÜÀíºóÌ¨</h2>
       </div>
       <nav class="admin-layout__nav">
         <router-link
@@ -19,18 +18,17 @@
       </nav>
     </aside>
 
-    <!-- ä¸»å†…å®¹åŒº -->
     <main class="admin-layout__main">
       <header class="admin-layout__header">
         <div class="admin-layout__header-left">
           <button class="admin-layout__menu-toggle" @click="toggleSidebar">
-            <span class="admin-layout__menu-icon">â˜°</span>
+            <span class="admin-layout__menu-icon">¡Ô</span>
           </button>
           <h1 class="admin-layout__page-title">{{ currentPageTitle }}</h1>
         </div>
         <div class="admin-layout__header-right">
-          <router-link to="/" class="admin-layout__back-home">è¿”å›é¦–é¡µ</router-link>
-          <button class="admin-layout__logout" @click="handleLogout">é€€å‡ºç™»å½•</button>
+          <router-link to="/" class="admin-layout__back-home">·µ»ØÊ×Ò³</router-link>
+          <button class="admin-layout__logout" @click="handleLogout">ÍË³öµÇÂ¼</button>
         </div>
       </header>
       <div class="admin-layout__content">
@@ -41,7 +39,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed } from 'vue';
+  import { computed, ref } from 'vue';
   import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
   import { useAuthStore } from '@/stores/auth';
 
@@ -52,23 +50,22 @@
   const sidebarOpen = ref(true);
 
   const navItems = [
-    { path: '/admin', title: 'ä»ªè¡¨æ¿', icon: 'ğŸ“Š' },
-    { path: '/admin/users', title: 'ç”¨æˆ·ç®¡ç†', icon: 'ğŸ‘¥' },
-    { path: '/admin/media', title: 'åª’ä½“ç®¡ç†', icon: 'ğŸ¬' },
-    { path: '/admin/play-sources', title: 'æ’­æ”¾æºç®¡ç†', icon: 'ğŸ”—' },
-    { path: '/admin/watch-history', title: 'è§‚çœ‹å†å²', icon: 'ğŸ“º' },
-    { path: '/admin/logs', title: 'ç³»ç»Ÿæ—¥å¿—', icon: 'ğŸ§¾' },
-    { path: '/admin/crawler', title: 'æ•°æ®é‡‡é›†', icon: 'ğŸ•·ï¸' },
+    { path: '/admin', title: 'ÒÇ±íÅÌ', icon: 'DB' },
+    { path: '/admin/users', title: 'ÓÃ»§¹ÜÀí', icon: 'US' },
+    { path: '/admin/media', title: 'Ã½Ìå¹ÜÀí', icon: 'MD' },
+    { path: '/admin/play-sources', title: '²¥·ÅÔ´¹ÜÀí', icon: 'PS' },
+    { path: '/admin/download-tasks', title: 'ÏÂÔØÈÎÎñ', icon: 'DL' },
+    { path: '/admin/watch-history', title: '¹Û¿´ÀúÊ·', icon: 'WH' },
+    { path: '/admin/logs', title: 'ÏµÍ³ÈÕÖ¾', icon: 'LG' },
+    { path: '/admin/crawler', title: 'Êı¾İ²É¼¯', icon: 'CR' },
   ];
 
   const currentPageTitle = computed(() => {
     const activeItem = navItems.find(item => isActive(item.path));
-    return activeItem ? activeItem.title : 'ç®¡ç†åå°';
+    return activeItem ? activeItem.title : '¹ÜÀíºóÌ¨';
   });
 
-  const isActive = (path: string) => {
-    return route.path === path || route.path.startsWith(path + '/');
-  };
+  const isActive = (path: string) => route.path === path || route.path.startsWith(path + '/');
 
   const toggleSidebar = () => {
     sidebarOpen.value = !sidebarOpen.value;
@@ -131,7 +128,10 @@
 
   .admin-layout__nav-icon {
     margin-right: 10px;
-    font-size: 1.2rem;
+    min-width: 24px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
   }
 
   .admin-layout__main {
@@ -204,7 +204,6 @@
     overflow-y: auto;
   }
 
-  /* å“åº”å¼è®¾è®¡ */
   @media (max-width: 768px) {
     .admin-layout__sidebar {
       position: fixed;

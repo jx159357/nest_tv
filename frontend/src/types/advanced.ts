@@ -43,9 +43,14 @@ export interface DownloadTask {
   total: number;
   fileName: string;
   filePath: string;
+  sourceLabel?: string;
+  mediaResourceId?: number | null;
+  handler?: 'browser' | 'system';
+  launchCount?: number;
   createdAt: Date;
   updatedAt: Date;
   completedAt?: Date;
+  lastLaunchedAt?: Date;
   error?: string;
   metadata?: DownloadMetadata;
 }

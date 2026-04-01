@@ -27,17 +27,17 @@ export const recommendationsApi = {
   getPersonalized: (limit = 8) => {
     return ApiClient.get<MediaResource[]>('/recommendations/personalized', {
       params: { limit },
-    });
+    }, false);
   },
 
   getPersonalizedDetailed: (limit = 8) => {
     return ApiClient.get<PersonalizedRecommendationItem[]>('/recommendations/personalized-detailed', {
       params: { limit },
-    });
+    }, false);
   },
 
   getProfile: () => {
-    return ApiClient.get<RecommendationProfile>('/recommendations/profile');
+    return ApiClient.get<RecommendationProfile>('/recommendations/profile', undefined, false);
   },
 
   getTrending: (limit = 8) => {

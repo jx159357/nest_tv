@@ -3,27 +3,27 @@ import api from './index';
 export const watchHistoryApi = {
   // 获取当前用户观看历史
   getMyWatchHistory: (params?: any) => {
-    return api.get('/watch-history/user/me', { params });
+    return api.get('/watch-history/user/me', { params }, false);
   },
 
   // 获取用户的观看历史
   getUserWatchHistory: (_userId?: string | number, params?: any) => {
-    return api.get('/watch-history/user/me', { params });
+    return api.get('/watch-history/user/me', { params }, false);
   },
 
   // 获取用户统计信息
   getUserStats: (_userId?: string | number) => {
-    return api.get('/watch-history/user/me/stats');
+    return api.get('/watch-history/user/me/stats', undefined, false);
   },
 
   // 获取用户继续观看列表
   getContinueWatching: (_userId?: string | number, params?: any) => {
-    return api.get('/watch-history/user/me/continue', { params });
+    return api.get('/watch-history/user/me/continue', { params }, false);
   },
 
   // 获取用户已看完列表
   getCompleted: (_userId?: string | number, params?: any) => {
-    return api.get('/watch-history/user/me/completed', { params });
+    return api.get('/watch-history/user/me/completed', { params }, false);
   },
 
   // 记录观看进度

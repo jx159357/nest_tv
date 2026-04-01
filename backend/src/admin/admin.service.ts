@@ -8,6 +8,7 @@ import { User } from '../entities/user.entity';
 import { MediaResource } from '../entities/media-resource.entity';
 import { PlaySource } from '../entities/play-source.entity';
 import { WatchHistory } from '../entities/watch-history.entity';
+import { DownloadTask, DownloadTaskStatus } from '../entities/download-task.entity';
 import {
   CreatePermissionDto,
   CreateRoleDto,
@@ -22,6 +23,33 @@ import {
 @Injectable()
 export class AdminService {
   private readonly logger = new Logger(AdminService.name);
+  private static readonly MAX_PAGE_SIZE = 200;
+
+  private normalizePagination(page?: number, limit?: number) {
+    const parsedPage = Number(page);
+    const parsedLimit = Number(limit);
+
+    return {
+      safePage: Number.isFinite(parsedPage) && parsedPage > 0 ? Math.floor(parsedPage) : 1,
+      safeLimit:
+        Number.isFinite(parsedLimit) && parsedLimit > 0
+          ? Math.min(Math.floor(parsedLimit), AdminService.MAX_PAGE_SIZE)
+          : 20,
+    };
+  }
+
+  private resolvePagination(total: number, page?: number, limit?: number) {
+    const { safePage, safeLimit } = this.normalizePagination(page, limit);
+    const totalPages = total > 0 ? Math.ceil(total / safeLimit) : 0;
+    const resolvedPage = totalPages > 0 ? Math.min(safePage, totalPages) : 1;
+
+    return {
+      page: resolvedPage,
+      limit: safeLimit,
+      totalPages,
+      offset: (resolvedPage - 1) * safeLimit,
+    };
+  }
 
   constructor(
     @InjectRepository(AdminRole)
@@ -38,6 +66,8 @@ export class AdminService {
     private playSourceRepository: Repository<PlaySource>,
     @InjectRepository(WatchHistory)
     private watchHistoryRepository: Repository<WatchHistory>,
+    @InjectRepository(DownloadTask)
+    private downloadTaskRepository: Repository<DownloadTask>,
   ) {}
 
   /**
@@ -101,18 +131,19 @@ export class AdminService {
     }
 
     const total = await queryBuilder.getCount();
+    const pagination = this.resolvePagination(total, page, limit);
     const data = await queryBuilder
       .orderBy('user.createdAt', 'DESC')
-      .skip((page - 1) * limit)
-      .take(limit)
+      .skip(pagination.offset)
+      .take(pagination.limit)
       .getMany();
 
     return {
       data,
       total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      page: pagination.page,
+      limit: pagination.limit,
+      totalPages: pagination.totalPages,
     };
   }
 
@@ -130,18 +161,19 @@ export class AdminService {
     }
 
     const total = await queryBuilder.getCount();
+    const pagination = this.resolvePagination(total, page, limit);
     const data = await queryBuilder
       .orderBy('media.createdAt', 'DESC')
-      .skip((page - 1) * limit)
-      .take(limit)
+      .skip(pagination.offset)
+      .take(pagination.limit)
       .getMany();
 
     return {
       data,
       total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      page: pagination.page,
+      limit: pagination.limit,
+      totalPages: pagination.totalPages,
     };
   }
 
@@ -240,17 +272,18 @@ export class AdminService {
       queryBuilder.orderBy('playSource.createdAt', 'DESC');
     }
 
+    const pagination = this.resolvePagination(total, page, limit);
     const data = await queryBuilder
-      .skip((page - 1) * limit)
-      .take(limit)
+      .skip(pagination.offset)
+      .take(pagination.limit)
       .getMany();
 
     return {
       data,
       total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      page: pagination.page,
+      limit: pagination.limit,
+      totalPages: pagination.totalPages,
     };
   }
 
@@ -265,18 +298,89 @@ export class AdminService {
     }
 
     const total = await queryBuilder.getCount();
+    const pagination = this.resolvePagination(total, page, limit);
     const data = await queryBuilder
       .orderBy('watchHistory.updatedAt', 'DESC')
-      .skip((page - 1) * limit)
-      .take(limit)
+      .skip(pagination.offset)
+      .take(pagination.limit)
       .getMany();
 
     return {
       data,
       total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      page: pagination.page,
+      limit: pagination.limit,
+      totalPages: pagination.totalPages,
+    };
+  }
+
+  async getDownloadTasks(
+    page: number = 1,
+    limit: number = 20,
+    status?: string,
+    type?: string,
+    userId?: number,
+    mediaResourceId?: number,
+    search?: string,
+  ) {
+    const { safePage, safeLimit } = this.normalizePagination(page, limit);
+    const safeUserId = userId ? Number(userId) : undefined;
+    const safeMediaResourceId = mediaResourceId ? Number(mediaResourceId) : undefined;
+    const normalizedStatus = this.normalizeOptionalText(status);
+    const normalizedType = this.normalizeOptionalText(type);
+    const normalizedSearch = this.normalizeOptionalText(search);
+
+    const queryBuilder = this.downloadTaskRepository
+      .createQueryBuilder('downloadTask')
+      .leftJoinAndSelect('downloadTask.user', 'user')
+      .leftJoinAndSelect('downloadTask.mediaResource', 'mediaResource');
+
+    if (safeUserId) {
+      queryBuilder.andWhere('downloadTask.userId = :userId', { userId: safeUserId });
+    }
+
+    if (safeMediaResourceId) {
+      queryBuilder.andWhere('downloadTask.mediaResourceId = :mediaResourceId', {
+        mediaResourceId: safeMediaResourceId,
+      });
+    }
+
+    if (normalizedStatus) {
+      queryBuilder.andWhere('downloadTask.status = :status', { status: normalizedStatus });
+    }
+
+    if (normalizedType) {
+      queryBuilder.andWhere('downloadTask.type = :type', { type: normalizedType });
+    }
+
+    if (normalizedSearch) {
+      queryBuilder.andWhere(
+        `(
+          downloadTask.fileName LIKE :search
+          OR downloadTask.sourceLabel LIKE :search
+          OR downloadTask.url LIKE :search
+          OR user.username LIKE :search
+          OR user.email LIKE :search
+          OR mediaResource.title LIKE :search
+        )`,
+        { search: `%${normalizedSearch}%` },
+      );
+    }
+
+    const total = await queryBuilder.getCount();
+    const pagination = this.resolvePagination(total, safePage, safeLimit);
+    const data = await queryBuilder
+      .orderBy('downloadTask.updatedAt', 'DESC')
+      .skip(pagination.offset)
+      .take(pagination.limit)
+      .getMany();
+
+    return {
+      data,
+      total,
+      page: pagination.page,
+      limit: pagination.limit,
+      totalPages: pagination.totalPages,
     };
   }
 
@@ -584,26 +688,53 @@ export class AdminService {
     mediaCount: number;
     playSourceCount: number;
     watchHistoryCount: number;
+    downloadTaskCount: number;
+    activeDownloadTaskCount: number;
+    completedDownloadTaskCount: number;
+    failedDownloadTaskCount: number;
     recentActivity: AdminLog[];
   }> {
     try {
-      const [userCount, mediaCount, playSourceCount, watchHistoryCount, recentActivity] =
-        await Promise.all([
-          this.userRepository.count(),
-          this.userRepository.manager.count('media_resource', {}),
-          this.userRepository.manager.count('play_source', {}),
-          this.userRepository.manager.count('watch_history', {}),
-          this.adminLogRepository.find({
-            order: { createdAt: 'DESC' },
-            take: 10,
-          }),
-        ]);
+      const [
+        userCount,
+        mediaCount,
+        playSourceCount,
+        watchHistoryCount,
+        downloadTaskCount,
+        activeDownloadTaskCount,
+        completedDownloadTaskCount,
+        failedDownloadTaskCount,
+        recentActivity,
+      ] = await Promise.all([
+        this.userRepository.count(),
+        this.userRepository.manager.count('media_resource', {}),
+        this.userRepository.manager.count('play_source', {}),
+        this.userRepository.manager.count('watch_history', {}),
+        this.downloadTaskRepository.count(),
+        this.downloadTaskRepository.count({
+          where: { status: In([DownloadTaskStatus.PENDING, DownloadTaskStatus.DOWNLOADING]) },
+        }),
+        this.downloadTaskRepository.count({
+          where: { status: DownloadTaskStatus.COMPLETED },
+        }),
+        this.downloadTaskRepository.count({
+          where: { status: In([DownloadTaskStatus.ERROR, DownloadTaskStatus.CANCELLED]) },
+        }),
+        this.adminLogRepository.find({
+          order: { createdAt: 'DESC' },
+          take: 10,
+        }),
+      ]);
 
       return {
         userCount,
         mediaCount,
         playSourceCount,
         watchHistoryCount,
+        downloadTaskCount,
+        activeDownloadTaskCount,
+        completedDownloadTaskCount,
+        failedDownloadTaskCount,
         recentActivity,
       };
     } catch (error) {
@@ -639,7 +770,7 @@ export class AdminService {
         .leftJoinAndSelect('adminLog.role', 'role')
         .leftJoinAndSelect('adminLog.user', 'user');
 
-      // 应用筛选条件
+      // 应用筛选条�?
       if (filters) {
         if (filters.action) {
           queryBuilder.andWhere('adminLog.action = :action', { action: filters.action });
@@ -667,8 +798,8 @@ export class AdminService {
       const total = await queryBuilder.getCount();
 
       // 分页
-      const offset = (page - 1) * limit;
-      queryBuilder.skip(offset).take(limit);
+      const pagination = this.resolvePagination(total, page, limit);
+      queryBuilder.skip(pagination.offset).take(pagination.limit);
 
       // 排序
       queryBuilder.orderBy('adminLog.createdAt', 'DESC');
@@ -678,9 +809,9 @@ export class AdminService {
       return {
         data,
         total,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil(total / limit),
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: pagination.totalPages,
       };
     } catch (error) {
       this.logger.error('Failed to get admin logs:', error);

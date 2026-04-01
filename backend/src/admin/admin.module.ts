@@ -10,6 +10,8 @@ import { MediaResource } from '../entities/media-resource.entity';
 import { PlaySource } from '../entities/play-source.entity';
 import { WatchHistory } from '../entities/watch-history.entity';
 import { Recommendation } from '../entities/recommendation.entity';
+import { DownloadTask } from '../entities/download-task.entity';
+import { AdminRoleGuard } from './admin-role.guard';
 
 /**
  * 后台管理模块
@@ -27,10 +29,11 @@ import { Recommendation } from '../entities/recommendation.entity';
       PlaySource,
       WatchHistory,
       Recommendation,
+      DownloadTask,
     ]),
   ],
   controllers: [AdminController],
-  providers: [AdminService],
+  providers: [AdminService, AdminRoleGuard],
   exports: [AdminService],
 })
 export class AdminModule {}

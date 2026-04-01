@@ -15,6 +15,10 @@ export interface AdminSystemStats {
   mediaCount: number;
   playSourceCount: number;
   watchHistoryCount: number;
+  downloadTaskCount: number;
+  activeDownloadTaskCount: number;
+  completedDownloadTaskCount: number;
+  failedDownloadTaskCount: number;
   recentActivity: Array<Record<string, unknown>>;
 }
 
@@ -101,6 +105,33 @@ export interface AdminWatchHistoryItem {
   };
 }
 
+export interface AdminDownloadTaskItem {
+  id: number;
+  clientId: string;
+  url: string;
+  type: 'direct' | 'torrent' | 'magnet';
+  status: 'pending' | 'downloading' | 'paused' | 'completed' | 'error' | 'cancelled';
+  progress: number;
+  speed: number;
+  downloaded: number;
+  total: number;
+  fileName: string;
+  filePath?: string;
+  sourceLabel?: string;
+  handler?: 'browser' | 'system';
+  launchCount?: number;
+  error?: string;
+  metadata?: Record<string, unknown>;
+  userId: number;
+  mediaResourceId?: number | null;
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string | null;
+  lastLaunchedAt?: string | null;
+  user?: Pick<User, 'id' | 'username' | 'email' | 'nickname'>;
+  mediaResource?: Pick<MediaResource, 'id' | 'title' | 'type' | 'poster'>;
+}
+
 export const adminApi = {
   getStats: () => ApiClient.get<AdminSystemStats>('/admin/stats', undefined, false),
 
@@ -144,6 +175,21 @@ export const adminApi = {
   getWatchHistory: (params?: { page?: number; limit?: number; userId?: number }) =>
     ApiClient.get<AdminPaginatedResponse<AdminWatchHistoryItem>>(
       '/admin/watch-history',
+      { params },
+      false,
+    ),
+
+  getDownloadTasks: (params?: {
+    page?: number;
+    limit?: number;
+    status?: AdminDownloadTaskItem['status'];
+    type?: AdminDownloadTaskItem['type'];
+    userId?: number;
+    mediaResourceId?: number;
+    search?: string;
+  }) =>
+    ApiClient.get<AdminPaginatedResponse<AdminDownloadTaskItem>>(
+      '/admin/download-tasks',
       { params },
       false,
     ),

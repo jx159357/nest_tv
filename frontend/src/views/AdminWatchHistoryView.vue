@@ -9,7 +9,7 @@
         <select
           v-model="selectedUserId"
           class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-          @change="loadWatchHistory(1)"
+          @change="applyFilters(1)"
         >
           <option value="">全部用户</option>
           <option v-for="item in users" :key="item.id" :value="String(item.id)">
@@ -18,7 +18,7 @@
         </select>
         <button
           class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          @click="loadWatchHistory(1)"
+          @click="applyFilters(1)"
         >
           刷新
         </button>
@@ -119,7 +119,7 @@
             <button
               :disabled="page <= 1"
               class="rounded border px-3 py-1 disabled:opacity-50"
-              @click="loadWatchHistory(page - 1)"
+              @click="applyFilters(page - 1)"
             >
               上一页
             </button>
@@ -127,7 +127,7 @@
             <button
               :disabled="page >= totalPages"
               class="rounded border px-3 py-1 disabled:opacity-50"
-              @click="loadWatchHistory(page + 1)"
+              @click="applyFilters(page + 1)"
             >
               下一页
             </button>
@@ -139,11 +139,14 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onMounted, ref } from 'vue';
+  import { computed, onMounted, ref, watch } from 'vue';
+  import { useRoute, useRouter } from 'vue-router';
   import { adminApi } from '@/api/admin';
   import type { AdminWatchHistoryItem } from '@/api/admin';
   import type { User } from '@/types/user';
 
+  const route = useRoute();
+  const router = useRouter();
   const historyItems = ref<AdminWatchHistoryItem[]>([]);
   const users = ref<User[]>([]);
   const loading = ref(false);
@@ -157,6 +160,36 @@
   const inProgressCount = computed(
     () => historyItems.value.filter(item => !item.isCompleted).length,
   );
+
+  const readSingleQuery = (value: unknown) => (Array.isArray(value) ? value[0] : value);
+
+  const syncFiltersFromRoute = () => {
+    const queryPage = Number(readSingleQuery(route.query.page));
+    const queryUserId = readSingleQuery(route.query.userId);
+
+    page.value = Number.isFinite(queryPage) && queryPage > 0 ? queryPage : 1;
+    selectedUserId.value = typeof queryUserId === 'string' ? queryUserId : '';
+  };
+
+  const buildWatchHistoryQuery = (nextPage = 1) => {
+    const query: Record<string, string> = {};
+
+    if (nextPage > 1) {
+      query.page = String(nextPage);
+    }
+    if (selectedUserId.value) {
+      query.userId = selectedUserId.value;
+    }
+
+    return query;
+  };
+
+  const applyFilters = async (nextPage = 1) => {
+    await router.replace({
+      name: 'admin-watch-history',
+      query: buildWatchHistoryQuery(nextPage),
+    });
+  };
 
   const loadUsers = async () => {
     try {
@@ -182,6 +215,12 @@
       page.value = response.page;
       total.value = response.total;
       totalPages.value = Math.max(response.totalPages, 1);
+      if (response.page !== nextPage) {
+        await router.replace({
+          name: 'admin-watch-history',
+          query: buildWatchHistoryQuery(response.page),
+        });
+      }
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : '加载观看历史失败';
     } finally {
@@ -216,6 +255,15 @@
   };
 
   onMounted(() => {
-    void Promise.all([loadUsers(), loadWatchHistory()]);
+    void loadUsers();
   });
+
+  watch(
+    () => route.query,
+    () => {
+      syncFiltersFromRoute();
+      void loadWatchHistory(page.value);
+    },
+    { immediate: true },
+  );
 </script>

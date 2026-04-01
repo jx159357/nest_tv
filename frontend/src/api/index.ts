@@ -242,5 +242,7 @@ export { authApi } from './auth';
 export { recommendationsApi } from './recommendations';
 export { torrentApi } from './torrent';
 export { iptvApi } from './iptv';
+export { downloadTasksApi } from './downloadTasks';
 
 export default ApiClient;
+

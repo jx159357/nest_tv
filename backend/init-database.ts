@@ -3,6 +3,7 @@ import { User } from './src/entities/user.entity';
 import { MediaResource } from './src/entities/media-resource.entity';
 import { PlaySource } from './src/entities/play-source.entity';
 import { WatchHistory } from './src/entities/watch-history.entity';
+import { DownloadTask } from './src/entities/download-task.entity';
 import * as dotenv from 'dotenv';
 
 // 加载环境变量
@@ -25,7 +26,7 @@ async function initializeDatabase() {
       database: process.env.DB_DATABASE || 'nest_tv',
       synchronize: false, // 不自动同步，手动创建表
       logging: true,
-      entities: [User, MediaResource, PlaySource, WatchHistory],
+      entities: [User, MediaResource, PlaySource, WatchHistory, DownloadTask],
     });
 
     console.log('✅ 数据库连接成功！');
@@ -165,6 +166,44 @@ async function initializeDatabase() {
     } else {
       console.log('✅ 观看历史表已存在，跳过创建');
     }
+    // 创建下载任务表
+    if (!tableNames.includes('download_tasks')) {
+      console.log('\\n📝 创建下载任务表 (download_tasks)...');
+      await connection.query(`
+        CREATE TABLE download_tasks (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          clientId VARCHAR(80) NOT NULL,
+          url TEXT NOT NULL,
+          type ENUM('direct', 'torrent', 'magnet') DEFAULT 'direct',
+          status ENUM('pending', 'downloading', 'paused', 'completed', 'error', 'cancelled') DEFAULT 'pending',
+          progress INT DEFAULT 0,
+          speed BIGINT DEFAULT 0,
+          downloaded BIGINT DEFAULT 0,
+          total BIGINT DEFAULT 0,
+          fileName VARCHAR(255) NOT NULL,
+          filePath VARCHAR(500) NULL,
+          sourceLabel VARCHAR(120) NULL,
+          handler ENUM('browser', 'system') DEFAULT 'browser',
+          launchCount INT DEFAULT 0,
+          lastLaunchedAt DATETIME NULL,
+          completedAt DATETIME NULL,
+          error TEXT NULL,
+          metadata JSON NULL,
+          createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          userId INT NOT NULL,
+          mediaResourceId INT NULL,
+          UNIQUE KEY unique_user_clientId (userId, clientId),
+          INDEX idx_download_task_status (userId, status),
+          INDEX idx_download_task_updated (userId, updatedAt),
+          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (mediaResourceId) REFERENCES media_resources(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+      console.log('✅ 下载任务表创建成功');
+    } else {
+      console.log('✅ 下载任务表已存在，跳过创建');
+    }
 
     // 创建关联表
     if (!tableNames.includes('users_favorites_media_resources')) {
@@ -226,3 +265,4 @@ async function initializeDatabase() {
 
 // 运行初始化
 initializeDatabase();
+

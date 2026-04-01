@@ -1,63 +1,70 @@
 import { createApp } from 'vue';
 import './style.css';
-import 'virtual:uno.css'; // 导入UnoCSS虚拟模块
+import 'virtual:uno.css';
 import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
 import { i18n } from './i18n';
+import { useAuthStore } from './stores/auth';
 import { initPreloadService } from './utils/preload-service';
 import { PerformanceService } from './services/performance.service';
 
-const app = createApp(App);
-const pinia = createPinia();
+const bootstrap = async () => {
+  const app = createApp(App);
+  const pinia = createPinia();
 
-app.use(pinia);
-app.use(i18n);
-app.use(router);
+  app.use(pinia);
 
-// 初始化预加载服务
-initPreloadService(router);
+  const authStore = useAuthStore(pinia);
+  if (authStore.token && !authStore.user) {
+    await authStore.fetchUserProfile();
+  }
 
-// 初始化性能监控服务
-const performanceService = PerformanceService.getInstance({
-  monitor: {
-    enabled: import.meta.env.PROD, // 仅生产环境启用监控
-    interval: 30000, // 减少监控频率：5秒 → 30秒
-    metrics: ['lcp', 'cls'], // 仅监控核心指标
-  },
-  reporting: {
-    enabled: import.meta.env.PROD, // 仅生产环境上报
-    batchSize: 10,
-    flushInterval: 60000, // 增加上报间隔
-  },
-  optimization: {
-    lazyLoad: true,
-    preLoad: true,
-    cache: true,
-    compress: true,
-  },
-});
+  app.use(i18n);
+  app.use(router);
 
-// 在开发环境下打印性能分数（降低频率）
-if (import.meta.env.DEV) {
-  setInterval(() => {
-    const metrics = performanceService.getCurrentMetrics();
-    if (metrics) {
-      const score = performanceService.getPerformanceScore();
-      console.log(`🚀 Performance Score: ${score}/100`, metrics);
-    }
-  }, 30000); // 减少打印频率：10秒 → 30秒
-}
+  initPreloadService(router);
 
-// 全局错误处理
-app.config.errorHandler = (err, vm, info) => {
-  console.error('❌ Vue Error:', err);
-  // 可以在这里添加错误上报逻辑
+  const performanceService = PerformanceService.getInstance({
+    monitor: {
+      enabled: import.meta.env.PROD,
+      interval: 30000,
+      metrics: ['lcp', 'cls'],
+    },
+    reporting: {
+      enabled: import.meta.env.PROD,
+      batchSize: 10,
+      flushInterval: 60000,
+    },
+    optimization: {
+      lazyLoad: true,
+      preLoad: true,
+      cache: true,
+      compress: true,
+    },
+  });
+
+  if (import.meta.env.DEV) {
+    setInterval(() => {
+      const metrics = performanceService.getCurrentMetrics();
+      if (metrics) {
+        const score = performanceService.getPerformanceScore();
+        console.log(`馃殌 Performance Score: ${score}/100`, metrics);
+      }
+    }, 30000);
+  }
+
+  app.config.errorHandler = err => {
+    console.error('鉂?Vue Error:', err);
+  };
+
+  app.config.warnHandler = (msg, vm, trace) => {
+    void vm;
+    console.warn('鈿狅笍 Vue Warning:', msg);
+    console.warn('Trace:', trace);
+  };
+
+  app.mount('#app');
 };
 
-app.config.warnHandler = (msg, vm, trace) => {
-  console.warn('⚠️ Vue Warning:', msg);
-  console.warn('Trace:', trace);
-};
-
-app.mount('#app');
+void bootstrap();

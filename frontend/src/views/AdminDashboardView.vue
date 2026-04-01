@@ -7,7 +7,7 @@
     </div>
 
     <!-- 统计卡片 -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
       <!-- 用户总数 -->
       <div class="bg-white overflow-hidden shadow rounded-lg">
         <div class="p-5">
@@ -1454,3 +1454,4 @@
     if (healthInterval) clearInterval(healthInterval);
   });
 </script>
+

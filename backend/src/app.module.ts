@@ -21,6 +21,7 @@ import { RateLimitModule } from './common/rate-limit/rate-limit.module';
 import { InitializationModule } from './initialization/initialization.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
 import { ProxyPoolModule } from './modules/proxy-pool/proxy-pool.module';
+import { DownloadTasksModule } from './download-tasks/download-tasks.module';
 import { User } from './entities/user.entity';
 import { MediaResource } from './entities/media-resource.entity';
 import { PlaySource } from './entities/play-source.entity';
@@ -32,6 +33,7 @@ import { AdminRole } from './entities/admin-role.entity';
 import { AdminPermission } from './entities/admin-permission.entity';
 import { AdminLog } from './entities/admin-log.entity';
 import { SearchHistory } from './entities/search-history.entity';
+import { DownloadTask } from './entities/download-task.entity';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -72,6 +74,7 @@ interface MysqlTypeCastField {
           AdminLog,
           IPTVChannel,
           ParseProvider,
+          DownloadTask,
         ], // 所有实体类
 
         // 连接池优化配置（生产环境增强）
@@ -232,6 +235,9 @@ interface MysqlTypeCastField {
 
     // 代理池模块 - 代理IP管理和轮换
     ProxyPoolModule,
+
+    // 下载任务模块 - 用户下载任务同步
+    DownloadTasksModule,
   ],
   controllers: [AppController],
   providers: [AppService],

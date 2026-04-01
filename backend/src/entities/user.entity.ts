@@ -21,6 +21,7 @@ import { MediaResource } from './media-resource.entity';
 import { PlaySource } from './play-source.entity';
 import { Recommendation } from './recommendation.entity';
 import { SearchHistory } from './search-history.entity';
+import { DownloadTask } from './download-task.entity';
 
 /**
  * 用户实体类
@@ -89,4 +90,8 @@ export class User {
   // 关联搜索历史（一对多）
   @OneToMany(() => SearchHistory, searchHistory => searchHistory.user)
   searchHistory: SearchHistory[];
+
+  // 关联下载任务（一对多）
+  @OneToMany(() => DownloadTask, downloadTask => downloadTask.user)
+  downloadTasks: DownloadTask[];
 }
