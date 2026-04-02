@@ -90,10 +90,10 @@
                         formatSize(item.size)
                       }}</span>
                       <span class="rounded-full bg-slate-100 px-2.5 py-1"
-                        >做种 {{ item.seeders ?? '—' }}</span
+                        >做种者 {{ item.seeders ?? '—' }}</span
                       >
                       <span class="rounded-full bg-slate-100 px-2.5 py-1"
-                        >吸血 {{ item.leechers ?? '—' }}</span
+                        >下载者 {{ item.leechers ?? '—' }}</span
                       >
                     </div>
                   </div>
@@ -226,7 +226,7 @@
             >
               <div class="font-medium text-slate-900">{{ item.name }}</div>
               <div class="mt-1 text-xs text-slate-500">
-                做种 {{ item.seeders ?? '—' }} · {{ formatSize(item.size) }}
+                做种者 {{ item.seeders ?? '—' }} · {{ formatSize(item.size) }}
               </div>
             </button>
           </div>
@@ -310,10 +310,10 @@
                   {{ selectedHealth.isHealthy ? '可用' : '异常' }}
                 </span>
                 <span class="rounded-full bg-slate-200 px-2.5 py-1 text-slate-700"
-                  >做种 {{ selectedHealth.seeders ?? '—' }}</span
+                  >做种者 {{ selectedHealth.seeders ?? '—' }}</span
                 >
                 <span class="rounded-full bg-slate-200 px-2.5 py-1 text-slate-700"
-                  >吸血 {{ selectedHealth.leechers ?? '—' }}</span
+                  >下载者 {{ selectedHealth.leechers ?? '—' }}</span
                 >
               </div>
               <div class="mt-2 text-xs text-slate-500">

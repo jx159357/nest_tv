@@ -7,7 +7,7 @@ export interface RecommendationProfilePreference {
 }
 
 export interface RecommendationProfile {
-  strategy: 'history-based' | 'fallback-trending';
+  strategy: 'history-based' | 'search-based' | 'fallback-trending';
   totalWatched: number;
   completedCount: number;
   recentWatchCount: number;
@@ -15,6 +15,7 @@ export interface RecommendationProfile {
   favoriteTypes: RecommendationProfilePreference[];
   favoriteGenres: RecommendationProfilePreference[];
   favoriteDirectors: RecommendationProfilePreference[];
+  recentSearchKeywords: RecommendationProfilePreference[];
 }
 
 export interface PersonalizedRecommendationItem {

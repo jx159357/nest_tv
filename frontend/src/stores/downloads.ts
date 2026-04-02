@@ -39,9 +39,7 @@ const inferDownloadType = (url: string): DownloadTaskType => {
 
   if (
     normalizedUrl.endsWith('.torrent') ||
-    normalizedUrl.includes('torrent') ||
-    normalizedUrl.startsWith('thunder:') ||
-    normalizedUrl.startsWith('ed2k:')
+    normalizedUrl.includes('torrent')
   ) {
     return 'torrent';
   }

@@ -23,7 +23,7 @@ describe('mediaApi', () => {
     await mediaApi.getWatchHistory({ page: 2 });
 
     expect(apiGet).toHaveBeenNthCalledWith(1, '/media/favorites', { params: { limit: 20 } }, false);
-    expect(apiGet).toHaveBeenNthCalledWith(2, '/watch-history', { params: { page: 2 } }, false);
+    expect(apiGet).toHaveBeenNthCalledWith(2, '/watch-history/user/me', { params: { page: 2 } }, false);
   });
 
   it('keeps public media shelves cacheable', async () => {

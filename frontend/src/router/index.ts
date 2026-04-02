@@ -8,6 +8,8 @@ const RegisterView = () => import('../views/RegisterView.vue');
 const MediaDetailView = () => import('../views/MediaDetailView.vue');
 const WatchView = () => import('../views/WatchView.vue');
 const ProfileView = () => import('../views/ProfileView.vue');
+const SettingsView = () => import('../views/SettingsView.vue');
+const SearchHistoryView = () => import('../views/SearchHistoryView.vue');
 const FavoritesView = () => import('../views/FavoritesView.vue');
 const CrawlerView = () => import('../views/CrawlerView.vue');
 const PlaySourcesView = () => import('../views/PlaySourcesView.vue');
@@ -92,11 +94,31 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/settings',
+    name: 'settings',
+    component: SettingsView,
+    meta: {
+      title: '偏好设置 - Nest TV',
+      requiresAuth: true,
+      preload: false,
+    },
+  },
+  {
     path: '/favorites',
     name: 'favorites',
     component: FavoritesView,
     meta: {
       title: '我的收藏 - Nest TV',
+      requiresAuth: true,
+      preload: false,
+    },
+  },
+  {
+    path: '/search-history',
+    name: 'search-history',
+    component: SearchHistoryView,
+    meta: {
+      title: '搜索历史 - Nest TV',
       requiresAuth: true,
       preload: false,
     },

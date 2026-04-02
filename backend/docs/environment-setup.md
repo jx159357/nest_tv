@@ -175,7 +175,7 @@ npm install -g @nestjs/cli
 ### 2.3 前端项目初始化
 ```bash
 # 进入前端目录
-cd frontend/tv-frontend
+cd frontend
 
 # 安装依赖
 npm install
@@ -215,7 +215,7 @@ JWT_SECRET=your_super_secret_jwt_key_at_least_32_characters_long
 JWT_EXPIRES_IN=1h
 
 # 应用配置
-APP_PORT=3000
+PORT=3334
 APP_NAME=NestTV
 APP_ENV=development
 
@@ -235,12 +235,11 @@ EMAIL_PASS=your_email_password
 ```
 
 ### 3.2 前端环境变量
-创建 `frontend/tv-frontend/.env` 文件：
+创建 `frontend/.env` 文件：
 
 ```env
 # API 配置
-VITE_API_BASE_URL=http://localhost:3000
-VITE_API_VERSION=v1
+VITE_API_BASE_URL=/api
 
 # 应用配置
 VITE_APP_TITLE=NestTV
@@ -314,14 +313,15 @@ npm run start:prod
 ```
 
 #### 后端服务信息
-- 服务地址: `http://localhost:3000`
-- API 文档: `http://localhost:3000/api` (Swagger 计划中)
-- 健康检查: `http://localhost:3000/health`
+- 服务地址: 默认 `http://localhost:3334`
+- API 文档: 默认 `http://localhost:3334/api`
+- 健康检查: 默认 `http://localhost:3334/health`
+- 若 `3334` 被占用，请以启动日志打印的实际端口为准
 
 ### 5.2 启动前端服务
 ```bash
 # 进入前端目录
-cd frontend/tv-frontend
+cd frontend
 
 # 开发模式启动
 npm run dev
@@ -338,7 +338,7 @@ npm run preview
 ### 5.3 验证服务启动
 ```bash
 # 测试后端 API
-curl http://localhost:3000
+curl http://localhost:3334/health
 
 # 测试前端页面
 curl http://localhost:5173
@@ -400,14 +400,14 @@ services:
       REDIS_PORT: 6379
       JWT_SECRET: your_production_jwt_secret
     ports:
-      - "3000:3000"
+      - "3334:3334"
     depends_on:
       - mysql
       - redis
     restart: unless-stopped
 
   frontend:
-    build: ./frontend/tv-frontend
+    build: ./frontend
     container_name: nesttv-frontend
     environment:
       VITE_API_BASE_URL: https://your-domain.com
@@ -468,14 +468,14 @@ module.exports = {
         REDIS_HOST: 'localhost',
         REDIS_PORT: 6379,
         JWT_SECRET: 'your_production_jwt_secret',
-        PORT: 3000
+        PORT: 3334
       }
     },
     {
       name: 'nesttv-frontend',
       script: 'npm',
       args: 'run preview',
-      cwd: './frontend/tv-frontend/dist',
+      cwd: './frontend/dist',
       instances: 1,
       env: {
         NODE_ENV: 'production'
@@ -492,7 +492,7 @@ cd backend
 npm run build
 
 # 构建前端
-cd ../frontend/tv-frontend
+cd ../frontend
 npm run build
 
 # 回到项目根目录
@@ -515,8 +515,8 @@ pm2 startup
 ### 7.1 端口冲突
 ```bash
 # 查看端口占用
-netstat -ano | findstr :3000  # Windows
-lsof -i :3000  # macOS/Linux
+netstat -ano | findstr :3334  # Windows
+lsof -i :3334  # macOS/Linux
 
 # 杀死占用进程
 taskkill /PID <pid> /F  # Windows

@@ -182,6 +182,7 @@
 <script setup lang="ts">
   import { ref, computed, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
+  import { notifyInfo } from '@/composables/useModal';
   import { useAuthStore } from '@/stores/auth';
   import { useRecommendationService } from '@/services/recommendation.service';
   import MediaCard from '@/components/ui/MediaCard.vue';
@@ -253,12 +254,11 @@
   };
 
   const goToRecommendations = () => {
-    router.push('/recommendations');
+    router.push({ name: 'recommendations', query: { focus: 'profile' } });
   };
 
   const exportData = () => {
-    // 实现数据导出功能
-    alert('数据导出功能开发中...');
+    notifyInfo('功能开发中', '数据导出功能正在规划中，后续版本会补充。');
   };
 
   const refreshRecommendations = async () => {
@@ -716,3 +716,5 @@
     }
   }
 </style>
+
+

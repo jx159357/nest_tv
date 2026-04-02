@@ -1,24 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <!-- 导航栏 -->
-    <nav class="bg-white shadow-sm">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-          <div class="flex items-center">
-            <router-link to="/" class="text-xl font-bold text-gray-900">视频平台</router-link>
-          </div>
-
-          <div class="flex items-center space-x-4">
-            <router-link to="/" class="text-gray-700 hover:text-gray-900"> 首页 </router-link>
-            <router-link to="/profile" class="text-gray-700 hover:text-gray-900">
-              个人中心
-            </router-link>
-          </div>
-        </div>
-      </div>
-    </nav>
-
-    <!-- 主要内容 -->
+  <NavigationLayout>
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-900">观看历史</h1>
@@ -237,12 +218,14 @@
         </div>
       </div>
     </main>
-  </div>
+  </NavigationLayout>
 </template>
 
 <script setup>
   import { ref, watch } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
+  import NavigationLayout from '@/components/NavigationLayout.vue';
+  import { showConfirm } from '@/composables/useModal';
   import { useAuthStore } from '@/stores/auth';
   import { watchHistoryApi } from '@/api/watchHistory';
 
@@ -457,19 +440,17 @@
 
   // 删除观看历史
   const deleteHistory = async id => {
-    if (!confirm('确定要删除这条观看历史记录吗？')) {
-      return;
-    }
-
-    try {
-      deletingId.value = id;
-      await watchHistoryApi.deleteWatchHistory(String(id));
-      await loadWatchHistory(pagination.value.page);
-    } catch (error) {
-      console.error('删除观看历史失败:', error);
-    } finally {
-      deletingId.value = null;
-    }
+    showConfirm('确定要删除这条观看历史记录吗？', async () => {
+      try {
+        deletingId.value = id;
+        await watchHistoryApi.deleteWatchHistory(String(id));
+        await loadWatchHistory(pagination.value.page);
+      } catch (error) {
+        console.error('删除观看历史失败:', error);
+      } finally {
+        deletingId.value = null;
+      }
+    });
   };
 
   // 组件挂载时加载数据

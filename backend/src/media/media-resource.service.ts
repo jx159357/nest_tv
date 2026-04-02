@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Like, Not, Repository } from 'typeorm';
 import { MediaResource } from '../entities/media-resource.entity';
+import { User } from '../entities/user.entity';
 import { CreateMediaResourceDto } from './dtos/create-media-resource.dto';
 import { UpdateMediaResourceDto } from './dtos/update-media-resource.dto';
 import { MediaResourceQueryDto } from './dtos/media-resource-query.dto';
@@ -34,6 +35,8 @@ export class MediaResourceService {
   constructor(
     @InjectRepository(MediaResource)
     private mediaResourceRepository: Repository<MediaResource>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
     private readonly cacheService: CacheService,
   ) {}
 
@@ -305,6 +308,106 @@ export class MediaResourceService {
    */
   async incrementViews(id: number): Promise<void> {
     await this.mediaResourceRepository.increment({ id }, 'viewCount', 1);
+  }
+
+  async addToFavorites(userId: number, mediaResourceId: number): Promise<void> {
+    const [user, mediaResource] = await Promise.all([
+      this.userRepository.findOne({
+        where: { id: userId },
+        relations: ['favorites'],
+      }),
+      this.mediaResourceRepository.findOne({
+        where: { id: mediaResourceId, isActive: true },
+      }),
+    ]);
+
+    if (!user) {
+      throw new NotFoundException(`用户ID ${userId} 不存在`);
+    }
+
+    if (!mediaResource) {
+      throw new NotFoundException(`影视资源ID ${mediaResourceId} 不存在`);
+    }
+
+    const favorites = Array.isArray(user.favorites) ? user.favorites : [];
+    if (favorites.some(item => item.id === mediaResourceId)) {
+      return;
+    }
+
+    user.favorites = [...favorites, mediaResource];
+    await this.userRepository.save(user);
+    await this.cacheService.clearPattern('media:list:*');
+  }
+
+  async removeFromFavorites(userId: number, mediaResourceId: number): Promise<void> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['favorites'],
+    });
+
+    if (!user) {
+      throw new NotFoundException(`用户ID ${userId} 不存在`);
+    }
+
+    const favorites = Array.isArray(user.favorites) ? user.favorites : [];
+    user.favorites = favorites.filter(item => item.id !== mediaResourceId);
+    await this.userRepository.save(user);
+    await this.cacheService.clearPattern('media:list:*');
+  }
+
+  async isFavoritedByUser(userId: number, mediaResourceId: number): Promise<boolean> {
+    const count = await this.userRepository
+      .createQueryBuilder('user')
+      .leftJoin('user.favorites', 'favorite')
+      .where('user.id = :userId', { userId })
+      .andWhere('favorite.id = :mediaResourceId', { mediaResourceId })
+      .getCount();
+
+    return count > 0;
+  }
+
+  async getUserFavorites(userId: number, page: number = 1, limit: number = 10) {
+    const nextPage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+    const nextLimit = Number.isFinite(limit) && limit > 0 ? Math.min(Math.floor(limit), 50) : 10;
+
+    const [data, total] = await this.mediaResourceRepository
+      .createQueryBuilder('mediaResource')
+      .innerJoin('mediaResource.favorites', 'favoriteUser', 'favoriteUser.id = :userId', { userId })
+      .where('mediaResource.isActive = :isActive', { isActive: true })
+      .orderBy('mediaResource.updatedAt', 'DESC')
+      .skip((nextPage - 1) * nextLimit)
+      .take(nextLimit)
+      .getManyAndCount();
+
+    const totalPages = total > 0 ? Math.ceil(total / nextLimit) : 0;
+    const resolvedPage = totalPages > 0 ? Math.min(nextPage, totalPages) : 1;
+
+    if (resolvedPage !== nextPage) {
+      const adjustedData = await this.mediaResourceRepository
+        .createQueryBuilder('mediaResource')
+        .innerJoin('mediaResource.favorites', 'favoriteUser', 'favoriteUser.id = :userId', { userId })
+        .where('mediaResource.isActive = :isActive', { isActive: true })
+        .orderBy('mediaResource.updatedAt', 'DESC')
+        .skip((resolvedPage - 1) * nextLimit)
+        .take(nextLimit)
+        .getMany();
+
+      return {
+        data: adjustedData,
+        page: resolvedPage,
+        limit: nextLimit,
+        total,
+        totalPages,
+      };
+    }
+
+    return {
+      data,
+      page: resolvedPage,
+      limit: nextLimit,
+      total,
+      totalPages,
+    };
   }
 
   /**

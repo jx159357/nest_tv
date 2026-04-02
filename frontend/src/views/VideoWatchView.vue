@@ -364,6 +364,7 @@
   import { useAuthStore } from '@/stores/auth';
   import { useDownloadsStore } from '@/stores/downloads';
   import { mediaApi, playSourceApi } from '@/api';
+  import { notifyError, notifySuccess, showConfirm } from '@/composables/useModal';
   import VideoPlayer from '@/components/ui/VideoPlayer.vue';
   import LocalVideoUpload from '@/components/ui/LocalVideoUpload.vue';
   import { formatFileSize, formatDuration } from '@/utils/file-size';
@@ -579,10 +580,6 @@
       // 尝试恢复播放
       if (videoPlayerRef.value) {
         await videoPlayerRef.value.play();
-
-        // 记录切换完成时间
-        const switchDuration = Date.now() - sourceSwitchStartTime.value;
-        console.log(`播放源切换完成，耗时: ${switchDuration}ms`);
       }
     } catch (error) {
       console.error('播放源切换失败:', error);
@@ -623,18 +620,11 @@
   };
 
   // 视频事件处理
-  const onVideoPlay = () => {
-    console.log('视频开始播放');
-    // 可以记录播放历史
-  };
+  const onVideoPlay = () => undefined;
 
-  const onVideoPause = () => {
-    console.log('视频暂停');
-    // 可以保存播放进度
-  };
+  const onVideoPause = () => undefined;
 
   const onVideoEnded = () => {
-    console.log('视频播放结束');
     // 可以标记为已观看
 
     // 如果是试看模式，播放结束后提示登录
@@ -660,9 +650,7 @@
     }
   };
 
-  const onVideoVolumeChange = (volume: number) => {
-    console.log('音量变化:', volume);
-  };
+  const onVideoVolumeChange = (_volume: number) => undefined;
 
   const onVideoError = (error: string) => {
     console.error('视频播放错误:', error);
@@ -672,10 +660,9 @@
   // 收藏/取消收藏
   const toggleFavorite = async () => {
     if (!authStore.isAuthenticated) {
-      // 未登录用户提示
-      if (confirm('收藏功能需要登录，是否前往登录页面？')) {
-        router.push('/login');
-      }
+      showConfirm('收藏功能需要登录，是否前往登录页面？', () => {
+        void router.push('/login');
+      });
       return;
     }
 
@@ -705,9 +692,11 @@
       navigator.clipboard
         .writeText(url)
         .then(() => {
-          alert('链接已复制到剪贴板');
+          notifySuccess('链接已复制', '当前视频链接已复制到剪贴板。');
         })
-        .catch(console.error);
+        .catch(() => {
+          notifyError('复制失败', '复制视频链接失败，请稍后重试。');
+        });
     }
   };
 
@@ -717,14 +706,14 @@
       currentPlaySource.value?.downloadUrls?.[0] || media.value?.downloadUrls?.[0] || '';
 
     if (!downloadUrl || !media.value) {
-      alert('该视频不支持下载');
+      notifyError('暂不支持下载', '当前视频没有可用的下载链接。');
       return;
     }
 
     const task = downloadsStore.enqueueTask({
       url: downloadUrl,
       fileName: media.value.title || 'video',
-      sourceLabel: currentPlaySource.value?.sourceName || media.value.source || '旧版播放页',
+      sourceLabel: currentPlaySource.value?.sourceName || media.value.source || '播放页',
       mediaResourceId: media.value.id,
       metadata: {
         title: media.value.title,
@@ -734,7 +723,7 @@
     });
 
     downloadsStore.startTask(task.id);
-    alert(`已加入下载任务：${task.fileName}`);
+    notifySuccess('已加入下载任务', `已将《${task.fileName}》加入下载任务。`);
   };
 
   // 格式化试看时间
@@ -754,8 +743,6 @@
       URL.revokeObjectURL(localVideoUrl.value);
     }
     localVideoUrl.value = URL.createObjectURL(file);
-
-    console.log('本地视频文件已选择:', file.name, metadata);
   };
 
   const onLocalVideoRemoved = () => {
@@ -773,20 +760,16 @@
       switchToBestSource();
     }
 
-    console.log('本地视频文件已移除');
   };
 
   const onLocalVideoPlay = (file: File, url: string) => {
+    void file;
+    void url;
     // 切换到本地视频播放
     switchToLocalVideo();
-
-    console.log('播放本地视频:', file.name);
   };
 
-  const onLocalVideoUploadComplete = (response: any) => {
-    console.log('本地视频上传完成:', response);
-    // 可以在这里处理上传完成后的逻辑
-  };
+  const onLocalVideoUploadComplete = (_response: unknown) => undefined;
 
   const onLocalVideoUploadError = (error: string) => {
     console.error('本地视频上传失败:', error);
@@ -833,9 +816,6 @@
       // 恢复播放
       if (videoPlayerRef.value) {
         await videoPlayerRef.value.play();
-
-        const switchDuration = Date.now() - sourceSwitchStartTime.value;
-        console.log(`本地视频切换完成，耗时: ${switchDuration}ms`);
       }
     } catch (error) {
       console.error('本地视频切换失败:', error);

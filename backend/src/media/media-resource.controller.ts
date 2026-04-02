@@ -23,6 +23,7 @@ import {
 import { MediaResourceService } from './media-resource.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RateLimitGuard, RateLimit } from '../common/guards/rate-limit.guard';
+import { GetCurrentUserId } from '../decorators/current-user.decorator';
 import { CreateMediaResourceDto } from './dtos/create-media-resource.dto';
 import { UpdateMediaResourceDto } from './dtos/update-media-resource.dto';
 import {
@@ -195,6 +196,57 @@ export class MediaResourceController {
   @ApiResponse({ status: 200, description: '获取成功' })
   async getStatistics() {
     return this.mediaResourceService.getStatistics();
+  }
+
+  @Get('favorites')
+  @ApiOperation({ summary: '获取当前用户收藏列表' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiQuery({ name: 'page', description: '页码', required: false })
+  @ApiQuery({ name: 'limit', description: '每页数量', required: false })
+  async getFavorites(
+    @GetCurrentUserId() userId: number,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    const nextPage = Number(page);
+    const nextLimit = Number(limit);
+
+    return this.mediaResourceService.getUserFavorites(userId, nextPage, nextLimit);
+  }
+
+  @Post(':id/favorites')
+  @ApiOperation({ summary: '添加影视资源到收藏' })
+  @ApiParam({ name: 'id', description: '影视资源ID' })
+  @ApiResponse({ status: 200, description: '收藏成功' })
+  async addToFavorites(
+    @Param('id') mediaResourceId: number,
+    @GetCurrentUserId() userId: number,
+  ): Promise<void> {
+    await this.mediaResourceService.addToFavorites(userId, mediaResourceId);
+  }
+
+  @Delete(':id/favorites')
+  @ApiOperation({ summary: '从收藏中移除影视资源' })
+  @ApiParam({ name: 'id', description: '影视资源ID' })
+  @ApiResponse({ status: 200, description: '取消收藏成功' })
+  async removeFromFavorites(
+    @Param('id') mediaResourceId: number,
+    @GetCurrentUserId() userId: number,
+  ): Promise<void> {
+    await this.mediaResourceService.removeFromFavorites(userId, mediaResourceId);
+  }
+
+  @Get(':id/favorites/status')
+  @ApiOperation({ summary: '检查影视资源收藏状态' })
+  @ApiParam({ name: 'id', description: '影视资源ID' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getFavoriteStatus(
+    @Param('id') mediaResourceId: number,
+    @GetCurrentUserId() userId: number,
+  ) {
+    const isFavorited = await this.mediaResourceService.isFavoritedByUser(userId, mediaResourceId);
+
+    return { isFavorited };
   }
 
   /**

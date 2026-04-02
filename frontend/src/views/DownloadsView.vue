@@ -247,8 +247,8 @@
 
   const typeText = (type: DownloadTask['type']) => {
     const labelMap: Record<DownloadTask['type'], string> = {
-      direct: '直链',
-      torrent: '种子 / 特殊协议',
+      direct: '直链 / 协议链接',
+      torrent: '种子文件',
       magnet: 'Magnet',
     };
     return labelMap[type];

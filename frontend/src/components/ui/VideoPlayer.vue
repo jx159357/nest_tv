@@ -1537,7 +1537,8 @@
 
   const handleSwipe = (direction: string, distance: number) => {
     // 基础滑动处理
-    console.log(`滑动方向: ${direction}, 距离: ${distance}`);
+    void direction;
+    void distance;
   };
 
   const handleSingleTap = (touch: Touch) => {
@@ -1597,11 +1598,6 @@
     const scale = distance / touchStartDistance.value;
 
     gestureState.pinchScale = Math.max(0.5, Math.min(3, scale));
-
-    // 可以用于画质切换或界面缩放
-    if (Math.abs(scale - 1) > 0.2) {
-      console.log('缩放比例:', gestureState.pinchScale);
-    }
   };
 
   const hideAllTouchIndicators = () => {

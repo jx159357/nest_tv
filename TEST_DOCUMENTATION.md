@@ -55,6 +55,36 @@ npm run init-database  # 如果存在
 # 或启动时 TypeORM 自动创建表结构
 ```
 
+### 2.4 前端高层回归脚本
+当前前端已经维护了一批高价值回归入口，建议在日常开发中优先使用：
+
+```bash
+# 用户主链
+npm run test:journeys --prefix frontend
+
+# 后台运营主链
+npm run test:journeys:admin --prefix frontend
+
+# 下载任务 / 磁力资源工具页
+npm run test:tools --prefix frontend
+
+# 汇总前端主回归护栏
+npm run test:regressions --prefix frontend
+```
+
+这些脚本分别覆盖：
+- `test:journeys`: 登录、注册、搜索、收藏、设置、推荐画像等核心用户链路
+- `test:journeys:admin`: 用户/媒体管理联动到下载任务排查的后台运营链路
+- `test:tools`: 下载任务页和磁力资源页的关键操作链路
+- `test:regressions`: 一次性串跑以上核心护栏
+
+### 2.5 开发者导航
+如果是继续迭代这个项目，建议先看：
+
+- `docs/current-progress.md`：当前连续迭代上下文
+- `docs/developer-navigation.md`：代码入口、回归命令、关键页面与模块速览
+- `README.md`：启动方式与当前接口速览
+
 ## 3. 功能测试用例
 
 ### 3.1 用户认证模块测试
@@ -166,14 +196,53 @@ npm run init-database  # 如果存在
 ### 3.5 推荐系统测试
 
 #### 3.5.1 获取推荐内容
-**测试路径**: `GET /recommendations`
+**测试路径**:
+- `GET /recommendations/personalized-detailed`
+- `GET /recommendations/profile`
+- `GET /recommendations/trending`
+- `GET /recommendations/latest`
+- `GET /recommendations/top-rated`
 
-| 测试用例编号 | 测试描述 | 查询参数 | 预期结果 | 优先级 |
-|-------------|---------|---------|---------|--------|
-| RECOMMEND-001 | 个性化推荐 | 无 | 基于用户历史的推荐 | 高 |
-| RECOMMEND-002 | 热门推荐 | type=popular | 热门内容推荐 | 高 |
-| RECOMMEND-003 | 相似推荐 | basedOn=123 | 基于媒体的相似推荐 | 中 |
-| RECOMMEND-004 | 分类推荐 | genre=动作 | 动作类推荐 | 中 |
+| 测试用例编号 | 测试描述 | 查询参数 / 路径 | 预期结果 | 优先级 |
+|-------------|---------|----------------|---------|--------|
+| RECOMMEND-001 | 个性化推荐明细 | `GET /recommendations/personalized-detailed?limit=8` | 返回带 `media`、`score`、`reasons` 的推荐列表 | 高 |
+| RECOMMEND-002 | 推荐画像 | `GET /recommendations/profile` | 返回观看/搜索驱动的推荐画像与偏好汇总 | 高 |
+| RECOMMEND-003 | 热门推荐 | `GET /recommendations/trending?limit=8` | 返回热门内容推荐 | 高 |
+| RECOMMEND-004 | 最新 / 高分推荐 | `GET /recommendations/latest?limit=8`、`GET /recommendations/top-rated?limit=8` | 分别返回最新内容和高分内容 | 中 |
+
+#### 3.5.2 搜索与搜索历史测试
+**测试路径**:
+- `GET /search/suggestions`
+- `GET /search/history`
+- `POST /search/history`
+- `DELETE /search/history`
+- `GET /search/related-keywords/:keyword`
+
+| 测试用例编号 | 测试描述 | 查询参数 / 路径 | 预期结果 | 优先级 |
+|-------------|---------|----------------|---------|--------|
+| SEARCH-001 | 获取搜索建议 | `GET /search/suggestions?keyword=沙丘&limit=6` | 返回搜索建议列表 | 高 |
+| SEARCH-002 | 获取搜索历史 | `GET /search/history?limit=8` | 返回当前用户最近搜索关键词 | 高 |
+| SEARCH-003 | 记录搜索历史 | `POST /search/history` + `keyword/resultCount/searchTime/filters` | 成功写入一条搜索历史 | 高 |
+| SEARCH-004 | 清空搜索历史 | `DELETE /search/history` | 返回清空成功结果 | 中 |
+| SEARCH-005 | 获取关联关键词 | `GET /search/related-keywords/沙丘?limit=6` | 返回相关关键词列表 | 中 |
+
+#### 3.5.3 下载任务测试
+**测试路径**:
+- `GET /download-tasks/user/me`
+- `GET /download-tasks/user/me/stats`
+- `POST /download-tasks`
+- `PATCH /download-tasks/:clientId`
+- `DELETE /download-tasks/:clientId`
+- `DELETE /download-tasks/user/me/completed`
+
+| 测试用例编号 | 测试描述 | 查询参数 / 路径 | 预期结果 | 优先级 |
+|-------------|---------|----------------|---------|--------|
+| DOWNLOAD-001 | 获取当前用户任务列表 | `GET /download-tasks/user/me?page=1&limit=20` | 返回分页下载任务列表 | 高 |
+| DOWNLOAD-002 | 获取任务统计 | `GET /download-tasks/user/me/stats` | 返回总数、活跃、完成、失败统计 | 高 |
+| DOWNLOAD-003 | 新建或覆盖任务 | `POST /download-tasks` + `clientId/url/fileName/...` | 成功保存当前用户任务 | 高 |
+| DOWNLOAD-004 | 更新任务状态 | `PATCH /download-tasks/:clientId` | 指定任务状态或进度更新成功 | 高 |
+| DOWNLOAD-005 | 删除单条任务 | `DELETE /download-tasks/:clientId` | 指定任务删除成功 | 中 |
+| DOWNLOAD-006 | 清空已完成任务 | `DELETE /download-tasks/user/me/completed` | 已完成任务批量清理成功 | 中 |
 
 ### 3.6 IPTV直播测试
 

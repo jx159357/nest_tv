@@ -6,21 +6,21 @@
 ## 基础信息
 
 ### 服务地址
-- 开发环境: `http://localhost:3000`
+- 开发环境: 默认 `http://localhost:3334`
 - 生产环境: `https://api.nesttv.com`
+
+> 当前后端默认监听 `3334`；如果端口被占用，会自动顺延到下一个可用端口，请以启动日志为准。
 
 ### 认证方式
 - **JWT Token**: 在请求头中添加 `Authorization: Bearer <token>`
-- **Token 类型**: Access Token (1小时有效期) + Refresh Token (7天有效期)
+- **Token 类型**: Access Token（当前登录接口返回 `accessToken`）
 
 ### 响应格式
-```json
-{
-  "statusCode": number,
-  "message": string,
-  "data": any
-}
-```
+当前实现没有强制统一的 `statusCode/message/data` 外层包装。
+
+- 用户资料接口通常直接返回 DTO 对象
+- 搜索建议 / 搜索历史通常直接返回数组或简单对象
+- 下载任务接口通常直接返回分页对象或任务对象
 
 ### 错误码说明
 | 状态码 | 说明 |
@@ -55,18 +55,14 @@
 **响应示例：**
 ```json
 {
-  "statusCode": 201,
-  "message": "用户注册成功",
-  "data": {
-    "id": 1,
-    "username": "mediauser",
-    "email": "media@streaming-platform.com",
-    "phone": "13800138000",
-    "nickname": "测试用户",
-    "role": "user",
-    "isActive": true,
-    "createdAt": "2024-08-28T12:00:00.000Z"
-  }
+  "id": 1,
+  "username": "mediauser",
+  "email": "media@streaming-platform.com",
+  "phone": "13800138000",
+  "nickname": "测试用户",
+  "role": "user",
+  "isActive": true,
+  "createdAt": "2024-08-28T12:00:00.000Z"
 }
 ```
 
@@ -84,24 +80,18 @@
 **响应示例：**
 ```json
 {
-  "statusCode": 200,
-  "message": "登录成功",
-  "data": {
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "expiresIn": 3600,
-    "user": {
-      "id": 1,
-      "username": "testuser",
-      "email": "test@example.com",
-      "role": "user"
-    }
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": 1,
+    "username": "testuser",
+    "email": "test@example.com",
+    "role": "user"
   }
 }
 ```
 
 ### 1.3 获取用户信息
-**POST** `/users/profile`
+**GET** `/users/profile`
 
 **请求头：**
 ```
@@ -111,462 +101,253 @@ Authorization: Bearer <access_token>
 **响应示例：**
 ```json
 {
-  "statusCode": 200,
-  "message": "获取用户信息成功",
-  "data": {
-    "id": 1,
-    "username": "mediauser",
-    "email": "media@streaming-platform.com",
-    "phone": "13800138000",
-    "nickname": "测试用户",
-    "role": "user",
-    "isActive": true,
-    "avatar": "https://cdn.streaming-platform.com/avatars/user1.jpg",
-    "lastLoginAt": "2024-08-28T12:00:00.000Z",
-    "createdAt": "2024-08-28T10:00:00.000Z"
-  }
+  "id": 1,
+  "username": "mediauser",
+  "email": "media@streaming-platform.com",
+  "phone": "13800138000",
+  "nickname": "测试用户",
+  "role": "user",
+  "isActive": true,
+  "avatar": "https://cdn.streaming-platform.com/avatars/user1.jpg",
+  "lastLoginAt": "2024-08-28T12:00:00.000Z",
+  "createdAt": "2024-08-28T10:00:00.000Z"
 }
 ```
 
-### 1.4 刷新令牌
-**POST** `/users/refresh`
+### 1.4 更新用户资料与推荐偏好
+**PUT** `/users/profile`
+
+**请求头：**
+```
+Authorization: Bearer <access_token>
+```
 
 **请求参数：**
 ```json
 {
-  "refreshToken": "string"   // 刷新令牌
+  "nickname": "星际影迷",
+  "phone": "13800000000",
+  "avatar": "https://example.com/avatar.png",
+  "recommendationSettings": {
+    "preferredTypes": ["movie", "tv_series"],
+    "preferredGenres": ["科幻", "悬疑"],
+    "excludedGenres": ["恐怖"],
+    "preferredKeywords": ["太空", "时间循环"],
+    "freshnessBias": "balanced"
+  }
+}
+```
+
+### 1.5 修改密码
+**PUT** `/users/change-password`
+
+**请求头：**
+```
+Authorization: Bearer <access_token>
+```
+
+**请求参数：**
+```json
+{
+  "oldPassword": "string",
+  "newPassword": "string"
 }
 ```
 
 ---
 
-## 2. 影视资源模块（开发中）
+## 2. 媒体 / 搜索 / 推荐 / 下载任务模块（当前实现）
 
-### 2.1 获取影视资源列表
-**GET** `/media-resources`
+### 2.1 获取媒体列表
+**GET** `/media`
 
-**查询参数：**
+**常用查询参数：**
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | page | number | 否 | 页码，默认1 |
-| limit | number | 否 | 每页数量，默认10 |
+| pageSize / limit | number | 否 | 每页数量 |
 | type | string | 否 | 影视类型 |
-| sort | string | 否 | 排序方式 |
-| order | string | 否 | 排序方向 |
+| keyword | string | 否 | 关键词过滤 |
 
-**响应示例：**
-```json
-{
-  "statusCode": 200,
-  "message": "获取影视资源列表成功",
-  "data": {
-    "items": [
-      {
-        "id": 1,
-        "title": "电影名称",
-        "description": "电影简介",
-        "type": "movie",
-        "director": "导演名",
-        "actors": "演员1,演员2",
-        "genres": ["动作", "冒险"],
-        "releaseDate": "2024-01-01",
-        "quality": "hd",
-        "poster": "https://example.com/poster.jpg",
-        "backdrop": "https://example.com/backdrop.jpg",
-        "rating": 8.5,
-        "viewCount": 1000,
-        "isActive": true,
-        "source": "豆瓣",
-        "episodeCount": null,
-        "createdAt": "2024-08-28T12:00:00.000Z"
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 10,
-      "total": 100,
-      "totalPages": 10
-    }
-  }
-}
-```
+### 2.2 获取媒体详情
+**GET** `/media/:id`
 
-### 2.2 获取影视资源详情
-**GET** `/media-resources/:id`
+### 2.3 媒体搜索与收藏
+- **GET** `/media/search?keyword=沙丘`
+- **GET** `/media/favorites?page=1&limit=12`（需要 JWT）
+- **POST** `/media/:id/favorites`（需要 JWT）
+- **DELETE** `/media/:id/favorites`（需要 JWT）
+- **GET** `/media/:id/favorites/status`（需要 JWT）
 
-**路径参数：**
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| id | number | 是 | 影视资源ID |
+### 2.4 搜索建议与搜索历史（需要 JWT）
+- **GET** `/search/suggestions?keyword=沙丘&limit=6`
+- **GET** `/search/popular-keywords?limit=8`
+- **GET** `/search/history?limit=8`
+- **POST** `/search/history`
+- **DELETE** `/search/history`
+- **GET** `/search/related-keywords/沙丘?limit=6`
+- **POST** `/search/advanced`
+- **POST** `/search/smart?query=2024%20科幻片`
 
-**响应示例：**
-```json
-{
-  "statusCode": 200,
-  "message": "获取影视资源详情成功",
-  "data": {
-    "id": 1,
-    "title": "电影名称",
-    "description": "详细简介",
-    "type": "movie",
-    "director": "导演名",
-    "actors": "演员1,演员2",
-    "genres": ["动作", "冒险"],
-    "releaseDate": "2024-01-01",
-    "quality": "hd",
-    "poster": "https://example.com/poster.jpg",
-    "backdrop": "https://example.com/backdrop.jpg",
-    "rating": 8.5,
-    "viewCount": 1000,
-    "isActive": true,
-    "source": "豆瓣",
-    "metadata": {
-      "country": "美国",
-      "language": "英语",
-      "duration": 120
-    },
-    "episodeCount": null,
-    "downloadUrls": [],
-    "createdAt": "2024-08-28T12:00:00.000Z",
-    "updatedAt": "2024-08-28T12:00:00.000Z"
-  }
-}
-```
+### 2.5 推荐接口
+- **GET** `/recommendations/personalized?limit=8`（需要 JWT）
+- **GET** `/recommendations/personalized-detailed?limit=8`（需要 JWT）
+- **GET** `/recommendations/profile`（需要 JWT）
+- **GET** `/recommendations/trending?limit=8`（当前控制器同样挂在 JWT 守卫下）
+- **GET** `/recommendations/latest?limit=8`（当前控制器同样挂在 JWT 守卫下）
+- **GET** `/recommendations/top-rated?limit=8`（当前控制器同样挂在 JWT 守卫下）
 
-### 2.3 搜索影视资源
-**GET** `/media-resources/search`
-
-**查询参数：**
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| keyword | string | 是 | 搜索关键词 |
-| page | number | 否 | 页码，默认1 |
-| limit | number | 否 | 每页数量，默认10 |
-
-**响应示例：**
-```json
-{
-  "statusCode": 200,
-  "message": "搜索成功",
-  "data": {
-    "items": [...],
-    "pagination": {
-      "page": 1,
-      "limit": 10,
-      "total": 5,
-      "totalPages": 1
-    }
-  }
-}
-```
-
-### 2.4 获取分类资源
-**GET** `/media-resources/category/:category`
-
-**路径参数：**
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| category | string | 是 | 分类名称 |
-
-**查询参数：**
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| page | number | 否 | 页码，默认1 |
-| limit | number | 否 | 每页数量，默认10 |
+### 2.6 下载任务接口（需要 JWT）
+- **GET** `/download-tasks/user/me?page=1&limit=20`
+- **GET** `/download-tasks/user/me/stats`
+- **POST** `/download-tasks`
+- **PATCH** `/download-tasks/:clientId`
+- **DELETE** `/download-tasks/:clientId`
+- **DELETE** `/download-tasks/user/me/completed`
 
 ---
 
-## 3. 播放源模块（开发中）
+## 3. 播放源模块（当前实现）
 
-### 3.1 获取影视资源的播放源列表
-**GET** `/play/sources/:mediaId`
+### 3.1 获取播放源列表
+**GET** `/play-sources`
 
-**路径参数：**
+**常用查询参数：**
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| mediaId | number | 是 | 影视资源ID |
+| page | number | 否 | 页码，从 1 开始 |
+| pageSize | number | 否 | 每页数量 |
+| mediaResourceId | number | 否 | 媒体资源 ID |
+| type | string | 否 | 播放源类型 |
+| quality / resolution | string | 否 | 清晰度筛选 |
+| isActive | boolean | 否 | 是否启用 |
+| search | string | 否 | URL / 描述模糊搜索 |
 
-**响应示例：**
-```json
-{
-  "statusCode": 200,
-  "message": "获取播放源列表成功",
-  "data": [
-    {
-      "id": 1,
-      "url": "https://cdn.streaming-platform.com/media/movie1-1080p.mp4",
-      "type": "online",
-      "status": "active",
-      "resolution": "1080p",
-      "format": "mp4",
-      "subtitleUrl": "https://cdn.streaming-platform.com/subtitles/movie1-zh.vtt",
-      "priority": 1,
-      "isAds": false,
-      "playCount": 100,
-      "description": "高清无广告",
-      "sourceName": "源站1",
-      "isActive": true,
-      "headers": {
-        "User-Agent": "Mozilla/5.0..."
-      },
-      "expireDate": null,
-      "episodeNumber": null,
-      "createdAt": "2024-08-28T12:00:00.000Z",
-      "lastCheckedAt": "2024-08-28T12:00:00.000Z"
-    }
-  ]
-}
-```
+### 3.2 获取媒体的播放源与最佳源
+- **GET** `/play-sources/media/:mediaId`
+- **GET** `/play-sources/media/:mediaId/best`
 
-### 3.2 添加播放源
-**POST** `/play/sources`
-
-**请求头：**
-```
-Authorization: Bearer <access_token>
-```
-
-**请求参数：**
-```json
-{
-  "mediaResourceId": number,
-  "url": "string",
-  "type": "online",
-  "resolution": "string",
-  "format": "string",
-  "subtitleUrl": "string",
-  "priority": number,
-  "isAds": boolean,
-  "description": "string",
-  "sourceName": "string",
-  "headers": object,
-  "expireDate": "string",
-  "episodeNumber": number
-}
-```
-
-### 3.3 验证播放源有效性
-**POST** `/play/sources/validate`
-
-**请求参数：**
-```json
-{
-  "url": "string",
-  "headers": object
-}
-```
-
-**响应示例：**
-```json
-{
-  "statusCode": 200,
-  "message": "验证成功",
-  "data": {
-    "isValid": true,
-    "status": "active",
-    "resolution": "1080p",
-    "format": "mp4",
-    "duration": 3600,
-    "filesize": 1000000000
-  }
-}
-```
+### 3.3 管理播放源（需要 JWT）
+- **POST** `/play-sources`
+- **PUT** `/play-sources/:id`
+- **DELETE** `/play-sources/:id`
+- **PUT** `/play-sources/:id/validate`
+- **PATCH** `/play-sources/:id/validate`
 
 ---
 
-## 4. 观看历史模块（开发中）
+## 4. 观看历史模块（当前实现）
 
-### 4.1 获取用户观看历史
-**GET** `/watch/history`
+### 4.1 创建或更新观看历史（需要 JWT）
+**POST** `/watch-history`
 
-**请求头：**
-```
-Authorization: Bearer <access_token>
-```
-
-**查询参数：**
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| page | number | 否 | 页码，默认1 |
-| limit | number | 否 | 每页数量，默认10 |
-
-**响应示例：**
+**请求体示例：**
 ```json
 {
-  "statusCode": 200,
-  "message": "获取观看历史成功",
-  "data": {
-    "items": [
-      {
-        "id": 1,
-        "progress": {
-          "currentTime": 1800,
-          "duration": 3600,
-          "percentage": 50
-        },
-        "watchDuration": 1800,
-        "isCompleted": false,
-        "episodeNumber": 1,
-        "playCount": 2,
-        "lastPlayedAt": "2024-08-28T12:00:00.000Z",
-        "playSettings": {
-          "volume": 80,
-          "playbackRate": 1.0,
-          "quality": "1080p",
-          "subtitleLanguage": "zh-CN"
-        },
-        "notes": "很好看的电影",
-        "mediaResource": {
-          "id": 1,
-          "title": "电影名称",
-          "type": "movie",
-          "poster": "https://example.com/poster.jpg"
-        },
-        "createdAt": "2024-08-28T12:00:00.000Z"
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 10,
-      "total": 20,
-      "totalPages": 2
-    }
-  }
+  "mediaResourceId": 1,
+  "currentTime": 1800,
+  "duration": 3600,
+  "isCompleted": false
 }
 ```
 
-### 4.2 记录观看进度
-**POST** `/watch/progress`
+### 4.2 获取观看历史与继续观看（需要 JWT）
+- **GET** `/watch-history/user/me?page=1&limit=10`
+- **GET** `/watch-history/user/me/continue?limit=10`
+- **GET** `/watch-history/user/me/completed?page=1&limit=10`
+- **GET** `/watch-history/user/me/stats`
 
-**请求头：**
-```
-Authorization: Bearer <access_token>
-```
+### 4.3 更新进度 / 完成状态 / 清空历史（需要 JWT）
+- **PATCH** `/watch-history/progress?mediaResourceId=1&currentTime=1800&duration=3600`
+- **PATCH** `/watch-history/:id`
+- **PATCH** `/watch-history/:id/complete`
+- **DELETE** `/watch-history/:id`
+- **DELETE** `/watch-history/user/me/all`
 
-**请求参数：**
-```json
-{
-  "mediaResourceId": number,
-  "progress": {
-    "currentTime": number,
-    "duration": number,
-    "percentage": number
-  },
-  "watchDuration": number,
-  "isCompleted": boolean,
-  "episodeNumber": number,
-  "playSettings": {
-    "volume": number,
-    "playbackRate": number,
-    "quality": string,
-    "subtitleLanguage": string
-  },
-  "notes": string
-}
-```
-
-### 4.3 获取影视资源的观看进度
-**GET** `/watch/progress/:mediaId`
-
-**请求头：**
-```
-Authorization: Bearer <access_token>
-```
-
-**路径参数：**
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| mediaId | number | 是 | 影视资源ID |
+### 4.4 管理态查询
+- **GET** `/watch-history`
+- **GET** `/watch-history/:id`
+- **GET** `/watch-history/user/:userId/media/:mediaResourceId`
 
 ---
 
-## 5. 收藏功能模块（开发中）
+## 5. 收藏与媒体互动（已并入媒体模块）
 
-### 5.1 获取用户收藏列表
-**GET** `/favorites`
+当前实现没有独立的 `/favorites` 控制器，收藏能力统一挂在 `/media/*` 路由下：
 
-**请求头：**
-```
-Authorization: Bearer <access_token>
-```
-
-**查询参数：**
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| page | number | 否 | 页码，默认1 |
-| limit | number | 否 | 每页数量，默认10 |
-
-### 5.2 添加收藏
-**POST** `/favorites`
-
-**请求头：**
-```
-Authorization: Bearer <access_token>
-```
-
-**请求参数：**
-```json
-{
-  "mediaResourceId": number
-}
-```
-
-### 5.3 取消收藏
-**DELETE** `/favorites/:mediaId`
-
-**请求头：**
-```
-Authorization: Bearer <access_token>
-```
-
-**路径参数：**
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| mediaId | number | 是 | 影视资源ID |
-
-### 5.4 检查是否已收藏
-**GET** `/favorites/check/:mediaId`
-
-**请求头：**
-```
-Authorization: Bearer <access_token>
-```
-
-**路径参数：**
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| mediaId | number | 是 | 影视资源ID |
+- **GET** `/media/favorites?page=1&limit=12`（需要 JWT）
+- **POST** `/media/:id/favorites`（需要 JWT）
+- **DELETE** `/media/:id/favorites`（需要 JWT）
+- **GET** `/media/:id/favorites/status`（需要 JWT）
+- **GET** `/media/:id/similar?limit=6`
+- **PUT** `/media/:id/views`
+- **GET** `/media/statistics`
 
 ---
 
-## 6. 管理员模块（计划中）
+## 6. 管理员模块（当前实现，需 JWT + AdminRoleGuard）
 
-### 6.1 影视资源管理
-- 创建、更新、删除影视资源
-- 批量导入影视资源
-- 设置影视资源状态
+### 6.1 系统与权限管理
+- **GET** `/admin/stats`
+- **GET** `/admin/health`
+- **POST** `/admin/roles`
+- **GET** `/admin/roles`
+- **PATCH** `/admin/roles/:id`
+- **POST** `/admin/permissions`
+- **GET** `/admin/permissions`
+- **PATCH** `/admin/permissions/:id`
 
-### 6.2 播放源管理
-- 审核播放源
-- 批量验证播放源
-- 设置播放源优先级
+### 6.2 后台列表与运维查询
+- **GET** `/admin/logs?page=1&limit=20`
+- **GET** `/admin/users?page=1&limit=20&search=keyword`
+- **GET** `/admin/media?page=1&limit=20&type=movie&search=keyword`
+- **GET** `/admin/play-sources?page=1&limit=20&search=keyword`
+- **GET** `/admin/watch-history?page=1&limit=20&userId=1`
+- **GET** `/admin/download-tasks?page=1&limit=20&status=downloading`
 
-### 6.3 用户管理
-- 用户列表查看
-- 用户状态管理
-- 权限分配
+### 6.3 管理员模块说明
+- 当前 `admin` 控制器以后台统计、角色权限、日志、用户、媒体、播放源、观看历史、下载任务查询为主。
+- 这些接口当前偏“运营台 / 运维台”用途，适合前端后台页做排查与只读分析。
 
 ---
 
-## 7. WebSocket 接口（计划中）
+## 7. 弹幕 / 实时相关接口（当前以 REST 为主）
 
-### 7.1 实时播放进度同步
-- 同步多个设备的播放进度
-- 实时通知播放状态
+### 7.1 弹幕核心接口
+- **POST** `/danmaku`
+- **POST** `/danmaku/bulk`
+- **GET** `/danmaku`
+- **POST** `/danmaku/search`
+- **GET** `/danmaku/:id`
+- **DELETE** `/danmaku/:id`
+- **DELETE** `/danmaku/:id/hard`
+- **DELETE** `/danmaku/clean`
 
-### 7.2 弹幕系统
-- 发送和接收弹幕
-- 弹幕过滤和管理
+### 7.2 弹幕查询与分析接口
+- **GET** `/danmaku/popular`
+- **GET** `/danmaku/user/me`
+- **GET** `/danmaku/media/:mediaResourceId`
+- **GET** `/danmaku/stats`
+- **POST** `/danmaku/import`
+- **POST** `/danmaku/advanced-search`
+- **GET** `/danmaku/trends`
+- **GET** `/danmaku/leaderboard/users`
+- **GET** `/danmaku/keywords/cloud`
+- **GET** `/danmaku/suggestions`
+- **GET** `/danmaku/health`
+
+### 7.3 实时与管理相关接口
+- **GET** `/danmaku/realtime/rooms/:videoId`
+- **PUT** `/danmaku/:id/highlight`
+- **GET** `/danmaku/:id/reports`
+- **POST** `/danmaku/:id/report`
+- **GET** `/danmaku/filter/rules`
+- **PUT** `/danmaku/filter/rules`
+
+### 7.4 当前实时能力说明
+- 仓库里存在弹幕实时房间信息与健康状态接口，但完整 WebSocket 网关尚未完全接好。
+- `GET /danmaku/realtime/rooms/:videoId` 当前更像占位/桥接接口，返回结构存在，但真实在线人数和消息数仍待网关集成。
+- 因此当前文档应理解为“弹幕 REST 能力已存在，WebSocket 实时推送仍是半集成状态”。
 
 ---
 
@@ -605,8 +386,9 @@ Authorization: Bearer <access_token>
 ## 9. 接口版本控制
 
 ### 9.1 版本路径
-- 当前版本: `/api/v1`
-- 示例: `GET /api/v1/media-resources`
+- 当前实现: 业务接口没有统一的 `/api/v1` 前缀
+- Swagger 入口: `/api`
+- 示例: `GET /media`
 
 ### 9.2 版本兼容性
 - 主要版本号变更可能导致不兼容
@@ -623,17 +405,21 @@ Authorization: Bearer <access_token>
 ### 10.2 测试示例
 ```bash
 # 用户注册
-curl -X POST http://localhost:3000/users/register \
+curl -X POST http://localhost:3334/users/register \
   -H "Content-Type: application/json" \
   -d '{"username":"test","password":"123456","email":"test@example.com"}'
 
 # 用户登录
-curl -X POST http://localhost:3000/users/login \
+curl -X POST http://localhost:3334/users/login \
   -H "Content-Type: application/json" \
   -d '{"identifier":"test","password":"123456"}'
 
-# 获取影视资源列表
-curl -X GET http://localhost:3000/media-resources \
+# 获取媒体列表
+curl -X GET http://localhost:3334/media \
+  -H "Authorization: Bearer <token>"
+
+# 获取搜索建议
+curl -X GET "http://localhost:3334/search/suggestions?keyword=%E6%B2%99%E4%B8%98&limit=6" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -656,4 +442,4 @@ curl -X GET http://localhost:3000/media-resources \
 
 ---
 
-*文档最后更新时间：2024年8月28日*
+*本文档已按当前仓库实现校对；后续若有差异，请以控制器代码与 Swagger 输出为准。*

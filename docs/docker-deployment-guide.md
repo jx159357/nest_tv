@@ -60,9 +60,9 @@ docker-compose logs -f frontend
 ```
 
 ### 4. 访问应用
-- **前端**: http://localhost:3000
-- **后端API**: http://localhost:3335
-- **API文档**: http://localhost:3335/api
+- **前端**: http://localhost:5173
+- **后端API**: http://localhost:3334
+- **API文档**: http://localhost:3334/api
 
 ### 开发环境特性
 - 🔁 **热重载**: 代码修改自动重启
@@ -142,7 +142,7 @@ docker run -d --name nest_tv_redis \
 
 # 5. 启动后端服务
 docker run -d --name nest_tv_api \
-  -p 3335:3335 \
+  -p 3334:3334 \
   -e NODE_ENV=production \
   --link nest_tv_mysql:mysql \
   --link nest_tv_redis:redis \
@@ -187,7 +187,7 @@ server {
     
     # 代理配置
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:5173;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -283,8 +283,8 @@ docker-compose -f docker-compose.prod.yml ps
 
 # 检查服务健康状态
 curl http://localhost/health
-curl http://localhost:3335/health
-curl -I http://localhost:3000
+curl http://localhost:3334/health
+curl -I http://localhost:5173
 
 # 查看应用日志
 docker-compose -f docker-compose.prod.yml logs -f api --tail=50
@@ -405,7 +405,7 @@ docker-compose logs api
 docker build -t test ./backend
 
 # 检查端口冲突
-netstat -tuln | grep :3335
+netstat -tuln | grep :3334
 
 # 检查文件权限
 ls -la backend/
@@ -438,7 +438,7 @@ docker network ls
 docker network inspect nest_tv_app-network
 
 # 测试API连通性
-docker exec nest_tv_frontend curl http://api:3335/health
+docker exec nest_tv_frontend curl http://api:3334/health
 
 # 检查代理配置
 docker exec nest_tv_frontend cat /etc/nginx/conf.d/default.conf

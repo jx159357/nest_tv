@@ -1,292 +1,428 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <!-- 导航�?-->
-    <nav class="bg-white shadow-sm">
-      <div class="container-responsive">
-        <div class="flex justify-between h-16">
-          <div class="flex items-center">
-            <router-link to="/" class="text-xl font-bold text-gray-900">视频平台</router-link>
-          </div>
-
-          <div class="flex items-center space-x-4">
-            <router-link to="/" class="text-gray-700 hover:text-gray-900"> 首页 </router-link>
-            <button class="text-gray-700 hover:text-gray-900" @click="handleLogout">
-              退出登�?
-            </button>
-          </div>
+  <NavigationLayout>
+    <div class="space-y-8">
+      <header class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">个人中心</h1>
+          <p class="mt-2 text-sm text-gray-600">聚合你的观看、收藏、搜索和推荐画像，形成一个更完整的兴趣中心。</p>
         </div>
-      </div>
-    </nav>
+        <div class="flex flex-wrap gap-3">
+          <button
+            class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+            @click="goToRecommendations"
+          >
+            推荐设置
+          </button>
+          <button
+            class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+            @click="goToSearchHistory"
+          >
+            搜索历史
+          </button>
+          <button
+            class="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+            @click="handleLogout"
+          >
+            退出登录
+          </button>
+        </div>
+      </header>
 
-    <!-- 主要内容 -->
-    <main class="container-responsive py-8">
-      <div class="grid-responsive">
-        <!-- 左侧用户信息 -->
-        <div class="lg:col-span-1">
-          <div class="card-responsive">
+      <div class="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+        <aside class="space-y-6">
+          <section class="rounded-2xl bg-white p-6 shadow-sm">
             <div class="text-center">
-              <div
-                class="w-24 h-24 bg-gray-200 rounded-full mx-auto mb-4 flex items-center justify-center"
-              >
-                <span class="text-2xl text-gray-500">
-                  {{ getUserInitial() }}
-                </span>
+              <div class="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-slate-100 text-2xl font-semibold text-slate-500">
+                {{ getUserInitial() }}
               </div>
-              <h2 class="text-xl font-bold text-gray-900">{{ authStore.user?.username }}</h2>
-              <p class="text-gray-600">{{ authStore.user?.email }}</p>
-              <div class="mt-2">
-                <span class="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
-                  {{ authStore.user?.role }}
-                </span>
+              <h2 class="text-xl font-bold text-gray-900">{{ authStore.user?.nickname || authStore.user?.username }}</h2>
+              <p class="mt-1 text-sm text-gray-500">{{ authStore.user?.email }}</p>
+              <div class="mt-3 inline-flex rounded-full bg-indigo-100 px-3 py-1 text-sm font-medium text-indigo-700">
+                {{ authStore.user?.role }}
               </div>
             </div>
 
-            <div class="mt-6 space-y-3">
-              <div class="flex justify-between text-sm">
-                <span class="text-gray-600">注册时间:</span>
-                <span class="text-gray-900">{{ formatDate(authStore.user?.createdAt) }}</span>
+            <dl class="mt-6 space-y-3 text-sm">
+              <div class="flex items-center justify-between gap-4">
+                <dt class="text-gray-500">注册时间</dt>
+                <dd class="text-gray-900">{{ formatDate(authStore.user?.createdAt) }}</dd>
               </div>
-              <div v-if="authStore.user?.lastLoginAt" class="flex justify-between text-sm">
-                <span class="text-gray-600">最后登�?</span>
-                <span class="text-gray-900">{{ formatDate(authStore.user?.lastLoginAt) }}</span>
+              <div v-if="authStore.user?.lastLoginAt" class="flex items-center justify-between gap-4">
+                <dt class="text-gray-500">最近登录</dt>
+                <dd class="text-gray-900">{{ formatDate(authStore.user?.lastLoginAt) }}</dd>
               </div>
-              <div class="pt-4">
-                <router-link
-                  to="/watch-history"
-                  class="w-full inline-flex justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  查看完整观看历史
-                </router-link>
-              </div>
-            </div>
-          </div>
-        </div>
+            </dl>
+          </section>
 
-        <!-- 右侧内容区域 -->
-        <div class="lg:col-span-3 space-y-6">
-          <!-- 统计信息 -->
-          <div class="card-responsive">
-            <h2 class="text-xl font-bold text-gray-900 mb-6">观看统计</h2>
-
-            <div v-if="statsLoading" class="text-center py-4">加载�?..</div>
-
-            <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div class="text-center">
-                <div class="text-3xl font-bold text-indigo-600">{{ userStats.totalWatched }}</div>
-                <div class="text-sm text-gray-600 mt-1">总观看数</div>
-              </div>
-
-              <div class="text-center">
-                <div class="text-3xl font-bold text-green-600">{{ userStats.completed }}</div>
-                <div class="text-sm text-gray-600 mt-1">�ѿ���</div>
-              </div>
-
-              <div class="text-center">
-                <div class="text-3xl font-bold text-blue-600">
-                  {{ formatWatchTime(userStats.totalWatchTime) }}
-                </div>
-                <div class="text-sm text-gray-600 mt-1">�ܹۿ�ʱ��</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 继续观看 -->
-          <div class="card-responsive">
-            <div class="flex justify-between items-center mb-6">
-              <h2 class="text-xl font-bold text-gray-900">继续观看</h2>
+          <section class="rounded-2xl bg-white p-6 shadow-sm">
+            <h2 class="text-lg font-semibold text-gray-900">快捷入口</h2>
+            <div class="mt-4 space-y-3">
               <router-link
-                to="/continue-watching"
-                class="text-indigo-600 hover:text-indigo-500 text-sm"
+                to="/watch-history"
+                class="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
               >
-                查看全部
+                <span>观看历史</span>
+                <span>→</span>
+              </router-link>
+              <router-link
+                to="/favorites"
+                class="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+              >
+                <span>我的收藏</span>
+                <span>→</span>
+              </router-link>
+              <router-link
+                to="/search-history"
+                class="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+              >
+                <span>搜索历史</span>
+                <span>→</span>
+              </router-link>
+              <router-link
+                :to="{ name: 'recommendations', query: { focus: 'profile' } }"
+                class="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+              >
+                <span>推荐设置</span>
+                <span>→</span>
+              </router-link>
+            </div>
+          </section>
+        </aside>
+
+        <div class="space-y-6">
+          <section class="rounded-2xl bg-white p-6 shadow-sm">
+            <h2 class="text-xl font-bold text-gray-900">观看统计</h2>
+            <div v-if="statsLoading" class="py-6 text-center">
+              <LoadingSpinner text="加载中..." />
+            </div>
+            <div v-else class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div class="rounded-2xl bg-slate-50 p-4">
+                <div class="text-xs text-slate-500">总观看数</div>
+                <div class="mt-2 text-2xl font-semibold text-slate-900">{{ userStats.totalWatched }}</div>
+              </div>
+              <div class="rounded-2xl bg-slate-50 p-4">
+                <div class="text-xs text-slate-500">已看完</div>
+                <div class="mt-2 text-2xl font-semibold text-slate-900">{{ userStats.completed }}</div>
+              </div>
+              <div class="rounded-2xl bg-slate-50 p-4">
+                <div class="text-xs text-slate-500">总观看时长</div>
+                <div class="mt-2 text-2xl font-semibold text-slate-900">{{ formatWatchTime(userStats.totalWatchTime) }}</div>
+              </div>
+              <div class="rounded-2xl bg-slate-50 p-4">
+                <div class="text-xs text-slate-500">收藏数</div>
+                <div class="mt-2 text-2xl font-semibold text-slate-900">{{ favoriteSummary.total }}</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="rounded-2xl bg-white p-6 shadow-sm">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <h2 class="text-xl font-bold text-gray-900">兴趣中心</h2>
+                <p class="mt-2 text-sm text-gray-600">把观看偏好、最近搜索和收藏内容放到一个视图里，方便快速回到感兴趣的方向。</p>
+              </div>
+              <router-link
+                :to="{ name: 'recommendations', query: { focus: 'profile' } }"
+                class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+              >
+                打开推荐画像
               </router-link>
             </div>
 
-            <div v-if="continueLoading" class="text-center py-4">加载�?..</div>
+            <div v-if="interestLoading" class="py-6 text-center">
+              <LoadingSpinner text="加载中..." />
+            </div>
+            <div v-else-if="interestError" class="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              {{ interestError }}
+            </div>
+            <div v-else class="mt-6 grid gap-6 lg:grid-cols-2">
+              <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">推荐画像</div>
+                <div class="mt-3 text-sm text-slate-600">
+                  {{ getStrategyDescription() }}
+                </div>
+                <div class="mt-4 space-y-3 text-sm text-slate-700">
+                  <div>
+                    <div class="font-medium">偏好类型</div>
+                    <div class="mt-2 flex flex-wrap gap-2">
+                      <span v-for="item in recommendationProfile.favoriteTypes" :key="`type-${item.key}`" class="rounded-full bg-blue-100 px-3 py-1 text-xs text-blue-700">
+                        {{ formatPreferenceLabel(item.key) }} · {{ item.score }}
+                      </span>
+                      <span v-if="recommendationProfile.favoriteTypes.length === 0" class="text-slate-500">暂无明显偏好</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="font-medium">偏好标签</div>
+                    <div class="mt-2 flex flex-wrap gap-2">
+                      <span v-for="item in recommendationProfile.favoriteGenres" :key="`genre-${item.key}`" class="rounded-full bg-emerald-100 px-3 py-1 text-xs text-emerald-700">
+                        {{ item.key }} · {{ item.score }}
+                      </span>
+                      <span v-if="recommendationProfile.favoriteGenres.length === 0" class="text-slate-500">暂无明显偏好</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="font-medium">最近搜索</div>
+                    <div class="mt-2 flex flex-wrap gap-2">
+                      <button
+                        v-for="item in recommendationProfile.recentSearchKeywords"
+                        :key="`search-${item.key}`"
+                        type="button"
+                        class="rounded-full bg-violet-100 px-3 py-1 text-xs text-violet-700 transition-colors hover:bg-violet-200"
+                        @click="searchByKeyword(item.key)"
+                      >
+                        {{ item.key }} · {{ item.score }}
+                      </button>
+                      <span v-if="recommendationProfile.recentSearchKeywords.length === 0" class="text-slate-500">暂无搜索兴趣</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-            <div v-else-if="continueWatching.length > 0" class="space-y-4">
-              <div
+              <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">近期收藏</div>
+                <div v-if="favoriteSummary.items.length > 0" class="mt-4 space-y-3">
+                  <button
+                    v-for="media in favoriteSummary.items"
+                    :key="media.id"
+                    type="button"
+                    class="flex w-full items-center justify-between rounded-xl bg-white px-4 py-3 text-left shadow-sm transition-colors hover:bg-slate-100"
+                    @click="goToMediaDetail(media.id)"
+                  >
+                    <div>
+                      <div class="font-medium text-slate-900">{{ media.title }}</div>
+                      <div class="mt-1 text-xs text-slate-500">
+                        {{ formatPreferenceLabel(media.type) }} · {{ formatRating(media.rating) }}
+                      </div>
+                    </div>
+                    <span class="text-slate-400">→</span>
+                  </button>
+                </div>
+                <div v-else class="mt-4 text-sm text-slate-500">暂无收藏内容</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="rounded-2xl bg-white p-6 shadow-sm">
+            <div class="flex items-center justify-between gap-3">
+              <h2 class="text-xl font-bold text-gray-900">继续观看</h2>
+              <router-link to="/continue-watching" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">查看全部</router-link>
+            </div>
+
+            <div v-if="continueLoading" class="py-6 text-center">
+              <LoadingSpinner text="加载中..." />
+            </div>
+            <div v-else-if="continueWatching.length > 0" class="mt-6 space-y-4">
+              <button
                 v-for="item in continueWatching"
                 :key="item.id"
-                class="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
+                type="button"
+                class="flex w-full items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition-colors hover:bg-slate-100"
+                data-testid="continue-item"
                 @click="goToWatch(item)"
               >
-                <div class="flex-shrink-0">
-                  <img
-                    v-if="item.mediaResource.poster"
-                    :src="item.mediaResource.poster"
-                    :alt="item.mediaResource.title"
-                    class="w-16 h-16 object-cover rounded"
-                  />
-                  <div
-                    v-else
-                    class="w-16 h-16 bg-gray-200 rounded flex items-center justify-center"
-                  >
-                    <span class="text-gray-500 text-xs">暂无封面</span>
-                  </div>
+                <div class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-slate-200">
+                  <img v-if="item.mediaResource.poster" :src="item.mediaResource.poster" :alt="item.mediaResource.title" class="h-full w-full object-cover" />
+                  <span v-else class="text-xs text-slate-500">暂无封面</span>
                 </div>
+                <div class="min-w-0 flex-1">
+                  <div class="truncate font-medium text-slate-900">{{ item.mediaResource.title }}</div>
+                  <div class="mt-1 text-sm text-slate-500">观看进度：{{ formatProgress(item.currentTime, item.duration) }}</div>
+                </div>
+                <div class="text-xs text-slate-400">{{ formatDate(item.updatedAt) }}</div>
+              </button>
+            </div>
+            <div v-else class="py-8 text-center text-sm text-slate-500">暂无继续观看内容</div>
+          </section>
 
-                <div class="flex-1">
-                  <h3 class="font-medium text-gray-900">{{ item.mediaResource.title }}</h3>
-                  <div class="text-sm text-gray-600 mt-1">
-                    观看进度: {{ formatProgress(item.currentTime, item.duration) }}
-                  </div>
-                </div>
-
-                <div class="text-sm text-gray-500">
-                  {{ formatDate(item.updatedAt) }}
-                </div>
-              </div>
+          <section class="rounded-2xl bg-white p-6 shadow-sm">
+            <div class="flex items-center justify-between gap-3">
+              <h2 class="text-xl font-bold text-gray-900">已看完</h2>
+              <router-link to="/completed" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">查看全部</router-link>
             </div>
 
-            <div v-else class="text-center py-8 text-gray-500">���޼����ۿ�������</div>
-          </div>
-
-          <!-- 已看�?-->
-          <div class="card-responsive">
-            <div class="flex justify-between items-center mb-6">
-              <h2 class="text-xl font-bold text-gray-900">�ѿ���</h2>
-              <router-link to="/completed" class="text-indigo-600 hover:text-indigo-500 text-sm">
-                查看全部
-              </router-link>
+            <div v-if="completedLoading" class="py-6 text-center">
+              <LoadingSpinner text="加载中..." />
             </div>
-
-            <div v-if="completedLoading" class="text-center py-4">加载�?..</div>
-
-            <div v-else-if="completed.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div
+            <div v-else-if="completed.length > 0" class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <button
                 v-for="item in completed"
                 :key="item.id"
-                class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 cursor-pointer transition-colors"
+                type="button"
+                class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition-colors hover:bg-slate-100"
                 @click="goToMediaDetail(item.mediaResource.id)"
               >
-                <div class="flex items-center space-x-3">
-                  <div class="flex-shrink-0">
-                    <img
-                      v-if="item.mediaResource.poster"
-                      :src="item.mediaResource.poster"
-                      :alt="item.mediaResource.title"
-                      class="w-12 h-12 object-cover rounded"
-                    />
-                    <div
-                      v-else
-                      class="w-12 h-12 bg-gray-200 rounded flex items-center justify-center"
-                    >
-                      <span class="text-gray-500 text-xs">暂无封面</span>
-                    </div>
-                  </div>
-
-                  <div class="flex-1 min-w-0">
-                    <h3 class="font-medium text-gray-900 truncate">
-                      {{ item.mediaResource.title }}
-                    </h3>
-                    <div class="text-sm text-gray-600">
-                      {{ formatRating(item.mediaResource.rating) }} �?
-                    </div>
-                  </div>
-                </div>
-              </div>
+                <div class="truncate font-medium text-slate-900">{{ item.mediaResource.title }}</div>
+                <div class="mt-2 text-sm text-slate-500">评分：{{ formatRating(item.mediaResource.rating) }}</div>
+              </button>
             </div>
-
-            <div v-else class="text-center py-8 text-gray-500">暂无已看完的内容</div>
-          </div>
+            <div v-else class="py-8 text-center text-sm text-slate-500">暂无已看完内容</div>
+          </section>
         </div>
       </div>
-    </main>
-  </div>
+    </div>
+  </NavigationLayout>
 </template>
 
-<script setup>
-  import { ref, onMounted } from 'vue';
+<script setup lang="ts">
+  import { onMounted, ref } from 'vue';
   import { useRouter } from 'vue-router';
+  import NavigationLayout from '@/components/NavigationLayout.vue';
+  import LoadingSpinner from '@/components/LoadingSpinner.vue';
   import { useAuthStore } from '@/stores/auth';
-  import { watchHistoryApi } from '@/api/watchHistory';
+  import { watchHistoryApi, type WatchHistoryItem, type WatchHistoryStats } from '@/api/watchHistory';
+  import { recommendationsApi, type RecommendationProfile } from '@/api/recommendations';
+  import { searchApi } from '@/api/search';
+  import { mediaApi } from '@/api/media';
+  import type { MediaResource } from '@/types/media';
 
   const router = useRouter();
   const authStore = useAuthStore();
 
-  const userStats = ref({
+  const userStats = ref<WatchHistoryStats>({
     totalWatched: 0,
     completed: 0,
     watching: 0,
     totalWatchTime: 0,
   });
 
-  const continueWatching = ref([]);
-  const completed = ref([]);
+  const recommendationProfile = ref<RecommendationProfile>({
+    strategy: 'fallback-trending',
+    totalWatched: 0,
+    completedCount: 0,
+    recentWatchCount: 0,
+    averageCompletionRate: 0,
+    favoriteTypes: [],
+    favoriteGenres: [],
+    favoriteDirectors: [],
+    recentSearchKeywords: [],
+  });
+
+  const favoriteSummary = ref<{ total: number; items: MediaResource[] }>({
+    total: 0,
+    items: [],
+  });
+
+  const continueWatching = ref<WatchHistoryItem[]>([]);
+  const completed = ref<WatchHistoryItem[]>([]);
   const statsLoading = ref(false);
   const continueLoading = ref(false);
   const completedLoading = ref(false);
+  const interestLoading = ref(false);
+  const interestError = ref<string | null>(null);
+
+  const getErrorMessage = (error: unknown, fallback: string) => {
+    return error instanceof Error ? error.message : fallback;
+  };
 
   const loadUserProfile = async () => {
     if (!authStore.user?.id) {
       await authStore.fetchUserProfile();
     }
 
-    if (!authStore.user?.id) return;
+    if (!authStore.user?.id) {
+      return;
+    }
 
     statsLoading.value = true;
     continueLoading.value = true;
     completedLoading.value = true;
+    interestLoading.value = true;
+    interestError.value = null;
 
     try {
-      // 加载用户统计
-      const statsResponse = await watchHistoryApi.getUserStats(authStore.user.id);
+      const [statsResponse, continueResponse, completedResponse, recommendationResponse, searchHistory, favoritesResponse] = await Promise.all([
+        watchHistoryApi.getUserStats(authStore.user.id),
+        watchHistoryApi.getContinueWatching(authStore.user.id, { limit: 5 }),
+        watchHistoryApi.getCompleted(authStore.user.id, { limit: 4 }),
+        recommendationsApi.getProfile(),
+        searchApi.getHistory(6),
+        mediaApi.getFavorites({ page: 1, limit: 4 }),
+      ]);
+
       userStats.value = statsResponse;
-
-      // 加载继续观看列表
-      const continueResponse = await watchHistoryApi.getContinueWatching(authStore.user.id, {
-        limit: 5,
-      });
       continueWatching.value = continueResponse;
-
-      // �����ѿ����б�
-      const completedResponse = await watchHistoryApi.getCompleted(authStore.user.id, { limit: 4 });
       completed.value = completedResponse.data || [];
+      recommendationProfile.value = {
+        ...recommendationResponse,
+        recentSearchKeywords: recommendationResponse.recentSearchKeywords?.length
+          ? recommendationResponse.recentSearchKeywords
+          : (searchHistory || []).map((keyword: string, index: number) => ({
+              key: keyword,
+              score: Math.max(1, 6 - index),
+            })),
+      };
+      favoriteSummary.value = {
+        total: favoritesResponse.total || 0,
+        items: favoritesResponse.data || [],
+      };
     } catch (error) {
-      console.error('加载用户数据失败:', error);
+      console.error('加载个人中心数据失败:', error);
+      interestError.value = getErrorMessage(error, '加载兴趣中心失败');
     } finally {
       statsLoading.value = false;
       continueLoading.value = false;
       completedLoading.value = false;
+      interestLoading.value = false;
     }
   };
 
   const getUserInitial = () => {
-    if (!authStore.user?.username) return 'U';
-    return authStore.user.username.charAt(0).toUpperCase();
+    const username = authStore.user?.username || authStore.user?.nickname;
+    return username ? username.charAt(0).toUpperCase() : 'U';
   };
 
-  const formatDate = dateString => {
+  const formatDate = (dateString?: string | Date) => {
     if (!dateString) return '';
     const date = new Date(dateString);
     return date.toLocaleDateString('zh-CN');
   };
 
-  const formatRating = rating => {
-    return typeof rating === 'number' && Number.isFinite(rating) ? rating.toFixed(1) : '��';
+  const formatRating = (rating?: number) => {
+    return typeof rating === 'number' && Number.isFinite(rating) ? rating.toFixed(1) : '—';
   };
 
-  const formatProgress = (currentTime, duration) => {
+  const formatProgress = (currentTime?: number, duration?: number) => {
     if (!currentTime || !duration) return '0%';
-    const percentage = Math.round((currentTime / duration) * 100);
-    return `${percentage}%`;
+    return `${Math.round((currentTime / duration) * 100)}%`;
   };
 
-  const formatWatchTime = seconds => {
+  const formatWatchTime = (seconds?: number) => {
     if (!seconds) return '0小时';
 
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
 
     if (hours > 0) {
-      return `${hours}小时${minutes > 0 ? minutes + '分钟' : ''}`;
-    } else {
-      return `${minutes}分钟`;
+      return `${hours}小时${minutes > 0 ? `${minutes}分钟` : ''}`;
+    }
+
+    return `${minutes}分钟`;
+  };
+
+  const formatPreferenceLabel = (value: string) => {
+    const labelMap: Record<string, string> = {
+      movie: '电影',
+      tv_series: '电视剧',
+      variety: '综艺',
+      anime: '动漫',
+      documentary: '纪录片',
+    };
+
+    return labelMap[value] || value;
+  };
+
+  const getStrategyDescription = () => {
+    switch (recommendationProfile.value.strategy) {
+      case 'history-based':
+        return '推荐画像主要来自你的观看历史、完成度和偏好标签。';
+      case 'search-based':
+        return '当前观看历史较少，推荐会更多参考你最近搜索过的内容方向。';
+      default:
+        return '当前画像信号较少，系统会优先为你展示站内热门内容。';
     }
   };
 
-  const goToWatch = item => {
+  const goToWatch = (item: any) => {
     const mediaId = item?.mediaResource?.id;
     if (!mediaId) {
       return;
@@ -294,29 +430,35 @@
 
     const currentTime = Number(item?.currentTime || 0);
     if (currentTime > 0) {
-      router.push(`/watch/${mediaId}?time=${currentTime}`);
+      void router.push(`/watch/${mediaId}?time=${currentTime}`);
       return;
     }
 
-    router.push(`/watch/${mediaId}`);
+    void router.push(`/watch/${mediaId}`);
   };
 
-  const goToMediaDetail = mediaId => {
-    router.push(`/media/${mediaId}`);
+  const goToMediaDetail = (mediaId: number) => {
+    void router.push(`/media/${mediaId}`);
+  };
+
+  const goToRecommendations = () => {
+    void router.push({ name: 'recommendations', query: { focus: 'profile' } });
+  };
+
+  const goToSearchHistory = () => {
+    void router.push('/search-history');
+  };
+
+  const searchByKeyword = (keyword: string) => {
+    void router.push({ path: '/search', query: { q: keyword } });
   };
 
   const handleLogout = () => {
     authStore.logout();
-    router.push('/login');
+    void router.push('/login');
   };
 
   onMounted(() => {
-    loadUserProfile();
+    void loadUserProfile();
   });
 </script>
-
-
-
-
-
-

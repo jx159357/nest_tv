@@ -14,6 +14,8 @@ const { routeState, routerState, mediaStore, authStore, downloadsStore, watchHis
     mediaStore: {
       fetchMediaDetail: vi.fn(),
       incrementViewCount: vi.fn(),
+      fetchFavoriteStatus: vi.fn(),
+      toggleFavorite: vi.fn(),
     },
     authStore: {
       token: '',
@@ -64,6 +66,8 @@ describe('WatchView', () => {
     routerState.push.mockReset();
     mediaStore.fetchMediaDetail.mockReset();
     mediaStore.incrementViewCount.mockReset();
+    mediaStore.fetchFavoriteStatus.mockReset();
+    mediaStore.toggleFavorite.mockReset();
     routeState.params = { id: '9' };
     routeState.query = { time: '128' };
 
@@ -88,6 +92,8 @@ describe('WatchView', () => {
       ],
     });
     mediaStore.incrementViewCount.mockResolvedValue(undefined);
+    mediaStore.fetchFavoriteStatus.mockResolvedValue(false);
+    mediaStore.toggleFavorite.mockResolvedValue(true);
   });
 
   it('applies the resume time from route query after metadata loads', async () => {
@@ -139,6 +145,29 @@ describe('WatchView', () => {
     await flushPromises();
 
     expect(wrapper.text()).toContain('Demo Movie');
+  });
+
+  it('toggles favorite state and shows feedback', async () => {
+    authStore.token = 'demo-token';
+
+    const wrapper = mount(WatchView, {
+      global: {
+        stubs: { RouterLink: true },
+      },
+    });
+    await flushPromises();
+
+    const favoriteButton = wrapper
+      .findAll('button')
+      .find(button => button.text().includes('加入收藏'));
+
+    expect(favoriteButton).toBeTruthy();
+
+    await favoriteButton!.trigger('click');
+    await flushPromises();
+
+    expect(mediaStore.toggleFavorite).toHaveBeenCalledWith('9', false);
+    expect(wrapper.text()).toContain('已将《Demo Movie》加入收藏');
   });
 });
 

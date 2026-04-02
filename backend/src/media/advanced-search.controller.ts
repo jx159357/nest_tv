@@ -7,7 +7,8 @@ import {
   Query,
   Body,
   UseGuards,
-  Request,
+  UsePipes,
+  ValidationPipe,
   HttpStatus,
   HttpException,
 } from '@nestjs/common';
@@ -20,14 +21,10 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { GetCurrentUserId } from '../decorators/current-user.decorator';
 import { AdvancedSearchService, SearchResult } from './advanced-search.service';
 import type { AdvancedSearchParams } from './advanced-search.service';
-
-interface AuthenticatedRequest {
-  user?: {
-    userId?: number;
-  };
-}
+import { CreateSearchHistoryDto } from './dtos/search-history.dto';
 
 const toHttpException = (error: unknown, fallbackMessage: string): HttpException => {
   const message = error instanceof Error ? error.message : fallbackMessage;
@@ -52,11 +49,10 @@ export class AdvancedSearchController {
   @ApiResponse({ status: 200, description: '搜索成功' })
   @ApiResponse({ status: 400, description: '参数错误' })
   async advancedSearch(
-    @Request() req: AuthenticatedRequest,
+    @GetCurrentUserId() userId: number,
     @Body() searchParams: AdvancedSearchParams,
   ): Promise<SearchResult> {
     try {
-      const userId = req.user?.userId;
       return await this.advancedSearchService.advancedSearch(searchParams, userId);
     } catch (error: unknown) {
       throw toHttpException(error, '搜索失败');
@@ -97,6 +93,25 @@ export class AdvancedSearchController {
   }
 
   /**
+   * 记录用户搜索历史
+   */
+  @Post('history')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  @ApiOperation({ summary: '记录用户搜索历史' })
+  @ApiResponse({ status: 201, description: '记录成功' })
+  async recordUserSearchHistory(
+    @GetCurrentUserId() userId: number,
+    @Body() createSearchHistoryDto: CreateSearchHistoryDto,
+  ): Promise<{ success: true }> {
+    try {
+      await this.advancedSearchService.recordSearchHistory(userId, createSearchHistoryDto);
+      return { success: true };
+    } catch (error: unknown) {
+      throw toHttpException(error, '记录搜索历史失败');
+    }
+  }
+
+  /**
    * 获取用户搜索历史
    */
   @Get('history')
@@ -104,11 +119,10 @@ export class AdvancedSearchController {
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiQuery({ name: 'limit', description: '返回数量限制，默认10', required: false })
   async getUserSearchHistory(
-    @Request() req: AuthenticatedRequest,
+    @GetCurrentUserId() userId: number,
     @Query('limit') limit?: string,
   ): Promise<string[]> {
     try {
-      const userId = req.user?.userId ?? 0;
       const parsedLimit = limit ? parseInt(limit, 10) : 10;
       return await this.advancedSearchService.getUserSearchHistory(userId, parsedLimit);
     } catch (error: unknown) {
@@ -122,9 +136,8 @@ export class AdvancedSearchController {
   @Delete('history')
   @ApiOperation({ summary: '清除用户搜索历史' })
   @ApiResponse({ status: 200, description: '清除成功' })
-  async clearUserSearchHistory(@Request() req: AuthenticatedRequest): Promise<{ message: string }> {
+  async clearUserSearchHistory(@GetCurrentUserId() userId: number): Promise<{ message: string }> {
     try {
-      const userId = req.user?.userId ?? 0;
       await this.advancedSearchService.clearUserSearchHistory(userId);
       return { message: '搜索历史清除成功' };
     } catch (error: unknown) {
@@ -204,11 +217,11 @@ export class AdvancedSearchController {
   @ApiQuery({ name: 'query', description: '搜索查询' })
   async smartSearch(
     @Query('query') query: string,
-    @Request() req: AuthenticatedRequest,
+    @GetCurrentUserId() userId: number,
     @Body() body?: { userId?: number; filters?: Record<string, unknown> },
   ): Promise<SearchResult> {
     try {
-      const userId = body?.userId ?? req.user?.userId;
+      void body;
 
       // 智能解析搜索查询
       const searchParams = this.parseSmartSearchQuery(query);

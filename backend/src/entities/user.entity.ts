@@ -22,6 +22,7 @@ import { PlaySource } from './play-source.entity';
 import { Recommendation } from './recommendation.entity';
 import { SearchHistory } from './search-history.entity';
 import { DownloadTask } from './download-task.entity';
+import type { UserRecommendationSettings } from '../users/dtos/user-recommendation-settings.interface';
 
 /**
  * 用户实体类
@@ -59,6 +60,9 @@ export class User {
 
   @Column({ nullable: true })
   avatar?: string; // 头像URL
+
+  @Column({ type: 'json', nullable: true })
+  recommendationSettings?: UserRecommendationSettings;
 
   @Column({ nullable: true })
   lastLoginAt?: Date; // 最后登录时间

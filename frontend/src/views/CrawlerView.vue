@@ -1,24 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <!-- 导航栏 -->
-    <nav class="bg-white shadow-sm">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-          <div class="flex items-center">
-            <router-link to="/" class="text-xl font-bold text-gray-900">视频平台</router-link>
-          </div>
-
-          <div class="flex items-center space-x-4">
-            <router-link to="/" class="text-gray-700 hover:text-gray-900"> 首页 </router-link>
-            <router-link to="/profile" class="text-gray-700 hover:text-gray-900">
-              个人中心
-            </router-link>
-          </div>
-        </div>
-      </div>
-    </nav>
-
-    <!-- 主要内容 -->
+  <NavigationLayout>
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-900">爬虫管理</h1>
@@ -865,12 +846,13 @@
         </div>
       </div>
     </main>
-  </div>
+  </NavigationLayout>
 </template>
 
 <script setup lang="ts">
   import { computed, nextTick, onMounted, ref, watch } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
+  import NavigationLayout from '@/components/NavigationLayout.vue';
   import {
     crawlerApi,
     type BatchCrawlResponse,

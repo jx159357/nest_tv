@@ -450,7 +450,7 @@ docker build -t test ./backend
 
 # 问题：端口冲突
 # 解决：检查端口占用
-netstat -tuln | grep :3335
+netstat -tuln | grep :3334
 
 # 问题：容器网络问题
 # 解决：检查Docker网络配置

@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-gray-50">
+  <NavigationLayout>
     <div class="container mx-auto px-4 py-8">
       <header class="mb-8">
         <h1 class="mb-3 text-3xl font-bold text-gray-900">IPTV 频道</h1>
@@ -365,11 +365,12 @@
         </div>
       </section>
     </div>
-  </div>
+  </NavigationLayout>
 </template>
 
 <script setup lang="ts">
   import { onMounted, ref } from 'vue';
+  import NavigationLayout from '@/components/NavigationLayout.vue';
   import { iptvApi, type IPTVChannel, type IPTVStats } from '@/api/iptv';
 
   const channels = ref<IPTVChannel[]>([]);

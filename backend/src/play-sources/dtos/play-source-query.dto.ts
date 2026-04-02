@@ -1,7 +1,7 @@
 import { IsNumber, IsOptional, IsString, IsBoolean, IsEnum, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { PlaySourceType } from '../../entities/play-source.entity';
+import { PlaySourceStatus, PlaySourceType } from '../../entities/play-source.entity';
 
 export class PlaySourceQueryDto {
   @ApiProperty({
@@ -46,6 +46,15 @@ export class PlaySourceQueryDto {
   @IsOptional()
   @IsEnum(PlaySourceType, { message: '播放源类型无效' })
   type?: PlaySourceType;
+
+  @ApiProperty({
+    description: '播放源状态',
+    enum: PlaySourceStatus,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(PlaySourceStatus, { message: '播放源状态无效' })
+  status?: PlaySourceStatus;
 
   @ApiProperty({
     description: '视频质量',

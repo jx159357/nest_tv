@@ -7,11 +7,12 @@ import { RecommendationController } from './recommendation.controller';
 import { User } from '../entities/user.entity';
 import { MediaResource } from '../entities/media-resource.entity';
 import { WatchHistory } from '../entities/watch-history.entity';
+import { SearchHistory } from '../entities/search-history.entity';
 import { MediaResourceModule } from '../media/media.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Recommendation, User, MediaResource, WatchHistory]),
+    TypeOrmModule.forFeature([Recommendation, User, MediaResource, WatchHistory, SearchHistory]),
     MediaResourceModule,
     CacheModule.register(),
   ],

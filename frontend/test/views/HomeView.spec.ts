@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import HomeView from '@/views/HomeView.vue';
 
-const { routerPush, routeState, mediaStore } = vi.hoisted(() => ({
+const { routerPush, routeState, mediaStore, searchApi } = vi.hoisted(() => ({
   routerPush: vi.fn(),
   routeState: {
     query: {} as Record<string, string>,
@@ -12,6 +12,14 @@ const { routerPush, routeState, mediaStore } = vi.hoisted(() => ({
     fetchLatestMedia: vi.fn(),
     fetchTopRatedMedia: vi.fn(),
     searchMedia: vi.fn(),
+  },
+  searchApi: {
+    getSuggestions: vi.fn(),
+    getPopularKeywords: vi.fn(),
+    getHistory: vi.fn(),
+    clearHistory: vi.fn(),
+    getRelatedKeywords: vi.fn(),
+    recordHistory: vi.fn(),
   },
 }));
 
@@ -24,6 +32,10 @@ vi.mock('vue-router', () => ({
 
 vi.mock('@/stores/media', () => ({
   useMediaStore: () => mediaStore,
+}));
+
+vi.mock('@/api/search', () => ({
+  searchApi,
 }));
 
 vi.mock('@/components/NavigationLayout.vue', () => ({
@@ -61,11 +73,23 @@ describe('HomeView', () => {
     mediaStore.fetchLatestMedia.mockReset();
     mediaStore.fetchTopRatedMedia.mockReset();
     mediaStore.searchMedia.mockReset();
+    searchApi.getSuggestions.mockReset();
+    searchApi.getPopularKeywords.mockReset();
+    searchApi.getHistory.mockReset();
+    searchApi.clearHistory.mockReset();
+    searchApi.getRelatedKeywords.mockReset();
+    searchApi.recordHistory.mockReset();
 
     mediaStore.fetchPopularMedia.mockResolvedValue([]);
     mediaStore.fetchLatestMedia.mockResolvedValue([]);
     mediaStore.fetchTopRatedMedia.mockResolvedValue([]);
     mediaStore.searchMedia.mockResolvedValue({ data: [] });
+    searchApi.getSuggestions.mockResolvedValue([]);
+    searchApi.getPopularKeywords.mockResolvedValue([]);
+    searchApi.getHistory.mockResolvedValue([]);
+    searchApi.clearHistory.mockResolvedValue({ message: 'ok' });
+    searchApi.getRelatedKeywords.mockResolvedValue([]);
+    searchApi.recordHistory.mockResolvedValue({ success: true });
   });
 
   const mountView = () => mount(HomeView);
@@ -96,6 +120,7 @@ describe('HomeView', () => {
       path: '/search',
       query: { q: '星际穿越' },
     });
+    expect(searchApi.recordHistory).toHaveBeenCalledWith({ keyword: '星际穿越' });
   });
 
   it('navigates to media detail when a media card is clicked', async () => {
@@ -121,5 +146,42 @@ describe('HomeView', () => {
     expect(mediaStore.searchMedia).toHaveBeenCalledWith('星际穿越', { page: 1, limit: 12 });
     expect(wrapper.text()).toContain('搜索结果');
     expect(wrapper.text()).toContain('星际穿越');
+  });
+
+  it('shows remote search suggestions while typing', async () => {
+    searchApi.getSuggestions.mockResolvedValue([
+      { text: '星际迷航', type: 'title', count: 12 },
+    ]);
+
+    const wrapper = mountView();
+    await flushPromises();
+
+    const input = wrapper.get('input[type="text"]');
+    await input.trigger('focus');
+    await input.setValue('星际');
+    await flushPromises();
+
+    expect(searchApi.getSuggestions).toHaveBeenCalledWith('星际', 6);
+    expect(wrapper.text()).toContain('星际迷航');
+  });
+
+  it('clears recent search history from the home search dropdown', async () => {
+    searchApi.getHistory.mockResolvedValue(['沙丘']);
+
+    const wrapper = mountView();
+    await flushPromises();
+
+    await wrapper.get('input[type="text"]').trigger('focus');
+    await flushPromises();
+
+    const clearButton = wrapper
+      .findAll('button')
+      .find(button => button.text().includes('清空'));
+
+    expect(clearButton).toBeTruthy();
+
+    await clearButton!.trigger('mousedown');
+
+    expect(searchApi.clearHistory).toHaveBeenCalled();
   });
 });

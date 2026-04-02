@@ -10,6 +10,10 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "test:ci": "vitest run --coverage --watchAll=false",
+    "test:journeys": "vitest run test/views/LoginView.spec.ts test/views/RegisterView.spec.ts test/views/UserJourney.spec.ts test/views/AuthProfileJourney.spec.ts",
+    "test:journeys:admin": "vitest run test/views/AdminJourney.spec.ts",
+    "test:tools": "vitest run test/views/DownloadsView.spec.ts test/views/TorrentView.spec.ts",
+    "test:regressions": "npm run test:journeys && npm run test:journeys:admin && npm run test:tools",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
     "lint:check": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore",
     "format": "prettier --write src/",
@@ -56,3 +60,7 @@
     "vue-tsc": "^3.0.6"
   }
 }
+
+
+
+

@@ -164,6 +164,7 @@
 <script setup lang="ts">
   import { ref, computed, nextTick } from 'vue';
   import type { Ref } from 'vue';
+  import { showConfirm } from '@/composables/useModal';
 
   interface VideoMetadata {
     width: number;
@@ -508,9 +509,9 @@
 
   // 移除视频
   const removeVideo = () => {
-    if (confirm('确定要移除当前视频吗？')) {
+    showConfirm('确定要移除当前视频吗？', () => {
       replaceVideo();
-    }
+    });
   };
 
   // 清理资源

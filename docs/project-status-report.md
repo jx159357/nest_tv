@@ -66,19 +66,22 @@
 
 #### 1. **重复的推荐服务文件** 🧹
 ```bash
-❌ 需要删除：
-- src/recommendations/recommendation.service.ts (损坏的复杂版本)
-- src/recommendations/simple-recommendation.service.ts (未使用的简化版本)
-- src/recommendations/simple-recommendation.controller.ts (未使用的简化版本)
+✅ 当前推荐模块主干：
+- src/recommendations/recommendation.controller.ts
+- src/recommendations/recommendation.service.ts
+- src/recommendations/recommendation.module.ts
 
-✅ 保留：
-- src/recommendations/recommendation.module.ts (清空的模块)
+✅ 当前已承载：
+- 个性化推荐
+- 推荐理由明细
+- 推荐画像
+- 热门 / 最新 / 高分推荐
 ```
 
 #### 2. **未使用的工具文件** 🧹
 ```bash
 ❌ 检查是否需要删除：
-- src/common/utils/recommendation-query-optimizer.util.ts (推荐服务被清空，可能无用了)
+- src/common/utils/recommendation-query-optimizer.util.ts (按当前推荐实现评估是否仍需要保留)
 - 源文件中的测试文件和临时文件
 ```
 
@@ -188,7 +191,7 @@ src/api/playSource.ts - 播放源API完整
 ```
 观看历史 → 兴趣分析 → 个性化推荐 → 推荐展示
 ✅ 前端：RecommendationsView.vue
-✅ 后端：推荐模块（暂时清空，框架完整）
+✅ 后端：recommendation.controller.ts + recommendation.service.ts
 ✅ 数据库：recommendation.entity.ts
 ```
 
@@ -221,9 +224,8 @@ src/api/playSource.ts - 播放源API完整
 #### 1. **代码清理** 🧹
 ```bash
 # 立即清理
-rm src/recommendations/recommendation.service.ts
-rm src/recommendations/simple-recommendation.service.ts  
-rm src/recommendations/simple-recommendation.controller.ts
+# 当前推荐模块已恢复为正式实现，不再建议删除 recommendation 目录主干文件
+# 如需继续清理，仅建议排查历史遗留的临时/备份文件
 ```
 
 #### 2. **功能完善** 🎯
@@ -275,8 +277,8 @@ rm src/recommendations/simple-recommendation.controller.ts
 4. **部署就绪** - Docker化部署支持
 
 #### 🔴 **需要立即处理的问题：**
-1. **代码清理** - 删除损坏的推荐服务文件
-2. **简单推荐** - 实现基础的推荐功能
+1. **代码清理** - 继续排查历史临时文件、备份文件和旧编码残留
+2. **推荐优化** - 在现有推荐主干上继续提升召回质量和理由可解释性
 3. **环境测试** - 验证生产环境运行
 
 #### 🟡 **建议优化的功能：**

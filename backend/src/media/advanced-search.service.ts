@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { MediaResource } from '../entities/media-resource.entity';
 import { SearchHistory } from '../entities/search-history.entity';
+import type { CreateSearchHistoryDto } from './dtos/search-history.dto';
 
 export interface AdvancedSearchParams {
   keyword?: string;
@@ -91,7 +92,7 @@ export class AdvancedSearchService {
 
     // 记录搜索历史
     if (keyword && userId) {
-      await this.recordSearchHistory(userId, keyword);
+      await this.recordSearchHistory(userId, { keyword });
     }
 
     // 构建查询
@@ -371,8 +372,13 @@ export class AdvancedSearchService {
   /**
    * 记录搜索历史
    */
-  private async recordSearchHistory(userId: number, keyword: string): Promise<void> {
+  async recordSearchHistory(userId: number, payload: CreateSearchHistoryDto): Promise<void> {
     try {
+      const keyword = payload.keyword.trim();
+      if (!keyword) {
+        return;
+      }
+
       // 避免重复记录相同的搜索词
       const existingRecord = await this.searchHistoryRepository.findOne({
         where: { userId, keyword },
@@ -383,13 +389,21 @@ export class AdvancedSearchService {
       if (existingRecord) {
         const timeDiff = Date.now() - existingRecord.createdAt.getTime();
         if (timeDiff < 5 * 60 * 1000) {
+          existingRecord.resultCount = payload.resultCount ?? existingRecord.resultCount;
+          existingRecord.searchTime = payload.searchTime ?? existingRecord.searchTime;
+          existingRecord.filters = payload.filters ?? existingRecord.filters;
+          existingRecord.isActive = true;
+          await this.searchHistoryRepository.save(existingRecord);
           return;
         }
       }
 
       const searchHistory = this.searchHistoryRepository.create({
         userId,
-        keyword: keyword.trim(),
+        keyword,
+        resultCount: payload.resultCount ?? 0,
+        searchTime: payload.searchTime ?? 0,
+        filters: payload.filters,
       });
 
       await this.searchHistoryRepository.save(searchHistory);

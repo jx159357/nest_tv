@@ -148,13 +148,24 @@ export const useMediaStore = defineStore('media', () => {
     }
   };
 
-  const toggleFavorite = async (id: string) => {
+  const toggleFavorite = async (id: string, currentState?: boolean) => {
     try {
-      await mediaApi.toggleFavorite(id);
+      const response = await mediaApi.toggleFavorite(id, currentState);
       // 清除相关缓存
       mediaApi.clearCache();
+      return response.isFavorited;
     } catch (error) {
       console.error('切换收藏状态失败:', error);
+      throw error;
+    }
+  };
+
+  const fetchFavoriteStatus = async (id: string) => {
+    try {
+      const response = await mediaApi.getFavoriteStatus(id);
+      return response.isFavorited;
+    } catch (error) {
+      console.error('获取收藏状态失败:', error);
       throw error;
     }
   };
@@ -237,6 +248,7 @@ export const useMediaStore = defineStore('media', () => {
     fetchMediaByType,
     incrementViewCount,
     toggleFavorite,
+    fetchFavoriteStatus,
     fetchFavorites,
     clearCurrentMedia,
     resetMediaList,

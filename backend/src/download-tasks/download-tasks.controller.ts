@@ -11,7 +11,7 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GetCurrentUserId } from '../decorators/current-user.decorator';
 import { DownloadTasksService } from './download-tasks.service';
@@ -22,6 +22,7 @@ import { DownloadTaskQueryDto } from './dtos/download-task-query.dto';
 @ApiTags('下载任务')
 @Controller('download-tasks')
 @UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class DownloadTasksController {
   constructor(private readonly downloadTasksService: DownloadTasksService) {}
 

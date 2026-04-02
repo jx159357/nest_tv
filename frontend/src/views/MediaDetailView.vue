@@ -1,258 +1,226 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <!-- 导航�?-->
-    <nav class="bg-white shadow-sm">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-          <div class="flex items-center">
-            <router-link to="/" class="text-xl font-bold text-gray-900">视频平台</router-link>
-          </div>
+  <NavigationLayout>
+    <div v-if="loading" class="py-16 text-center">
+      <LoadingSpinner text="加载中..." />
+    </div>
 
-          <div class="flex items-center space-x-4">
-            <router-link to="/" class="text-gray-700 hover:text-gray-900"> 返回首页 </router-link>
-          </div>
-        </div>
-      </div>
-    </nav>
+    <div v-else-if="media" class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+      <section class="space-y-6 lg:col-span-2">
+        <div class="overflow-hidden rounded-2xl bg-white shadow-sm">
+          <div class="grid grid-cols-1 gap-6 p-6 md:grid-cols-[320px_minmax(0,1fr)]">
+            <div class="overflow-hidden rounded-2xl bg-slate-100">
+              <img v-if="media.poster" :src="media.poster" :alt="media.title" class="h-full w-full object-cover" />
+              <div v-else class="flex aspect-[2/3] items-center justify-center text-sm text-slate-400">暂无封面</div>
+            </div>
 
-    <!-- 主要内容 -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div v-if="loading" class="text-center py-12">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-        <p class="mt-4">加载�?..</p>
-      </div>
-
-      <div v-else-if="media" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- 媒体信息主区�?-->
-        <div class="lg:col-span-2 space-y-6">
-          <!-- 封面和基本信�?-->
-          <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+            <div class="space-y-5">
               <div>
-                <div class="aspect-w-16 aspect-h-9 bg-gray-200 rounded-lg overflow-hidden">
-                  <img
-                    v-if="media.poster"
-                    :src="media.poster"
-                    :alt="media.title"
-                    class="w-full h-full object-cover"
-                  />
-                  <div v-else class="w-full h-full flex items-center justify-center bg-gray-200">
-                    <span class="text-gray-500">暂无封面</span>
-                  </div>
-                </div>
+                <h1 class="text-3xl font-bold text-slate-900">{{ media.title }}</h1>
+                <p v-if="media.description" class="mt-3 text-sm leading-6 text-slate-600">
+                  {{ media.description }}
+                </p>
               </div>
 
-              <div class="space-y-4">
-                <h1 class="text-3xl font-bold text-gray-900">{{ media.title }}</h1>
+              <div class="flex flex-wrap items-center gap-4 text-sm text-slate-600">
+                <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-amber-700">
+                  ⭐ {{ formatRating(media.rating) }}/10
+                </span>
+                <span>播放 {{ media.viewCount || 0 }}</span>
+                <span v-if="media.releaseDate">上映 {{ formatDate(media.releaseDate) }}</span>
+                <span v-if="media.episodeCount">共 {{ media.episodeCount }} 集</span>
+              </div>
 
-                <div class="flex items-center space-x-4">
-                  <div class="flex items-center">
-                    <span class="text-yellow-400 text-lg">��</span>
-                    <span class="ml-1 text-gray-900 font-semibold">{{
-                      formatRating(media.rating)
-                    }}</span>
-                    <span class="text-gray-500">/10</span>
-                  </div>
+              <div class="flex flex-wrap gap-2">
+                <span class="rounded-full bg-indigo-100 px-3 py-1 text-sm text-indigo-700">
+                  {{ formatPreferenceLabel(media.type) }}
+                </span>
+                <span
+                  v-for="genre in media.genres || []"
+                  :key="genre"
+                  class="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700"
+                >
+                  {{ genre }}
+                </span>
+              </div>
 
-                  <div class="text-gray-500">�ۿ� {{ media.viewCount }} ��</div>
+              <dl class="grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
+                <div v-if="media.director">
+                  <dt class="font-medium text-slate-800">导演</dt>
+                  <dd class="mt-1">{{ media.director }}</dd>
                 </div>
-
-                <div class="flex flex-wrap gap-2">
-                  <span class="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
-                    {{ media.type }}
-                  </span>
-                  <span
-                    v-for="genre in media.genres"
-                    :key="genre"
-                    class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
-                  >
-                    {{ genre }}
-                  </span>
+                <div v-if="media.actors">
+                  <dt class="font-medium text-slate-800">主演</dt>
+                  <dd class="mt-1">{{ media.actors }}</dd>
                 </div>
-
-                <div v-if="media.director" class="text-gray-600">
-                  <strong>导演:</strong> {{ media.director }}
+                <div v-if="media.source">
+                  <dt class="font-medium text-slate-800">来源平台</dt>
+                  <dd class="mt-1">{{ media.source }}</dd>
                 </div>
+              </dl>
 
-                <div v-if="media.actors" class="text-gray-600">
-                  <strong>主演:</strong> {{ media.actors }}
-                </div>
-
-                <div v-if="media.releaseDate" class="text-gray-600">
-                  <strong>上映时间:</strong> {{ formatDate(media.releaseDate) }}
-                </div>
-
-                <div v-if="media.episodeCount" class="text-gray-600">
-                  <strong>剧集�?</strong> {{ media.episodeCount }} �?
-                </div>
-
+              <div class="flex flex-col gap-3 sm:flex-row">
                 <button
-                  class="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                  class="w-full rounded-xl bg-indigo-600 px-6 py-3 font-medium text-white transition-colors hover:bg-indigo-700 sm:flex-1"
                   @click="goToWatch"
                 >
                   立即观看
                 </button>
+                <button
+                  class="w-full rounded-xl border px-6 py-3 font-medium transition-colors sm:w-auto"
+                  :class="
+                    isFavorite
+                      ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                      : 'border-slate-300 text-slate-700 hover:bg-slate-50'
+                  "
+                  :disabled="favoriteLoading"
+                  @click="toggleFavorite"
+                >
+                  {{ favoriteLoading ? '处理中...' : isFavorite ? '已收藏' : '加入收藏' }}
+                </button>
               </div>
-            </div>
-          </div>
 
-          <!-- 简�?-->
-          <div v-if="media.description" class="bg-white rounded-lg shadow-sm p-6">
-            <h2 class="text-xl font-bold text-gray-900 mb-4">���</h2>
-            <p class="text-gray-700 leading-relaxed">{{ media.description }}</p>
-          </div>
-
-          <!-- 相关推荐 -->
-          <div class="bg-white rounded-lg shadow-sm p-6">
-            <h2 class="text-xl font-bold text-gray-900 mb-6">相关推荐</h2>
-            <div v-if="recommendationsLoading" class="text-center py-4">加载�?..</div>
-            <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div
-                v-for="recommendation in recommendations"
-                :key="recommendation.id"
-                class="bg-gray-50 rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-                @click="goToMediaDetail(recommendation.id)"
+                v-if="favoriteMessage"
+                class="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700"
               >
-                <div class="aspect-w-16 aspect-h-9 bg-gray-200">
-                  <img
-                    v-if="recommendation.poster"
-                    :src="recommendation.poster"
-                    :alt="recommendation.title"
-                    class="w-full h-32 object-cover"
-                  />
-                  <div v-else class="w-full h-32 flex items-center justify-center bg-gray-200">
-                    <span class="text-gray-500">暂无封面</span>
-                  </div>
-                </div>
-                <div class="p-3">
-                  <h3 class="font-medium text-gray-900 text-sm line-clamp-2">
-                    {{ recommendation.title }}
-                  </h3>
-                  <div class="flex items-center justify-between text-xs text-gray-500 mt-1">
-                    <span>评分: {{ formatRating(recommendation.rating) }}</span>
-                    <span>观看: {{ recommendation.viewCount }}</span>
-                  </div>
-                </div>
+                <span>{{ favoriteMessage }}</span>
+                <button v-if="isFavorite" class="font-medium text-amber-800 hover:underline" @click="goToFavorites">
+                  查看收藏
+                </button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 侧边�?-->
-        <div class="space-y-6">
-          <!-- 播放源信�?-->
-          <div class="bg-white rounded-lg shadow-sm p-6">
-            <h3 class="text-lg font-bold text-gray-900 mb-4">����Դ</h3>
-            <div v-if="media.playSources && media.playSources.length > 0" class="space-y-3">
-              <div
-                v-for="playSource in media.playSources"
-                :key="playSource.id"
-                class="p-3 bg-gray-50 rounded-lg"
-              >
-                <div class="flex justify-between items-start">
-                  <div>
-                    <div class="font-medium text-gray-900">
-                      {{ playSource.sourceName || `播放�?${playSource.id}` }}
-                    </div>
-                    <div class="text-sm text-gray-500 mt-1">
-                      {{ playSource.resolution }} {{ playSource.format }}
-                    </div>
-                  </div>
-                  <span
-                    :class="[
-                      'px-2 py-1 rounded text-xs',
-                      playSource.status === 'active'
-                        ? 'bg-green-100 text-green-800'
-                        : playSource.status === 'error'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-yellow-100 text-yellow-800',
-                    ]"
-                  >
-                    {{ getStatusText(playSource.status) }}
-                  </span>
-                </div>
-              </div>
+        <section class="rounded-2xl bg-white p-6 shadow-sm">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="text-xl font-semibold text-slate-900">相关推荐</h2>
+              <p class="mt-1 text-sm text-slate-500">基于同类内容和当前画像推荐的相近作品。</p>
             </div>
-            <div v-else class="text-gray-500 text-sm">���޿��ò���Դ</div>
           </div>
 
-          <!-- 下载链接 -->
-          <div
-            v-if="media.downloadUrls && media.downloadUrls.length > 0"
-            class="bg-white rounded-lg shadow-sm p-6"
-          >
-            <div class="mb-4 flex items-start justify-between gap-3">
-              <div>
-                <h3 class="text-lg font-bold text-gray-900">下载链接</h3>
-                <p class="mt-1 text-sm text-gray-500">��ֱ�Ӵ�ԭʼ���ӣ���������������б�ͳһ������</p>
-              </div>
-              <router-link
-                to="/downloads"
-                class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                查看任务
-              </router-link>
-            </div>
+          <div v-if="recommendationsLoading" class="py-8 text-center">
+            <LoadingSpinner text="加载中..." />
+          </div>
+          <div v-else-if="recommendations.length === 0" class="py-8 text-center text-sm text-slate-500">
+            暂无相关推荐
+          </div>
+          <div v-else class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <MediaCard
+              v-for="item in recommendations"
+              :key="item.id"
+              :media="item"
+              @click="goToMediaDetail(item.id)"
+            />
+          </div>
+        </section>
+      </section>
+
+      <aside class="space-y-6">
+        <section class="rounded-2xl bg-white p-6 shadow-sm">
+          <h2 class="text-lg font-semibold text-slate-900">播放源</h2>
+          <div v-if="media.playSources && media.playSources.length > 0" class="mt-4 space-y-3">
             <div
-              v-if="downloadMessage"
-              class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700"
+              v-for="playSource in media.playSources"
+              :key="playSource.id"
+              class="rounded-xl border border-slate-200 bg-slate-50 p-4"
             >
-              {{ downloadMessage }}
-            </div>
-            <div class="space-y-2">
-              <div
-                v-for="(url, index) in media.downloadUrls"
-                :key="index"
-                class="flex flex-col gap-2 rounded-lg border border-gray-200 p-3 md:flex-row md:items-center md:justify-between"
-              >
-                <div class="min-w-0 flex-1">
-                  <div class="font-medium text-gray-900">下载链接 {{ index + 1 }}</div>
-                  <div class="mt-1 break-all text-xs text-gray-500">{{ url }}</div>
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <div class="font-medium text-slate-900">{{ playSource.sourceName || `播放源 ${playSource.id}` }}</div>
+                  <div class="mt-1 text-xs text-slate-500">{{ playSource.resolution }} {{ playSource.format }}</div>
                 </div>
-                <div class="flex shrink-0 gap-2">
-                  <button
-                    class="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-                    @click="queueDownloadTask(url, index)"
-                  >
-                    加入任务
-                  </button>
-                  <a
-                    :href="url"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    打开原链
-                  </a>
-                </div>
+                <span
+                  :class="[
+                    'rounded-full px-2.5 py-1 text-xs font-medium',
+                    playSource.status === 'active'
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : playSource.status === 'error'
+                        ? 'bg-rose-100 text-rose-700'
+                        : 'bg-amber-100 text-amber-700',
+                  ]"
+                >
+                  {{ getStatusText(playSource.status) }}
+                </span>
               </div>
             </div>
           </div>
+          <div v-else class="mt-4 text-sm text-slate-500">暂无可用播放源</div>
+        </section>
 
-          <!-- 来源信息 -->
-          <div v-if="media.source" class="bg-white rounded-lg shadow-sm p-6">
-            <h3 class="text-lg font-bold text-gray-900 mb-4">来源信息</h3>
-            <div class="text-gray-600">来源平台: {{ media.source }}</div>
+        <section v-if="media.downloadUrls && media.downloadUrls.length > 0" class="rounded-2xl bg-white p-6 shadow-sm">
+          <div class="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <h2 class="text-lg font-semibold text-slate-900">下载链接</h2>
+              <p class="mt-1 text-sm text-slate-500">可直接打开原始链接，或加入下载任务统一管理。</p>
+            </div>
+            <router-link
+              to="/downloads"
+              class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              查看任务
+            </router-link>
           </div>
-        </div>
-      </div>
 
-      <div v-else class="text-center py-12">
-        <p class="text-red-400">加载失败</p>
-      </div>
-    </main>
-  </div>
+          <div
+            v-if="downloadMessage"
+            class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700"
+          >
+            {{ downloadMessage }}
+          </div>
+
+          <div class="space-y-2">
+            <div
+              v-for="(url, index) in media.downloadUrls"
+              :key="index"
+              class="flex flex-col gap-2 rounded-xl border border-slate-200 p-3 md:flex-row md:items-center md:justify-between"
+            >
+              <div class="min-w-0 flex-1">
+                <div class="font-medium text-slate-900">下载链接 {{ index + 1 }}</div>
+                <div class="mt-1 break-all text-xs text-slate-500">{{ url }}</div>
+              </div>
+              <div class="flex shrink-0 gap-2">
+                <button
+                  class="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                  @click="queueDownloadTask(url, index)"
+                >
+                  加入任务
+                </button>
+                <a
+                  :href="url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  打开原链
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <div v-else class="py-16 text-center text-red-500">加载失败</div>
+  </NavigationLayout>
 </template>
 
 <script setup>
-  import { ref, onMounted } from 'vue';
+  import { onMounted, ref } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
+  import NavigationLayout from '@/components/NavigationLayout.vue';
+  import LoadingSpinner from '@/components/LoadingSpinner.vue';
+  import MediaCard from '@/components/MediaCard.vue';
   import { useMediaStore } from '@/stores/media';
+  import { useAuthStore } from '@/stores/auth';
   import { useDownloadsStore } from '@/stores/downloads';
+  import { notifyError, notifyInfo, notifySuccess } from '@/composables/useModal';
 
   const route = useRoute();
   const router = useRouter();
   const mediaStore = useMediaStore();
+  const authStore = useAuthStore();
   const downloadsStore = useDownloadsStore();
 
   const media = ref(null);
@@ -260,17 +228,34 @@
   const loading = ref(true);
   const recommendationsLoading = ref(false);
   const downloadMessage = ref('');
+  const isFavorite = ref(false);
+  const favoriteLoading = ref(false);
+  const favoriteMessage = ref('');
+
+  const syncFavoriteStatus = async mediaId => {
+    if (!authStore.isAuthenticated) {
+      isFavorite.value = false;
+      return;
+    }
+
+    try {
+      isFavorite.value = await mediaStore.fetchFavoriteStatus(String(mediaId));
+    } catch (error) {
+      console.error('加载收藏状态失败:', error);
+      isFavorite.value = false;
+    }
+  };
 
   const loadMedia = async () => {
     const mediaId = parseInt(route.params.id);
     loading.value = true;
+    favoriteMessage.value = '';
 
     try {
       const mediaData = await mediaStore.fetchMediaDetail(mediaId);
       media.value = mediaData;
-
-      // 加载推荐内容
-      loadRecommendations(mediaId);
+      await syncFavoriteStatus(mediaId);
+      void loadRecommendations(mediaId);
     } catch (error) {
       console.error('加载媒体详情失败:', error);
     } finally {
@@ -295,6 +280,47 @@
     router.push(`/watch/${media.value.id}`);
   };
 
+  const goToFavorites = () => {
+    router.push({
+      name: 'favorites',
+      query: { highlight: String(media.value.id) },
+    });
+  };
+
+  const toggleFavorite = async () => {
+    if (!media.value) {
+      return;
+    }
+
+    if (!authStore.isAuthenticated) {
+      notifyInfo('登录后可收藏', '登录后即可将内容加入收藏夹。');
+      void router.push('/login');
+      return;
+    }
+
+    favoriteLoading.value = true;
+    favoriteMessage.value = '';
+
+    try {
+      const nextState = await mediaStore.toggleFavorite(String(media.value.id), isFavorite.value);
+      isFavorite.value = nextState;
+      favoriteMessage.value = nextState
+        ? `已将《${media.value.title}》加入收藏`
+        : `已将《${media.value.title}》移出收藏`;
+
+      if (nextState) {
+        notifySuccess('收藏已更新', `已将《${media.value.title}》加入收藏，可前往“我的收藏”继续查看。`);
+      } else {
+        notifyInfo('收藏已更新', `已将《${media.value.title}》从收藏中移除。`);
+      }
+    } catch (error) {
+      console.error('收藏操作失败:', error);
+      notifyError('收藏操作失败', error instanceof Error ? error.message : '请稍后重试');
+    } finally {
+      favoriteLoading.value = false;
+    }
+  };
+
   const goToMediaDetail = id => {
     router.push(`/media/${id}`);
   };
@@ -302,7 +328,7 @@
   const getStatusText = status => {
     const statusMap = {
       active: '可用',
-      inactive: '������',
+      inactive: '不可用',
       error: '错误',
       checking: '检查中',
     };
@@ -316,7 +342,19 @@
   };
 
   const formatRating = rating => {
-    return typeof rating === 'number' && Number.isFinite(rating) ? rating.toFixed(1) : '��';
+    return typeof rating === 'number' && Number.isFinite(rating) ? rating.toFixed(1) : '—';
+  };
+
+  const formatPreferenceLabel = value => {
+    const labelMap = {
+      movie: '电影',
+      tv_series: '电视剧',
+      variety: '综艺',
+      anime: '动漫',
+      documentary: '纪录片',
+    };
+
+    return labelMap[value] || value;
   };
 
   const queueDownloadTask = (url, index) => {
@@ -328,7 +366,7 @@
     const task = downloadsStore.enqueueTask({
       url,
       fileName: `${media.value.title} · 下载链接 ${index + 1}`,
-      sourceLabel: media.value.source || '����ҳ',
+      sourceLabel: media.value.source || '详情页',
       mediaResourceId: media.value.id,
       metadata: {
         title: media.value.title,
@@ -342,13 +380,6 @@
   };
 
   onMounted(() => {
-    loadMedia();
+    void loadMedia();
   });
 </script>
-
-
-
-
-
-
-

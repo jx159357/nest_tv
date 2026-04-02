@@ -1,11 +1,30 @@
 import ApiClient from './index';
 import type { PlaySource, PlaySourceQueryParams } from '@/types/media';
 
+export interface PlaySourceListResponse {
+  data: PlaySource[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
 // 播放源相关API
 export const playSourceApi = {
   // 获取播放源列表
   getPlaySources: (params?: PlaySourceQueryParams) => {
-    return ApiClient.get<PlaySource[]>('/play-sources', { params });
+    const normalizedParams = params
+      ? {
+          ...params,
+          pageSize: params.pageSize ?? params.limit,
+        }
+      : undefined;
+
+    if (normalizedParams && 'limit' in normalizedParams) {
+      delete normalizedParams.limit;
+    }
+
+    return ApiClient.get<PlaySourceListResponse>('/play-sources', { params: normalizedParams });
   },
 
   // 根据ID获取播放源
@@ -25,7 +44,7 @@ export const playSourceApi = {
 
   // 获取媒体资源的所有播放源（按质量排序）
   getPlaySourcesByMediaId: (mediaId: string) => {
-    return ApiClient.get<PlaySource[]>(`/media/${mediaId}/play-sources`);
+    return ApiClient.get<PlaySource[]>(`/play-sources/media/${mediaId}`);
   },
 
   // 添加播放源
@@ -43,23 +62,10 @@ export const playSourceApi = {
     return ApiClient.delete<void>(`/play-sources/${id}`);
   },
 
-  // 测试播放源连接
+  // 验证播放源连接
   testPlaySource: (id: string) => {
-    return ApiClient.post<{ success: boolean; message: string }>(`/play-sources/${id}/test`);
-  },
-
-  // 添加播放源到收藏
-  addToFavorites: (playSourceId: string) => {
-    return ApiClient.post(`/play-sources/${playSourceId}/favorites`);
-  },
-
-  // 从收藏中移除
-  removeFromFavorites: (playSourceId: string) => {
-    return ApiClient.delete(`/play-sources/${playSourceId}/favorites`);
-  },
-
-  // 检查是否已收藏
-  isFavorite: (playSourceId: string) => {
-    return ApiClient.get(`/play-sources/${playSourceId}/favorites`);
+    return ApiClient.patch<{ isValid: boolean; message: string; details: Record<string, unknown> }>(
+      `/play-sources/${id}/validate`,
+    );
   },
 };

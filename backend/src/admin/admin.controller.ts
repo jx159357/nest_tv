@@ -11,7 +11,7 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminPermission } from '../entities/admin-permission.entity';
 import { AdminRole } from '../entities/admin-role.entity';
@@ -37,6 +37,7 @@ import {
 @Controller('admin')
 @UseGuards(JwtAuthGuard, AdminRoleGuard)
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+@ApiBearerAuth()
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 

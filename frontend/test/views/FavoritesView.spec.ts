@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import FavoritesView from '@/views/FavoritesView.vue';
 
-const { routeState, routerState, mediaStore } = vi.hoisted(() => ({
+const { routeState, routerState, mediaStore, mediaApi } = vi.hoisted(() => ({
   routeState: {
     query: {} as Record<string, string>,
   },
@@ -13,6 +13,9 @@ const { routeState, routerState, mediaStore } = vi.hoisted(() => ({
   mediaStore: {
     fetchFavorites: vi.fn(),
   },
+  mediaApi: {
+    getMediaById: vi.fn(),
+  },
 }));
 
 vi.mock('vue-router', () => ({
@@ -22,6 +25,10 @@ vi.mock('vue-router', () => ({
 
 vi.mock('@/stores/media', () => ({
   useMediaStore: () => mediaStore,
+}));
+
+vi.mock('@/api/media', () => ({
+  mediaApi,
 }));
 
 vi.mock('@/components/NavigationLayout.vue', () => ({
@@ -57,6 +64,7 @@ describe('FavoritesView', () => {
     routerState.push.mockReset();
     routerState.replace.mockReset();
     mediaStore.fetchFavorites.mockReset();
+    mediaApi.getMediaById.mockReset();
     mediaStore.fetchFavorites.mockResolvedValue({
       data: [],
       page: 1,
@@ -64,6 +72,7 @@ describe('FavoritesView', () => {
       total: 0,
       totalPages: 0,
     });
+    mediaApi.getMediaById.mockResolvedValue({ id: 99, title: 'Pinned Favorite', rating: 8.9 });
   });
 
   it('loads favorites using the route page query', async () => {
@@ -117,5 +126,88 @@ describe('FavoritesView', () => {
     await wrapper.get('.media-card').trigger('click');
 
     expect(routerState.push).toHaveBeenCalledWith('/media/9');
+  });
+
+  it('highlights the matching favorite when highlight query points to the current page', async () => {
+    routeState.query = { highlight: '9' };
+    mediaStore.fetchFavorites.mockResolvedValue({
+      data: [{ id: 9, title: 'Favorite Movie', rating: 8.6 }],
+      page: 1,
+      limit: 12,
+      total: 1,
+      totalPages: 1,
+    });
+
+    const wrapper = mount(FavoritesView);
+    await flushPromises();
+
+    expect(wrapper.get('[data-testid="favorite-highlighted"]').text()).toContain('Favorite Movie');
+    expect(wrapper.get('[data-testid="highlighted-favorite-banner"]').text()).toContain('高亮显示');
+    expect(mediaApi.getMediaById).not.toHaveBeenCalled();
+  });
+
+  it('pins the highlighted favorite when it is outside the current page', async () => {
+    routeState.query = { highlight: '99' };
+    mediaStore.fetchFavorites.mockResolvedValue({
+      data: [{ id: 9, title: 'Favorite Movie', rating: 8.6 }],
+      page: 1,
+      limit: 12,
+      total: 20,
+      totalPages: 2,
+    });
+
+    const wrapper = mount(FavoritesView);
+    await flushPromises();
+
+    expect(mediaApi.getMediaById).toHaveBeenCalledWith('99');
+    expect(wrapper.get('[data-testid="highlighted-favorite-pinned"]').text()).toContain('Pinned Favorite');
+  });
+
+  it('clears the highlight after the one-time banner is dismissed', async () => {
+    routeState.query = { highlight: '9' };
+    mediaStore.fetchFavorites.mockResolvedValue({
+      data: [{ id: 9, title: 'Favorite Movie', rating: 8.6 }],
+      page: 1,
+      limit: 12,
+      total: 1,
+      totalPages: 1,
+    });
+
+    const wrapper = mount(FavoritesView);
+    await flushPromises();
+
+    await wrapper.get('[data-testid="dismiss-highlight"]').trigger('click');
+
+    expect(routerState.replace).toHaveBeenCalledWith({
+      name: 'favorites',
+      query: {},
+    });
+  });
+
+  it('drops the highlight query when paginating away from the landing state', async () => {
+    routeState.query = { highlight: '9' };
+    mediaStore.fetchFavorites.mockResolvedValue({
+      data: [{ id: 9, title: 'Favorite Movie', rating: 8.6 }],
+      page: 1,
+      limit: 12,
+      total: 24,
+      totalPages: 2,
+    });
+
+    const wrapper = mount(FavoritesView);
+    await flushPromises();
+
+    const nextPageButton = wrapper
+      .findAll('button')
+      .find(button => button.text().includes('下一页'));
+
+    expect(nextPageButton).toBeTruthy();
+
+    await nextPageButton!.trigger('click');
+
+    expect(routerState.replace).toHaveBeenLastCalledWith({
+      name: 'favorites',
+      query: { page: '2' },
+    });
   });
 });

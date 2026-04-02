@@ -381,6 +381,7 @@
 
 <script setup lang="ts">
   import { computed, onMounted, ref } from 'vue';
+  import { showConfirm } from '@/composables/useModal';
   import {
     adminApi,
     type AdminPermissionItem,
@@ -594,17 +595,15 @@
     const nextStatus = !role.isActive;
     const actionLabel = nextStatus ? '启用' : '停用';
 
-    if (!window.confirm(`确定要${actionLabel}角色“${role.name}”吗？`)) {
-      return;
-    }
-
-    try {
-      await adminApi.updateRole(role.id, { isActive: nextStatus });
-      setNotice('success', `角色“${role.name}”已${actionLabel}`);
-      await loadRoles();
-    } catch (error: unknown) {
-      setNotice('error', getErrorMessage(error, `${actionLabel}角色失败`));
-    }
+    showConfirm(`确定要${actionLabel}角色“${role.name}”吗？`, async () => {
+      try {
+        await adminApi.updateRole(role.id, { isActive: nextStatus });
+        setNotice('success', `角色“${role.name}”已${actionLabel}`);
+        await loadRoles();
+      } catch (error: unknown) {
+        setNotice('error', getErrorMessage(error, `${actionLabel}角色失败`));
+      }
+    });
   };
 
   const openCreatePermission = () => {
@@ -670,17 +669,15 @@
     const nextStatus = !permission.isActive;
     const actionLabel = nextStatus ? '启用' : '停用';
 
-    if (!window.confirm(`确定要${actionLabel}权限“${permission.name}”吗？`)) {
-      return;
-    }
-
-    try {
-      await adminApi.updatePermission(permission.id, { isActive: nextStatus });
-      setNotice('success', `权限“${permission.name}”已${actionLabel}`);
-      await reloadPermissionAndRoleData();
-    } catch (error: unknown) {
-      setNotice('error', getErrorMessage(error, `${actionLabel}权限失败`));
-    }
+    showConfirm(`确定要${actionLabel}权限“${permission.name}”吗？`, async () => {
+      try {
+        await adminApi.updatePermission(permission.id, { isActive: nextStatus });
+        setNotice('success', `权限“${permission.name}”已${actionLabel}`);
+        await reloadPermissionAndRoleData();
+      } catch (error: unknown) {
+        setNotice('error', getErrorMessage(error, `${actionLabel}权限失败`));
+      }
+    });
   };
 
   const getRolePermissionPreview = (role: AdminRoleItem) => {

@@ -11,6 +11,9 @@ import { User } from '../entities/user.entity';
 import { RegisterUserDto } from './dtos/register-user.dto';
 import { LoginUserDto } from './dtos/login-user.dto';
 import { UserResponseDto } from './dtos/user-response.dto';
+import { UpdateUserProfileDto } from './dtos/update-user-profile.dto';
+import { RecommendationFreshnessBias } from './dtos/user-recommendation-settings.interface';
+import { ChangePasswordDto } from './dtos/change-password.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -151,6 +154,80 @@ export class UserService {
     }
 
     return this.toUserResponseDto(user);
+  }
+
+  async updateProfile(userId: number, updateUserProfileDto: UpdateUserProfileDto): Promise<UserResponseDto> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      throw new HttpException('用户不存在', HttpStatus.NOT_FOUND);
+    }
+
+    if (typeof updateUserProfileDto.nickname === 'string') {
+      user.nickname = updateUserProfileDto.nickname.trim() || undefined;
+    }
+
+    if (typeof updateUserProfileDto.phone === 'string') {
+      user.phone = updateUserProfileDto.phone.trim() || undefined;
+    }
+
+    if (typeof updateUserProfileDto.avatar === 'string') {
+      user.avatar = updateUserProfileDto.avatar.trim() || undefined;
+    }
+
+    if (updateUserProfileDto.recommendationSettings) {
+      const settings = updateUserProfileDto.recommendationSettings;
+      user.recommendationSettings = {
+        preferredTypes: settings.preferredTypes?.map(item => item.trim()).filter(Boolean) || [],
+        preferredGenres: settings.preferredGenres?.map(item => item.trim()).filter(Boolean) || [],
+        excludedGenres: settings.excludedGenres?.map(item => item.trim()).filter(Boolean) || [],
+        preferredKeywords: settings.preferredKeywords?.map(item => item.trim()).filter(Boolean) || [],
+        freshnessBias: settings.freshnessBias || RecommendationFreshnessBias.BALANCED,
+      };
+    }
+
+    const savedUser = await this.userRepository.save(user);
+    return this.toUserResponseDto(savedUser);
+  }
+
+  async changePassword(userId: number, changePasswordDto: ChangePasswordDto): Promise<void> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: [
+        'id',
+        'username',
+        'email',
+        'phone',
+        'nickname',
+        'role',
+        'isActive',
+        'avatar',
+        'lastLoginAt',
+        'createdAt',
+        'updatedAt',
+        'password',
+      ],
+    });
+
+    if (!user || !user.password) {
+      throw new UnauthorizedException('用户不存在或密码未设置');
+    }
+
+    const isPasswordValid = await bcrypt.compare(changePasswordDto.oldPassword, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('当前密码错误');
+    }
+
+    const isSamePassword = await bcrypt.compare(changePasswordDto.newPassword, user.password);
+    if (isSamePassword) {
+      throw new ConflictException('新密码不能与当前密码相同');
+    }
+
+    user.password = await bcrypt.hash(
+      changePasswordDto.newPassword,
+      parseInt(this.configService.get<string>('BCRYPT_ROUNDS', '12'), 10),
+    );
+    await this.userRepository.save(user);
   }
 
   /**

@@ -23,9 +23,18 @@ export interface User {
   role: string;
   isActive: boolean;
   avatar?: string;
+  recommendationSettings?: UserRecommendationSettings;
   lastLoginAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface UserRecommendationSettings {
+  preferredTypes?: string[];
+  preferredGenres?: string[];
+  excludedGenres?: string[];
+  preferredKeywords?: string[];
+  freshnessBias?: 'balanced' | 'fresh' | 'classic';
 }
 
 export interface LoginCredentials {
@@ -66,6 +75,7 @@ export interface UserUpdateData {
   email?: string;
   phone?: string;
   avatar?: string;
+  recommendationSettings?: UserRecommendationSettings;
 }
 
 export interface ChangePasswordData {

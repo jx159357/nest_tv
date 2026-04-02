@@ -37,6 +37,8 @@ describe('downloads store', () => {
     expect(inferDownloadType('magnet:?xt=urn:btih:abc')).toBe('magnet');
     expect(inferDownloadType('https://example.com/file.torrent')).toBe('torrent');
     expect(inferDownloadType('https://example.com/video.mp4')).toBe('direct');
+    expect(inferDownloadType('thunder://example')).toBe('direct');
+    expect(inferDownloadType('ed2k://example')).toBe('direct');
   });
 
   it('enqueues tasks and deduplicates the same url', () => {

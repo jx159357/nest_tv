@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import type { UserRecommendationSettings } from './user-recommendation-settings.interface';
 
 /**
  * 用户信息响应DTO
@@ -50,6 +51,13 @@ export class UserResponseDto {
     required: false,
   })
   avatar?: string;
+
+  @ApiProperty({
+    description: '推荐偏好设置',
+    required: false,
+    type: Object,
+  })
+  recommendationSettings?: UserRecommendationSettings;
 
   @ApiProperty({
     description: '创建时间',

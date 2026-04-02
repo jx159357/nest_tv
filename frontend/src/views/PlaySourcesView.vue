@@ -1,24 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <!-- 导航栏 -->
-    <nav class="bg-white shadow-sm">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-          <div class="flex items-center">
-            <router-link to="/" class="text-xl font-bold text-gray-900">视频平台</router-link>
-          </div>
-
-          <div class="flex items-center space-x-4">
-            <router-link to="/" class="text-gray-700 hover:text-gray-900"> 首页 </router-link>
-            <router-link to="/profile" class="text-gray-700 hover:text-gray-900">
-              个人中心
-            </router-link>
-          </div>
-        </div>
-      </div>
-    </nav>
-
-    <!-- 主要内容 -->
+  <NavigationLayout>
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="mb-6 flex justify-between items-center">
         <h1 class="text-2xl font-bold text-gray-900">播放源管理</h1>
@@ -52,8 +33,9 @@
               <option value="">全部</option>
               <option value="online">在线播放</option>
               <option value="download">下载链接</option>
+              <option value="stream">流媒体</option>
               <option value="magnet">磁力链接</option>
-              <option value="ed2k">电驴链接</option>
+              <option value="third_party">第三方</option>
             </select>
           </div>
 
@@ -290,8 +272,9 @@
                 >
                   <option value="online">在线播放</option>
                   <option value="download">下载链接</option>
+                  <option value="stream">流媒体</option>
                   <option value="magnet">磁力链接</option>
-                  <option value="ed2k">电驴链接</option>
+                  <option value="third_party">第三方</option>
                 </select>
               </div>
 
@@ -376,14 +359,14 @@
         </div>
       </div>
     </div>
-  </div>
+  </NavigationLayout>
 </template>
 
 <script setup>
   import { ref, onMounted } from 'vue';
-  import { useAuthStore } from '@/stores/auth';
-
-  const authStore = useAuthStore();
+  import { playSourceApi } from '@/api';
+  import { showConfirm } from '@/composables/useModal';
+  import NavigationLayout from '@/components/NavigationLayout.vue';
 
   // 状态管理
   const playSources = ref([]);
@@ -406,7 +389,6 @@
     mediaResourceId: '',
     type: '',
     status: '',
-    activeOnly: false,
   });
 
   // 当前编辑的播放源
@@ -414,6 +396,7 @@
     id: null,
     mediaResourceId: '',
     type: 'online',
+    name: '',
     url: '',
     resolution: '',
     language: '',
@@ -440,15 +423,15 @@
         }
       });
 
-      const response = await authStore.api.get('/play-sources', { params });
+      const response = await playSourceApi.getPlaySources(params);
 
-      if (response.data && response.data.data) {
-        playSources.value = response.data.data;
+      if (response?.data) {
+        playSources.value = response.data;
         pagination.value = {
-          page: response.data.page,
-          limit: response.data.limit,
-          total: response.data.total,
-          totalPages: response.data.totalPages,
+          page: response.page,
+          limit: response.pageSize,
+          total: response.total,
+          totalPages: response.totalPages,
         };
       } else {
         playSources.value = [];
@@ -473,7 +456,6 @@
       mediaResourceId: '',
       type: '',
       status: '',
-      activeOnly: false,
     };
     pagination.value.page = 1;
     loadPlaySources();
@@ -525,7 +507,7 @@
   const validatePlaySource = async id => {
     try {
       validatingSourceId.value = id;
-      await authStore.api.patch(`/play-sources/${id}/validate`);
+      await playSourceApi.testPlaySource(String(id));
       loadPlaySources(); // 重新加载数据以更新状态
     } catch (error) {
       console.error('验证播放源失败:', error);
@@ -536,19 +518,17 @@
 
   // 删除播放源
   const deletePlaySource = async id => {
-    if (!confirm('确定要删除这个播放源吗？')) {
-      return;
-    }
-
-    try {
-      deletingSourceId.value = id;
-      await authStore.api.delete(`/play-sources/${id}`);
-      loadPlaySources(); // 重新加载数据
-    } catch (error) {
-      console.error('删除播放源失败:', error);
-    } finally {
-      deletingSourceId.value = null;
-    }
+    showConfirm('确定要删除这个播放源吗？', async () => {
+      try {
+        deletingSourceId.value = id;
+        await playSourceApi.deletePlaySource(String(id));
+        await loadPlaySources();
+      } catch (error) {
+        console.error('删除播放源失败:', error);
+      } finally {
+        deletingSourceId.value = null;
+      }
+    });
   };
 
   // 编辑播放源
@@ -563,15 +543,36 @@
     try {
       saving.value = true;
 
+      const createPayload = {
+        mediaResourceId: Number(currentPlaySource.value.mediaResourceId),
+        type: currentPlaySource.value.type,
+        name:
+          currentPlaySource.value.name ||
+          currentPlaySource.value.resolution ||
+          currentPlaySource.value.type,
+        url: currentPlaySource.value.url,
+        resolution: currentPlaySource.value.resolution || undefined,
+        priority: Number(currentPlaySource.value.priority) || 1,
+        isActive: Boolean(currentPlaySource.value.isActive),
+      };
+
+      const updatePayload = {
+        name:
+          currentPlaySource.value.name ||
+          currentPlaySource.value.resolution ||
+          currentPlaySource.value.type,
+        url: currentPlaySource.value.url,
+        resolution: currentPlaySource.value.resolution || undefined,
+        priority: Number(currentPlaySource.value.priority) || 1,
+        isActive: Boolean(currentPlaySource.value.isActive),
+      };
+
       if (showEditModal.value) {
         // 编辑播放源
-        await authStore.api.patch(
-          `/play-sources/${currentPlaySource.value.id}`,
-          currentPlaySource.value,
-        );
+        await playSourceApi.updatePlaySource(String(currentPlaySource.value.id), updatePayload);
       } else {
         // 添加播放源
-        await authStore.api.post('/play-sources', currentPlaySource.value);
+        await playSourceApi.createPlaySource(createPayload);
       }
 
       closeModal();
@@ -589,6 +590,7 @@
       id: null,
       mediaResourceId: '',
       type: 'online',
+      name: '',
       url: '',
       resolution: '',
       language: '',
@@ -608,6 +610,6 @@
 
   // 组件挂载时加载数据
   onMounted(() => {
-    loadPlaySources();
+    void loadPlaySources();
   });
 </script>

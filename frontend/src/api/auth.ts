@@ -29,16 +29,25 @@ export const authApi = {
 
   // 修改密码
   changePassword: (passwordData: { oldPassword: string; newPassword: string }) => {
-    return ApiClient.put<void>('/users/change-password', passwordData);
+    return ApiClient.put<{ success: true }>('/users/change-password', passwordData);
   },
 
   // 检查令牌有效性
-  validateToken: () => {
-    return ApiClient.get<{ valid: boolean; user: User }>('/auth/validate', undefined, false);
+  validateToken: async () => {
+    try {
+      const user = await ApiClient.get<User>('/users/profile', undefined, false);
+      return {
+        valid: true,
+        user,
+      };
+    } catch {
+      return {
+        valid: false,
+        user: null,
+      };
+    }
   },
 
-  // 退出登录
-  logout: () => {
-    return ApiClient.post<void>('/auth/logout');
-  },
+  // 退出登录由前端本地清理令牌完成；当前后端没有单独的 /auth/logout 端点
+  logout: async () => undefined,
 };

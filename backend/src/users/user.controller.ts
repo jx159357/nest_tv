@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Put,
   Body,
   UsePipes,
   ValidationPipe,
@@ -16,6 +17,8 @@ import { AuthService } from '../auth/auth.service';
 import { RegisterUserDto } from './dtos/register-user.dto';
 import { LoginUserDto } from './dtos/login-user.dto';
 import { UserResponseDto } from './dtos/user-response.dto';
+import { UpdateUserProfileDto } from './dtos/update-user-profile.dto';
+import { ChangePasswordDto } from './dtos/change-password.dto';
 import { JwtResponseDto } from '../auth/dtos/jwt-response.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -104,12 +107,49 @@ export class UserController {
       id: user.id,
       username: user.username,
       email: user.email,
+      nickname: user.nickname,
       role: user.role,
       avatar: user.avatar,
       phone: user.phone,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
+      lastLoginAt: user.lastLoginAt,
+      recommendationSettings: user.recommendationSettings,
       isActive: user.isActive || true,
     };
+  }
+
+  @Put('profile')
+  @ApiOperation({ summary: '更新当前用户资料与推荐偏好' })
+  @ApiResponse({
+    status: 200,
+    description: '成功更新当前用户信息',
+    type: UserResponseDto,
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async updateProfile(
+    @Request() req: AuthenticatedRequest,
+    @Body() updateUserProfileDto: UpdateUserProfileDto,
+  ): Promise<UserResponseDto> {
+    return this.userService.updateProfile(req.user.id, updateUserProfileDto);
+  }
+
+  @Put('change-password')
+  @ApiOperation({ summary: '修改当前用户密码' })
+  @ApiResponse({
+    status: 200,
+    description: '密码修改成功',
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async changePassword(
+    @Request() req: AuthenticatedRequest,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ): Promise<{ success: true }> {
+    await this.userService.changePassword(req.user.id, changePasswordDto);
+    return { success: true };
   }
 }

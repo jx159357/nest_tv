@@ -103,7 +103,17 @@ export class PlaySourceService {
     pageSize: number;
     totalPages: number;
   }> {
-    const { page = 1, pageSize = 10, mediaResourceId, type } = queryDto;
+    const {
+      page = 1,
+      pageSize = 10,
+      mediaResourceId,
+      type,
+      status,
+      quality,
+      resolution,
+      isActive,
+      search,
+    } = queryDto;
 
     const queryBuilder = this.playSourceRepository
       .createQueryBuilder('playSource')
@@ -115,6 +125,29 @@ export class PlaySourceService {
 
     if (type) {
       queryBuilder.andWhere('playSource.type = :type', { type });
+    }
+
+    if (status) {
+      queryBuilder.andWhere('playSource.status = :status', { status });
+    }
+
+    if (quality) {
+      queryBuilder.andWhere('playSource.resolution = :quality', { quality });
+    }
+
+    if (resolution) {
+      queryBuilder.andWhere('playSource.resolution = :resolution', { resolution });
+    }
+
+    if (typeof isActive === 'boolean') {
+      queryBuilder.andWhere('playSource.isActive = :isActive', { isActive });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(playSource.url LIKE :search OR playSource.name LIKE :search OR playSource.description LIKE :search OR mediaResource.title LIKE :search)',
+        { search: `%${search}%` },
+      );
     }
 
     const total = await queryBuilder.getCount();

@@ -103,10 +103,13 @@ export interface MediaQueryParams {
 
 export interface PlaySourceQueryParams {
   page?: number;
+  pageSize?: number;
   limit?: number;
   type?: PlaySourceType;
   status?: PlaySourceStatus;
   mediaResourceId?: number;
+  isActive?: boolean;
+  search?: string;
   sortBy?: 'priority' | 'createdAt' | 'playCount';
   sortOrder?: 'ASC' | 'DESC';
 }

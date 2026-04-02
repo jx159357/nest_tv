@@ -30,7 +30,7 @@ npm install --prefix frontend
 ```bash
 npm run start:dev --prefix backend
 ```
-后端服务将在 http://localhost:3334 启动
+后端默认从 `http://localhost:3334` 启动；如果 `3334` 被占用，后端会自动选择下一个可用端口，并在启动日志里打印实际端口。
 
 4. **启动前端服务**
 ```bash
@@ -134,56 +134,41 @@ npm run dev --prefix frontend
 ```
 backend/
 ├── src/
-│   ├── entities/          # 数据库实体
-│   │   ├── user.entity.ts              # 用户实体
-│   │   ├── media-resource.entity.ts   # 影视资源实体
-│   │   ├── play-source.entity.ts     # 播放源实体
-│   │   └── watch-history.entity.ts     # 观看历史实体
-│   │
-│   ├── auth/              # 认证模块
-│   │   ├── jwt-auth.guard.ts          # JWT守卫
-│   │   └── jwt.strategy.ts            # JWT策略
-│   │
-│   ├── users/             # 用户模块
-│   │   ├── users.service.ts          # 用户服务
-│   │   └── users.controller.ts       # 用户控制器
-│   │
-│   ├── media/              # 影视资源模块
-│   │   ├── media-resource.service.ts # 影视资源服务
-│   │   └── media-resource.controller.ts# 影视资源控制器
-│   │
-│   ├── play-sources/       # 播放源模块
-│   │   ├── play-source.service.ts    # 播放源服务
-│   │   └── play-source.controller.ts # 播放源控制器
-│   │
-│   ├── watch-history/      # 观看历史模块
-│   │   ├── watch-history.service.ts  # 观看历史服务
-│   │   └── watch-history.controller.ts# 观看历史控制器
-│   │
-│   ├── data-collection/    # 数据采集模块
-│   │   ├── data-collection.service.ts # 数据采集服务
-│   │   └── data-collection.controller.ts# 数据采集控制器
-│   │
-│   ├── torrent/           # 磁力链接模块
-│   │   └── torrent.controller.ts      # 磁力链接控制器
-│   │
-│   ├── common/            # 通用模块
-│   │   ├── services/                   # 通用服务
-│   │   │   └── app-logger.service.ts  # 日志服务
-│   │   └── common.module.ts            # 通用模块
-│   │
-│   ├── dtos/              # 数据传输对象
-│   │   ├── media/
-│   │   │   ├── create-media-resource.dto.ts
-│   │   │   ├── update-media-resource.dto.ts
-│   │   │   └── media-resource-query.dto.ts
-│   │   └── play-sources/
-│   │       ├── create-play-source.dto.ts
-│   │       ├── update-play-source.dto.ts
-│   │       └── play-source-query.dto.ts
-│   │
-│   ├── app.module.ts     # 主应用模块
-│   └── main.ts           # 应用入口
+│   ├── app.module.ts                   # 后端模块汇总
+│   ├── main.ts                         # 应用入口 / Swagger / 动态端口
+│   ├── entities/                       # 核心实体
+│   │   ├── user.entity.ts
+│   │   ├── media-resource.entity.ts
+│   │   ├── play-source.entity.ts
+│   │   ├── watch-history.entity.ts
+│   │   ├── search-history.entity.ts
+│   │   ├── recommendation.entity.ts
+│   │   └── download-task.entity.ts
+│   ├── auth/                           # JWT / Passport 认证
+│   ├── users/                          # 注册、登录、资料、密码、推荐偏好
+│   │   ├── user.controller.ts
+│   │   ├── user.service.ts
+│   │   └── dtos/
+│   ├── media/                          # 媒体列表、详情、收藏、高级搜索
+│   │   ├── media-resource.controller.ts
+│   │   ├── media-resource.service.ts
+│   │   ├── advanced-search.controller.ts
+│   │   └── advanced-search.service.ts
+│   ├── recommendations/                # 个性化推荐、画像、热门/最新/高分
+│   │   ├── recommendation.controller.ts
+│   │   ├── recommendation.service.ts
+│   │   └── recommendation.module.ts
+│   ├── download-tasks/                 # 用户下载任务同步与统计
+│   │   ├── download-tasks.controller.ts
+│   │   ├── download-tasks.service.ts
+│   │   └── dtos/
+│   ├── play-sources/                   # 播放源管理
+│   ├── watch-history/                  # 观看进度与历史
+│   ├── admin/                          # 后台统计与下载任务运维
+│   ├── torrent/                        # 磁力检索与解析
+│   ├── iptv/                           # IPTV 频道管理
+│   ├── data-collection/                # 采集与导入
+│   └── common/                         # 日志、缓存、限流、异常处理
 └── docs/                  # 项目文档
 ```
 
@@ -262,16 +247,33 @@ npm run dev
 ```
 
 ### 5. 访问应用
-- **后端 API**: http://localhost:3333
+- **后端 API**: 默认 `http://localhost:3334`（若端口占用，请以启动日志打印的实际端口为准）
 - **前端界面**: http://localhost:5173
-- **API 文档**: http://localhost:3333/api
+- **API 文档**: 默认 `http://localhost:3334/api`（跟随后端实际监听端口）
+
+### 6. 推荐测试入口
+前端已经补了一批高价值回归脚本，建议在提交前至少跑一组：
+
+```bash
+# 用户主链（登录/注册/搜索/收藏/设置/推荐）
+npm run test:journeys --prefix frontend
+
+# 后台运营主链（用户/媒体 → 下载任务排查）
+npm run test:journeys:admin --prefix frontend
+
+# 工具页（下载任务 / 磁力资源）
+npm run test:tools --prefix frontend
+
+# 一次性跑完前端主要回归护栏
+npm run test:regressions --prefix frontend
+```
 
 ## 📋 API 接口概览
 
-### 认证接口
+### 当前用户 / 资料接口
 ```bash
 # 用户注册
-POST /auth/register
+POST /users/register
 Content-Type: application/json
 
 {
@@ -282,20 +284,50 @@ Content-Type: application/json
 }
 
 # 用户登录
-POST /auth/login
+POST /users/login
 Content-Type: application/json
 
 {
-  "username": "testuser",
+  "identifier": "testuser",
   "password": "password123"
 }
 
+# identifier 支持用户名或邮箱
+
 # 获取用户信息（需要JWT）
-GET /auth/profile
+GET /users/profile
 Authorization: Bearer <JWT_TOKEN>
+
+# 更新用户资料与推荐偏好（需要JWT）
+PUT /users/profile
+Authorization: Bearer <JWT_TOKEN>
+Content-Type: application/json
+
+{
+  "nickname": "星际影迷",
+  "phone": "13800000000",
+  "avatar": "https://example.com/avatar.png",
+  "recommendationSettings": {
+    "preferredTypes": ["movie", "tv_series"],
+    "preferredGenres": ["科幻", "悬疑"],
+    "excludedGenres": ["恐怖"],
+    "preferredKeywords": ["太空", "时间循环"],
+    "freshnessBias": "balanced"
+  }
+}
+
+# 修改密码（需要JWT）
+PUT /users/change-password
+Authorization: Bearer <JWT_TOKEN>
+Content-Type: application/json
+
+{
+  "oldPassword": "password123",
+  "newPassword": "securePassword456"
+}
 ```
 
-### 影视资源接口
+### 当前核心内容接口
 ```bash
 # 获取影视资源列表
 GET /media?page=1&pageSize=10
@@ -304,10 +336,7 @@ GET /media?page=1&pageSize=10
 GET /media/:id
 
 # 搜索影视资源
-GET /media/search?q=关键词
-
-# 获取分类资源
-GET /media/category/:category
+GET /media/search?keyword=关键词
 
 # 获取热门影视
 GET /media/popular?limit=10
@@ -317,6 +346,111 @@ GET /media/latest?limit=10
 
 # 获取相似影视
 GET /media/:id/similar?limit=6
+
+# 收藏列表（需要JWT）
+GET /media/favorites?page=1&limit=12
+
+# 添加 / 移除收藏（需要JWT）
+POST /media/:id/favorites
+DELETE /media/:id/favorites
+
+# 收藏状态（需要JWT）
+GET /media/:id/favorites/status
+```
+
+### 当前推荐接口
+```bash
+# 个性化推荐与画像（需要JWT）
+GET /recommendations/personalized?limit=8
+GET /recommendations/personalized-detailed?limit=8
+GET /recommendations/profile
+
+# 热门 / 最新 / 高分推荐（当前控制器同样挂在 JWT 守卫下）
+GET /recommendations/trending?limit=8
+GET /recommendations/latest?limit=8
+GET /recommendations/top-rated?limit=8
+```
+
+### 当前搜索接口
+```bash
+# 注意：`/search/*` 当前由 `AdvancedSearchController` 统一挂在 JWT 守卫下
+
+# 搜索建议与搜索历史（需要JWT）
+GET /search/suggestions?keyword=沙丘&limit=6
+GET /search/popular-keywords?limit=8
+GET /search/history?limit=8
+POST /search/history
+DELETE /search/history
+GET /search/related-keywords/沙丘?limit=6
+
+# 高级搜索 / 智能搜索 / 过滤器预设（需要JWT）
+POST /search/advanced
+POST /search/smart?query=2024%20科幻片
+GET /search/filters/presets
+
+# 记录一次搜索历史示例
+POST /search/history
+Authorization: Bearer <JWT_TOKEN>
+Content-Type: application/json
+
+{
+  "keyword": "沙丘",
+  "resultCount": 24,
+  "searchTime": 0.42,
+  "filters": {
+    "types": ["movie"],
+    "genres": ["科幻"],
+    "minRating": 7.5
+  }
+}
+```
+
+### 当前下载任务接口
+```bash
+GET /download-tasks/user/me?page=1&limit=20&status=downloading&search=沙丘
+GET /download-tasks/user/me/stats
+POST /download-tasks
+PATCH /download-tasks/:clientId
+DELETE /download-tasks/:clientId
+DELETE /download-tasks/user/me/completed
+
+# 当前前端以 `clientId` 作为用户维度内的任务唯一标识
+# status 可选：pending / downloading / paused / completed / error / cancelled
+# type 可选：direct / torrent / magnet
+
+# 创建 / 覆盖一条下载任务示例
+POST /download-tasks
+Authorization: Bearer <JWT_TOKEN>
+Content-Type: application/json
+
+{
+  "clientId": "download-1720000000000",
+  "url": "magnet:?xt=urn:btih:EXAMPLEHASH",
+  "type": "magnet",
+  "status": "pending",
+  "progress": 0,
+  "speed": 0,
+  "downloaded": 0,
+  "total": 0,
+  "fileName": "Dune.Part.Two.2024.1080p.mkv",
+  "sourceLabel": "TorrentView",
+  "handler": "browser",
+  "mediaResourceId": 12,
+  "metadata": {
+    "quality": "1080p",
+    "from": "torrent-search"
+  }
+}
+```
+
+# 磁力资源
+```bash
+GET /torrent/search?keyword=沙丘&page=1&pageSize=10
+GET /torrent/popular
+GET /torrent/latest
+GET /torrent/info/:infoHash
+GET /torrent/health/:infoHash
+POST /torrent/parse
 ```
 
 ### 播放源接口

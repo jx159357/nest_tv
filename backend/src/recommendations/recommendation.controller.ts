@@ -1,5 +1,5 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { RecommendationService } from './recommendation.service';
 import { MediaResource } from '../entities/media-resource.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -8,6 +8,7 @@ import { GetCurrentUserId } from '../decorators/current-user.decorator';
 @ApiTags('推荐系统')
 @Controller('recommendations')
 @UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class RecommendationController {
   constructor(private readonly recommendationService: RecommendationService) {}
 

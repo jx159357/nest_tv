@@ -29,7 +29,7 @@ export const useRecommendationService = () => {
 
       // 提取用户偏好的类型和标签
       const userPreferences = analyzeUserPreferences([
-        ...(watchHistory as any[]),
+        ...watchHistory.data.map(item => item.mediaResource),
         ...favorites.data,
       ]);
 
@@ -231,7 +231,7 @@ export const useRecommendationService = () => {
       };
 
       // 分析用户画像
-      userHistory.forEach((item: any) => {
+      userHistory.data.forEach((item: any) => {
         if (item.mediaResource?.type) {
           userProfile.watchedTypes[item.mediaResource.type] =
             (userProfile.watchedTypes[item.mediaResource.type] || 0) + 1;
@@ -248,10 +248,10 @@ export const useRecommendationService = () => {
         }
       });
 
-      userProfile.completionRate /= Math.max(1, userHistory.length);
+      userProfile.completionRate /= Math.max(1, userHistory.data.length);
       userProfile.avgWatchTime =
-        userHistory.reduce((sum: number, item: any) => sum + (item.currentTime || 0), 0) /
-        Math.max(1, userHistory.length);
+        userHistory.data.reduce((sum: number, item: any) => sum + (item.currentTime || 0), 0) /
+        Math.max(1, userHistory.data.length);
 
       // 获取候选媒体
       const candidateMedia = await mediaApi.getMediaList({ limit: 100 });

@@ -24,6 +24,7 @@ import { PlaySourceService } from './play-source.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreatePlaySourceDto, UpdatePlaySourceDto } from './dtos/play-source.dto';
 import { PlaySourceQueryDto } from './dtos/play-source-query.dto';
+import { PlaySourceStatus } from '../entities/play-source.entity';
 
 @ApiTags('播放源管理')
 @Controller('play-sources')
@@ -108,6 +109,12 @@ export class PlaySourceController {
     description: '视频质量',
     example: '1080p',
     enum: ['4K', '1080p', '720p', '480p', '360p'],
+  })
+  @ApiQuery({
+    name: 'status',
+    description: '播放源状态',
+    required: false,
+    enum: PlaySourceStatus,
   })
   @ApiQuery({ name: 'isActive', description: '是否激活', example: true, required: false })
   @ApiQuery({ name: 'mediaResourceId', description: '媒体资源ID', example: 1, required: false })
