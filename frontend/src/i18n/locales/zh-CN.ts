@@ -256,7 +256,7 @@ export const zhCN = {
   // 认证相关
   auth: {
     login: {
-      title: '登录到视频平台',
+      title: '登录到 Nest TV',
       username: '用户名或邮箱',
       password: '密码',
       rememberMe: '记住我',

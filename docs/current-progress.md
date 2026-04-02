@@ -32,12 +32,13 @@
   - `WatchHistoryView` now syncs `isCompleted`/`sortBy`/`sortOrder`/page through route query params, and `/continue-watching` + `/completed` now redirect into prefiltered watch-history routes instead of dropping the user into an unfiltered list.
   - User-specific recommendation requests now bypass the shared API cache on the client, preventing personalized recommendation/profile responses from being mistakenly reused across different signed-in users.
   - `RecommendationsView` now clears stale personalized/profile state before auth changes and manual refresh retries, so a failed personalized fetch no longer leaves the previous account's recommendation cards or profile snapshot visible on screen.
-  - `ProfileView` now resumes �������ۿ��� cards from the saved `currentTime` instead of always reopening the media from the beginning.
+  - `ProfileView` now resumes “继续观看” cards from the saved `currentTime` instead of always reopening the media from the beginning.
   - `WatchView` now actually consumes the `?time=` resume query and seeks after metadata loads, so resume links from profile/watch-history finally continue playback from the intended timestamp instead of silently starting from 0.
   - `WatchView`, `ProfileView`, and `MediaDetailView` now tolerate missing `rating` values safely instead of calling `toFixed` on `undefined` and crashing the page during render.
   - `HomeView` now consumes the `q` route query and renders real search results, closing the gap where `/search?q=...` changed the URL but the homepage never actually executed a media search.
   - User-specific media favorites/watch-history reads now bypass the shared API cache on the client, preventing favorites/history payloads from being accidentally reused after account switching in the same browser session.
-  - `/favorites` is now a real page instead of a mistaken redirect to watch history, with proper pagination, refresh-safe route state, and media-detail navigation.`r`n  - `AppLayout` now keeps the header search box synchronized with the current `q` route query, and `NavigationLayout` mobile logout now actually invokes the logout handler.
+  - `/favorites` is now a real page instead of a mistaken redirect to watch history, with proper pagination, refresh-safe route state, and media-detail navigation.
+  - `AppLayout` now keeps the header search box synchronized with the current `q` route query, and `NavigationLayout` mobile logout now actually invokes the logout handler.
 - Backend:
   - Restored `/media/favorites`, `/media/:id/favorites`, and `/media/:id/favorites/status` on the active backend controller/service path, so the frontend favorites page and new instant-feedback collection actions no longer rely on missing legacy routes.
   - `AdvancedSearchController` now consistently uses the authenticated user's real `id` instead of a stale `userId` field assumption, and `/search/history` now supports explicit write-in recording for frontend-driven search flows.
@@ -248,12 +249,13 @@
 - Follow-up user/watch-history backend integrity enhancement completed: `WatchHistoryController.findMyHistory` now consumes `WatchHistoryQueryDto` and passes completion/sort filters through to the service layer, closing the gap where the new watch-history UI filters updated the URL but the backend still returned an unfiltered result set.
 - Follow-up user/recommendation cache hardening completed: personalized recommendation/profile requests now disable the shared client-side GET cache, preventing one signed-in user's recommendation payload from being incorrectly reused after account switching in the same browser session.
 - Follow-up user/recommendation stale-state hardening completed: `RecommendationsView` now clears old personalized cards/profile data before token-driven reloads and before manual refresh retries, so failed recommendation/profile requests no longer leave stale user-specific content visible in the personalized section.
-- Follow-up user/profile resume enhancement completed: the �������ۿ��� cards on `ProfileView` now route into `/watch/:id?time=...` when saved progress exists, so personal dashboard resume actions continue from the last known playback time instead of restarting from 0.
+- Follow-up user/profile resume enhancement completed: the “继续观看” cards on `ProfileView` now route into `/watch/:id?time=...` when saved progress exists, so personal dashboard resume actions continue from the last known playback time instead of restarting from 0.
 - Follow-up user/watch resume integrity enhancement completed: `WatchView` now honors the `time` query parameter and seeks once metadata is ready, closing the final gap in the resume chain from dashboard/history shortcuts into the actual player state.
 - Follow-up user/rating null-safety enhancement completed: user-facing watch/detail/profile surfaces now format missing ratings defensively, preventing runtime render crashes when upstream media records lack a numeric `rating`.
 - Follow-up user/home-search enhancement completed: the homepage now watches the `q` query, runs `mediaStore.searchMedia(...)`, and shows a dedicated search-results mode, so global search entry points finally produce visible results instead of just mutating the URL.
 - Follow-up user/media cache hardening completed: `mediaApi.getFavorites()` and `mediaApi.getWatchHistory()` now disable the shared client-side GET cache, preventing user-specific favorites/history data from bleeding across accounts in reused browser sessions.
-- Follow-up user/favorites feature enhancement completed: `/favorites` now renders a dedicated favorites workspace backed by `mediaStore.fetchFavorites(...)`, replacing the old incorrect redirect to watch history and making ���ҵ��ղء� entries from the header/dashboard finally land on the right data set.`r`n- Follow-up user/layout entrypoint enhancement completed: `AppLayout` now mirrors the active `q` query into the header search field, and `NavigationLayout` mobile logout now reliably triggers sign-out, making the top-level navigation/search affordances consistent across desktop and mobile flows.
+- Follow-up user/favorites feature enhancement completed: `/favorites` now renders a dedicated favorites workspace backed by `mediaStore.fetchFavorites(...)`, replacing the old incorrect redirect to watch history and making “我的收藏” entries from the header/dashboard finally land on the right data set.
+- Follow-up user/layout entrypoint enhancement completed: `AppLayout` now mirrors the active `q` query into the header search field, and `NavigationLayout` mobile logout now reliably triggers sign-out, making the top-level navigation/search affordances consistent across desktop and mobile flows.
 - Follow-up admin e2e hardening completed: backend now has request-level coverage for `/admin/stats`, `/admin/download-tasks`, and `POST /admin/roles`, validating that unauthenticated users are rejected, non-admins are forbidden, admins are allowed, malformed query/body payloads are blocked, and unknown role payload fields are stripped before reaching the service layer.
 - Follow-up admin stats integrity enhancement completed: backend `AdminController` now actually exposes `/admin/stats`, removing the frontend/backend mismatch where `AdminDashboard` requested live stats from a route that was not mounted.
 - Follow-up admin dashboard enhancement completed: system stats now include download-task totals and active/completed/failed breakdowns, and `AdminDashboardView` surfaces a dedicated download-task summary card alongside the existing core platform metrics.
@@ -264,10 +266,10 @@
 - Follow-up admin/download-task testing enhancement completed: `AdminService` now has focused coverage for filtered admin download-task listing, so the new management endpoint is validated alongside the existing stats coverage instead of relying only on manual smoke checks.
 - Follow-up admin/download-task UX enhancement completed: `AdminDownloadTasksView` now syncs status/type/user/search/page state through route query params, making filtered investigation shareable and preserving context during pagination/refresh.
 - Follow-up admin/dashboard UX enhancement completed: the download-task summary card on `AdminDashboardView` now deep-links into the admin download-task page with ready-made shortcuts for all tasks, active tasks, and failed tasks.
-- Follow-up admin/download-task drill-down enhancement completed: operators can now pivot from any download-task row into ��same user�� or ��same media�� filtered task views, while the page preserves those pivots as route query state for continued investigation and sharing.
+- Follow-up admin/download-task drill-down enhancement completed: operators can now pivot from any download-task row into “same user” or “same media” filtered task views, while the page preserves those pivots as route query state for continued investigation and sharing.
 - Follow-up admin/cross-page enhancement completed: `AdminUsersView` and `AdminMediaView` now deep-link directly into the admin download-task page with prefilled user/media filters, shortening the path from account/content inspection to download-task troubleshooting.
 - Follow-up admin/cross-page testing enhancement completed: frontend now has focused view coverage for those `AdminUsersView` / `AdminMediaView` deep links, locking in the route handoff into the admin download-task workspace.
-- Follow-up admin/download-task prioritization enhancement completed: `AdminDownloadTasksView` now supports route-synced sort modes for ��recently updated��, ��recently started��, and ��exceptions first��, with row highlighting so failed/cancelled tasks surface faster during operations review.
+- Follow-up admin/download-task prioritization enhancement completed: `AdminDownloadTasksView` now supports route-synced sort modes for “recently updated”, “recently started”, and “exceptions first”, with row highlighting so failed/cancelled tasks surface faster during operations review.
 - Follow-up admin/download-task view testing enhancement completed: frontend now has focused coverage for route-query filter hydration and exception-priority ordering inside `AdminDownloadTasksView`, reducing the risk of regressions in the new admin troubleshooting flow.
 - Follow-up admin/controller testing enhancement completed: backend now has focused `AdminController` coverage for the new system-stats and download-task management entry points, so controller-to-service parameter handoff is validated instead of relying only on service tests.
 - Follow-up admin/download-task overview enhancement completed: `AdminDownloadTasksView` now adds operator-oriented summary cards such as unique-user/media coverage and 24h-started/magnet counts, plus an exception CTA banner so risky task clusters surface before table-level inspection.
@@ -291,17 +293,10 @@
 - Follow-up confirm-dialog consistency cleanup completed: `PlaySourcesView` and `WatchHistoryView` now use the shared `showConfirm(...)` modal helper instead of bare browser `confirm(...)`, bringing those delete actions closer to the rest of the app's notification/modal style while preserving behavior.
 - Follow-up admin confirm cleanup completed: `AdminRolesView` now also uses the shared `showConfirm(...)` modal helper for role/permission enable-disable actions instead of bare `window.confirm(...)`, making the backend role-management flow match the same modal-confirm style as the rest of the app.
 - Follow-up prompt cleanup completed: `LocalVideoUpload`, `VideoWatchView`, and `UserDashboard` no longer rely on bare `confirm(...)` / `alert(...)` for normal interactive feedback; only `SettingsView` intentionally keeps a native `window.confirm(...)` for synchronous unsaved-changes route-leave protection.
+- Follow-up brand-copy cleanup completed: the remaining visible “视频平台” hardcoded brand labels in shared/frontend shells (`NavigationLayout`, `WatchView`, `AdminLayout`) and auth copy (`LoginView`, locale titles) are now aligned back to the `Nest TV` product name for more consistent chrome and entry-page messaging.
+- Follow-up startup-log cleanup completed: `frontend/src/main.ts` no longer prints mojibake startup/performance/error log labels and now uses clean `[Performance]`, `[Vue Error]`, and `[Vue Warning]` prefixes during development/runtime diagnostics.
+- Follow-up logging hygiene cleanup completed: the frontend request/cache helpers no longer print sensitive bearer-header debug output or routine cache preload/cleanup noise, reducing console clutter and avoiding accidental exposure of auth header details during development.
+- Follow-up danmaku placeholder copy cleanup completed: the remaining danmaku controller placeholder responses now use clearer “当前返回基础结果 / 后续接入能力” style wording instead of rough “功能开发中” copy, making those partially implemented backend endpoints read more like intentional temporary responses than abandoned stubs.
+- Follow-up dev-log gating cleanup completed: the remaining high-volume frontend performance/WebSocket logs are now gated to development usage and use cleaner prefixes, reducing routine console noise while keeping meaningful diagnostics available during local debugging.
+- Follow-up regression gap cleanup completed: frontend now also has direct view coverage for the shared confirm-flow integrations in `PlaySourcesView` and `WatchHistoryView`, reducing the risk that future cleanup work accidentally regresses those newly unified delete-confirm interactions.
 - Avoid reverting the staged removals under `backend/dist` and `.env.production`; those are intentional index cleanups.
-
-
-
-
-
-
-
-
-
-
-
-
-

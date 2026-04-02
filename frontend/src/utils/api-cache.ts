@@ -285,8 +285,8 @@ class APICacheManager {
     const preloadPromises = urls.map(url => {
       return axios
         .get(url, { cacheConfig: { ttl } } as any)
-        .then(() => console.log(`预加载成功: ${url}`))
-        .catch(() => console.log(`预加载失败: ${url}`));
+        .then(() => undefined)
+        .catch(() => undefined);
     });
 
     await Promise.allSettled(preloadPromises);

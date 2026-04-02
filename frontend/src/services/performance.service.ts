@@ -2,6 +2,8 @@
  * 性能监控和优化服务
  */
 
+const DEV = import.meta.env.DEV;
+
 // 性能指标类型定义
 export interface PerformanceMetrics {
   // 核心Web指标
@@ -129,7 +131,9 @@ export class PerformanceService {
 
   private init() {
     if (typeof window === 'undefined' || !('performance' in window)) {
-      console.warn('Performance API not supported');
+      if (DEV) {
+        console.warn('Performance API not supported');
+      }
       return;
     }
 
@@ -142,7 +146,9 @@ export class PerformanceService {
   // 设置性能观察器
   private setupObservers() {
     if (!('PerformanceObserver' in window)) {
-      console.warn('PerformanceObserver not supported');
+      if (DEV) {
+        console.warn('PerformanceObserver not supported');
+      }
       return;
     }
 
@@ -158,7 +164,9 @@ export class PerformanceService {
       lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
       this.observers.push(lcpObserver);
     } catch (e) {
-      console.warn('Failed to observe LCP:', e);
+      if (DEV) {
+        console.warn('Failed to observe LCP:', e);
+      }
     }
 
     // 观察CLS
@@ -177,7 +185,9 @@ export class PerformanceService {
       clsObserver.observe({ entryTypes: ['layout-shift'] });
       this.observers.push(clsObserver);
     } catch (e) {
-      console.warn('Failed to observe CLS:', e);
+      if (DEV) {
+        console.warn('Failed to observe CLS:', e);
+      }
     }
 
     // 观察FID
@@ -194,7 +204,9 @@ export class PerformanceService {
       fidObserver.observe({ entryTypes: ['first-input'] });
       this.observers.push(fidObserver);
     } catch (e) {
-      console.warn('Failed to observe FID:', e);
+      if (DEV) {
+        console.warn('Failed to observe FID:', e);
+      }
     }
 
     // 观察资源加载
@@ -207,7 +219,9 @@ export class PerformanceService {
       resourceObserver.observe({ entryTypes: ['resource'] });
       this.observers.push(resourceObserver);
     } catch (e) {
-      console.warn('Failed to observe resources:', e);
+      if (DEV) {
+        console.warn('Failed to observe resources:', e);
+      }
     }
   }
 
@@ -379,7 +393,9 @@ export class PerformanceService {
 
       // 内存警告
       if (this.metrics && this.metrics.memory.percentage > 90) {
-        console.warn('Memory usage high:', this.metrics.memory.percentage.toFixed(2) + '%');
+        if (DEV) {
+          console.warn('Memory usage high:', this.metrics.memory.percentage.toFixed(2) + '%');
+        }
         this.optimizeMemory();
       }
     }, 10000); // 每10秒检查一次
@@ -424,7 +440,9 @@ export class PerformanceService {
     }
 
     if (warnings.length > 0) {
-      console.warn('Performance warnings:', warnings);
+      if (DEV) {
+        console.warn('Performance warnings:', warnings);
+      }
       this.reportWarnings(warnings);
     }
   }
@@ -432,7 +450,9 @@ export class PerformanceService {
   // 报告警告
   private reportWarnings(warnings: string[]) {
     if (typeof console.warn === 'function') {
-      console.warn('Performance issues detected:', warnings.join(', '));
+      if (DEV) {
+        console.warn('Performance issues detected:', warnings.join(', '));
+      }
     }
 
     // 这里可以发送到错误监控服务
@@ -504,10 +524,14 @@ export class PerformanceService {
       navigator.serviceWorker
         .register('/sw.js')
         .then(registration => {
-          console.log('Service Worker registered:', registration);
+          if (DEV) {
+            console.log('Service Worker registered:', registration);
+          }
         })
         .catch(error => {
-          console.warn('Service Worker registration failed:', error);
+          if (DEV) {
+            console.warn('Service Worker registration failed:', error);
+          }
         });
     }
   }
@@ -554,7 +578,9 @@ export class PerformanceService {
         keepalive: true,
       });
     } catch (error) {
-      console.warn('Failed to send performance metrics:', error);
+      if (DEV) {
+        console.warn('Failed to send performance metrics:', error);
+      }
     }
   }
 

@@ -149,7 +149,7 @@
   }
 
   withDefaults(defineProps<Props>(), {
-    title: '视频平台',
+    title: 'Nest TV',
     navigationItems: () =>
       [
         {

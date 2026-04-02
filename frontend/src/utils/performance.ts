@@ -1,5 +1,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 
+const DEV = import.meta.env.DEV;
+
 // 性能监控工具
 export class PerformanceMonitor {
   private static metrics = {
@@ -22,12 +24,15 @@ export class PerformanceMonitor {
     if (navigation) {
       this.metrics.pageLoad = navigation.loadEventEnd - navigation.loadEventStart;
 
-      // 记录到控制台
-      console.log(`🚀 页面加载时间: ${this.metrics.pageLoad}ms`);
+      if (DEV) {
+        console.log(`[Performance] page load: ${this.metrics.pageLoad}ms`);
+      }
 
       // 如果加载时间过长，发出警告
       if (this.metrics.pageLoad > 3000) {
-        console.warn('⚠️ 页面加载时间过长，建议优化');
+        if (DEV) {
+          console.warn('页面加载时间过长，建议优化');
+        }
         this.metrics.warnings++;
       }
     }
@@ -40,11 +45,15 @@ export class PerformanceMonitor {
 
     const avgTime = this.metrics.apiTotalTime / this.metrics.apiCalls;
 
-    console.log(`📡 API调用: ${endpoint} - ${duration}ms (平均: ${avgTime.toFixed(2)}ms)`);
+    if (DEV) {
+      console.log(`[Performance] API ${endpoint}: ${duration}ms (avg ${avgTime.toFixed(2)}ms)`);
+    }
 
     // 如果API调用时间过长，发出警告
     if (duration > 5000) {
-      console.warn(`⚠️ API调用时间过长: ${endpoint} - ${duration}ms`);
+      if (DEV) {
+        console.warn(`API调用时间过长: ${endpoint} - ${duration}ms`);
+      }
       this.metrics.warnings++;
     }
   }
@@ -53,11 +62,15 @@ export class PerformanceMonitor {
   static trackComponentRender(componentName: string, duration: number) {
     this.metrics.renderTime = duration;
 
-    console.log(`🎨 组件渲染: ${componentName} - ${duration}ms`);
+    if (DEV) {
+      console.log(`[Performance] component ${componentName}: ${duration}ms`);
+    }
 
     // 如果渲染时间过长，发出警告
     if (duration > 100) {
-      console.warn(`⚠️ 组件渲染时间过长: ${componentName} - ${duration}ms`);
+      if (DEV) {
+        console.warn(`组件渲染时间过长: ${componentName} - ${duration}ms`);
+      }
       this.metrics.warnings++;
     }
   }
@@ -79,13 +92,17 @@ export class PerformanceMonitor {
         this.metrics.memoryUsage = this.metrics.memoryUsage.slice(-100);
       }
 
-      console.log(
-        `🧠 内存使用: ${usedMB.toFixed(2)}MB / ${totalMB.toFixed(2)}MB (限制: ${limitMB.toFixed(2)}MB)`,
-      );
+      if (DEV) {
+        console.log(
+          `[Performance] memory: ${usedMB.toFixed(2)}MB / ${totalMB.toFixed(2)}MB (limit ${limitMB.toFixed(2)}MB)`,
+        );
+      }
 
       // 如果内存使用过高，发出警告
       if (usedMB > totalMB * 0.9) {
-        console.warn('⚠️ 内存使用过高，建议检查内存泄漏');
+        if (DEV) {
+          console.warn('内存使用过高，建议检查内存泄漏');
+        }
         this.metrics.warnings++;
       }
     }

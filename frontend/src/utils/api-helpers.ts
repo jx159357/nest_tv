@@ -88,15 +88,6 @@ export class RequestInterceptor {
         const token = localStorage.getItem('token');
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
-          // 调试信息，生产环境可删除
-          if (process.env.NODE_ENV === 'development') {
-            console.log('Authorization header set:', config.headers.Authorization);
-          }
-        } else {
-          // 调试信息，生产环境可删除
-          if (process.env.NODE_ENV === 'development') {
-            console.warn('No token found in localStorage');
-          }
         }
         return config;
       },

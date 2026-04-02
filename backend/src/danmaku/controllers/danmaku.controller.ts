@@ -352,7 +352,7 @@ export class DanmakuController {
       interval,
       startDate,
       endDate,
-      message: '弹幕趋势分析功能开发中',
+      message: '当前返回基础统计摘要，细粒度弹幕趋势分析将后续接入。',
       stats: await this.danmakuService.getDanmakuStats(videoId),
     };
   }
@@ -379,7 +379,7 @@ export class DanmakuController {
       mediaResourceId,
       limit,
       period,
-      message: '弹幕用户排行榜功能开发中',
+      message: '当前暂无排行榜聚合结果，弹幕用户排行榜能力将后续接入。',
       leaderboard: [],
     };
   }
@@ -406,7 +406,7 @@ export class DanmakuController {
       mediaResourceId,
       minFrequency,
       limit,
-      message: '弹幕关键词云功能开发中',
+      message: '当前暂无关键词云结果，关键词提取与词云能力将后续接入。',
       keywords: [],
     };
   }
@@ -424,7 +424,7 @@ export class DanmakuController {
       messageCount: 0, // 需要从网关获取
       isActive: false, // 需要从网关获取
       lastActivity: null,
-      message: '实时房间信息需要WebSocket网关集成',
+      message: '当前返回占位房间信息，实时房间统计待 WebSocket 网关接入。',
     };
   }
 
@@ -490,7 +490,7 @@ export class DanmakuController {
       reports: [],
       reportCount: 0,
       status: 'active',
-      message: '弹幕举报系统功能开发中',
+      message: '当前暂无举报记录，举报工单与审核流转能力将后续接入。',
     };
   }
 
@@ -507,7 +507,7 @@ export class DanmakuController {
 
     return {
       success: true,
-      message: `弹幕 ${id} 举报已提交，原因：${body.reason}`,
+      message: `已接收对弹幕 ${id} 的举报请求（原因：${body.reason}），后续将接入持久化与审核流转。`,
     };
   }
 
@@ -530,7 +530,7 @@ export class DanmakuController {
       ],
       level: 'medium',
       autoBlock: false,
-      message: '弹幕过滤规则管理功能开发中',
+      message: '当前返回内置基础过滤规则，后台规则管理能力将后续接入。',
     };
   }
 

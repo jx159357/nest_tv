@@ -29,7 +29,7 @@
 
       <section class="rounded-3xl border border-white/10 bg-white p-8 text-slate-900 shadow-2xl shadow-slate-950/40">
         <div>
-          <h2 class="text-3xl font-bold">登录到视频平台</h2>
+          <h2 class="text-3xl font-bold">登录到 Nest TV</h2>
           <p class="mt-2 text-sm text-slate-500">请输入用户名或邮箱与密码。</p>
         </div>
 

@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-gray-900 text-white">
     <nav class="bg-gray-800 shadow-sm">
       <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <router-link to="/" class="text-xl font-bold text-white">视频平台</router-link>
+        <router-link to="/" class="text-xl font-bold text-white">Nest TV</router-link>
         <router-link to="/" class="text-sm text-gray-300 hover:text-white">返回首页</router-link>
       </div>
     </nav>

@@ -49,18 +49,18 @@ const bootstrap = async () => {
       const metrics = performanceService.getCurrentMetrics();
       if (metrics) {
         const score = performanceService.getPerformanceScore();
-        console.log(`馃殌 Performance Score: ${score}/100`, metrics);
+        console.log(`[Performance] Score: ${score}/100`, metrics);
       }
     }, 30000);
   }
 
   app.config.errorHandler = err => {
-    console.error('鉂?Vue Error:', err);
+    console.error('[Vue Error]', err);
   };
 
   app.config.warnHandler = (msg, vm, trace) => {
     void vm;
-    console.warn('鈿狅笍 Vue Warning:', msg);
+    console.warn('[Vue Warning]', msg);
     console.warn('Trace:', trace);
   };
 

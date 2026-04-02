@@ -257,7 +257,7 @@ export const en = {
   // Authentication related
   auth: {
     login: {
-      title: 'Login to Video Platform',
+      title: 'Login to Nest TV',
       username: 'Username or Email',
       password: 'Password',
       rememberMe: 'Remember me',

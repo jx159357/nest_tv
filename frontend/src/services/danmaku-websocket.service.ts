@@ -10,6 +10,8 @@ import type {
   DanmakuServiceConfig,
 } from '@/types/danmaku';
 
+const DEV = import.meta.env.DEV;
+
 export type {
   DanmakuMessage,
   RoomInfo,
@@ -86,7 +88,9 @@ export class DanmakuWebSocketService {
 
     // 连接成功
     this.socket.on('connect', () => {
-      console.log('✅ WebSocket连接成功');
+      if (DEV) {
+        console.log('[DanmakuWS] connected');
+      }
       this.isConnected.value = true;
       this.reconnectAttempts = 0;
 
@@ -108,7 +112,9 @@ export class DanmakuWebSocketService {
 
     // 连接断开
     this.socket.on('disconnect', reason => {
-      console.log('❌ WebSocket连接断开:', reason);
+      if (DEV) {
+        console.log('[DanmakuWS] disconnected:', reason);
+      }
       this.isConnected.value = false;
       this.stopHeartbeat();
       this.emit('disconnected', reason);
@@ -200,13 +206,19 @@ export class DanmakuWebSocketService {
   // 重连处理
   private handleReconnect() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('❌ 达到最大重连次数，停止重连');
+      if (DEV) {
+        console.warn('[DanmakuWS] reached max reconnect attempts');
+      }
       this.emit('reconnect-failed');
       return;
     }
 
     this.reconnectAttempts++;
-    console.log(`🔄 尝试重连 (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+    if (DEV) {
+      console.log(
+        `[DanmakuWS] reconnecting (${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
+      );
+    }
 
     this.reconnectInterval = window.setTimeout(() => {
       if (this.roomId.value && this.userId.value) {

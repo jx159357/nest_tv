@@ -5,7 +5,7 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
           <div class="flex items-center">
-            <router-link to="/" class="text-xl font-bold text-gray-900">视频平台</router-link>
+            <router-link to="/" class="text-xl font-bold text-gray-900">Nest TV</router-link>
             <span class="ml-4 text-gray-500">|</span>
             <span class="ml-4 text-lg font-medium text-gray-700">后台管理</span>
           </div>

@@ -340,10 +340,7 @@ export class ResourceCache<T = any> {
   private startCleanup(): void {
     if (this.config.cleanupInterval && this.config.cleanupInterval > 0) {
       this.cleanupTimer = setInterval(() => {
-        const cleaned = this.cleanup();
-        if (cleaned > 0) {
-          console.log(`Cache ${this.config.name}: cleaned ${cleaned} expired entries`);
-        }
+        this.cleanup();
       }, this.config.cleanupInterval);
     }
   }
