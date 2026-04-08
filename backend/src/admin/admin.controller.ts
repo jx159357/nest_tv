@@ -155,12 +155,14 @@ export class AdminController {
     type: String,
     description: 'Download task client id filter',
   })
+  @ApiQuery({ name: 'hash', required: false, type: String, description: 'Exact magnet infoHash' })
   @ApiQuery({
     name: 'downloadTaskId',
     required: false,
     type: Number,
     description: 'Download task id filter',
   })
+  @ApiQuery({ name: 'logId', required: false, type: Number, description: 'Exact admin log id' })
   @ApiResponse({ status: 200, description: 'Admin log list loaded successfully' })
   async getAdminLogs(@Query() queryDto: AdminLogsQueryDto) {
     const {
@@ -171,7 +173,9 @@ export class AdminController {
       status,
       roleId,
       clientId,
+      hash,
       downloadTaskId,
+      logId,
     } = queryDto;
     return await this.adminService.getAdminLogs(page, limit, {
       action,
@@ -179,7 +183,9 @@ export class AdminController {
       status,
       roleId,
       clientId,
+      hash,
       downloadTaskId,
+      logId,
     });
   }
 
@@ -278,9 +284,23 @@ export class AdminController {
     type: String,
     description: 'File/source/url/user search',
   })
+  @ApiQuery({ name: 'clientId', required: false, type: String, description: 'Exact download task client id' })
+  @ApiQuery({ name: 'hash', required: false, type: String, description: 'Exact magnet infoHash' })
+  @ApiQuery({ name: 'taskId', required: false, type: Number, description: 'Exact download task id' })
   @ApiResponse({ status: 200, description: 'Download task list loaded successfully' })
   getDownloadTasks(@Query() queryDto: AdminDownloadTasksQueryDto) {
-    const { page = 1, limit = 20, status, type, userId, mediaResourceId, search } = queryDto;
+    const {
+      page = 1,
+      limit = 20,
+      status,
+      type,
+      userId,
+      mediaResourceId,
+      search,
+      clientId,
+      hash,
+      taskId,
+    } = queryDto;
     return this.adminService.getDownloadTasks(
       page,
       limit,
@@ -289,6 +309,9 @@ export class AdminController {
       userId,
       mediaResourceId,
       search,
+      clientId,
+      hash,
+      taskId,
     );
   }
 

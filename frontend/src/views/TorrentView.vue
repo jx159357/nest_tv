@@ -192,7 +192,7 @@
                   加入下载任务
                 </button>
                 <RouterLink
-                  :to="buildDownloadsLink(parsedMagnet.name || parsedMagnet.infoHash)"
+                  :to="buildDownloadsLink(parsedMagnet.name || parsedMagnet.infoHash, parsedMagnet.infoHash)"
                   class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
                 >
                   查看下载任务
@@ -349,7 +349,7 @@
                   启动本地客户端
                 </button>
                 <RouterLink
-                  :to="buildDownloadsLink(selectedInfo.name || selectedInfo.infoHash)"
+                  :to="buildDownloadsLink(selectedInfo.name || selectedInfo.infoHash, selectedInfo.infoHash)"
                   class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
                 >
                   查看下载任务
@@ -429,7 +429,7 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue';
+  import { onMounted, ref, watch } from 'vue';
   import { RouterLink } from 'vue-router';
   import {
     torrentApi,
@@ -444,6 +444,8 @@
   const category = ref('');
   const magnetInput = ref('');
   const downloadsStore = useDownloadsStore();
+  const hasHydratedRouteState = ref(false);
+  const selectedHash = ref('');
 
   const searchResults = ref<TorrentListItem[]>([]);
   const searchPagination = ref({ page: 1, totalPages: 1, total: 0, pageSize: 10 });
@@ -464,6 +466,7 @@
   const searchError = ref<string | null>(null);
   const selectedError = ref<string | null>(null);
   const parseError = ref<string | null>(null);
+  const supportedCategories = ['movie', 'tv_series', 'variety', 'anime', 'documentary'];
 
   const formatDateTime = (value?: string | null) => {
     if (!value) {
@@ -665,19 +668,73 @@
     return error instanceof Error ? error.message : fallback;
   };
 
-  const buildDownloadsLink = (keyword?: string) => ({
+  const buildDownloadsLink = (keyword?: string, infoHash?: string) => ({
     path: '/downloads',
     hash: '#active',
     query: {
       type: 'magnet',
       ...(keyword?.trim() ? { keyword: keyword.trim() } : {}),
+      ...(infoHash?.trim() ? { hash: infoHash.trim().toLowerCase() } : {}),
     },
   });
 
+  const resetSearchState = () => {
+    searchResults.value = [];
+    searchPagination.value = { page: 1, totalPages: 1, total: 0, pageSize: 10 };
+    searchError.value = null;
+  };
+
+  const applyStateFromLocation = () => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const nextKeyword = params.get('keyword')?.trim() || '';
+    const nextCategory = params.get('category')?.trim() || '';
+    const nextHash = params.get('hash')?.trim() || '';
+
+    keyword.value = nextKeyword;
+    category.value = supportedCategories.includes(nextCategory) ? nextCategory : '';
+    selectedHash.value = nextHash;
+  };
+
+  const syncStateToLocation = () => {
+    if (typeof window === 'undefined' || !hasHydratedRouteState.value) {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    const params = new URLSearchParams(url.search);
+    const normalizedKeyword = keyword.value.trim();
+    const normalizedHash = selectedHash.value.trim();
+
+    if (normalizedKeyword) {
+      params.set('keyword', normalizedKeyword);
+    } else {
+      params.delete('keyword');
+    }
+
+    if (category.value) {
+      params.set('category', category.value);
+    } else {
+      params.delete('category');
+    }
+
+    if (normalizedHash) {
+      params.set('hash', normalizedHash);
+    } else {
+      params.delete('hash');
+    }
+
+    const nextQuery = params.toString();
+    const nextUrl = `${url.pathname}${nextQuery ? `?${nextQuery}` : ''}`;
+    window.history.replaceState(window.history.state, '', nextUrl);
+  };
+
   const searchTorrents = async (page = 1) => {
     if (!keyword.value.trim()) {
-      searchResults.value = [];
-      searchPagination.value = { page: 1, totalPages: 1, total: 0, pageSize: 10 };
+      resetSearchState();
       return;
     }
 
@@ -688,17 +745,14 @@
         keyword: keyword.value.trim(),
         page,
         pageSize: 10,
+        category: category.value || undefined,
       });
 
-      const filtered = category.value
-        ? response.data.filter(item => item.category === category.value)
-        : response.data;
-
-      searchResults.value = filtered;
+      searchResults.value = response.data;
       searchPagination.value = {
         page: response.page,
         totalPages: Math.max(response.totalPages, 1),
-        total: category.value ? filtered.length : response.total,
+        total: response.total,
         pageSize: response.pageSize,
       };
     } catch (error: unknown) {
@@ -738,19 +792,27 @@
   };
 
   const selectTorrent = async (hash: string) => {
+    const normalizedHash = hash.trim();
+    if (!normalizedHash) {
+      return;
+    }
+
+    selectedHash.value = normalizedHash;
     selectedLoading.value = true;
     selectedError.value = null;
     try {
       const [info, health] = await Promise.all([
-        torrentApi.getInfo(hash),
-        torrentApi.getHealth(hash),
+        torrentApi.getInfo(normalizedHash),
+        torrentApi.getHealth(normalizedHash),
       ]);
       selectedInfo.value = info;
       selectedHealth.value = health;
+      selectedHash.value = info.infoHash || normalizedHash;
     } catch (error: unknown) {
       selectedError.value = getErrorMessage(error, '加载磁力详情失败');
       selectedInfo.value = null;
       selectedHealth.value = null;
+      selectedHash.value = '';
     } finally {
       selectedLoading.value = false;
     }
@@ -778,7 +840,37 @@
   };
 
   onMounted(() => {
+    applyStateFromLocation();
+    hasHydratedRouteState.value = true;
+    syncStateToLocation();
     void loadPopularTorrents();
     void loadLatestTorrents();
+
+    if (keyword.value.trim()) {
+      void searchTorrents(1);
+    } else {
+      resetSearchState();
+    }
+
+    if (selectedHash.value) {
+      void selectTorrent(selectedHash.value);
+    }
+  });
+
+  watch([keyword, category, selectedHash], () => {
+    syncStateToLocation();
+  });
+
+  watch(category, () => {
+    if (!hasHydratedRouteState.value) {
+      return;
+    }
+
+    void loadPopularTorrents();
+    void loadLatestTorrents();
+
+    if (keyword.value.trim()) {
+      void searchTorrents(1);
+    }
   });
 </script>

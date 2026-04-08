@@ -8,7 +8,7 @@ import { User } from '../entities/user.entity';
 import { MediaResource } from '../entities/media-resource.entity';
 import { PlaySource } from '../entities/play-source.entity';
 import { WatchHistory } from '../entities/watch-history.entity';
-import { DownloadTask, DownloadTaskStatus } from '../entities/download-task.entity';
+import { DownloadTask, DownloadTaskStatus, DownloadTaskType } from '../entities/download-task.entity';
 import {
   CreatePermissionDto,
   CreateRoleDto,
@@ -54,6 +54,80 @@ export class AdminService {
       totalPages,
       offset: (resolvedPage - 1) * safeLimit,
     };
+  }
+
+  private extractMagnetInfoHash(url: string): string | null {
+    const magnetMatch = url.trim().match(/(?:\?|&)xt=urn:btih:([^&]+)/i);
+    if (!magnetMatch?.[1]) {
+      return null;
+    }
+
+    return decodeURIComponent(magnetMatch[1]).trim().toLowerCase();
+  }
+
+  private buildDownloadTaskDedupKey(task: Pick<DownloadTask, 'id' | 'type' | 'url'>): string {
+    if (task.type === DownloadTaskType.MAGNET) {
+      const infoHash = this.extractMagnetInfoHash(task.url);
+      if (infoHash) {
+        return `magnet:${infoHash}`;
+      }
+    }
+
+    return `task:${task.id}`;
+  }
+
+  private getDownloadTaskTimestamp(task: Partial<DownloadTask>): number {
+    if (!task.updatedAt) {
+      return 0;
+    }
+
+    const value = task.updatedAt instanceof Date ? task.updatedAt.getTime() : new Date(task.updatedAt).getTime();
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  private dedupeDownloadTasks(tasks: DownloadTask[]): DownloadTask[] {
+    const taskMap = new Map<string, DownloadTask>();
+
+    tasks.forEach(task => {
+      const dedupKey = this.buildDownloadTaskDedupKey(task);
+      const existingTask = taskMap.get(dedupKey);
+      if (
+        !existingTask ||
+        this.getDownloadTaskTimestamp(existingTask) <= this.getDownloadTaskTimestamp(task)
+      ) {
+        taskMap.set(dedupKey, task);
+      }
+    });
+
+    return [...taskMap.values()].sort(
+      (left, right) => this.getDownloadTaskTimestamp(right) - this.getDownloadTaskTimestamp(left),
+    );
+  }
+
+  private async cleanupDuplicateMagnetTasks(keeperTask: DownloadTask): Promise<void> {
+    if (keeperTask.type !== DownloadTaskType.MAGNET || !keeperTask.userId) {
+      return;
+    }
+
+    const keeperHash = this.extractMagnetInfoHash(keeperTask.url);
+    if (!keeperHash) {
+      return;
+    }
+
+    const tasks = await this.downloadTaskRepository.find({
+      where: { userId: keeperTask.userId, type: DownloadTaskType.MAGNET },
+    });
+
+    const duplicateIds = tasks
+      .filter(task => task.id !== keeperTask.id && this.extractMagnetInfoHash(task.url) === keeperHash)
+      .map(task => task.id)
+      .filter((id): id is number => typeof id === 'number');
+
+    if (duplicateIds.length === 0) {
+      return;
+    }
+
+    await this.downloadTaskRepository.delete(duplicateIds);
   }
 
   constructor(
@@ -324,13 +398,19 @@ export class AdminService {
     userId?: number,
     mediaResourceId?: number,
     search?: string,
+    clientId?: string,
+    hash?: string,
+    taskId?: number,
   ) {
     const { safePage, safeLimit } = this.normalizePagination(page, limit);
     const safeUserId = userId ? Number(userId) : undefined;
     const safeMediaResourceId = mediaResourceId ? Number(mediaResourceId) : undefined;
+    const safeTaskId = taskId ? Number(taskId) : undefined;
     const normalizedStatus = this.normalizeOptionalText(status);
     const normalizedType = this.normalizeOptionalText(type);
     const normalizedSearch = this.normalizeOptionalText(search);
+    const normalizedClientId = this.normalizeOptionalText(clientId);
+    const normalizedHash = this.normalizeOptionalText(hash)?.toLowerCase();
 
     const queryBuilder = this.downloadTaskRepository
       .createQueryBuilder('downloadTask')
@@ -345,6 +425,14 @@ export class AdminService {
       queryBuilder.andWhere('downloadTask.mediaResourceId = :mediaResourceId', {
         mediaResourceId: safeMediaResourceId,
       });
+    }
+
+    if (safeTaskId) {
+      queryBuilder.andWhere('downloadTask.id = :taskId', { taskId: safeTaskId });
+    }
+
+    if (normalizedClientId) {
+      queryBuilder.andWhere('downloadTask.clientId = :clientId', { clientId: normalizedClientId });
     }
 
     if (normalizedStatus) {
@@ -370,13 +458,18 @@ export class AdminService {
       );
     }
 
-    const total = await queryBuilder.getCount();
+    const dedupedTasks = this.dedupeDownloadTasks(
+      await queryBuilder.orderBy('downloadTask.updatedAt', 'DESC').getMany(),
+    ).filter(task => {
+      if (!normalizedHash) {
+        return true;
+      }
+
+      return this.extractMagnetInfoHash(task.url) === normalizedHash;
+    });
+    const total = dedupedTasks.length;
     const pagination = this.resolvePagination(total, safePage, safeLimit);
-    const data = await queryBuilder
-      .orderBy('downloadTask.updatedAt', 'DESC')
-      .skip(pagination.offset)
-      .take(pagination.limit)
-      .getMany();
+    const data = dedupedTasks.slice(pagination.offset, pagination.offset + pagination.limit);
 
     return {
       data,
@@ -416,6 +509,7 @@ export class AdminService {
     }
 
     const savedTask = await this.downloadTaskRepository.save(task);
+    await this.cleanupDuplicateMagnetTasks(savedTask);
 
     await this.logAction(
       actionDto.action,
@@ -423,6 +517,9 @@ export class AdminService {
       {
         downloadTaskId: savedTask.id,
         clientId: savedTask.clientId,
+        ...(savedTask.type === DownloadTaskType.MAGNET
+          ? { infoHash: this.extractMagnetInfoHash(savedTask.url) }
+          : {}),
         status: savedTask.status,
       },
       1,
@@ -764,31 +861,31 @@ export class AdminService {
         mediaCount,
         playSourceCount,
         watchHistoryCount,
-        downloadTaskCount,
-        activeDownloadTaskCount,
-        completedDownloadTaskCount,
-        failedDownloadTaskCount,
+        downloadTasks,
         recentActivity,
       ] = await Promise.all([
         this.userRepository.count(),
         this.userRepository.manager.count('media_resource', {}),
         this.userRepository.manager.count('play_source', {}),
         this.userRepository.manager.count('watch_history', {}),
-        this.downloadTaskRepository.count(),
-        this.downloadTaskRepository.count({
-          where: { status: In([DownloadTaskStatus.PENDING, DownloadTaskStatus.DOWNLOADING]) },
-        }),
-        this.downloadTaskRepository.count({
-          where: { status: DownloadTaskStatus.COMPLETED },
-        }),
-        this.downloadTaskRepository.count({
-          where: { status: In([DownloadTaskStatus.ERROR, DownloadTaskStatus.CANCELLED]) },
-        }),
+        this.downloadTaskRepository.find(),
         this.adminLogRepository.find({
           order: { createdAt: 'DESC' },
           take: 10,
         }),
       ]);
+
+      const dedupedDownloadTasks = this.dedupeDownloadTasks(downloadTasks);
+      const downloadTaskCount = dedupedDownloadTasks.length;
+      const activeDownloadTaskCount = dedupedDownloadTasks.filter(task =>
+        [DownloadTaskStatus.PENDING, DownloadTaskStatus.DOWNLOADING].includes(task.status),
+      ).length;
+      const completedDownloadTaskCount = dedupedDownloadTasks.filter(
+        task => task.status === DownloadTaskStatus.COMPLETED,
+      ).length;
+      const failedDownloadTaskCount = dedupedDownloadTasks.filter(task =>
+        [DownloadTaskStatus.ERROR, DownloadTaskStatus.CANCELLED].includes(task.status),
+      ).length;
 
       return {
         userCount,
@@ -819,7 +916,9 @@ export class AdminService {
       status?: 'success' | 'error' | 'warning';
       roleId?: number;
       clientId?: string;
+      hash?: string;
       downloadTaskId?: number;
+      logId?: number;
       startDate?: Date;
       endDate?: Date;
     },
@@ -856,11 +955,20 @@ export class AdminService {
             { clientId: filters.clientId },
           );
         }
+        if (filters.hash) {
+          queryBuilder.andWhere(
+            "JSON_UNQUOTE(JSON_EXTRACT(adminLog.metadata, '$.infoHash')) = :hash",
+            { hash: filters.hash.toLowerCase() },
+          );
+        }
         if (filters.downloadTaskId) {
           queryBuilder.andWhere(
             "JSON_UNQUOTE(JSON_EXTRACT(adminLog.metadata, '$.downloadTaskId')) = :downloadTaskId",
             { downloadTaskId: String(filters.downloadTaskId) },
           );
+        }
+        if (filters.logId) {
+          queryBuilder.andWhere('adminLog.id = :logId', { logId: filters.logId });
         }
         if (filters.startDate) {
           queryBuilder.andWhere('adminLog.createdAt >= :startDate', {

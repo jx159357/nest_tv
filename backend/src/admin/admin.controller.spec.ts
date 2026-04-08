@@ -65,6 +65,9 @@ describe('AdminController', () => {
         userId: 8,
         mediaResourceId: 15,
         search: 'demo',
+        clientId: 'task-21',
+        hash: 'hash-demo',
+        taskId: 21,
       }),
     ).resolves.toEqual(payload);
     expect(adminService.getDownloadTasks).toHaveBeenCalledWith(
@@ -75,6 +78,9 @@ describe('AdminController', () => {
       8,
       15,
       'demo',
+      'task-21',
+      'hash-demo',
+      21,
     );
   });
 
@@ -87,7 +93,9 @@ describe('AdminController', () => {
         action: 'retry',
         resource: 'download_task',
         clientId: 'task-21',
+        hash: 'hash-demo',
         downloadTaskId: 21,
+        logId: 7,
       }),
     ).resolves.toEqual(payload);
 
@@ -97,7 +105,9 @@ describe('AdminController', () => {
       status: undefined,
       roleId: undefined,
       clientId: 'task-21',
+      hash: 'hash-demo',
       downloadTaskId: 21,
+      logId: 7,
     });
   });
 

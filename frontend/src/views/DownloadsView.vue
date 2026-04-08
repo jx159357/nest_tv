@@ -77,15 +77,27 @@
             <h2 class="text-base font-semibold text-gray-900">任务筛选</h2>
             <p class="mt-1 text-sm text-gray-500">按状态或关键词快速收窄当前任务列表。</p>
           </div>
-          <label class="block lg:w-80">
-            <span class="sr-only">搜索任务</span>
-            <input
-              v-model="searchKeyword"
-              type="text"
-              class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm text-gray-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
-              placeholder="搜索文件名、来源或链接"
-            />
-          </label>
+          <div class="flex flex-col gap-3 lg:w-[32rem] lg:flex-row">
+            <label class="block flex-1">
+              <span class="sr-only">搜索任务</span>
+              <input
+                v-model="searchKeyword"
+                type="text"
+                class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm text-gray-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                placeholder="搜索文件名、来源或链接"
+              />
+            </label>
+            <label class="block flex-1">
+              <span class="sr-only">磁力 Hash</span>
+              <input
+                :value="selectedHash"
+                type="text"
+                class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm text-gray-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                placeholder="磁力 Hash，如 hash-demo"
+                @input="selectedHash = normalizeHashInput(($event.target as HTMLInputElement).value)"
+              />
+            </label>
+          </div>
         </div>
         <div class="mt-4 flex flex-wrap gap-2">
           <button
@@ -117,6 +129,17 @@
           >
             {{ option.label }}
             <span class="ml-1 text-xs opacity-80">{{ option.count }}</span>
+          </button>
+        </div>
+        <div v-if="selectedHash" class="mt-3 flex flex-wrap items-center gap-2 text-xs text-indigo-700">
+          <span class="rounded-full bg-indigo-50 px-3 py-1.5 font-medium">
+            已锁定磁力 Hash：{{ selectedHash }}
+          </span>
+          <button
+            class="rounded-full border border-indigo-200 bg-white px-3 py-1.5 font-medium text-indigo-700 hover:bg-indigo-50"
+            @click="selectedHash = ''"
+          >
+            取消 Hash 锁定
           </button>
         </div>
       </section>
@@ -246,6 +269,13 @@
               >
                 查看关联媒体
               </RouterLink>
+              <RouterLink
+                v-if="buildTorrentDetailLink(task)"
+                :to="buildTorrentDetailLink(task)!"
+                class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-center text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                查看磁力详情
+              </RouterLink>
               <button
                 v-if="
                   task.status === 'pending' ||
@@ -316,6 +346,7 @@
   const downloadsStore = useDownloadsStore();
   const actionMessage = ref<string | null>(null);
   const searchKeyword = ref('');
+  const selectedHash = ref('');
   const selectedFilter = ref<'all' | 'active' | 'failed' | 'completed'>('all');
   const selectedType = ref<'all' | 'direct' | 'torrent' | 'magnet'>('all');
   const hasHydratedFilters = ref(false);
@@ -389,6 +420,10 @@
 
       if (selectedType.value !== 'all' && task.type !== selectedType.value) {
         return false;
+      }
+
+      if (selectedHash.value) {
+        return extractTaskInfoHash(task) === selectedHash.value;
       }
 
       if (!normalizedKeyword) {
@@ -475,6 +510,44 @@
     return parsed.toLocaleString('zh-CN');
   };
 
+  const normalizeHashInput = (value: string) => value.trim().toLowerCase();
+
+  const extractTaskInfoHash = (task: DownloadTask) => {
+    if (task.type !== 'magnet') {
+      return null;
+    }
+
+    const magnetMatch = task.url.match(/(?:\?|&)xt=urn:btih:([^&]+)/i);
+    if (magnetMatch?.[1]) {
+      return decodeURIComponent(magnetMatch[1]).trim().toLowerCase();
+    }
+
+    const metadataDescription =
+      typeof task.metadata?.description === 'string' ? task.metadata.description : '';
+    const descriptionMatch = metadataDescription.match(/InfoHash:\s*([a-z0-9]+)/i);
+    if (descriptionMatch?.[1]) {
+      return descriptionMatch[1].trim().toLowerCase();
+    }
+
+    return null;
+  };
+
+  const buildTorrentDetailLink = (task: DownloadTask) => {
+    const infoHash = extractTaskInfoHash(task);
+    if (!infoHash) {
+      return null;
+    }
+
+    const normalizedKeyword = task.fileName.trim();
+    return {
+      name: 'torrent',
+      query: {
+        hash: infoHash,
+        ...(normalizedKeyword ? { keyword: normalizedKeyword } : {}),
+      },
+    };
+  };
+
   const updateActionMessage = (message: string) => {
     actionMessage.value = message;
   };
@@ -543,6 +616,7 @@
     const hashFilter = window.location.hash.replace('#', '');
     const params = new URLSearchParams(window.location.search);
     const keyword = params.get('keyword');
+    const hash = params.get('hash');
     const type = params.get('type');
 
     if (
@@ -558,6 +632,7 @@
       selectedType.value = type;
     }
 
+    selectedHash.value = normalizeHashInput(hash || '');
     searchKeyword.value = keyword?.trim() || '';
   };
 
@@ -581,6 +656,12 @@
       params.delete('keyword');
     }
 
+    if (selectedHash.value) {
+      params.set('hash', selectedHash.value);
+    } else {
+      params.delete('hash');
+    }
+
     const queryString = params.toString();
     const nextHash = selectedFilter.value === 'all' ? '' : `#${selectedFilter.value}`;
     const nextUrl = `${url.pathname}${queryString ? `?${queryString}` : ''}${nextHash}`;
@@ -591,10 +672,11 @@
   const resetFilters = () => {
     selectedFilter.value = 'all';
     selectedType.value = 'all';
+    selectedHash.value = '';
     searchKeyword.value = '';
   };
 
-  watch([selectedFilter, selectedType, searchKeyword], () => {
+  watch([selectedFilter, selectedType, searchKeyword, selectedHash], () => {
     syncFiltersToLocation();
   });
 

@@ -128,6 +128,9 @@ describe('AdminDownloadTasksView', () => {
       page: 2,
       limit: 10,
       search: undefined,
+      clientId: undefined,
+      hash: undefined,
+      taskId: undefined,
       status: 'error',
       type: undefined,
       userId: 8,
@@ -196,7 +199,9 @@ describe('AdminDownloadTasksView', () => {
         return (
           target.includes('admin-logs') &&
           target.includes('clientId') &&
-          target.includes('detail-task')
+          target.includes('detail-task') &&
+          target.includes('downloadTaskId') &&
+          target.includes('3')
         );
       }),
     ).toBe(true);
@@ -403,12 +408,7 @@ describe('AdminDownloadTasksView', () => {
     });
   });
 
-  it('shows search, status, and type filter chips from route state', async () => {
-    routeState.query = {
-      search: 'hash-demo',
-      status: 'error',
-      type: 'magnet',
-    };
+  it('normalizes hash filter into route query from the toolbar input', async () => {
     adminApi.getDownloadTasks.mockResolvedValue({
       data: [],
       total: 0,
@@ -420,7 +420,113 @@ describe('AdminDownloadTasksView', () => {
     const wrapper = mount(AdminDownloadTasksView);
     await flushPromises();
 
+    const hashInput = wrapper.find('input[placeholder="任务 Hash，如 hash-demo"]');
+    expect(hashInput.exists()).toBe(true);
+    await hashInput.setValue(' HASH-DEMO ');
+
+    const refreshButton = wrapper.findAll('button').find(button => button.text().includes('刷新'));
+    expect(refreshButton).toBeTruthy();
+    await refreshButton!.trigger('click');
+
+    expect(routerReplace).toHaveBeenCalledWith({
+      name: 'admin-download-tasks',
+      query: { hash: 'hash-demo' },
+    });
+  });
+
+  it('writes taskId filter into route query from the toolbar input', async () => {
+    adminApi.getDownloadTasks.mockResolvedValue({
+      data: [],
+      total: 0,
+      page: 1,
+      limit: 10,
+      totalPages: 1,
+    });
+
+    const wrapper = mount(AdminDownloadTasksView);
+    await flushPromises();
+
+    const taskIdInput = wrapper.find('input[placeholder="任务 ID，如 21"]');
+    expect(taskIdInput.exists()).toBe(true);
+    await taskIdInput.setValue('21');
+
+    const refreshButton = wrapper.findAll('button').find(button => button.text().includes('刷新'));
+    expect(refreshButton).toBeTruthy();
+    await refreshButton!.trigger('click');
+
+    expect(routerReplace).toHaveBeenCalledWith({
+      name: 'admin-download-tasks',
+      query: { taskId: '21' },
+    });
+  });
+
+  it('writes exact clientId filter into route query from the toolbar input', async () => {
+    adminApi.getDownloadTasks.mockResolvedValue({
+      data: [],
+      total: 0,
+      page: 1,
+      limit: 10,
+      totalPages: 1,
+    });
+
+    const wrapper = mount(AdminDownloadTasksView);
+    await flushPromises();
+
+    const clientIdInput = wrapper.find('input[placeholder="任务 clientId，如 task-21"]');
+    expect(clientIdInput.exists()).toBe(true);
+    await clientIdInput.setValue('task-21');
+
+    const refreshButton = wrapper.findAll('button').find(button => button.text().includes('刷新'));
+    expect(refreshButton).toBeTruthy();
+    await refreshButton!.trigger('click');
+
+    expect(routerReplace).toHaveBeenCalledWith({
+      name: 'admin-download-tasks',
+      query: { clientId: 'task-21' },
+    });
+  });
+
+  it('shows search, clientId, status, type, hash, and task chips from route state', async () => {
+    routeState.query = {
+      search: 'hash-demo',
+      clientId: 'task-21',
+      status: 'error',
+      type: 'magnet',
+      hash: 'hash-demo',
+      taskId: '21',
+    };
+    adminApi.getDownloadTasks.mockResolvedValue({
+      data: [
+        {
+          id: 21,
+          clientId: 'task-21',
+          userId: 8,
+          url: 'magnet:?xt=urn:btih:hash-demo',
+          type: 'magnet',
+          status: 'error',
+          progress: 20,
+          speed: 0,
+          downloaded: 20,
+          total: 100,
+          fileName: 'Hash Task',
+          error: 'network',
+          createdAt: '2025-01-01T00:00:00.000Z',
+          updatedAt: '2025-01-02T00:00:00.000Z',
+        },
+      ],
+      total: 1,
+      page: 1,
+      limit: 10,
+      totalPages: 1,
+    });
+
+    const wrapper = mount(AdminDownloadTasksView);
+    await flushPromises();
+
     expect(wrapper.text()).toContain('搜索：hash-demo');
+    expect(wrapper.text()).toContain('clientId：task-21');
+    expect(wrapper.text()).toContain('Hash：hash-demo');
+    expect(wrapper.text()).toContain('任务：#21');
     expect(wrapper.text()).toContain('状态：error');
     expect(wrapper.text()).toContain('类型：magnet');
   });
@@ -461,6 +567,9 @@ describe('AdminDownloadTasksView', () => {
       page: 5,
       limit: 10,
       search: undefined,
+      clientId: undefined,
+      hash: undefined,
+      taskId: undefined,
       status: 'error',
       type: undefined,
       userId: undefined,
@@ -510,11 +619,126 @@ describe('AdminDownloadTasksView', () => {
       page: 1,
       limit: 10,
       search: 'task-21',
+      clientId: undefined,
+      hash: undefined,
+      taskId: 21,
       status: undefined,
       type: undefined,
       userId: undefined,
       mediaResourceId: undefined,
     });
+  });
+
+  it('drops an invalid routed taskId and falls back to the remaining filters', async () => {
+    routeState.query = {
+      hash: 'hash-demo',
+      taskId: '21',
+    };
+    adminApi.getDownloadTasks
+      .mockResolvedValueOnce({
+        data: [],
+        total: 0,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+      })
+      .mockResolvedValueOnce({
+        data: [
+          {
+            id: 31,
+            clientId: 'task-current',
+            userId: 8,
+            url: 'magnet:?xt=urn:btih:hash-demo',
+            type: 'magnet',
+            status: 'error',
+            progress: 20,
+            speed: 0,
+            downloaded: 20,
+            total: 100,
+            fileName: 'Current Hash Task',
+            error: 'network',
+            createdAt: '2025-01-01T00:00:00.000Z',
+            updatedAt: '2025-01-02T00:00:00.000Z',
+          },
+        ],
+        total: 1,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+      });
+
+    const wrapper = mount(AdminDownloadTasksView);
+    await flushPromises();
+    await flushPromises();
+
+    expect(adminApi.getDownloadTasks).toHaveBeenNthCalledWith(1, {
+      page: 1,
+      limit: 10,
+      search: undefined,
+      clientId: undefined,
+      hash: 'hash-demo',
+      taskId: 21,
+      status: undefined,
+      type: undefined,
+      userId: undefined,
+      mediaResourceId: undefined,
+    });
+    expect(routerReplace).toHaveBeenCalledWith({
+      name: 'admin-download-tasks',
+      query: { hash: 'hash-demo' },
+    });
+  });
+
+  it('adds a same-hash recommendation action for magnet tasks', async () => {
+    adminApi.getDownloadTasks.mockResolvedValue({
+      data: [
+        {
+          id: 41,
+          clientId: 'hash-task',
+          userId: 8,
+          url: 'magnet:?xt=urn:btih:hash-demo&tr=udp://tracker-a',
+          type: 'magnet',
+          status: 'error',
+          progress: 20,
+          speed: 0,
+          downloaded: 20,
+          total: 100,
+          fileName: 'Hash Task',
+          error: 'network',
+          createdAt: '2025-01-01T00:00:00.000Z',
+          updatedAt: '2025-01-02T00:00:00.000Z',
+        },
+      ],
+      total: 1,
+      page: 1,
+      limit: 10,
+      totalPages: 1,
+    });
+
+    const wrapper = mount(AdminDownloadTasksView);
+    await flushPromises();
+
+    await wrapper.get('.task-detail-toggle').trigger('click');
+
+    expect(wrapper.text()).toContain('Same hash tasks');
+    expect(wrapper.text()).toContain('Open hash logs');
+    expect(
+      wrapper.findAll('.router-link-stub').some(link => {
+        const target = link.attributes('data-to') || '';
+        return target.includes('admin-download-tasks') && target.includes('hash-demo');
+      }),
+    ).toBe(true);
+    expect(
+      wrapper.findAll('.router-link-stub').some(link => {
+        const target = link.attributes('data-to') || '';
+        return (
+          target.includes('admin-logs') &&
+          target.includes('hash-demo') &&
+          target.includes('downloadTaskId') &&
+          target.includes('41')
+        );
+      }),
+    ).toBe(true);
   });
 
   it('writes taskId into route query when toggling details', async () => {

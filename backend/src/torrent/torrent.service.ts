@@ -140,6 +140,7 @@ export class TorrentService {
     keyword: string,
     page: number = 1,
     pageSize: number = 10,
+    category?: string,
   ): Promise<{
     data: TorrentListItem[];
     total: number;
@@ -163,6 +164,10 @@ export class TorrentService {
         )`,
         { keyword: `%${keyword.trim()}%` },
       );
+    }
+
+    if (category?.trim()) {
+      queryBuilder.andWhere('mediaResource.type = :category', { category: category.trim() });
     }
 
     const total = await queryBuilder.getCount();

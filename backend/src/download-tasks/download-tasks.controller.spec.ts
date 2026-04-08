@@ -5,6 +5,7 @@ describe('DownloadTasksController', () => {
     findMine: jest.fn(),
     clearCompletedMine: jest.fn(),
     clearFailedMine: jest.fn(),
+    removeMine: jest.fn(),
   };
 
   let controller: DownloadTasksController;
@@ -45,5 +46,12 @@ describe('DownloadTasksController', () => {
 
     await expect(controller.clearFailedMine(11)).resolves.toEqual({ deleted: 2 });
     expect(downloadTasksService.clearFailedMine).toHaveBeenCalledWith(11);
+  });
+
+  it('removes a task for the current user', async () => {
+    downloadTasksService.removeMine.mockResolvedValue(undefined);
+
+    await expect(controller.removeMine(13, 'task-13')).resolves.toEqual({ success: true });
+    expect(downloadTasksService.removeMine).toHaveBeenCalledWith(13, 'task-13');
   });
 });

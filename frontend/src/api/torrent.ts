@@ -69,7 +69,7 @@ export const torrentApi = {
   parseMagnet: (magnetUri: string) =>
     ApiClient.post<ParsedMagnetResult>('/torrent/parse', { magnetUri }),
 
-  search: (params: { keyword: string; page?: number; pageSize?: number }) =>
+  search: (params: { keyword: string; page?: number; pageSize?: number; category?: string }) =>
     ApiClient.get<TorrentSearchResponse>('/torrent/search', { params }, false),
 
   getPopular: (params?: { limit?: number; category?: string }) =>

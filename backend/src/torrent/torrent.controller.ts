@@ -8,10 +8,14 @@ import {
   Body,
   Query,
   UseGuards,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TorrentService } from './torrent.service';
+import { TorrentSearchQueryDto } from './dtos/torrent-search-query.dto';
+import { TorrentRankQueryDto } from './dtos/torrent-rank-query.dto';
 
 @ApiTags('磁力链接播放')
 @Controller('torrent')
@@ -74,12 +78,14 @@ export class TorrentController {
   @Get('search')
   @ApiOperation({ summary: '搜索磁力链接' })
   @ApiResponse({ status: 200, description: '搜索成功' })
-  async searchTorrents(
-    @Query('keyword') keyword: string,
-    @Query('page') page: number = 1,
-    @Query('pageSize') pageSize: number = 10,
-  ) {
-    return this.torrentService.searchTorrents(keyword || '', page, pageSize);
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async searchTorrents(@Query() queryDto: TorrentSearchQueryDto) {
+    return this.torrentService.searchTorrents(
+      queryDto.keyword || '',
+      queryDto.page,
+      queryDto.pageSize,
+      queryDto.category,
+    );
   }
 
   /**
@@ -88,11 +94,9 @@ export class TorrentController {
   @Get('popular')
   @ApiOperation({ summary: '获取热门磁力链接' })
   @ApiResponse({ status: 200, description: '获取成功' })
-  async getPopularTorrents(
-    @Query('limit') limit: number = 20,
-    @Query('category') category?: string,
-  ) {
-    return this.torrentService.getPopularTorrents(limit, category);
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async getPopularTorrents(@Query() queryDto: TorrentRankQueryDto) {
+    return this.torrentService.getPopularTorrents(queryDto.limit, queryDto.category);
   }
 
   /**
@@ -101,10 +105,8 @@ export class TorrentController {
   @Get('latest')
   @ApiOperation({ summary: '获取最新磁力链接' })
   @ApiResponse({ status: 200, description: '获取成功' })
-  async getLatestTorrents(
-    @Query('limit') limit: number = 20,
-    @Query('category') category?: string,
-  ) {
-    return this.torrentService.getLatestTorrents(limit, category);
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async getLatestTorrents(@Query() queryDto: TorrentRankQueryDto) {
+    return this.torrentService.getLatestTorrents(queryDto.limit, queryDto.category);
   }
 }

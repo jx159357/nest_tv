@@ -13,6 +13,29 @@
           placeholder="文件名 / clientId / 来源 / 链接 / 用户"
           @keyup.enter="applyFilters(1)"
         />
+        <input
+          v-model="selectedClientId"
+          type="text"
+          class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          placeholder="任务 clientId，如 task-21"
+          @keyup.enter="applyFilters(1)"
+        />
+        <input
+          :value="selectedHash"
+          type="text"
+          class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          placeholder="任务 Hash，如 hash-demo"
+          @input="selectedHash = normalizeHashInput(($event.target as HTMLInputElement).value)"
+          @keyup.enter="applyFilters(1)"
+        />
+        <input
+          :value="selectedTaskId ? String(selectedTaskId) : ''"
+          type="text"
+          class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          placeholder="任务 ID，如 21"
+          @input="selectedTaskId = parseTaskId(($event.target as HTMLInputElement).value)"
+          @keyup.enter="applyFilters(1)"
+        />
         <select
           v-model="selectedStatus"
           class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
@@ -534,6 +557,8 @@
   const totalPages = ref(1);
   const total = ref(0);
   const search = ref('');
+  const selectedClientId = ref('');
+  const selectedHash = ref('');
   const selectedStatus = ref<AdminDownloadTaskItem['status'] | ''>('');
   const selectedType = ref<AdminDownloadTaskItem['type'] | ''>('');
   const selectedUserId = ref('');
@@ -707,6 +732,39 @@
       });
     }
 
+    if (selectedClientId.value.trim()) {
+      chips.push({
+        key: 'clientId',
+        label: `clientId：${selectedClientId.value.trim()}`,
+        clear: async () => {
+          selectedClientId.value = '';
+          await applyFilters(1);
+        },
+      });
+    }
+
+    if (selectedHash.value) {
+      chips.push({
+        key: 'hash',
+        label: `Hash：${selectedHash.value}`,
+        clear: async () => {
+          selectedHash.value = '';
+          await applyFilters(1);
+        },
+      });
+    }
+
+    if (selectedTaskId.value) {
+      chips.push({
+        key: 'taskId',
+        label: `任务：#${selectedTaskId.value}`,
+        clear: async () => {
+          selectedTaskId.value = null;
+          await applyFilters(1);
+        },
+      });
+    }
+
     if (sortMode.value !== 'updated') {
       chips.push({
         key: 'sort',
@@ -731,12 +789,19 @@
   };
 
   const readSingleQuery = (value: unknown) => (Array.isArray(value) ? value[0] : value);
+  const normalizeHashInput = (value: string) => value.trim().toLowerCase();
+  const parseTaskId = (value: string) => {
+    const parsed = Number(value.trim());
+    return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : null;
+  };
 
   const syncFiltersFromRoute = () => {
     const queryPage = Number(readSingleQuery(route.query.page));
     const querySearch = readSingleQuery(route.query.search);
+    const queryClientId = readSingleQuery(route.query.clientId);
     const queryStatus = readSingleQuery(route.query.status);
     const queryType = readSingleQuery(route.query.type);
+    const queryHash = readSingleQuery(route.query.hash);
     const queryUserId = readSingleQuery(route.query.userId);
     const queryMediaResourceId = readSingleQuery(route.query.mediaResourceId);
     const querySort = readSingleQuery(route.query.sort);
@@ -744,6 +809,7 @@
 
     page.value = Number.isFinite(queryPage) && queryPage > 0 ? queryPage : 1;
     search.value = typeof querySearch === 'string' ? querySearch : '';
+    selectedClientId.value = typeof queryClientId === 'string' ? queryClientId : '';
     selectedStatus.value =
       typeof queryStatus === 'string' &&
       taskStatuses.includes(queryStatus as AdminDownloadTaskItem['status'])
@@ -754,6 +820,7 @@
       taskTypes.includes(queryType as AdminDownloadTaskItem['type'])
         ? (queryType as AdminDownloadTaskItem['type'])
         : '';
+    selectedHash.value = typeof queryHash === 'string' ? normalizeHashInput(queryHash) : '';
     selectedUserId.value = typeof queryUserId === 'string' ? queryUserId : '';
     selectedMediaResourceId.value =
       typeof queryMediaResourceId === 'string' ? queryMediaResourceId : '';
@@ -773,11 +840,17 @@
     if (search.value.trim()) {
       query.search = search.value.trim();
     }
+    if (selectedClientId.value.trim()) {
+      query.clientId = selectedClientId.value.trim();
+    }
     if (selectedStatus.value) {
       query.status = selectedStatus.value;
     }
     if (selectedType.value) {
       query.type = selectedType.value;
+    }
+    if (selectedHash.value) {
+      query.hash = selectedHash.value;
     }
     if (selectedUserId.value) {
       query.userId = selectedUserId.value;
@@ -804,6 +877,8 @@
 
   const resetFilters = async () => {
     search.value = '';
+    selectedClientId.value = '';
+    selectedHash.value = '';
     selectedStatus.value = '';
     selectedType.value = '';
     selectedUserId.value = '';
@@ -954,6 +1029,9 @@
         page: nextPage,
         limit: 10,
         search: search.value || undefined,
+        clientId: selectedClientId.value || undefined,
+        hash: selectedHash.value || undefined,
+        taskId: selectedTaskId.value || undefined,
         status: selectedStatus.value || undefined,
         type: selectedType.value || undefined,
         userId: selectedUserId.value ? Number(selectedUserId.value) : undefined,
@@ -971,9 +1049,14 @@
           name: 'admin-download-tasks',
           query: buildTaskQuery(response.page),
         });
+        return;
       }
       if (selectedTaskId.value && !response.data.some(task => task.id === selectedTaskId.value)) {
         selectedTaskId.value = null;
+        await router.replace({
+          name: 'admin-download-tasks',
+          query: buildTaskQuery(response.page),
+        });
       }
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : '加载下载任务失败';
@@ -1044,8 +1127,22 @@
     }));
   };
 
+  const extractTaskInfoHash = (task: AdminDownloadTaskItem) => {
+    if (task.type !== 'magnet') {
+      return null;
+    }
+
+    const magnetMatch = task.url.match(/(?:\?|&)xt=urn:btih:([^&]+)/i);
+    if (magnetMatch?.[1]) {
+      return decodeURIComponent(magnetMatch[1]).trim().toLowerCase();
+    }
+
+    return null;
+  };
+
   const taskRecommendation = (task: AdminDownloadTaskItem) => {
     const actions: Array<{ label: string; to: string | Record<string, unknown> }> = [];
+    const magnetHash = extractTaskInfoHash(task);
 
     if (task.userId) {
       actions.push({
@@ -1073,6 +1170,17 @@
       });
     }
 
+    if (magnetHash) {
+      actions.push({
+        label: 'Same hash tasks',
+        to: { name: 'admin-download-tasks', query: { type: 'magnet', hash: magnetHash } },
+      });
+      actions.push({
+        label: 'Open hash logs',
+        to: { name: 'admin-logs', query: { resource: 'download_task', hash: magnetHash } },
+      });
+    }
+
     actions.push({
       label: 'Open download logs',
       to: {
@@ -1080,7 +1188,8 @@
         query: {
           resource: 'download_task',
           clientId: task.clientId,
-          taskId: String(task.id),
+          ...(magnetHash ? { hash: magnetHash } : {}),
+          downloadTaskId: String(task.id),
         },
       },
     });

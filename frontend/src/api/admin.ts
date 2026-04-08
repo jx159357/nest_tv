@@ -220,6 +220,9 @@ export const adminApi = {
     userId?: number;
     mediaResourceId?: number;
     search?: string;
+    clientId?: string;
+    hash?: string;
+    taskId?: number;
   }) =>
     ApiClient.get<AdminPaginatedResponse<AdminDownloadTaskItem>>(
       '/admin/download-tasks',
@@ -241,6 +244,8 @@ export const adminApi = {
     status?: 'success' | 'error' | 'warning';
     roleId?: number;
     clientId?: string;
+    hash?: string;
     downloadTaskId?: number;
+    logId?: number;
   }) => ApiClient.get<AdminPaginatedResponse<AdminLogItem>>('/admin/logs', { params }, false),
 };

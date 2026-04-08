@@ -28,10 +28,26 @@
           @keyup.enter="applyFilters(1)"
         />
         <input
+          :value="hash"
+          type="text"
+          class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          placeholder="任务 Hash，如 hash-demo"
+          @input="hash = normalizeHashInput(($event.target as HTMLInputElement).value)"
+          @keyup.enter="applyFilters(1)"
+        />
+        <input
           v-model="downloadTaskId"
           type="text"
           class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
           placeholder="任务 ID，如 21"
+          @keyup.enter="applyFilters(1)"
+        />
+        <input
+          :value="selectedLogId ? String(selectedLogId) : ''"
+          type="text"
+          class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          placeholder="日志 ID，如 7"
+          @input="selectedLogId = parseLogId(($event.target as HTMLInputElement).value)"
           @keyup.enter="applyFilters(1)"
         />
         <select
@@ -355,6 +371,7 @@
   const resource = ref('');
   const status = ref<'success' | 'error' | 'warning' | ''>('');
   const clientId = ref('');
+  const hash = ref('');
   const downloadTaskId = ref('');
   const page = ref(1);
   const totalPages = ref(1);
@@ -435,6 +452,17 @@
       });
     }
 
+    if (hash.value.trim()) {
+      chips.push({
+        key: 'hash',
+        label: `Hash：${hash.value.trim()}`,
+        clear: async () => {
+          hash.value = '';
+          await applyFilters(1);
+        },
+      });
+    }
+
     if (downloadTaskId.value.trim()) {
       chips.push({
         key: 'downloadTaskId',
@@ -446,10 +474,26 @@
       });
     }
 
+    if (selectedLogId.value) {
+      chips.push({
+        key: 'logId',
+        label: `日志：#${selectedLogId.value}`,
+        clear: async () => {
+          selectedLogId.value = null;
+          await applyFilters(page.value);
+        },
+      });
+    }
+
     return chips;
   });
 
   const readSingleQuery = (value: unknown) => (Array.isArray(value) ? value[0] : value);
+  const normalizeHashInput = (value: string) => value.trim().toLowerCase();
+  const parseLogId = (value: string) => {
+    const parsed = Number(value.trim());
+    return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : null;
+  };
 
   const syncFiltersFromRoute = () => {
     const queryPage = Number(readSingleQuery(route.query.page));
@@ -457,7 +501,9 @@
     const queryResource = readSingleQuery(route.query.resource);
     const queryStatus = readSingleQuery(route.query.status);
     const queryClientId = readSingleQuery(route.query.clientId);
+    const queryHash = readSingleQuery(route.query.hash);
     const queryDownloadTaskId = readSingleQuery(route.query.downloadTaskId);
+    const queryLogId = Number(readSingleQuery(route.query.logId));
 
     page.value = Number.isFinite(queryPage) && queryPage > 0 ? queryPage : 1;
     action.value = typeof queryAction === 'string' ? queryAction : '';
@@ -467,7 +513,9 @@
         ? queryStatus
         : '';
     clientId.value = typeof queryClientId === 'string' ? queryClientId : '';
+    hash.value = typeof queryHash === 'string' ? normalizeHashInput(queryHash) : '';
     downloadTaskId.value = typeof queryDownloadTaskId === 'string' ? queryDownloadTaskId : '';
+    selectedLogId.value = Number.isFinite(queryLogId) && queryLogId > 0 ? queryLogId : null;
   };
 
   const buildLogsQuery = (nextPage = 1) => {
@@ -488,8 +536,14 @@
     if (clientId.value.trim()) {
       query.clientId = clientId.value.trim();
     }
+    if (hash.value.trim()) {
+      query.hash = hash.value.trim().toLowerCase();
+    }
     if (downloadTaskId.value.trim()) {
       query.downloadTaskId = downloadTaskId.value.trim();
+    }
+    if (selectedLogId.value) {
+      query.logId = String(selectedLogId.value);
     }
 
     return query;
@@ -524,12 +578,19 @@
         resource: resource.value || undefined,
         status: status.value || undefined,
         clientId: clientId.value || undefined,
+        hash: hash.value || undefined,
         downloadTaskId: downloadTaskId.value ? Number(downloadTaskId.value) : undefined,
+        logId: selectedLogId.value || undefined,
       });
 
       logs.value = response.data;
       if (selectedLogId.value && !response.data.some(log => log.id === selectedLogId.value)) {
         selectedLogId.value = null;
+        await router.replace({
+          name: 'admin-logs',
+          query: buildLogsQuery(response.page),
+        });
+        return;
       }
       page.value = response.page;
       total.value = response.total;
@@ -576,6 +637,7 @@
     }
 
     const clientId = typeof log.metadata?.clientId === 'string' ? log.metadata.clientId.trim() : '';
+    const infoHash = typeof log.metadata?.infoHash === 'string' ? log.metadata.infoHash.trim() : '';
     const taskId =
       typeof log.metadata?.downloadTaskId === 'number'
         ? log.metadata.downloadTaskId
@@ -583,21 +645,27 @@
           ? Number(log.metadata.downloadTaskId)
           : undefined;
 
-    if (!clientId) {
+    if (!clientId && !infoHash && !(Number.isFinite(taskId) && taskId)) {
       return null;
     }
 
     return {
       name: 'admin-download-tasks',
       query: {
-        search: clientId,
+        ...(infoHash ? { type: 'magnet' } : {}),
+        ...(!infoHash && clientId ? { clientId } : {}),
+        ...(infoHash ? { hash: infoHash } : {}),
         ...(Number.isFinite(taskId) && taskId ? { taskId: String(taskId) } : {}),
       },
     };
   };
 
-  const toggleLogDetails = (id: number) => {
+  const toggleLogDetails = async (id: number) => {
     selectedLogId.value = selectedLogId.value === id ? null : id;
+    await router.replace({
+      name: 'admin-logs',
+      query: buildLogsQuery(page.value),
+    });
   };
 
   watch(

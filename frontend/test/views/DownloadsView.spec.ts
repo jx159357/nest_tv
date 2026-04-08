@@ -245,7 +245,7 @@ describe('DownloadsView', () => {
   });
 
   it('hydrates filter state from location hash and keyword query', async () => {
-    window.history.replaceState({}, '', '/downloads?keyword=hash-demo&type=magnet#failed');
+    window.history.replaceState({}, '', '/downloads?keyword=Demo&hash=hash-demo&type=magnet#failed');
     downloadsStore.orderedTasks = [
       {
         id: 'task-active',
@@ -280,6 +280,23 @@ describe('DownloadsView', () => {
         createdAt: new Date('2025-01-02T00:00:00.000Z'),
         updatedAt: new Date('2025-01-02T01:00:00.000Z'),
       },
+      {
+        id: 'task-failed-other',
+        url: 'magnet:?xt=urn:btih:other-hash',
+        type: 'magnet',
+        status: 'error',
+        progress: 0,
+        speed: 0,
+        downloaded: 0,
+        total: 0,
+        fileName: 'Demo Magnet 其他任务',
+        sourceLabel: '磁力页',
+        mediaResourceId: null,
+        launchCount: 1,
+        error: '启动失败',
+        createdAt: new Date('2025-01-02T00:00:00.000Z'),
+        updatedAt: new Date('2025-01-02T01:00:00.000Z'),
+      },
     ];
     downloadsStore.activeCount = 1;
     downloadsStore.completedCount = 0;
@@ -294,6 +311,86 @@ describe('DownloadsView', () => {
 
     expect(wrapper.text()).toContain('Demo Magnet');
     expect(wrapper.text()).not.toContain('Active File');
+    expect(wrapper.text()).not.toContain('Demo Magnet 其他任务');
+    expect(wrapper.text()).toContain('已锁定磁力 Hash：hash-demo');
+  });
+
+  it('clears the locked hash filter and removes it from the location url', async () => {
+    window.history.replaceState({}, '', '/downloads?keyword=Demo&hash=hash-demo&type=magnet#failed');
+    downloadsStore.orderedTasks = [
+      {
+        id: 'task-magnet',
+        url: 'magnet:?xt=urn:btih:hash-demo',
+        type: 'magnet',
+        status: 'error',
+        progress: 0,
+        speed: 0,
+        downloaded: 0,
+        total: 0,
+        fileName: 'Demo Magnet',
+        sourceLabel: '磁力页',
+        mediaResourceId: null,
+        launchCount: 1,
+        error: '启动失败',
+        createdAt: new Date('2025-01-02T00:00:00.000Z'),
+        updatedAt: new Date('2025-01-02T01:00:00.000Z'),
+      },
+    ];
+
+    const wrapper = mount(DownloadsView, {
+      global: {
+        stubs: { RouterLink: true, 'router-link': true },
+      },
+    });
+    await flushPromises();
+
+    const clearHashButton = wrapper
+      .findAll('button')
+      .find(button => button.text().includes('取消 Hash 锁定'));
+    expect(clearHashButton).toBeTruthy();
+    await clearHashButton!.trigger('click');
+    await flushPromises();
+
+    expect(window.location.search).toContain('keyword=Demo');
+    expect(window.location.search).toContain('type=magnet');
+    expect(window.location.search).not.toContain('hash=hash-demo');
+  });
+
+  it('normalizes hash filter input before writing it into the location url', async () => {
+    downloadsStore.orderedTasks = [
+      {
+        id: 'task-magnet',
+        url: 'magnet:?xt=urn:btih:hash-demo',
+        type: 'magnet',
+        status: 'error',
+        progress: 0,
+        speed: 0,
+        downloaded: 0,
+        total: 0,
+        fileName: 'Demo Magnet',
+        sourceLabel: '磁力页',
+        mediaResourceId: null,
+        launchCount: 1,
+        error: '启动失败',
+        createdAt: new Date('2025-01-02T00:00:00.000Z'),
+        updatedAt: new Date('2025-01-02T01:00:00.000Z'),
+      },
+    ];
+
+    const wrapper = mount(DownloadsView, {
+      global: {
+        stubs: { RouterLink: true, 'router-link': true },
+      },
+    });
+    await flushPromises();
+
+    const hashInput = wrapper.find('input[placeholder="磁力 Hash，如 hash-demo"]');
+    expect(hashInput.exists()).toBe(true);
+    await hashInput.setValue(' HASH-DEMO ');
+    await flushPromises();
+
+    expect(window.location.search).toContain('hash=hash-demo');
+    expect(wrapper.text()).toContain('已锁定磁力 Hash：hash-demo');
   });
 
   it('filters tasks by download type', async () => {
@@ -408,5 +505,51 @@ describe('DownloadsView', () => {
 
     expect(window.location.hash).toBe('');
     expect(window.location.search).toBe('');
+  });
+
+  it('renders a magnet-detail deep link for magnet tasks', async () => {
+    downloadsStore.orderedTasks = [
+      {
+        id: 'task-magnet',
+        url: 'magnet:?xt=urn:btih:hash-demo&dn=Demo%20Magnet',
+        type: 'magnet',
+        status: 'pending',
+        progress: 0,
+        speed: 0,
+        downloaded: 0,
+        total: 0,
+        fileName: 'Demo Magnet',
+        sourceLabel: '磁力页',
+        mediaResourceId: null,
+        launchCount: 0,
+        metadata: { description: 'InfoHash: hash-demo' },
+        createdAt: new Date('2025-01-02T00:00:00.000Z'),
+        updatedAt: new Date('2025-01-02T01:00:00.000Z'),
+      },
+    ];
+
+    const routerLinkStub = {
+      props: ['to'],
+      template: '<a class="router-link-stub" :data-to="JSON.stringify(to)"><slot /></a>',
+    };
+
+    const wrapper = mount(DownloadsView, {
+      global: {
+        stubs: {
+          RouterLink: routerLinkStub,
+          'router-link': routerLinkStub,
+        },
+      },
+    });
+    await flushPromises();
+
+    const torrentLink = wrapper
+      .findAll('.router-link-stub')
+      .find(link => link.text().includes('查看磁力详情'));
+
+    expect(torrentLink).toBeTruthy();
+    expect(torrentLink?.attributes('data-to')).toContain('"name":"torrent"');
+    expect(torrentLink?.attributes('data-to')).toContain('"hash":"hash-demo"');
+    expect(torrentLink?.attributes('data-to')).toContain('"keyword":"Demo Magnet"');
   });
 });

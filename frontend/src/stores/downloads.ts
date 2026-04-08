@@ -8,6 +8,8 @@ import {
 import type { DownloadMetadata, DownloadTask } from '@/types/advanced';
 
 const STORAGE_KEY = 'nest-tv-download-tasks';
+const REMOTE_PAGE_SIZE = 200;
+const MAX_REMOTE_PAGES = 20;
 
 type DownloadTaskType = DownloadTask['type'];
 type DownloadTaskStatus = DownloadTask['status'];
@@ -49,6 +51,57 @@ const inferDownloadType = (url: string): DownloadTaskType => {
   }
 
   return 'direct';
+};
+
+const extractMagnetInfoHash = (url: string) => {
+  const magnetMatch = url.trim().match(/(?:\?|&)xt=urn:btih:([^&]+)/i);
+  if (!magnetMatch?.[1]) {
+    return null;
+  }
+
+  return decodeURIComponent(magnetMatch[1]).trim().toLowerCase();
+};
+
+const isSameTaskSource = (
+  existingTask: Pick<DownloadTask, 'url' | 'type'>,
+  nextUrl: string,
+  nextType: DownloadTaskType,
+) => {
+  if (existingTask.type === 'magnet' && nextType === 'magnet') {
+    const existingHash = extractMagnetInfoHash(existingTask.url);
+    const nextHash = extractMagnetInfoHash(nextUrl);
+
+    if (existingHash && nextHash) {
+      return existingHash === nextHash;
+    }
+  }
+
+  return existingTask.url.trim() === nextUrl;
+};
+
+const getTaskMergeKey = (task: Pick<DownloadTask, 'id' | 'url' | 'type'>) => {
+  if (task.type === 'magnet') {
+    const infoHash = extractMagnetInfoHash(task.url);
+    if (infoHash) {
+      return `magnet:${infoHash}`;
+    }
+  }
+
+  return `id:${task.id}`;
+};
+
+const buildTaskMergeMap = (items: DownloadTask[]) => {
+  const taskMap = new Map<string, DownloadTask>();
+
+  items.forEach(task => {
+    const mergeKey = getTaskMergeKey(task);
+    const existingTask = taskMap.get(mergeKey);
+    if (!existingTask || existingTask.updatedAt.getTime() <= task.updatedAt.getTime()) {
+      taskMap.set(mergeKey, task);
+    }
+  });
+
+  return taskMap;
 };
 
 const toDate = (value?: string | Date | null) => {
@@ -169,14 +222,7 @@ const persistTasks = (tasks: DownloadTask[]) => {
 };
 
 const mergeTasks = (localTasks: DownloadTask[], remoteTasks: DownloadTask[]) => {
-  const taskMap = new Map<string, DownloadTask>();
-  localTasks.forEach(task => taskMap.set(task.id, task));
-  remoteTasks.forEach(task => {
-    const existingTask = taskMap.get(task.id);
-    if (!existingTask || existingTask.updatedAt.getTime() <= task.updatedAt.getTime()) {
-      taskMap.set(task.id, task);
-    }
-  });
+  const taskMap = buildTaskMergeMap([...localTasks, ...remoteTasks]);
 
   return [...taskMap.values()].sort(
     (left, right) => right.updatedAt.getTime() - left.updatedAt.getTime(),
@@ -241,6 +287,34 @@ export const useDownloadsStore = defineStore('downloads', () => {
     }
   };
 
+  const loadRemoteTasks = async () => {
+    const remoteRecords: DownloadTaskRecord[] = [];
+    let currentPage = 1;
+    let totalPages = 1;
+
+    while (currentPage <= totalPages && currentPage <= MAX_REMOTE_PAGES) {
+      const response = await downloadTasksApi.listMine({
+        page: currentPage,
+        limit: REMOTE_PAGE_SIZE,
+      });
+
+      remoteRecords.push(...response.data);
+
+      const normalizedTotalPages = Number.isFinite(response.totalPages)
+        ? Math.max(response.totalPages, 1)
+        : 1;
+      totalPages = Math.min(normalizedTotalPages, MAX_REMOTE_PAGES);
+
+      if (response.data.length === 0 || response.page >= totalPages) {
+        break;
+      }
+
+      currentPage = response.page + 1;
+    }
+
+    return remoteRecords;
+  };
+
   const patchTask = (
     taskId: string,
     partial: Partial<DownloadTask>,
@@ -286,18 +360,17 @@ export const useDownloadsStore = defineStore('downloads', () => {
 
     isSyncingRemote.value = true;
     try {
-      const response = await downloadTasksApi.listMine({ limit: 200 });
-      const remoteTasks = response.data
+      const remoteTasks = (await loadRemoteTasks())
         .map(item => mapRemoteTask(item))
         .filter((item): item is DownloadTask => Boolean(item));
-      const remoteTaskMap = new Map(remoteTasks.map(task => [task.id, task]));
+      const remoteTaskMap = buildTaskMergeMap(remoteTasks);
       const mergedTasks = mergeTasks(tasks.value, remoteTasks);
       syncTasks(mergedTasks);
       remoteHydrated.value = true;
       lastRemoteSyncAt.value = new Date();
 
       const unsyncedLocalTasks = mergedTasks.filter(task => {
-        const remoteTask = remoteTaskMap.get(task.id);
+        const remoteTask = remoteTaskMap.get(getTaskMergeKey(task));
         return !remoteTask || task.updatedAt.getTime() > remoteTask.updatedAt.getTime();
       });
       await Promise.all(unsyncedLocalTasks.map(task => upsertRemoteTask(task)));
@@ -311,17 +384,23 @@ export const useDownloadsStore = defineStore('downloads', () => {
   };
 
   const enqueueTask = (input: DownloadTaskInput) => {
-    const existingTask = tasks.value.find(task => task.url === input.url.trim());
+    const normalizedUrl = input.url.trim();
+    const nextType = input.type ?? inferDownloadType(input.url);
+    const existingTask = tasks.value.find(task =>
+      isSameTaskSource(task, normalizedUrl, nextType),
+    );
+
     if (existingTask) {
       return (
         patchTask(existingTask.id, {
+          url: normalizedUrl,
           fileName: input.fileName || existingTask.fileName,
           filePath: input.filePath ?? existingTask.filePath,
           sourceLabel: input.sourceLabel ?? existingTask.sourceLabel,
           mediaResourceId: input.mediaResourceId ?? existingTask.mediaResourceId,
           metadata: input.metadata ?? existingTask.metadata,
           total: input.total ?? existingTask.total,
-          type: input.type ?? existingTask.type,
+          type: nextType,
           handler: input.handler ?? existingTask.handler,
           error: undefined,
         }) ?? existingTask
@@ -330,8 +409,8 @@ export const useDownloadsStore = defineStore('downloads', () => {
 
     const task: DownloadTask = {
       id: createTaskId(),
-      url: input.url.trim(),
-      type: input.type ?? inferDownloadType(input.url),
+      url: normalizedUrl,
+      type: nextType,
       status: 'pending',
       progress: 0,
       speed: 0,

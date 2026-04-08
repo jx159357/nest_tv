@@ -41,6 +41,7 @@ describe('AdminLogsView', () => {
       resource: 'media',
       status: 'warning',
       clientId: 'task-21',
+      hash: 'hash-demo',
       downloadTaskId: '21',
     };
     adminApi.getLogs.mockResolvedValue({
@@ -61,7 +62,9 @@ describe('AdminLogsView', () => {
       resource: 'media',
       status: 'warning',
       clientId: 'task-21',
+      hash: 'hash-demo',
       downloadTaskId: 21,
+      logId: undefined,
     });
   });
 
@@ -122,7 +125,7 @@ describe('AdminLogsView', () => {
     });
   });
 
-  it('writes clientId and taskId filters into route query', async () => {
+  it('normalizes clientId, hash, taskId, and logId filters into route query', async () => {
     adminApi.getLogs.mockResolvedValue({
       data: [],
       total: 0,
@@ -135,10 +138,14 @@ describe('AdminLogsView', () => {
     await flushPromises();
 
     const clientIdInput = wrapper.find('input[placeholder="任务 clientId，如 task-21"]');
+    const hashInput = wrapper.find('input[placeholder="任务 Hash，如 hash-demo"]');
     const taskIdInput = wrapper.find('input[placeholder="任务 ID，如 21"]');
+    const logIdInput = wrapper.find('input[placeholder="日志 ID，如 7"]');
 
     await clientIdInput.setValue('task-21');
+    await hashInput.setValue(' HASH-DEMO ');
     await taskIdInput.setValue('21');
+    await logIdInput.setValue('7');
 
     const searchButton = wrapper.findAll('button').find(button => button.text().includes('搜索'));
     expect(searchButton).toBeTruthy();
@@ -146,7 +153,7 @@ describe('AdminLogsView', () => {
 
     expect(routerReplace).toHaveBeenCalledWith({
       name: 'admin-logs',
-      query: { clientId: 'task-21', downloadTaskId: '21' },
+      query: { clientId: 'task-21', hash: 'hash-demo', downloadTaskId: '21', logId: '7' },
     });
   });
 
@@ -156,11 +163,22 @@ describe('AdminLogsView', () => {
       resource: 'download_task',
       status: 'success',
       clientId: 'task-21',
+      hash: 'hash-demo',
       downloadTaskId: '21',
+      logId: '7',
     };
     adminApi.getLogs.mockResolvedValue({
-      data: [],
-      total: 0,
+      data: [
+        {
+          id: 7,
+          action: 'retry',
+          resource: 'download_task',
+          status: 'success',
+          roleId: 1,
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+      ],
+      total: 1,
       page: 1,
       limit: 10,
       totalPages: 1,
@@ -173,7 +191,9 @@ describe('AdminLogsView', () => {
     expect(wrapper.text()).toContain('资源：download_task');
     expect(wrapper.text()).toContain('状态：success');
     expect(wrapper.text()).toContain('clientId：task-21');
+    expect(wrapper.text()).toContain('Hash：hash-demo');
     expect(wrapper.text()).toContain('任务：#21');
+    expect(wrapper.text()).toContain('日志：#7');
   });
 
   it('shows metadata and request info in the log detail panel', async () => {
@@ -191,6 +211,7 @@ describe('AdminLogsView', () => {
           metadata: {
             downloadTaskId: 21,
             clientId: 'task-21',
+            infoHash: 'hash-demo',
             status: 'pending',
           },
           requestInfo: {
@@ -222,8 +243,159 @@ describe('AdminLogsView', () => {
     const taskLink = wrapper.find('.router-link-stub');
     expect(taskLink.exists()).toBe(true);
     expect(taskLink.attributes('data-to')).toContain('admin-download-tasks');
-    expect(taskLink.attributes('data-to')).toContain('task-21');
+    expect(taskLink.attributes('data-to')).toContain('magnet');
+    expect(taskLink.attributes('data-to')).not.toContain('task-21');
     expect(taskLink.attributes('data-to')).toContain('21');
+    expect(taskLink.attributes('data-to')).toContain('hash-demo');
+  });
+
+  it('still links back to admin download tasks when only downloadTaskId is available', async () => {
+    adminApi.getLogs.mockResolvedValue({
+      data: [
+        {
+          id: 8,
+          action: 'retry',
+          resource: 'download_task',
+          status: 'success',
+          roleId: 1,
+          createdAt: '2025-01-01T00:00:00.000Z',
+          metadata: {
+            downloadTaskId: 31,
+          },
+        },
+      ],
+      total: 1,
+      page: 1,
+      limit: 10,
+      totalPages: 1,
+    });
+
+    const wrapper = mount(AdminLogsView);
+    await flushPromises();
+
+    const detailButton = wrapper.findAll('button').find(button => button.text().includes('详情'));
+    expect(detailButton).toBeTruthy();
+    await detailButton!.trigger('click');
+
+    const taskLink = wrapper.find('.router-link-stub');
+    expect(taskLink.exists()).toBe(true);
+    expect(taskLink.attributes('data-to')).toContain('admin-download-tasks');
+    expect(taskLink.attributes('data-to')).toContain('taskId');
+    expect(taskLink.attributes('data-to')).toContain('31');
+  });
+
+  it('uses exact clientId query when only clientId is available in log metadata', async () => {
+    adminApi.getLogs.mockResolvedValue({
+      data: [
+        {
+          id: 9,
+          action: 'retry',
+          resource: 'download_task',
+          status: 'success',
+          roleId: 1,
+          createdAt: '2025-01-01T00:00:00.000Z',
+          metadata: {
+            clientId: 'task-21',
+          },
+        },
+      ],
+      total: 1,
+      page: 1,
+      limit: 10,
+      totalPages: 1,
+    });
+
+    const wrapper = mount(AdminLogsView);
+    await flushPromises();
+
+    const detailButton = wrapper.findAll('button').find(button => button.text().includes('详情'));
+    expect(detailButton).toBeTruthy();
+    await detailButton!.trigger('click');
+
+    const taskLink = wrapper.find('.router-link-stub');
+    expect(taskLink.exists()).toBe(true);
+    expect(taskLink.attributes('data-to')).toContain('clientId');
+    expect(taskLink.attributes('data-to')).toContain('task-21');
+    expect(taskLink.attributes('data-to')).not.toContain('search');
+  });
+
+  it('opens the matching log detail from route logId query', async () => {
+    routeState.query = { logId: '7' };
+    adminApi.getLogs.mockResolvedValue({
+      data: [
+        {
+          id: 7,
+          action: 'retry',
+          resource: 'download_task',
+          status: 'success',
+          roleId: 1,
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+      ],
+      total: 1,
+      page: 1,
+      limit: 10,
+      totalPages: 1,
+    });
+
+    const wrapper = mount(AdminLogsView);
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('日志：#7');
+    expect(wrapper.findAll('button').some(button => button.text().includes('收起'))).toBe(true);
+  });
+
+  it('writes logId into route query when toggling log details', async () => {
+    adminApi.getLogs.mockResolvedValue({
+      data: [
+        {
+          id: 7,
+          action: 'retry',
+          resource: 'download_task',
+          status: 'success',
+          roleId: 1,
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+      ],
+      total: 1,
+      page: 1,
+      limit: 10,
+      totalPages: 1,
+    });
+
+    const wrapper = mount(AdminLogsView);
+    await flushPromises();
+
+    const detailButton = wrapper.findAll('button').find(button => button.text().includes('详情'));
+    expect(detailButton).toBeTruthy();
+    await detailButton!.trigger('click');
+
+    expect(routerReplace).toHaveBeenCalledWith({
+      name: 'admin-logs',
+      query: { logId: '7' },
+    });
+  });
+
+  it('drops an invalid routed logId and falls back to the remaining filters', async () => {
+    routeState.query = {
+      resource: 'download_task',
+      logId: '7',
+    };
+    adminApi.getLogs.mockResolvedValue({
+      data: [],
+      total: 0,
+      page: 1,
+      limit: 10,
+      totalPages: 1,
+    });
+
+    mount(AdminLogsView);
+    await flushPromises();
+
+    expect(routerReplace).toHaveBeenCalledWith({
+      name: 'admin-logs',
+      query: { resource: 'download_task' },
+    });
   });
 
   it('aggregates download-task action metrics in summary cards', async () => {

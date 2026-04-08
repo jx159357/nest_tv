@@ -42,6 +42,11 @@ export class AdminUsersQueryDto extends AdminPaginationQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional({ description: 'Exact download task client id filter' })
+  @IsOptional()
+  @IsString()
+  clientId?: string;
 }
 
 export class AdminMediaQueryDto extends AdminPaginationQueryDto {
@@ -131,6 +136,23 @@ export class AdminDownloadTasksQueryDto extends AdminPaginationQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional({ description: 'Exact download task client id filter' })
+  @IsOptional()
+  @IsString()
+  clientId?: string;
+
+  @ApiPropertyOptional({ description: 'Exact magnet infoHash filter' })
+  @IsOptional()
+  @IsString()
+  hash?: string;
+
+  @ApiPropertyOptional({ description: 'Exact download task id filter' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  taskId?: number;
 }
 
 export class AdminLogsQueryDto extends AdminPaginationQueryDto {
@@ -161,10 +183,22 @@ export class AdminLogsQueryDto extends AdminPaginationQueryDto {
   @IsString()
   clientId?: string;
 
+  @ApiPropertyOptional({ description: 'Exact magnet infoHash filter' })
+  @IsOptional()
+  @IsString()
+  hash?: string;
+
   @ApiPropertyOptional({ description: 'Download task id filter' })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   downloadTaskId?: number;
+
+  @ApiPropertyOptional({ description: 'Exact admin log id filter' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  logId?: number;
 }
