@@ -385,7 +385,9 @@ export class MediaResourceService {
     if (resolvedPage !== nextPage) {
       const adjustedData = await this.mediaResourceRepository
         .createQueryBuilder('mediaResource')
-        .innerJoin('mediaResource.favorites', 'favoriteUser', 'favoriteUser.id = :userId', { userId })
+        .innerJoin('mediaResource.favorites', 'favoriteUser', 'favoriteUser.id = :userId', {
+          userId,
+        })
         .where('mediaResource.isActive = :isActive', { isActive: true })
         .orderBy('mediaResource.updatedAt', 'DESC')
         .skip((resolvedPage - 1) * nextLimit)

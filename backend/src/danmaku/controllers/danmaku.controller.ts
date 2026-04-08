@@ -6,22 +6,42 @@ import {
   Param,
   Query,
   Delete,
+  Patch,
   Put,
   UseGuards,
   HttpCode,
   HttpStatus,
+  NotFoundException,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import {
   DanmakuService,
   CreateDanmakuDto,
   type DanmakuStats,
+  type DanmakuLeaderboardItem,
+  type DanmakuRealtimeRoomSummary,
+  type DanmakuReportsSnapshot,
+  type DanmakuTrendPoint,
   type DanmakuUpdateDto,
   type DanmakuQueryDto,
   type DanmakuFilterDto,
 } from '../services/danmaku.service';
 import { User } from '../../decorators/user.decorator';
 import { Danmaku } from '../entities/danmaku.entity';
+import { ReportDanmakuDto } from '../dtos/report-danmaku.dto';
+import { DanmakuSuggestionsQueryDto } from '../dtos/danmaku-suggestions-query.dto';
+import { DanmakuModerationAction, ModerateDanmakuDto } from '../dtos/moderate-danmaku.dto';
+import { UpdateDanmakuFilterRulesDto } from '../dtos/update-danmaku-filter-rules.dto';
+import { DanmakuGateway } from '../../gateway/danmaku.gateway';
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { AdminRoleGuard } from '../../admin/admin-role.guard';
+import { AdminService } from '../../admin/admin.service';
+import {
+  DanmakuFilterRulesService,
+  type DanmakuFilterRules,
+} from '../services/danmaku-filter-rules.service';
 
 interface CurrentUser {
   id: number;
@@ -31,10 +51,12 @@ interface DanmakuTrendsResponse {
   videoId?: string;
   mediaResourceId?: number;
   interval: 'hour' | 'day' | 'week' | 'month';
-  startDate?: string;
-  endDate?: string;
+  startDate: string | null;
+  endDate: string | null;
   message: string;
+  activeUsers: number;
   stats: DanmakuStats;
+  points: DanmakuTrendPoint[];
 }
 
 interface DanmakuLeaderboardResponse {
@@ -43,7 +65,7 @@ interface DanmakuLeaderboardResponse {
   limit: number;
   period: 'all' | 'day' | 'week' | 'month';
   message: string;
-  leaderboard: unknown[];
+  leaderboard: DanmakuLeaderboardItem[];
 }
 
 interface DanmakuKeywordCloudResponse {
@@ -60,7 +82,7 @@ interface DanmakuRealtimeRoomInfoResponse {
   onlineUsers: number;
   messageCount: number;
   isActive: boolean;
-  lastActivity: null;
+  lastActivity: string | null;
   message: string;
 }
 
@@ -82,16 +104,16 @@ interface DanmakuSuggestionsResponse {
 
 interface DanmakuReportsResponse {
   danmakuId: number;
-  reports: unknown[];
+  reports: DanmakuReportsSnapshot['reports'];
   reportCount: number;
-  status: 'active';
+  status: DanmakuReportsSnapshot['status'];
   message: string;
 }
 
 interface DanmakuFilterRulesResponse {
   sensitiveWords: string[];
   spamPatterns: string[];
-  level: 'medium';
+  level: DanmakuFilterRules['level'];
   autoBlock: boolean;
   message: string;
 }
@@ -104,6 +126,8 @@ interface DanmakuHealthStatusResponse {
     responseTime: 'normal';
     memoryUsage: 'normal';
     activeConnections: number;
+    activeRooms: number;
+    totalMessages: number;
   };
   lastUpdate: Date;
   uptime: number;
@@ -112,10 +136,15 @@ interface DanmakuHealthStatusResponse {
 
 @ApiTags('弹幕系统')
 @Controller('danmaku')
-@UseGuards(User)
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class DanmakuController {
-  constructor(private readonly danmakuService: DanmakuService) {}
+  constructor(
+    private readonly danmakuService: DanmakuService,
+    private readonly danmakuGateway: DanmakuGateway,
+    private readonly danmakuFilterRulesService: DanmakuFilterRulesService,
+    private readonly adminService: AdminService,
+  ) {}
 
   // 创建弹幕
   @Post()
@@ -127,8 +156,20 @@ export class DanmakuController {
     @User() user: CurrentUser,
   ): Promise<Danmaku> {
     const { videoId, mediaResourceId, ...danmakuData } = createDto;
+    const danmaku = await this.danmakuService.create(
+      danmakuData,
+      user.id,
+      mediaResourceId,
+      videoId,
+    );
 
-    return await this.danmakuService.create(danmakuData, user.id, mediaResourceId, videoId);
+    this.danmakuGateway.sendDanmaku({
+      videoId,
+      userId: user.id,
+      danmakuId: danmaku.id,
+    });
+
+    return danmaku;
   }
 
   // 批量创建弹幕
@@ -207,6 +248,7 @@ export class DanmakuController {
 
   // 硬删除弹幕
   @Delete(':id/hard')
+  @UseGuards(AdminRoleGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '永久删除弹幕', description: '从数据库中永久删除弹幕' })
   @ApiResponse({ status: 200, description: '永久删除成功' })
@@ -221,6 +263,7 @@ export class DanmakuController {
 
   // 清理过期弹幕
   @Delete('clean')
+  @UseGuards(AdminRoleGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '清理过期弹幕', description: '清理指定天数前的已停用弹幕' })
   async cleanExpiredDanmaku(
@@ -346,21 +389,31 @@ export class DanmakuController {
     // 临时实现，返回基础统计
     const { videoId, mediaResourceId, startDate, endDate, interval = 'day' } = query;
 
+    const analysis = await this.danmakuService.getTrendAnalysis({
+      videoId,
+      mediaResourceId,
+      startDate,
+      endDate,
+      interval,
+    });
+
     return {
       videoId,
       mediaResourceId,
-      interval,
-      startDate,
-      endDate,
-      message: '当前返回基础统计摘要，细粒度弹幕趋势分析将后续接入。',
-      stats: await this.danmakuService.getDanmakuStats(videoId),
+      interval: analysis.interval,
+      startDate: analysis.startDate,
+      endDate: analysis.endDate,
+      message: '当前返回基于已入库弹幕的时间趋势摘要。',
+      activeUsers: analysis.activeUsers,
+      stats: analysis.stats,
+      points: analysis.points,
     };
   }
 
   // 获取弹幕用户排行榜
   @Get('leaderboard/users')
   @ApiOperation({ summary: '弹幕用户排行榜', description: '按弹幕数量统计的用户排行榜' })
-  getDanmakuUserLeaderboard(
+  async getDanmakuUserLeaderboard(
     @Query()
     query: {
       videoId?: string;
@@ -368,7 +421,7 @@ export class DanmakuController {
       limit?: number;
       period?: 'all' | 'day' | 'week' | 'month';
     },
-  ): DanmakuLeaderboardResponse {
+  ): Promise<DanmakuLeaderboardResponse> {
     // 这里可以实现用户弹幕排行榜
     // 例如：发送弹幕最多的用户、活跃度等
 
@@ -379,15 +432,20 @@ export class DanmakuController {
       mediaResourceId,
       limit,
       period,
-      message: '当前暂无排行榜聚合结果，弹幕用户排行榜能力将后续接入。',
-      leaderboard: [],
+      message: '当前返回基于已入库弹幕的用户活跃排行榜。',
+      leaderboard: await this.danmakuService.getUserLeaderboard({
+        videoId,
+        mediaResourceId,
+        limit,
+        period,
+      }),
     };
   }
 
   // 获取弹幕关键词云
   @Get('keywords/cloud')
   @ApiOperation({ summary: '弹幕关键词云', description: '生成指定视频或媒体资源的弹幕关键词云' })
-  getDanmakuKeywordCloud(
+  async getDanmakuKeywordCloud(
     @Query()
     query: {
       videoId?: string;
@@ -395,7 +453,7 @@ export class DanmakuController {
       minFrequency?: number;
       limit?: number;
     },
-  ): DanmakuKeywordCloudResponse {
+  ): Promise<DanmakuKeywordCloudResponse> {
     // 这里可以实现弹幕关键词提取和词云生成
     // 例如：提取高频词汇、生成权重、过滤停用词等
 
@@ -406,25 +464,33 @@ export class DanmakuController {
       mediaResourceId,
       minFrequency,
       limit,
-      message: '当前暂无关键词云结果，关键词提取与词云能力将后续接入。',
-      keywords: [],
+      message: '当前返回基于已入库弹幕关键词聚合的词云结果。',
+      keywords: await this.danmakuService.getKeywordCloud({
+        videoId,
+        mediaResourceId,
+        minFrequency,
+        limit,
+      }),
     };
   }
 
   // 获取弹幕实时统计（WebSocket房间信息）
   @Get('realtime/rooms/:videoId')
   @ApiOperation({ summary: '实时房间信息', description: '获取指定视频的WebSocket弹幕房间信息' })
-  getRealtimeRoomInfo(@Param('videoId') videoId: string): DanmakuRealtimeRoomInfoResponse {
-    // 这里应该与WebSocket网关集成，获取实时房间信息
-    // 例如：在线用户数、消息统计等
+  async getRealtimeRoomInfo(
+    @Param('videoId') videoId: string,
+  ): Promise<DanmakuRealtimeRoomInfoResponse> {
+    const roomInfo = this.danmakuGateway.getRoomInfo(videoId);
+    const summary: DanmakuRealtimeRoomSummary =
+      await this.danmakuService.getRealtimeRoomSummary(videoId);
 
     return {
       videoId,
-      onlineUsers: 0, // 需要从网关获取
-      messageCount: 0, // 需要从网关获取
-      isActive: false, // 需要从网关获取
-      lastActivity: null,
-      message: '当前返回占位房间信息，实时房间统计待 WebSocket 网关接入。',
+      onlineUsers: roomInfo.onlineCount,
+      messageCount: Math.max(roomInfo.messageCount, summary.totalDanmaku),
+      isActive: roomInfo.isActive || summary.totalDanmaku > 0,
+      lastActivity: roomInfo.lastActivity ?? summary.lastActivity,
+      message: '当前返回基于网关状态与已入库弹幕汇总的房间信息。',
     };
   }
 
@@ -432,38 +498,28 @@ export class DanmakuController {
   @Get('suggestions')
   @ApiOperation({ summary: '弹幕建议', description: '基于历史弹幕数据获取发送建议' })
   async getDanmakuSuggestions(
-    @Query()
-    query: {
-      videoId?: string;
-      mediaResourceId?: number;
-      type?: 'popular' | 'recent' | 'relevant';
-      limit?: number;
-    },
+    @Query() query: DanmakuSuggestionsQueryDto,
   ): Promise<DanmakuSuggestionsResponse> {
-    // 这里可以实现弹幕建议系统
-    // 例如：推荐热门弹幕、相关弹幕、智能建议等
-
     const { videoId, mediaResourceId, type = 'popular', limit = 10 } = query;
-
-    const popularDanmaku = await this.danmakuService.getPopularDanmaku(limit);
+    const suggestions = await this.danmakuService.getSuggestions({
+      videoId,
+      mediaResourceId,
+      type,
+      limit,
+    });
 
     return {
       videoId,
       mediaResourceId,
       type,
       limit,
-      suggestions: popularDanmaku.map(d => ({
-        text: d.text,
-        color: d.color,
-        type: d.type,
-        priority: d.priority,
-        score: 1 - d.priority / 10, // 简单评分算法
-      })),
+      suggestions,
     };
   }
 
   // 设置弹幕高亮状态
   @Put(':id/highlight')
+  @UseGuards(AdminRoleGuard)
   @ApiOperation({ summary: '设置弹幕高亮', description: '将指定弹幕设置为高亮状态' })
   async setDanmakuHighlight(
     @Param('id') id: number,
@@ -479,18 +535,64 @@ export class DanmakuController {
   }
 
   // 获取弹幕举报信息
-  @Get(':id/reports')
-  @ApiOperation({ summary: '获取弹幕举报', description: '获取指定弹幕的举报信息' })
-  getDanmakuReports(@Param('id') id: number): DanmakuReportsResponse {
-    // 这里可以实现弹幕举报系统
-    // 例如：举报次数、举报原因、处理状态等
+  @Get('reports')
+  @UseGuards(AdminRoleGuard)
+  @ApiOperation({ summary: '获取举报弹幕列表', description: '获取当前已被举报的弹幕列表' })
+  async listReportedDanmaku(@Query('limit') limit?: number) {
+    const safeLimit = Number.isFinite(Number(limit))
+      ? Math.min(Math.max(Number(limit), 1), 50)
+      : 20;
 
     return {
-      danmakuId: id,
-      reports: [],
-      reportCount: 0,
-      status: 'active',
-      message: '当前暂无举报记录，举报工单与审核流转能力将后续接入。',
+      data: await this.danmakuService.getReportedDanmaku(safeLimit),
+      limit: safeLimit,
+      message: '当前返回已被举报的弹幕列表快照。',
+    };
+  }
+
+  @Patch(':id/moderation')
+  @UseGuards(AdminRoleGuard)
+  @ApiOperation({ summary: '处置举报弹幕', description: '隐藏或恢复指定弹幕' })
+  async moderateDanmaku(@Param('id') id: number, @Body() body: ModerateDanmakuDto) {
+    const danmaku = await this.danmakuService.moderateDanmaku(id, body.action);
+    if (!danmaku) {
+      throw new NotFoundException(`Danmaku ${id} not found`);
+    }
+
+    void this.adminService.logAction(
+      body.action,
+      'danmaku',
+      {
+        danmakuId: danmaku.id,
+        videoId: danmaku.videoId,
+        moderationStatus: danmaku.metadata?.moderationStatus,
+      },
+      1,
+      danmaku.userId,
+      'success',
+      `Moderate danmaku: ${body.action}`,
+    );
+
+    return {
+      success: true,
+      message: body.action === DanmakuModerationAction.HIDE ? '弹幕已隐藏。' : '弹幕已恢复显示。',
+      danmaku,
+    };
+  }
+
+  // 获取弹幕举报信息
+  @Get(':id/reports')
+  @UseGuards(AdminRoleGuard)
+  @ApiOperation({ summary: '获取弹幕举报', description: '获取指定弹幕的举报信息' })
+  async getDanmakuReports(@Param('id') id: number): Promise<DanmakuReportsResponse> {
+    const snapshot = await this.danmakuService.getReportsSnapshot(id);
+    if (!snapshot) {
+      throw new NotFoundException(`Danmaku ${id} not found`);
+    }
+
+    return {
+      ...snapshot,
+      message: snapshot.reportCount > 0 ? '当前返回已持久化的弹幕举报记录。' : '当前暂无举报记录。',
     };
   }
 
@@ -498,69 +600,114 @@ export class DanmakuController {
   @Post(':id/report')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '举报弹幕', description: '举报指定弹幕内容' })
-  reportDanmaku(
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async reportDanmaku(
     @Param('id') id: number,
-    @Body() body: { reason: string; description?: string },
-  ): { success: boolean; message: string } {
-    // 这里可以实现弹幕举报功能
-    // 例如：保存举报记录、通知管理员、降低优先级等
+    @Body() body: ReportDanmakuDto,
+    @User() user: CurrentUser,
+  ): Promise<{ success: boolean; message: string; reportCount: number }> {
+    const snapshot = await this.danmakuService.reportDanmaku(
+      id,
+      user.id,
+      body.reason,
+      body.description,
+    );
+    if (!snapshot) {
+      throw new NotFoundException(`Danmaku ${id} not found`);
+    }
 
     return {
       success: true,
-      message: `已接收对弹幕 ${id} 的举报请求（原因：${body.reason}），后续将接入持久化与审核流转。`,
+      message: `已记录对弹幕 ${id} 的举报请求，当前累计举报 ${snapshot.reportCount} 条。`,
+      reportCount: snapshot.reportCount,
     };
   }
 
   // 获取弹幕敏感词过滤规则
   @Get('filter/rules')
+  @UseGuards(AdminRoleGuard)
   @ApiOperation({ summary: '获取过滤规则', description: '获取弹幕敏感词过滤规则' })
   getFilterRules(): DanmakuFilterRulesResponse {
-    // 这里可以实现敏感词过滤规则管理
-    // 例如：敏感词列表、过滤级别、自定义规则等
+    const rules = this.danmakuFilterRulesService.getRules();
 
     return {
-      sensitiveWords: ['傻逼', '草泥马', '妈的', '操你', '傻叉'],
-      spamPatterns: [
-        'http[s]?:\\/\\/|www\\.',
-        '(?:\\+?\\d{1,3}[-.\\s]?)?\\(?\\d{3}\\)',
-        '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}',
-        '【.*?】.*?【.*?】',
-        '关注.*?公众号.*?',
-        '加.*?群.*?',
-      ],
-      level: 'medium',
-      autoBlock: false,
-      message: '当前返回内置基础过滤规则，后台规则管理能力将后续接入。',
+      ...rules,
+      message: '当前返回内存态弹幕过滤规则快照。',
     };
   }
 
   // 更新弹幕过滤规则
   @Put('filter/rules')
+  @UseGuards(AdminRoleGuard)
   @ApiOperation({ summary: '更新过滤规则', description: '更新弹幕敏感词过滤规则' })
-  updateFilterRules(
-    @Body()
-    body: {
-      sensitiveWords?: string[];
-      spamPatterns?: string[];
-      level?: 'low' | 'medium' | 'high';
-      autoBlock?: boolean;
-    },
-  ): { success: boolean; message: string; updatedRules: typeof body } {
-    // 这里可以实现过滤规则更新功能
-    // 例如：添加/删除敏感词、更新过滤模式等
+  updateFilterRules(@Body() body: UpdateDanmakuFilterRulesDto): {
+    success: boolean;
+    message: string;
+    updatedRules: DanmakuFilterRules;
+  } {
+    const updatedRules = this.danmakuFilterRulesService.updateRules(body);
+
+    void this.adminService.logAction(
+      'update',
+      'danmaku_filter_rules',
+      {
+        level: updatedRules.level,
+        autoBlock: updatedRules.autoBlock,
+        sensitiveWordCount: updatedRules.sensitiveWords.length,
+        spamPatternCount: updatedRules.spamPatterns.length,
+      },
+      1,
+      undefined,
+      'success',
+      'Update danmaku filter rules',
+    );
 
     return {
       success: true,
-      message: '过滤规则已更新',
-      updatedRules: body,
+      message: '过滤规则已更新并已在当前服务进程内生效。',
+      updatedRules,
+    };
+  }
+
+  @Post('filter/rules/reset')
+  @UseGuards(AdminRoleGuard)
+  @ApiOperation({ summary: '重置过滤规则', description: '将弹幕过滤规则重置为默认内置值' })
+  resetFilterRules(): { success: boolean; message: string; updatedRules: DanmakuFilterRules } {
+    const updatedRules = this.danmakuFilterRulesService.resetRules();
+
+    void this.adminService.logAction(
+      'reset',
+      'danmaku_filter_rules',
+      {
+        level: updatedRules.level,
+        autoBlock: updatedRules.autoBlock,
+        sensitiveWordCount: updatedRules.sensitiveWords.length,
+        spamPatternCount: updatedRules.spamPatterns.length,
+      },
+      1,
+      undefined,
+      'success',
+      'Reset danmaku filter rules',
+    );
+
+    return {
+      success: true,
+      message: '过滤规则已重置为默认值。',
+      updatedRules,
     };
   }
 
   // 获取弹幕系统健康状态
   @Get('health')
+  @UseGuards(AdminRoleGuard)
   @ApiOperation({ summary: '系统健康状态', description: '检查弹幕系统的健康状态' })
   getHealthStatus(): DanmakuHealthStatusResponse {
-    // 检查数据库连接、WebSocket状态、性能指标等
+    const roomStats = this.danmakuGateway.getRoomStats();
+    const roomDetails = roomStats.roomDetails as Array<{ messageCount?: number }>;
+    const totalMessages = roomDetails.reduce(
+      (total: number, room) => total + Number(room.messageCount || 0),
+      0,
+    );
 
     return {
       status: 'healthy',
@@ -569,11 +716,16 @@ export class DanmakuController {
       performance: {
         responseTime: 'normal',
         memoryUsage: 'normal',
-        activeConnections: 0,
+        activeConnections: roomStats.totalUsers,
+        activeRooms: roomStats.totalRooms,
+        totalMessages,
       },
       lastUpdate: new Date(),
       uptime: process.uptime(),
-      message: '弹幕系统运行正常',
+      message:
+        roomStats.totalRooms > 0
+          ? `弹幕系统运行正常，当前监控 ${roomStats.totalRooms} 个活跃房间。`
+          : '弹幕系统运行正常，当前暂无活跃房间。',
     };
   }
 }

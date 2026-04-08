@@ -2,6 +2,24 @@ import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
 import { User } from '../../entities/user.entity';
 import { MediaResource } from '../../entities/media-resource.entity';
 
+export interface DanmakuReportRecord {
+  reporterId: number;
+  reason: string;
+  description?: string;
+  createdAt: string;
+  updatedAt?: string;
+  status: 'pending';
+}
+
+export interface DanmakuMetadata {
+  userAgent?: string;
+  timestamp?: number;
+  location?: string;
+  platform?: string;
+  reports?: DanmakuReportRecord[];
+  moderationStatus?: 'active' | 'reported' | 'hidden';
+}
+
 @Entity('danmaku')
 export class Danmaku {
   @PrimaryGeneratedColumn()
@@ -35,12 +53,7 @@ export class Danmaku {
   isActive: boolean;
 
   @Column({ type: 'json', nullable: true })
-  metadata: {
-    userAgent?: string;
-    timestamp?: number;
-    location?: string;
-    platform?: string;
-  };
+  metadata: DanmakuMetadata;
 
   @Column({ type: 'json', nullable: true })
   filters: {

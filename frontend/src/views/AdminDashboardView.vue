@@ -150,7 +150,9 @@
       class="rounded-2xl border border-slate-200 bg-white px-6 py-12 shadow-sm"
     >
       <div class="flex flex-col items-center justify-center text-center">
-        <div class="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-indigo-600"></div>
+        <div
+          class="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-indigo-600"
+        ></div>
         <p class="mt-3 text-sm text-slate-500">正在加载稳定源采集监控...</p>
       </div>
     </div>
@@ -159,7 +161,9 @@
       v-else-if="collectionStatistics"
       class="overflow-hidden rounded-2xl bg-slate-950 shadow-xl ring-1 ring-slate-800"
     >
-      <div class="bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.26),_transparent_36%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.18),_transparent_32%),linear-gradient(135deg,_rgba(15,23,42,0.98),_rgba(15,23,42,0.92))] p-6 text-white lg:p-8">
+      <div
+        class="bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.26),_transparent_36%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.18),_transparent_32%),linear-gradient(135deg,_rgba(15,23,42,0.98),_rgba(15,23,42,0.92))] p-6 text-white lg:p-8"
+      >
         <div class="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
           <div class="max-w-2xl">
             <span
@@ -315,7 +319,8 @@
                 <div class="rounded-lg border border-white/10 bg-slate-950/50 p-3">
                   <div class="text-[11px] text-slate-500">新建媒体 / 播放源</div>
                   <div class="mt-2 text-lg font-semibold text-white">
-                    {{ dailySummary.totalCreatedMedia }} / {{ dailySummary.totalCreatedPlaySources }}
+                    {{ dailySummary.totalCreatedMedia }} /
+                    {{ dailySummary.totalCreatedPlaySources }}
                   </div>
                 </div>
                 <div class="rounded-lg border border-white/10 bg-slate-950/50 p-3">
@@ -333,7 +338,10 @@
                 </div>
               </div>
 
-              <div v-else class="mt-4 rounded-lg border border-dashed border-white/10 bg-slate-900/30 p-4 text-sm text-slate-400">
+              <div
+                v-else
+                class="mt-4 rounded-lg border border-dashed border-white/10 bg-slate-900/30 p-4 text-sm text-slate-400"
+              >
                 {{ dailySummaryError || '暂无每日自动采集执行记录。' }}
               </div>
 
@@ -381,14 +389,18 @@
                   <div class="mt-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
                     <div class="rounded-lg border border-white/10 bg-slate-950/50 p-3">
                       <div class="text-[11px] text-slate-500">近期待执行次数</div>
-                      <div class="mt-2 text-lg font-semibold text-white">{{ taskMetrics.totalRuns }}</div>
+                      <div class="mt-2 text-lg font-semibold text-white">
+                        {{ taskMetrics.totalRuns }}
+                      </div>
                       <div class="mt-1 text-[11px] text-slate-400">
                         定时 {{ taskMetrics.scheduledRuns }} · 手动 {{ taskMetrics.manualRuns }}
                       </div>
                     </div>
                     <div class="rounded-lg border border-white/10 bg-slate-950/50 p-3">
                       <div class="text-[11px] text-slate-500">成功率</div>
-                      <div class="mt-2 text-lg font-semibold text-white">{{ taskMetrics.successRate }}%</div>
+                      <div class="mt-2 text-lg font-semibold text-white">
+                        {{ taskMetrics.successRate }}%
+                      </div>
                       <div class="mt-1 text-[11px] text-slate-400">
                         成功 {{ taskMetrics.successfulRuns }} · 异常 {{ taskMetrics.errorRuns }}
                       </div>
@@ -404,14 +416,18 @@
                     </div>
                     <div class="rounded-lg border border-white/10 bg-slate-950/50 p-3">
                       <div class="text-[11px] text-slate-500">连续失败</div>
-                      <div class="mt-2 text-lg font-semibold text-white">{{ taskMetrics.failureStreak }}</div>
+                      <div class="mt-2 text-lg font-semibold text-white">
+                        {{ taskMetrics.failureStreak }}
+                      </div>
                       <div class="mt-1 text-[11px] text-slate-400">
                         最近成功 {{ formatDateTime(taskMetrics.lastSuccessAt) }}
                       </div>
                     </div>
                   </div>
 
-                  <div class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)]">
+                  <div
+                    class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)]"
+                  >
                     <div class="rounded-xl border border-white/10 bg-slate-950/40 p-4">
                       <div class="flex items-center justify-between gap-3">
                         <div>
@@ -428,7 +444,9 @@
                           :key="run.id"
                           class="rounded-lg border border-white/10 bg-slate-900/40 p-4"
                         >
-                          <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <div
+                            class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"
+                          >
                             <div>
                               <div class="flex flex-wrap items-center gap-2">
                                 <span
@@ -452,7 +470,9 @@
                               {{ formatDuration(run.durationMs) }}
                             </div>
                           </div>
-                          <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-300 md:grid-cols-4">
+                          <div
+                            class="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-300 md:grid-cols-4"
+                          >
                             <div>尝试 {{ run.totalAttempted }}</div>
                             <div>成功/失败 {{ run.totalSucceeded }} / {{ run.totalFailed }}</div>
                             <div>新建媒体 {{ run.totalCreatedMedia }}</div>
@@ -482,9 +502,12 @@
                         >
                           <div class="flex items-start justify-between gap-3">
                             <div>
-                              <div class="text-sm font-medium text-white">{{ issue.sourceName }}</div>
+                              <div class="text-sm font-medium text-white">
+                                {{ issue.sourceName }}
+                              </div>
                               <div class="mt-1 text-xs text-slate-400">
-                                命中 {{ issue.affectedRuns }} 次 · 失败 {{ issue.totalFailed }} · 报错 {{ issue.totalErrors }}
+                                命中 {{ issue.affectedRuns }} 次 · 失败 {{ issue.totalFailed }} ·
+                                报错 {{ issue.totalErrors }}
                               </div>
                             </div>
                             <span
@@ -521,7 +544,10 @@
                   {{ taskDashboardError || '暂无任务看板数据。' }}
                 </div>
 
-                <p v-if="taskDashboardError && taskDashboard" class="mt-3 text-xs text-amber-200/90">
+                <p
+                  v-if="taskDashboardError && taskDashboard"
+                  class="mt-3 text-xs text-amber-200/90"
+                >
                   {{ taskDashboardError }}
                 </p>
               </div>
@@ -601,7 +627,9 @@
             </div>
 
             <div id="dashboard-alert-summary" class="grid grid-cols-2 gap-3">
-              <div class="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 backdrop-blur-sm">
+              <div
+                class="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 backdrop-blur-sm"
+              >
                 <div class="text-xs text-rose-200">立即止损</div>
                 <div class="mt-2 text-2xl font-semibold text-white">
                   {{ attentionSummary.criticalCount }}
@@ -625,7 +653,9 @@
                   </router-link>
                 </div>
               </div>
-              <div class="rounded-2xl border border-amber-400/20 bg-amber-500/10 p-4 backdrop-blur-sm">
+              <div
+                class="rounded-2xl border border-amber-400/20 bg-amber-500/10 p-4 backdrop-blur-sm"
+              >
                 <div class="text-xs text-amber-200">优先处理</div>
                 <div class="mt-2 text-2xl font-semibold text-white">
                   {{ attentionSummary.highCount }}
@@ -673,7 +703,9 @@
                   </router-link>
                 </div>
               </div>
-              <div class="rounded-2xl border border-fuchsia-400/20 bg-fuchsia-500/10 p-4 backdrop-blur-sm">
+              <div
+                class="rounded-2xl border border-fuchsia-400/20 bg-fuchsia-500/10 p-4 backdrop-blur-sm"
+              >
                 <div class="text-xs text-fuchsia-200">无活跃源</div>
                 <div class="mt-2 text-2xl font-semibold text-white">
                   {{ attentionSummary.noActiveSourcesCount }}
@@ -720,7 +752,8 @@
                         {{ item.source.name }}
                       </div>
                       <div class="mt-1 text-xs text-slate-400">
-                        质量 {{ item.source.qualityScore }} · 可用率 {{ item.source.activeRate }}% · 提取 {{ item.source.extractionCoverage }}%
+                        质量 {{ item.source.qualityScore }} · 可用率 {{ item.source.activeRate }}% ·
+                        提取 {{ item.source.extractionCoverage }}%
                       </div>
                     </div>
                     <span
@@ -960,6 +993,43 @@
               <span class="text-sm font-medium text-gray-900">检查时间</span>
               <span class="text-sm text-gray-600">{{ formatDateTime(health.timestamp) }}</span>
             </div>
+            <div
+              v-if="danmakuHealth"
+              class="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3"
+            >
+              <div class="text-xs font-medium uppercase tracking-wide text-indigo-500">
+                弹幕运行态
+              </div>
+              <div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+                <div>
+                  <div class="text-xs text-slate-500">活跃房间</div>
+                  <div class="mt-1 text-lg font-semibold text-slate-900">
+                    {{ danmakuHealth.performance.activeRooms }}
+                  </div>
+                </div>
+                <div>
+                  <div class="text-xs text-slate-500">在线连接</div>
+                  <div class="mt-1 text-lg font-semibold text-slate-900">
+                    {{ danmakuHealth.performance.activeConnections }}
+                  </div>
+                </div>
+                <div>
+                  <div class="text-xs text-slate-500">房间消息</div>
+                  <div class="mt-1 text-lg font-semibold text-slate-900">
+                    {{ danmakuHealth.performance.totalMessages }}
+                  </div>
+                </div>
+              </div>
+              <div class="mt-3 text-xs text-slate-600">
+                {{ danmakuHealth.message }}
+              </div>
+              <router-link
+                to="/admin/danmaku"
+                class="mt-3 inline-flex rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+              >
+                打开弹幕管理
+              </router-link>
+            </div>
           </div>
           <div v-else class="text-center">
             <p class="text-red-600">无法获取系统状态</p>
@@ -972,11 +1042,8 @@
 
 <script setup lang="ts">
   import { computed, ref, onMounted, onUnmounted } from 'vue';
-  import { adminApi } from '@/api/admin';
-  import {
-    crawlerApi,
-    type CollectionStatistics,
-  } from '@/api/crawler';
+  import { adminApi, type AdminDanmakuHealthStatus } from '@/api/admin';
+  import { crawlerApi, type CollectionStatistics } from '@/api/crawler';
   import {
     schedulerApi,
     type DailySourceCollectionDashboardSummary,
@@ -1026,6 +1093,7 @@
 
   const loading = ref(false);
   const health = ref<HealthStatus | null>(null);
+  const danmakuHealth = ref<AdminDanmakuHealthStatus | null>(null);
   const healthLoading = ref(false);
   const collectionStatistics = ref<CollectionStatistics | null>(null);
   const collectionLoading = ref(false);
@@ -1038,28 +1106,33 @@
   const taskDashboardError = ref('');
   const taskActionLoading = ref(false);
 
-  const topCollectionSources = computed(() => collectionStatistics.value?.sources.slice(0, 4) ?? []);
-  const recentTaskRuns = computed<DailySourceCollectionRunRecord[]>(() => taskDashboard.value?.history ?? []);
-  const taskIssueSources = computed<DailySourceCollectionIssueSource[]>(() =>
-    taskDashboard.value?.issueSources ?? [],
+  const topCollectionSources = computed(
+    () => collectionStatistics.value?.sources.slice(0, 4) ?? [],
   );
-  const taskMetrics = computed(() =>
-    taskDashboard.value?.metrics ?? {
-      totalRuns: 0,
-      successfulRuns: 0,
-      errorRuns: 0,
-      skippedRuns: 0,
-      manualRuns: 0,
-      scheduledRuns: 0,
-      successRate: 0,
-      averageDurationMs: 0,
-      averageAttempted: 0,
-      averageCreatedMedia: 0,
-      averageCreatedPlaySources: 0,
-      lastSuccessAt: undefined,
-      lastErrorAt: undefined,
-      failureStreak: 0,
-    },
+  const recentTaskRuns = computed<DailySourceCollectionRunRecord[]>(
+    () => taskDashboard.value?.history ?? [],
+  );
+  const taskIssueSources = computed<DailySourceCollectionIssueSource[]>(
+    () => taskDashboard.value?.issueSources ?? [],
+  );
+  const taskMetrics = computed(
+    () =>
+      taskDashboard.value?.metrics ?? {
+        totalRuns: 0,
+        successfulRuns: 0,
+        errorRuns: 0,
+        skippedRuns: 0,
+        manualRuns: 0,
+        scheduledRuns: 0,
+        successRate: 0,
+        averageDurationMs: 0,
+        averageAttempted: 0,
+        averageCreatedMedia: 0,
+        averageCreatedPlaySources: 0,
+        lastSuccessAt: undefined,
+        lastErrorAt: undefined,
+        failureStreak: 0,
+      },
   );
   const isTaskRunPending = computed(
     () => taskActionLoading.value || dailySummary.value?.status === 'running',
@@ -1072,7 +1145,9 @@
       .filter((item): item is AttentionSourceItem => item !== null)
       .sort(compareAttentionSources);
   });
-  const attentionCollectionSources = computed(() => attentionCollectionCandidates.value.slice(0, 4));
+  const attentionCollectionSources = computed(() =>
+    attentionCollectionCandidates.value.slice(0, 4),
+  );
   const attentionSummary = computed(() => {
     const candidates = attentionCollectionCandidates.value;
 
@@ -1082,7 +1157,10 @@
       highCount: candidates.filter(item => item.severity === 'high').length,
       stalledIngestionCount: candidates.filter(item => {
         const hoursSinceLastCrawled = getHoursSince(item.source.lastCrawled);
-        return item.source.dailyEnabled && (hoursSinceLastCrawled === null || hoursSinceLastCrawled >= 168);
+        return (
+          item.source.dailyEnabled &&
+          (hoursSinceLastCrawled === null || hoursSinceLastCrawled >= 168)
+        );
       }).length,
       noActiveSourcesCount: candidates.filter(
         item => item.source.totalPlaySources > 0 && item.source.activePlaySources === 0,
@@ -1106,10 +1184,16 @@
   const loadHealth = async () => {
     healthLoading.value = true;
     try {
-      health.value = await adminApi.getHealth();
+      const [systemHealth, nextDanmakuHealth] = await Promise.all([
+        adminApi.getHealth(),
+        adminApi.getDanmakuHealth(),
+      ]);
+      health.value = systemHealth;
+      danmakuHealth.value = nextDanmakuHealth;
     } catch (error) {
       console.error('加载系统状态失败:', error);
       health.value = null;
+      danmakuHealth.value = null;
     } finally {
       healthLoading.value = false;
     }
@@ -1136,7 +1220,6 @@
     }
   };
 
-  
   const loadDailySummary = async () => {
     dailySummaryLoading.value = true;
     dailySummaryError.value = '';
@@ -1158,8 +1241,18 @@
     taskDashboardError.value = '';
 
     try {
-      taskDashboard.value = await schedulerApi.getDailySourceCollectionDashboard();
-      dailySummary.value = taskDashboard.value.current;
+      const nextTaskDashboard = await schedulerApi.getDailySourceCollectionDashboard();
+
+      if (
+        nextTaskDashboard &&
+        typeof nextTaskDashboard === 'object' &&
+        'current' in nextTaskDashboard
+      ) {
+        taskDashboard.value = nextTaskDashboard;
+        dailySummary.value = nextTaskDashboard.current;
+      } else {
+        taskDashboard.value = null;
+      }
     } catch (error) {
       console.error('加载任务结果看板失败:', error);
       taskDashboardError.value = taskDashboard.value
@@ -1454,4 +1547,3 @@
     if (healthInterval) clearInterval(healthInterval);
   });
 </script>
-

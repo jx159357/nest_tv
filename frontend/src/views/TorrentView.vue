@@ -192,7 +192,7 @@
                   加入下载任务
                 </button>
                 <RouterLink
-                  to="/downloads"
+                  :to="buildDownloadsLink(parsedMagnet.name || parsedMagnet.infoHash)"
                   class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
                 >
                   查看下载任务
@@ -349,7 +349,7 @@
                   启动本地客户端
                 </button>
                 <RouterLink
-                  to="/downloads"
+                  :to="buildDownloadsLink(selectedInfo.name || selectedInfo.infoHash)"
                   class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
                 >
                   查看下载任务
@@ -549,7 +549,12 @@
     return task;
   };
 
-  const copyText = async (value: string, successMessage: string, action: string, infoHash: string) => {
+  const copyText = async (
+    value: string,
+    successMessage: string,
+    action: string,
+    infoHash: string,
+  ) => {
     try {
       await navigator.clipboard.writeText(value);
       actionMessage.value = successMessage;
@@ -632,7 +637,6 @@
     });
   };
 
-
   const formatSize = (value?: string | number | null) => {
     if (value === null || value === undefined || value === '') {
       return '—';
@@ -660,6 +664,15 @@
   const getErrorMessage = (error: unknown, fallback: string) => {
     return error instanceof Error ? error.message : fallback;
   };
+
+  const buildDownloadsLink = (keyword?: string) => ({
+    path: '/downloads',
+    hash: '#active',
+    query: {
+      type: 'magnet',
+      ...(keyword?.trim() ? { keyword: keyword.trim() } : {}),
+    },
+  });
 
   const searchTorrents = async (page = 1) => {
     if (!keyword.value.trim()) {
@@ -769,4 +782,3 @@
     void loadLatestTorrents();
   });
 </script>
-

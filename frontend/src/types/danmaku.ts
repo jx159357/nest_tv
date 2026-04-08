@@ -32,6 +32,9 @@ export interface RoomInfo {
   videoId: string;
   onlineCount: number;
   timestamp: number;
+  messageCount?: number;
+  isActive?: boolean;
+  lastActivity?: string | null;
 }
 
 // 心跳响应类型

@@ -71,6 +71,13 @@ export class DownloadTasksController {
     return this.downloadTasksService.clearCompletedMine(userId);
   }
 
+  @Delete('user/me/failed')
+  @ApiOperation({ summary: '清空当前用户异常下载任务' })
+  @ApiResponse({ status: 200, description: '异常任务清理成功' })
+  async clearFailedMine(@GetCurrentUserId() userId: number) {
+    return this.downloadTasksService.clearFailedMine(userId);
+  }
+
   @Delete(':clientId')
   @ApiOperation({ summary: '删除当前用户下载任务' })
   @ApiResponse({ status: 200, description: '下载任务删除成功' })

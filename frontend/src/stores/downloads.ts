@@ -1,6 +1,10 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
-import { downloadTasksApi, type DownloadTaskPayload, type DownloadTaskRecord } from '@/api/downloadTasks';
+import {
+  downloadTasksApi,
+  type DownloadTaskPayload,
+  type DownloadTaskRecord,
+} from '@/api/downloadTasks';
 import type { DownloadMetadata, DownloadTask } from '@/types/advanced';
 
 const STORAGE_KEY = 'nest-tv-download-tasks';
@@ -20,7 +24,10 @@ interface DownloadTaskInput {
   total?: number;
 }
 
-type DownloadTaskLike = Omit<Partial<DownloadTask>, 'createdAt' | 'updatedAt' | 'completedAt' | 'lastLaunchedAt'> & {
+type DownloadTaskLike = Omit<
+  Partial<DownloadTask>,
+  'createdAt' | 'updatedAt' | 'completedAt' | 'lastLaunchedAt'
+> & {
   createdAt?: string | Date | null;
   updatedAt?: string | Date | null;
   completedAt?: string | Date | null;
@@ -37,10 +44,7 @@ const inferDownloadType = (url: string): DownloadTaskType => {
     return 'magnet';
   }
 
-  if (
-    normalizedUrl.endsWith('.torrent') ||
-    normalizedUrl.includes('torrent')
-  ) {
+  if (normalizedUrl.endsWith('.torrent') || normalizedUrl.includes('torrent')) {
     return 'torrent';
   }
 
@@ -174,7 +178,9 @@ const mergeTasks = (localTasks: DownloadTask[], remoteTasks: DownloadTask[]) => 
     }
   });
 
-  return [...taskMap.values()].sort((left, right) => right.updatedAt.getTime() - left.updatedAt.getTime());
+  return [...taskMap.values()].sort(
+    (left, right) => right.updatedAt.getTime() - left.updatedAt.getTime(),
+  );
 };
 
 const triggerDownload = (task: DownloadTask) => {
@@ -203,7 +209,9 @@ export const useDownloadsStore = defineStore('downloads', () => {
   const remoteHydrated = ref(false);
 
   const syncTasks = (nextTasks: DownloadTask[]) => {
-    tasks.value = [...nextTasks].sort((left, right) => right.updatedAt.getTime() - left.updatedAt.getTime());
+    tasks.value = [...nextTasks].sort(
+      (left, right) => right.updatedAt.getTime() - left.updatedAt.getTime(),
+    );
     persistTasks(tasks.value);
   };
 
@@ -249,11 +257,11 @@ export const useDownloadsStore = defineStore('downloads', () => {
         ...task,
         ...partial,
         status: nextStatus,
-        progress: nextStatus === 'completed' ? 100 : partial.progress ?? task.progress,
+        progress: nextStatus === 'completed' ? 100 : (partial.progress ?? task.progress),
         updatedAt: partial.updatedAt ?? new Date(),
         completedAt:
           nextStatus === 'completed'
-            ? partial.completedAt ?? task.completedAt ?? new Date()
+            ? (partial.completedAt ?? task.completedAt ?? new Date())
             : partial.completedAt,
       };
     });
@@ -367,8 +375,10 @@ export const useDownloadsStore = defineStore('downloads', () => {
 
   const pauseTask = (taskId: string) => patchTask(taskId, {}, 'paused');
   const cancelTask = (taskId: string) => patchTask(taskId, { progress: 0, speed: 0 }, 'cancelled');
-  const markCompleted = (taskId: string) => patchTask(taskId, { progress: 100, speed: 0 }, 'completed');
-  const markError = (taskId: string, message: string) => patchTask(taskId, { error: message }, 'error');
+  const markCompleted = (taskId: string) =>
+    patchTask(taskId, { progress: 100, speed: 0 }, 'completed');
+  const markError = (taskId: string, message: string) =>
+    patchTask(taskId, { error: message }, 'error');
 
   const removeTask = (taskId: string) => {
     syncTasks(tasks.value.filter(task => task.id !== taskId));
@@ -389,11 +399,26 @@ export const useDownloadsStore = defineStore('downloads', () => {
     }
   };
 
+  const clearFailed = () => {
+    syncTasks(tasks.value.filter(task => task.status !== 'error' && task.status !== 'cancelled'));
+    if (hasAuthToken()) {
+      void downloadTasksApi
+        .clearFailed()
+        .then(() => {
+          lastRemoteSyncAt.value = new Date();
+        })
+        .catch(error => {
+          console.error('清理远程异常下载任务失败:', error);
+        });
+    }
+  };
+
   const orderedTasks = computed(() =>
     [...tasks.value].sort((left, right) => right.updatedAt.getTime() - left.updatedAt.getTime()),
   );
   const activeCount = computed(
-    () => tasks.value.filter(task => task.status === 'downloading' || task.status === 'pending').length,
+    () =>
+      tasks.value.filter(task => task.status === 'downloading' || task.status === 'pending').length,
   );
   const completedCount = computed(
     () => tasks.value.filter(task => task.status === 'completed').length,
@@ -419,6 +444,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
     markError,
     removeTask,
     clearCompleted,
+    clearFailed,
   };
 });
 

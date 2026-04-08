@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import WatchView from '@/views/WatchView.vue';
 
-const { routeState, routerState, mediaStore, authStore, downloadsStore, watchHistoryApi } = vi.hoisted(
-  () => ({
+const { routeState, routerState, mediaStore, authStore, downloadsStore, watchHistoryApi } =
+  vi.hoisted(() => ({
     routeState: {
       params: { id: '9' },
       query: { time: '128' } as Record<string, string>,
@@ -27,8 +27,7 @@ const { routeState, routerState, mediaStore, authStore, downloadsStore, watchHis
     watchHistoryApi: {
       recordProgress: vi.fn(),
     },
-  }),
-);
+  }));
 
 vi.mock('vue-router', () => ({
   RouterLink: {
@@ -57,7 +56,9 @@ vi.mock('@/api/watchHistory', () => ({
 
 vi.mock('@/components/DanmakuPlayer.vue', () => ({
   default: {
-    template: '<div class="danmaku-player-stub" />',
+    props: ['videoId', 'mediaResourceId'],
+    template:
+      '<div class="danmaku-player-stub" :data-video-id="videoId" :data-media-resource-id="mediaResourceId" />',
   },
 }));
 
@@ -169,5 +170,17 @@ describe('WatchView', () => {
     expect(mediaStore.toggleFavorite).toHaveBeenCalledWith('9', false);
     expect(wrapper.text()).toContain('已将《Demo Movie》加入收藏');
   });
-});
 
+  it('passes the media resource id into DanmakuPlayer', async () => {
+    const wrapper = mount(WatchView, {
+      global: {
+        stubs: { RouterLink: true },
+      },
+    });
+    await flushPromises();
+
+    const danmakuPlayer = wrapper.get('.danmaku-player-stub');
+    expect(danmakuPlayer.attributes('data-video-id')).toBe('9');
+    expect(danmakuPlayer.attributes('data-media-resource-id')).toBe('9');
+  });
+});

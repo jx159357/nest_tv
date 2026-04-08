@@ -32,7 +32,7 @@ export class WatchHistoryQueryDto {
 
   @ApiProperty({ description: 'Completed status', required: false })
   @IsOptional()
-  @Transform(({ value }) => {
+  @Transform(({ value }: { value: unknown }) => {
     if (value === 'true' || value === true) return true;
     if (value === 'false' || value === false) return false;
     return value;

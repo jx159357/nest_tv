@@ -27,6 +27,7 @@ const AdminPlaySourcesView = () => import('../views/AdminPlaySourcesView.vue');
 const AdminDownloadTasksView = () => import('../views/AdminDownloadTasksView.vue');
 const AdminWatchHistoryView = () => import('../views/AdminWatchHistoryView.vue');
 const AdminLogsView = () => import('../views/AdminLogsView.vue');
+const AdminDanmakuView = () => import('../views/AdminDanmakuView.vue');
 // const SettingsView = () => import('../views/SettingsView.vue'); // 暂时注释，文件不存在
 const NotFoundView = () => import('../views/NotFoundView.vue');
 
@@ -296,6 +297,16 @@ const routes: RouteRecordRaw[] = [
         component: AdminLogsView,
         meta: {
           title: '系统日志 - Nest TV',
+          requiresAuth: true,
+          requiresAdmin: true,
+        },
+      },
+      {
+        path: 'danmaku',
+        name: 'admin-danmaku',
+        component: AdminDanmakuView,
+        meta: {
+          title: '弹幕管理 - Nest TV',
           requiresAuth: true,
           requiresAdmin: true,
         },

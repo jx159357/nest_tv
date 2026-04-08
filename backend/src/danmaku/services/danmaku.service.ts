@@ -1,7 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
-import { Danmaku } from '../entities/danmaku.entity';
+import {
+  Danmaku,
+  type DanmakuMetadata,
+  type DanmakuReportRecord,
+} from '../entities/danmaku.entity';
 
 export interface CreateDanmakuDto {
   text: string;
@@ -75,6 +79,62 @@ export interface DanmakuStats {
   normalDanmaku: number;
 }
 
+export interface DanmakuLeaderboardItem {
+  userId: number;
+  username: string | null;
+  nickname: string | null;
+  count: number;
+  highlightedCount: number;
+  lastCreatedAt: string | null;
+}
+
+export interface DanmakuTrendPoint {
+  bucketStart: string;
+  totalDanmaku: number;
+  highlightedDanmaku: number;
+  uniqueUsers: number;
+}
+
+export interface DanmakuTrendAnalysis {
+  interval: 'hour' | 'day' | 'week' | 'month';
+  startDate: string | null;
+  endDate: string | null;
+  activeUsers: number;
+  stats: DanmakuStats;
+  points: DanmakuTrendPoint[];
+}
+
+export interface DanmakuReportsSnapshot {
+  danmakuId: number;
+  reports: DanmakuReportRecord[];
+  reportCount: number;
+  status: 'active' | 'reported' | 'hidden';
+}
+
+export interface DanmakuSuggestionRecord {
+  text: string;
+  color: string;
+  type: Danmaku['type'];
+  priority: number;
+  score: number;
+}
+
+export interface ReportedDanmakuRecord {
+  id: number;
+  text: string;
+  videoId: string;
+  userId: number;
+  reportCount: number;
+  status: 'active' | 'reported' | 'hidden';
+  latestReason: string | null;
+  lastReportedAt: string | null;
+}
+
+export interface DanmakuRealtimeRoomSummary {
+  totalDanmaku: number;
+  lastActivity: string | null;
+}
+
 interface ImportedDanmakuItem {
   id?: string;
   text?: string;
@@ -87,6 +147,15 @@ interface ImportedDanmakuItem {
   userId?: number;
   mediaResourceId?: number;
   videoId?: string;
+}
+
+interface DanmakuLeaderboardRaw {
+  userId?: string;
+  username?: string | null;
+  nickname?: string | null;
+  count?: string;
+  highlightedCount?: string;
+  lastCreatedAt?: Date | string | null;
 }
 
 @Injectable()
@@ -366,6 +435,423 @@ export class DanmakuService {
     };
   }
 
+  async getUserLeaderboard(options: {
+    videoId?: string;
+    mediaResourceId?: number;
+    limit?: number;
+    period?: 'all' | 'day' | 'week' | 'month';
+  }): Promise<DanmakuLeaderboardItem[]> {
+    const { videoId, mediaResourceId, limit = 20, period = 'all' } = options;
+
+    const queryBuilder = this.danmakuRepository
+      .createQueryBuilder('danmaku')
+      .leftJoin('danmaku.user', 'user')
+      .select([
+        'danmaku.userId as userId',
+        'user.username as username',
+        'user.nickname as nickname',
+        'COUNT(*) as count',
+        'SUM(CASE WHEN danmaku.isHighlighted = true THEN 1 ELSE 0 END) as highlightedCount',
+        'MAX(danmaku.createdAt) as lastCreatedAt',
+      ])
+      .where('danmaku.isActive = :isActive', { isActive: true })
+      .andWhere('danmaku.userId IS NOT NULL');
+
+    if (videoId) {
+      queryBuilder.andWhere('danmaku.videoId = :videoId', { videoId });
+    }
+
+    if (mediaResourceId) {
+      queryBuilder.andWhere('danmaku.mediaResourceId = :mediaResourceId', { mediaResourceId });
+    }
+
+    const periodStart = this.getPeriodStart(period);
+    if (periodStart) {
+      queryBuilder.andWhere('danmaku.createdAt >= :periodStart', { periodStart });
+    }
+
+    const rows = await queryBuilder
+      .groupBy('danmaku.userId')
+      .addGroupBy('user.username')
+      .addGroupBy('user.nickname')
+      .orderBy('count', 'DESC')
+      .addOrderBy('highlightedCount', 'DESC')
+      .addOrderBy('lastCreatedAt', 'DESC')
+      .limit(limit)
+      .getRawMany<DanmakuLeaderboardRaw>();
+
+    return rows.map(row => ({
+      userId: this.parseCount(row.userId),
+      username: row.username ?? null,
+      nickname: row.nickname ?? null,
+      count: this.parseCount(row.count),
+      highlightedCount: this.parseCount(row.highlightedCount),
+      lastCreatedAt: row.lastCreatedAt ? new Date(row.lastCreatedAt).toISOString() : null,
+    }));
+  }
+
+  async getKeywordCloud(options: {
+    videoId?: string;
+    mediaResourceId?: number;
+    minFrequency?: number;
+    limit?: number;
+  }): Promise<string[]> {
+    const { videoId, mediaResourceId, minFrequency = 2, limit = 100 } = options;
+
+    const queryBuilder = this.danmakuRepository
+      .createQueryBuilder('danmaku')
+      .select(['danmaku.text', 'danmaku.filters'])
+      .where('danmaku.isActive = :isActive', { isActive: true });
+
+    if (videoId) {
+      queryBuilder.andWhere('danmaku.videoId = :videoId', { videoId });
+    }
+
+    if (mediaResourceId) {
+      queryBuilder.andWhere('danmaku.mediaResourceId = :mediaResourceId', { mediaResourceId });
+    }
+
+    const danmakuItems = await queryBuilder.getMany();
+    const counts = new Map<string, number>();
+
+    danmakuItems.forEach(item => {
+      const derivedKeywords =
+        Array.isArray(item.filters?.keywords) && item.filters.keywords.length > 0
+          ? item.filters.keywords
+          : this.analyzeContent(item.text).keywords;
+
+      derivedKeywords
+        .map(keyword => keyword.trim())
+        .filter(keyword => keyword.length >= 2)
+        .forEach(keyword => {
+          counts.set(keyword, (counts.get(keyword) || 0) + 1);
+        });
+    });
+
+    return [...counts.entries()]
+      .filter(([, count]) => count >= minFrequency)
+      .sort((left, right) => {
+        if (right[1] !== left[1]) {
+          return right[1] - left[1];
+        }
+
+        return left[0].localeCompare(right[0], 'zh-CN');
+      })
+      .slice(0, limit)
+      .map(([keyword]) => keyword);
+  }
+
+  async getTrendAnalysis(options: {
+    videoId?: string;
+    mediaResourceId?: number;
+    startDate?: string;
+    endDate?: string;
+    interval?: 'hour' | 'day' | 'week' | 'month';
+  }): Promise<DanmakuTrendAnalysis> {
+    const { videoId, mediaResourceId, startDate, endDate, interval = 'day' } = options;
+
+    const queryBuilder = this.danmakuRepository
+      .createQueryBuilder('danmaku')
+      .select(['danmaku.createdAt', 'danmaku.userId', 'danmaku.type', 'danmaku.isHighlighted'])
+      .where('danmaku.isActive = :isActive', { isActive: true });
+
+    if (videoId) {
+      queryBuilder.andWhere('danmaku.videoId = :videoId', { videoId });
+    }
+
+    if (mediaResourceId) {
+      queryBuilder.andWhere('danmaku.mediaResourceId = :mediaResourceId', { mediaResourceId });
+    }
+
+    if (startDate) {
+      queryBuilder.andWhere('danmaku.createdAt >= :startDate', { startDate: new Date(startDate) });
+    }
+
+    if (endDate) {
+      queryBuilder.andWhere('danmaku.createdAt <= :endDate', { endDate: new Date(endDate) });
+    }
+
+    const danmakuItems = await queryBuilder.getMany();
+    const activeUsers = new Set(danmakuItems.map(item => item.userId)).size;
+
+    const stats: DanmakuStats = {
+      uniqueUsers: activeUsers,
+      totalDanmaku: danmakuItems.length,
+      scrollDanmaku: danmakuItems.filter(item => item.type === 'scroll').length,
+      topDanmaku: danmakuItems.filter(item => item.type === 'top').length,
+      bottomDanmaku: danmakuItems.filter(item => item.type === 'bottom').length,
+      highlightedDanmaku: danmakuItems.filter(item => item.isHighlighted).length,
+      normalDanmaku: danmakuItems.filter(item => !item.isHighlighted).length,
+    };
+
+    const bucketMap = new Map<
+      string,
+      {
+        totalDanmaku: number;
+        highlightedDanmaku: number;
+        users: Set<number>;
+      }
+    >();
+
+    danmakuItems.forEach(item => {
+      const bucketStart = this.getTrendBucketStart(item.createdAt, interval).toISOString();
+      const currentBucket = bucketMap.get(bucketStart) ?? {
+        totalDanmaku: 0,
+        highlightedDanmaku: 0,
+        users: new Set<number>(),
+      };
+
+      currentBucket.totalDanmaku += 1;
+      if (item.isHighlighted) {
+        currentBucket.highlightedDanmaku += 1;
+      }
+      currentBucket.users.add(item.userId);
+      bucketMap.set(bucketStart, currentBucket);
+    });
+
+    const points = [...bucketMap.entries()]
+      .sort((left, right) => left[0].localeCompare(right[0]))
+      .map(([bucketStart, value]) => ({
+        bucketStart,
+        totalDanmaku: value.totalDanmaku,
+        highlightedDanmaku: value.highlightedDanmaku,
+        uniqueUsers: value.users.size,
+      }));
+
+    const parsedStartDate = startDate
+      ? new Date(startDate).toISOString()
+      : danmakuItems[0]?.createdAt
+        ? this.getTrendBucketStart(danmakuItems[0].createdAt, interval).toISOString()
+        : null;
+
+    const parsedEndDate = endDate
+      ? new Date(endDate).toISOString()
+      : danmakuItems.length > 0
+        ? this.getTrendBucketStart(
+            danmakuItems[danmakuItems.length - 1].createdAt,
+            interval,
+          ).toISOString()
+        : null;
+
+    return {
+      interval,
+      startDate: parsedStartDate,
+      endDate: parsedEndDate,
+      activeUsers,
+      stats,
+      points,
+    };
+  }
+
+  async getReportsSnapshot(id: number): Promise<DanmakuReportsSnapshot | null> {
+    const danmaku = await this.findById(id);
+    if (!danmaku) {
+      return null;
+    }
+
+    const metadata = this.getMetadata(danmaku);
+    const reports = metadata.reports ?? [];
+
+    return {
+      danmakuId: id,
+      reports,
+      reportCount: reports.length,
+      status: this.getModerationStatus(danmaku, reports),
+    };
+  }
+
+  async reportDanmaku(
+    id: number,
+    reporterId: number,
+    reason: string,
+    description?: string,
+  ): Promise<DanmakuReportsSnapshot | null> {
+    const danmaku = await this.findById(id);
+    if (!danmaku) {
+      return null;
+    }
+
+    const metadata = this.getMetadata(danmaku);
+    const reports = [...(metadata.reports ?? [])];
+    const normalizedReason = reason.trim();
+    if (!normalizedReason) {
+      throw new BadRequestException('举报原因不能为空');
+    }
+
+    const normalizedDescription = description?.trim() || undefined;
+    const now = new Date().toISOString();
+
+    const existingIndex = reports.findIndex(report => report.reporterId === reporterId);
+    if (existingIndex >= 0) {
+      reports[existingIndex] = {
+        ...reports[existingIndex],
+        reason: normalizedReason,
+        description: normalizedDescription,
+        updatedAt: now,
+      };
+    } else {
+      reports.push({
+        reporterId,
+        reason: normalizedReason,
+        description: normalizedDescription,
+        createdAt: now,
+        status: 'pending',
+      });
+    }
+
+    danmaku.metadata = {
+      ...metadata,
+      reports,
+      moderationStatus: reports.length > 0 ? 'reported' : 'active',
+    };
+
+    await this.danmakuRepository.save(danmaku);
+
+    return {
+      danmakuId: id,
+      reports,
+      reportCount: reports.length,
+      status: this.getModerationStatus(danmaku, reports),
+    };
+  }
+
+  async getRealtimeRoomSummary(videoId: string): Promise<DanmakuRealtimeRoomSummary> {
+    const summary = await this.danmakuRepository
+      .createQueryBuilder('danmaku')
+      .select('COUNT(*)', 'totalDanmaku')
+      .addSelect('MAX(danmaku.createdAt)', 'lastActivity')
+      .where('danmaku.videoId = :videoId', { videoId })
+      .andWhere('danmaku.isActive = :isActive', { isActive: true })
+      .getRawOne<{ totalDanmaku?: string; lastActivity?: Date | string | null }>();
+
+    return {
+      totalDanmaku: this.parseCount(summary?.totalDanmaku),
+      lastActivity: summary?.lastActivity ? new Date(summary.lastActivity).toISOString() : null,
+    };
+  }
+
+  async getSuggestions(options: {
+    videoId?: string;
+    mediaResourceId?: number;
+    type?: 'popular' | 'recent' | 'relevant';
+    limit?: number;
+  }): Promise<DanmakuSuggestionRecord[]> {
+    const { videoId, mediaResourceId, type = 'popular', limit = 10 } = options;
+
+    const queryBuilder = this.danmakuRepository
+      .createQueryBuilder('danmaku')
+      .select([
+        'danmaku.id',
+        'danmaku.text',
+        'danmaku.color',
+        'danmaku.type',
+        'danmaku.priority',
+        'danmaku.isHighlighted',
+        'danmaku.createdAt',
+        'danmaku.filters',
+      ])
+      .where('danmaku.isActive = :isActive', { isActive: true });
+
+    if (videoId) {
+      queryBuilder.andWhere('danmaku.videoId = :videoId', { videoId });
+    }
+
+    if (mediaResourceId) {
+      queryBuilder.andWhere('danmaku.mediaResourceId = :mediaResourceId', { mediaResourceId });
+    }
+
+    if (type === 'recent') {
+      const recentDanmaku = await queryBuilder
+        .orderBy('danmaku.createdAt', 'DESC')
+        .take(limit * 3)
+        .getMany();
+      return this.buildSuggestionRecords(recentDanmaku, 'recent').slice(0, limit);
+    }
+
+    if (type === 'relevant') {
+      const relevantDanmaku = await queryBuilder
+        .orderBy('danmaku.createdAt', 'DESC')
+        .addOrderBy('danmaku.isHighlighted', 'DESC')
+        .take(limit * 5)
+        .getMany();
+      return this.buildRelevantSuggestionRecords(relevantDanmaku).slice(0, limit);
+    }
+
+    const popularDanmaku = await queryBuilder
+      .orderBy('danmaku.isHighlighted', 'DESC')
+      .addOrderBy('danmaku.createdAt', 'DESC')
+      .take(limit * 4)
+      .getMany();
+
+    return this.buildSuggestionRecords(popularDanmaku, 'popular').slice(0, limit);
+  }
+
+  async getReportedDanmaku(limit = 20): Promise<ReportedDanmakuRecord[]> {
+    const danmakuItems = await this.danmakuRepository.find({
+      where: { isActive: true },
+      order: { updatedAt: 'DESC', createdAt: 'DESC' },
+      take: Math.max(limit * 4, limit),
+    });
+
+    const reportedItems: Array<ReportedDanmakuRecord | null> = danmakuItems.map(item => {
+      const reports = item.metadata?.reports ?? [];
+      if (reports.length === 0) {
+        return null;
+      }
+
+      const latestReport = [...reports].sort((left, right) => {
+        const leftTime = new Date(left.updatedAt || left.createdAt).getTime();
+        const rightTime = new Date(right.updatedAt || right.createdAt).getTime();
+        return rightTime - leftTime;
+      })[0];
+
+      return {
+        id: item.id,
+        text: item.text,
+        videoId: item.videoId,
+        userId: item.userId,
+        reportCount: reports.length,
+        status: this.getModerationStatus(item, reports),
+        latestReason: latestReport?.reason ?? null,
+        lastReportedAt: latestReport
+          ? new Date(latestReport.updatedAt || latestReport.createdAt).toISOString()
+          : null,
+      };
+    });
+
+    return reportedItems
+      .filter((item): item is ReportedDanmakuRecord => item !== null)
+      .sort((left, right) => {
+        if (right.reportCount !== left.reportCount) {
+          return right.reportCount - left.reportCount;
+        }
+
+        return (
+          new Date(right.lastReportedAt || 0).getTime() -
+          new Date(left.lastReportedAt || 0).getTime()
+        );
+      })
+      .slice(0, limit);
+  }
+
+  async moderateDanmaku(id: number, action: 'hide' | 'restore'): Promise<Danmaku | null> {
+    const danmaku = await this.findById(id);
+    if (!danmaku) {
+      return null;
+    }
+
+    const metadata = this.getMetadata(danmaku);
+    const reports = metadata.reports ?? [];
+
+    danmaku.isActive = action === 'restore';
+    danmaku.metadata = {
+      ...metadata,
+      moderationStatus: action === 'hide' ? 'hidden' : reports.length > 0 ? 'reported' : 'active',
+    };
+
+    return await this.danmakuRepository.save(danmaku);
+  }
+
   // 应用查询过滤器
   private applyFilters(queryBuilder: SelectQueryBuilder<Danmaku>, filters: DanmakuFilterDto): void {
     if (filters.text) {
@@ -548,5 +1034,150 @@ export class DanmakuService {
 
   private parseCount(value?: string): number {
     return value ? parseInt(value, 10) : 0;
+  }
+
+  private getMetadata(danmaku: Danmaku): DanmakuMetadata {
+    return danmaku.metadata ?? {};
+  }
+
+  private getModerationStatus(
+    danmaku: Danmaku,
+    reports: DanmakuReportRecord[],
+  ): 'active' | 'reported' | 'hidden' {
+    if (!danmaku.isActive) {
+      return 'hidden';
+    }
+
+    return reports.length > 0 ? 'reported' : 'active';
+  }
+
+  private getPeriodStart(period: 'all' | 'day' | 'week' | 'month'): Date | null {
+    if (period === 'all') {
+      return null;
+    }
+
+    const current = new Date();
+
+    switch (period) {
+      case 'day':
+        current.setDate(current.getDate() - 1);
+        break;
+      case 'week':
+        current.setDate(current.getDate() - 7);
+        break;
+      case 'month':
+        current.setMonth(current.getMonth() - 1);
+        break;
+      default:
+        return null;
+    }
+
+    return current;
+  }
+
+  private getTrendBucketStart(date: Date, interval: 'hour' | 'day' | 'week' | 'month'): Date {
+    const bucket = new Date(date);
+
+    switch (interval) {
+      case 'hour':
+        bucket.setUTCMinutes(0, 0, 0);
+        break;
+      case 'day':
+        bucket.setUTCHours(0, 0, 0, 0);
+        break;
+      case 'week': {
+        bucket.setUTCHours(0, 0, 0, 0);
+        const currentDay = bucket.getUTCDay();
+        const diff = currentDay === 0 ? -6 : 1 - currentDay;
+        bucket.setUTCDate(bucket.getUTCDate() + diff);
+        break;
+      }
+      case 'month':
+        bucket.setUTCDate(1);
+        bucket.setUTCHours(0, 0, 0, 0);
+        break;
+      default:
+        bucket.setUTCHours(0, 0, 0, 0);
+        break;
+    }
+
+    return bucket;
+  }
+
+  private buildSuggestionRecords(
+    danmakuItems: Danmaku[],
+    strategy: 'popular' | 'recent',
+  ): DanmakuSuggestionRecord[] {
+    const seenTexts = new Set<string>();
+
+    return danmakuItems
+      .filter(item => {
+        const normalizedText = item.text.trim();
+        if (!normalizedText || seenTexts.has(normalizedText)) {
+          return false;
+        }
+
+        seenTexts.add(normalizedText);
+        return true;
+      })
+      .map(item => ({
+        text: item.text,
+        color: item.color,
+        type: item.type,
+        priority: item.priority,
+        score:
+          strategy === 'popular'
+            ? (item.isHighlighted ? 1 : 0.8) - item.priority / 20
+            : 0.9 - item.priority / 20,
+      }));
+  }
+
+  private buildRelevantSuggestionRecords(danmakuItems: Danmaku[]): DanmakuSuggestionRecord[] {
+    const keywordCounts = new Map<string, number>();
+
+    danmakuItems.forEach(item => {
+      const keywords = item.filters?.keywords ?? [];
+      keywords.forEach(keyword => {
+        const normalizedKeyword = keyword.trim().toLocaleLowerCase();
+        if (normalizedKeyword.length < 2) {
+          return;
+        }
+
+        keywordCounts.set(normalizedKeyword, (keywordCounts.get(normalizedKeyword) || 0) + 1);
+      });
+    });
+
+    const seenTexts = new Set<string>();
+
+    return danmakuItems
+      .map(item => {
+        const keywords = item.filters?.keywords ?? [];
+        const keywordScore = keywords.reduce(
+          (total, keyword) => total + (keywordCounts.get(keyword.trim().toLocaleLowerCase()) || 0),
+          0,
+        );
+
+        return {
+          item,
+          score: keywordScore + (item.isHighlighted ? 3 : 0) + Math.max(0, 5 - item.priority),
+        };
+      })
+      .sort((left, right) => right.score - left.score)
+      .filter(({ item }) => {
+        const normalizedText = item.text.trim();
+        if (!normalizedText || seenTexts.has(normalizedText)) {
+          return false;
+        }
+
+        seenTexts.add(normalizedText);
+        return true;
+      })
+      .map(({ item, score }) => ({
+        text: item.text,
+        color: item.color,
+        type: item.type,
+        priority: item.priority,
+        score,
+      }));
   }
 }

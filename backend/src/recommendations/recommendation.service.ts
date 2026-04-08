@@ -7,7 +7,10 @@ import { Recommendation } from '../entities/recommendation.entity';
 import { WatchHistory } from '../entities/watch-history.entity';
 import { SearchHistory } from '../entities/search-history.entity';
 import { User } from '../entities/user.entity';
-import type { UserRecommendationSettings } from '../users/dtos/user-recommendation-settings.interface';
+import {
+  RecommendationFreshnessBias,
+  type UserRecommendationSettings,
+} from '../users/dtos/user-recommendation-settings.interface';
 
 interface WeightedPreference {
   key: string;
@@ -127,19 +130,16 @@ export class RecommendationService {
 
       const items = candidates
         .filter(candidate => !watchedIds.has(candidate.id))
-        .filter(
-          candidate =>
-            !candidate.genres?.some(genre => excludedGenres.has(genre)),
-        )
+        .filter(candidate => !candidate.genres?.some(genre => excludedGenres.has(genre)))
         .map(candidate => {
           const reasons = this.buildRecommendationReasons(
-              candidate,
-              profile,
-              typeWeights,
-              genreWeights,
-              directorWeights,
-              searchKeywordWeights,
-            );
+            candidate,
+            profile,
+            typeWeights,
+            genreWeights,
+            directorWeights,
+            searchKeywordWeights,
+          );
 
           return {
             media: candidate,
@@ -480,8 +480,13 @@ export class RecommendationService {
 
     const daysSinceRelease =
       (Date.now() - new Date(media.releaseDate).getTime()) / (1000 * 60 * 60 * 24);
-    const freshnessBias = settings?.freshnessBias || 'balanced';
-    const multiplier = freshnessBias === 'fresh' ? 1.4 : freshnessBias === 'classic' ? 0.6 : 1;
+    const freshnessBias = settings?.freshnessBias ?? RecommendationFreshnessBias.BALANCED;
+    const multiplier =
+      freshnessBias === RecommendationFreshnessBias.FRESH
+        ? 1.4
+        : freshnessBias === RecommendationFreshnessBias.CLASSIC
+          ? 0.6
+          : 1;
 
     if (daysSinceRelease <= 60) {
       return 3 * multiplier;
@@ -500,7 +505,8 @@ export class RecommendationService {
     searchKeywordWeights: Map<string, number>,
     settings?: UserRecommendationSettings,
   ): number {
-    let score = this.calculateBaseQualityScore(media) + this.calculateFreshnessBonus(media, settings);
+    let score =
+      this.calculateBaseQualityScore(media) + this.calculateFreshnessBonus(media, settings);
 
     score += typeWeights.get(media.type) || 0;
 
@@ -616,7 +622,9 @@ export class RecommendationService {
         score += weight * 2.2;
       }
 
-      if (genres.some(item => item.includes(normalizedKeyword) || normalizedKeyword.includes(item))) {
+      if (
+        genres.some(item => item.includes(normalizedKeyword) || normalizedKeyword.includes(item))
+      ) {
         score += weight * 1.6;
       }
 

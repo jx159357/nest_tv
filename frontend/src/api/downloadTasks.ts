@@ -64,11 +64,12 @@ export const downloadTasksApi = {
     mediaResourceId?: number;
   }) => ApiClient.get<DownloadTasksResponse>('/download-tasks/user/me', { params }, false),
 
-  getMineStats: () => ApiClient.get<{ total: number; active: number; completed: number; failed: number }>(
-    '/download-tasks/user/me/stats',
-    undefined,
-    false,
-  ),
+  getMineStats: () =>
+    ApiClient.get<{ total: number; active: number; completed: number; failed: number }>(
+      '/download-tasks/user/me/stats',
+      undefined,
+      false,
+    ),
 
   upsert: (payload: DownloadTaskPayload) =>
     ApiClient.post<DownloadTaskRecord>('/download-tasks', payload),
@@ -78,6 +79,7 @@ export const downloadTasksApi = {
 
   remove: (clientId: string) => ApiClient.delete<{ success: true }>(`/download-tasks/${clientId}`),
 
-  clearCompleted: () =>
-    ApiClient.delete<{ deleted: number }>('/download-tasks/user/me/completed'),
+  clearCompleted: () => ApiClient.delete<{ deleted: number }>('/download-tasks/user/me/completed'),
+
+  clearFailed: () => ApiClient.delete<{ deleted: number }>('/download-tasks/user/me/failed'),
 };

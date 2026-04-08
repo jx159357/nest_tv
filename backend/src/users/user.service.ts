@@ -156,7 +156,10 @@ export class UserService {
     return this.toUserResponseDto(user);
   }
 
-  async updateProfile(userId: number, updateUserProfileDto: UpdateUserProfileDto): Promise<UserResponseDto> {
+  async updateProfile(
+    userId: number,
+    updateUserProfileDto: UpdateUserProfileDto,
+  ): Promise<UserResponseDto> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
 
     if (!user) {
@@ -181,7 +184,8 @@ export class UserService {
         preferredTypes: settings.preferredTypes?.map(item => item.trim()).filter(Boolean) || [],
         preferredGenres: settings.preferredGenres?.map(item => item.trim()).filter(Boolean) || [],
         excludedGenres: settings.excludedGenres?.map(item => item.trim()).filter(Boolean) || [],
-        preferredKeywords: settings.preferredKeywords?.map(item => item.trim()).filter(Boolean) || [],
+        preferredKeywords:
+          settings.preferredKeywords?.map(item => item.trim()).filter(Boolean) || [],
         freshnessBias: settings.freshnessBias || RecommendationFreshnessBias.BALANCED,
       };
     }

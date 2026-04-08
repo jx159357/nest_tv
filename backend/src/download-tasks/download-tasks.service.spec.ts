@@ -183,4 +183,38 @@ describe('DownloadTasksService', () => {
     expect(result.status).toBe(DownloadTaskStatus.COMPLETED);
     expect(result.completedAt).toBeInstanceOf(Date);
   });
+
+  it('clears failed and cancelled tasks together', async () => {
+    downloadTaskRepository.delete.mockResolvedValue({ affected: 2 });
+
+    const result = await service.clearFailedMine(5);
+
+    expect(downloadTaskRepository.delete).toHaveBeenCalledTimes(1);
+    const deleteCalls = downloadTaskRepository.delete.mock.calls as Array<
+      [
+        {
+          userId: number;
+          status: { _value: DownloadTaskStatus[] };
+        },
+      ]
+    >;
+    const deletePayload = deleteCalls[0]?.[0];
+
+    expect(deletePayload).toBeDefined();
+    if (!deletePayload) {
+      throw new Error('Expected failed-task delete payload');
+    }
+
+    const typedDeletePayload = deletePayload as {
+      userId: number;
+      status: { _value: DownloadTaskStatus[] };
+    };
+
+    expect(typedDeletePayload.userId).toBe(5);
+    expect(typedDeletePayload.status._value).toEqual([
+      DownloadTaskStatus.ERROR,
+      DownloadTaskStatus.CANCELLED,
+    ]);
+    expect(result).toEqual({ deleted: 2 });
+  });
 });

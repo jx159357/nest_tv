@@ -155,4 +155,16 @@ export class AdminLogsQueryDto extends AdminPaginationQueryDto {
   @IsInt()
   @Min(1)
   roleId?: number;
+
+  @ApiPropertyOptional({ description: 'Download task client id filter' })
+  @IsOptional()
+  @IsString()
+  clientId?: string;
+
+  @ApiPropertyOptional({ description: 'Download task id filter' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  downloadTaskId?: number;
 }

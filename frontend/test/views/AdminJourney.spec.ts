@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
+import type { Component } from 'vue';
 import AdminUsersView from '@/views/AdminUsersView.vue';
 import AdminDownloadTasksView from '@/views/AdminDownloadTasksView.vue';
 import AdminMediaView from '@/views/AdminMediaView.vue';
@@ -9,6 +10,8 @@ const { adminApi, routeState, routerReplace } = vi.hoisted(() => ({
     getUsers: vi.fn(),
     getDownloadTasks: vi.fn(),
     getMedia: vi.fn(),
+    handleDownloadTask: vi.fn(),
+    handleDownloadTasksBatch: vi.fn(),
   },
   routeState: {
     query: {} as Record<string, string>,
@@ -31,7 +34,7 @@ vi.mock('vue-router', () => ({
   }),
 }));
 
-const mountAdminView = (component: any): VueWrapper =>
+const mountAdminView = (component: Component): VueWrapper =>
   mount(component, {
     global: {
       stubs: {
@@ -50,6 +53,8 @@ describe('Admin operations journey regression', () => {
     adminApi.getUsers.mockReset();
     adminApi.getDownloadTasks.mockReset();
     adminApi.getMedia.mockReset();
+    adminApi.handleDownloadTask.mockReset();
+    adminApi.handleDownloadTasksBatch.mockReset();
 
     adminApi.getUsers.mockResolvedValue({
       data: [
@@ -140,9 +145,13 @@ describe('Admin operations journey regression', () => {
     });
 
     await tasksWrapper.get('.task-detail-toggle').trigger('click');
-    const taskLinks = tasksWrapper.findAll('.router-link-stub').map(link => link.attributes('data-to'));
+    const taskLinks = tasksWrapper
+      .findAll('.router-link-stub')
+      .map(link => link.attributes('data-to'));
     expect(taskLinks.some(link => link?.includes('Same media tasks') || false)).toBe(false);
-    expect(taskLinks.some(link => link?.includes('mediaResourceId') && link.includes('12'))).toBe(true);
+    expect(taskLinks.some(link => link?.includes('mediaResourceId') && link.includes('12'))).toBe(
+      true,
+    );
 
     routeState.query = { mediaResourceId: '12' };
     const mediaWrapper = mountAdminView(AdminMediaView);

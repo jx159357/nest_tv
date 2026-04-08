@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { DownloadTask, DownloadTaskStatus } from '../entities/download-task.entity';
 import { CreateDownloadTaskDto } from './dtos/create-download-task.dto';
 import { UpdateDownloadTaskDto } from './dtos/update-download-task.dto';
@@ -111,6 +111,15 @@ export class DownloadTasksService {
     const result = await this.downloadTaskRepository.delete({
       userId,
       status: DownloadTaskStatus.COMPLETED,
+    });
+
+    return { deleted: result.affected || 0 };
+  }
+
+  async clearFailedMine(userId: number): Promise<{ deleted: number }> {
+    const result = await this.downloadTaskRepository.delete({
+      userId,
+      status: In([DownloadTaskStatus.ERROR, DownloadTaskStatus.CANCELLED]),
     });
 
     return { deleted: result.affected || 0 };

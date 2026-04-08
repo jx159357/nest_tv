@@ -38,6 +38,20 @@ describe('admin query DTOs', () => {
     expect(errors.length).toBeGreaterThan(0);
   });
 
+  it('transforms numeric download-task log metadata filters before validation', () => {
+    const dto = plainToInstance(AdminLogsQueryDto, {
+      action: 'retry',
+      resource: 'download_task',
+      clientId: 'task-21',
+      downloadTaskId: '21',
+    });
+
+    const errors = validateSync(dto);
+
+    expect(errors).toHaveLength(0);
+    expect(dto.downloadTaskId).toBe(21);
+  });
+
   it('rejects unsupported play-source sort values', () => {
     const dto = plainToInstance(AdminPlaySourcesQueryDto, {
       sortBy: 'updatedAt',

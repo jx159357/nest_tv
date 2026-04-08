@@ -6,6 +6,8 @@ describe('AdminController', () => {
   const adminService = {
     getSystemStats: jest.fn(),
     getDownloadTasks: jest.fn(),
+    handleDownloadTaskAction: jest.fn(),
+    handleDownloadTaskBatchAction: jest.fn(),
   };
 
   let controller: AdminController;
@@ -74,5 +76,60 @@ describe('AdminController', () => {
       15,
       'demo',
     );
+  });
+
+  it('passes log metadata filters through to the service', async () => {
+    const payload = { data: [], total: 0, page: 1, limit: 20, totalPages: 0 };
+    adminService.getAdminLogs = jest.fn().mockResolvedValue(payload);
+
+    await expect(
+      controller.getAdminLogs({
+        action: 'retry',
+        resource: 'download_task',
+        clientId: 'task-21',
+        downloadTaskId: 21,
+      }),
+    ).resolves.toEqual(payload);
+
+    expect(adminService.getAdminLogs).toHaveBeenCalledWith(1, 20, {
+      action: 'retry',
+      resource: 'download_task',
+      status: undefined,
+      roleId: undefined,
+      clientId: 'task-21',
+      downloadTaskId: 21,
+    });
+  });
+
+  it('passes admin download-task actions through to the service', async () => {
+    const payload = { id: 9, clientId: 'task-9', status: 'pending' };
+    adminService.handleDownloadTaskAction.mockResolvedValue(payload);
+
+    await expect(
+      controller.handleDownloadTask(9, {
+        action: 'retry' as never,
+      }),
+    ).resolves.toEqual(payload);
+
+    expect(adminService.handleDownloadTaskAction).toHaveBeenCalledWith(9, {
+      action: 'retry',
+    });
+  });
+
+  it('passes batch download-task actions through to the service', async () => {
+    const payload = [{ id: 9, clientId: 'task-9', status: 'pending' }];
+    adminService.handleDownloadTaskBatchAction.mockResolvedValue(payload);
+
+    await expect(
+      controller.handleDownloadTasksBatch({
+        action: 'retry' as never,
+        ids: [9, 10],
+      }),
+    ).resolves.toEqual(payload);
+
+    expect(adminService.handleDownloadTaskBatchAction).toHaveBeenCalledWith({
+      action: 'retry',
+      ids: [9, 10],
+    });
   });
 });

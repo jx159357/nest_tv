@@ -1,7 +1,7 @@
 import type { Repository } from 'typeorm';
 import { AdminService } from './admin.service';
 import { AdminLog } from '../entities/admin-log.entity';
-import { DownloadTask } from '../entities/download-task.entity';
+import { DownloadTask, DownloadTaskStatus } from '../entities/download-task.entity';
 import { User } from '../entities/user.entity';
 
 describe('AdminService', () => {
@@ -40,17 +40,25 @@ describe('AdminService', () => {
   };
 
   const adminLogRepository = {
+    create: jest.fn(),
+    save: jest.fn(),
     find: jest.fn(),
   } as unknown as Repository<AdminLog> & {
+    create: jest.Mock;
+    save: jest.Mock;
     find: jest.Mock;
   };
 
   const downloadTaskRepository = {
     count: jest.fn(),
     createQueryBuilder: jest.fn(),
+    findOne: jest.fn(),
+    save: jest.fn(),
   } as unknown as Repository<DownloadTask> & {
     count: jest.Mock;
     createQueryBuilder: jest.Mock;
+    findOne: jest.Mock;
+    save: jest.Mock;
   };
 
   const service = new AdminService(
@@ -78,6 +86,12 @@ describe('AdminService', () => {
     downloadTaskQueryBuilder.orderBy.mockImplementation(() => downloadTaskQueryBuilder);
     downloadTaskQueryBuilder.skip.mockImplementation(() => downloadTaskQueryBuilder);
     downloadTaskQueryBuilder.take.mockImplementation(() => downloadTaskQueryBuilder);
+    adminLogRepository.create.mockImplementation(
+      (payload: Partial<AdminLog>): Partial<AdminLog> => payload,
+    );
+    adminLogRepository.save.mockImplementation(
+      (item: Partial<AdminLog>): Promise<Partial<AdminLog>> => Promise.resolve(item),
+    );
   });
 
   it('returns system stats including download task totals and breakdowns', async () => {
@@ -147,6 +161,10 @@ describe('AdminService', () => {
       expect.stringContaining('downloadTask.fileName LIKE :search'),
       { search: '%demo%' },
     );
+    expect(downloadTaskQueryBuilder.andWhere).toHaveBeenCalledWith(
+      expect.stringContaining('downloadTask.clientId LIKE :search'),
+      { search: '%demo%' },
+    );
     expect(downloadTaskQueryBuilder.skip).toHaveBeenCalledWith(10);
     expect(downloadTaskQueryBuilder.take).toHaveBeenCalledWith(10);
     expect(result).toEqual({
@@ -156,6 +174,43 @@ describe('AdminService', () => {
       limit: 10,
       totalPages: 3,
     });
+  });
+
+  it('filters admin logs by download-task metadata fields', async () => {
+    const adminLogQueryBuilder = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getCount: jest.fn().mockResolvedValue(1),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([{ id: 1 }]),
+    };
+
+    adminLogRepository.createQueryBuilder = jest.fn().mockReturnValue(adminLogQueryBuilder);
+
+    const result = await service.getAdminLogs(1, 10, {
+      resource: 'download_task',
+      action: 'retry',
+      clientId: 'task-21',
+      downloadTaskId: 21,
+    });
+
+    expect(adminLogQueryBuilder.andWhere).toHaveBeenCalledWith('adminLog.resource = :resource', {
+      resource: 'download_task',
+    });
+    expect(adminLogQueryBuilder.andWhere).toHaveBeenCalledWith('adminLog.action = :action', {
+      action: 'retry',
+    });
+    expect(adminLogQueryBuilder.andWhere).toHaveBeenCalledWith(
+      "JSON_UNQUOTE(JSON_EXTRACT(adminLog.metadata, '$.clientId')) = :clientId",
+      { clientId: 'task-21' },
+    );
+    expect(adminLogQueryBuilder.andWhere).toHaveBeenCalledWith(
+      "JSON_UNQUOTE(JSON_EXTRACT(adminLog.metadata, '$.downloadTaskId')) = :downloadTaskId",
+      { downloadTaskId: '21' },
+    );
+    expect(result.total).toBe(1);
   });
 
   it('clamps out-of-range admin download-task pages back to the last available page', async () => {
@@ -217,5 +272,101 @@ describe('AdminService', () => {
       limit: 200,
       totalPages: 3,
     });
+  });
+
+  it('retries an errored admin download task by resetting its execution state', async () => {
+    const task = {
+      id: 7,
+      clientId: 'error-task',
+      status: DownloadTaskStatus.ERROR,
+      progress: 33,
+      speed: 99,
+      downloaded: 1024,
+      error: 'network timeout',
+      completedAt: new Date('2025-01-01T00:00:00.000Z'),
+    } as DownloadTask;
+
+    downloadTaskRepository.findOne.mockResolvedValue(task);
+    downloadTaskRepository.save.mockImplementation((item: DownloadTask) => Promise.resolve(item));
+
+    const result = await service.handleDownloadTaskAction(7, { action: 'retry' as never });
+
+    expect(downloadTaskRepository.findOne).toHaveBeenCalledWith({
+      where: { id: 7 },
+      relations: ['user', 'mediaResource'],
+    });
+    expect(result.status).toBe(DownloadTaskStatus.PENDING);
+    expect(result.progress).toBe(0);
+    expect(result.downloaded).toBe(0);
+    expect(result.error).toBeUndefined();
+    expect(adminLogRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'retry',
+        resource: 'download_task',
+      }),
+    );
+  });
+
+  it('cancels an admin download task and keeps a visible cancellation reason', async () => {
+    const task = {
+      id: 8,
+      clientId: 'downloading-task',
+      status: DownloadTaskStatus.DOWNLOADING,
+      progress: 60,
+      speed: 2048,
+      downloaded: 2048,
+      error: undefined,
+    } as DownloadTask;
+
+    downloadTaskRepository.findOne.mockResolvedValue(task);
+    downloadTaskRepository.save.mockImplementation((item: DownloadTask) => Promise.resolve(item));
+
+    const result = await service.handleDownloadTaskAction(8, { action: 'cancel' as never });
+
+    expect(result.status).toBe(DownloadTaskStatus.CANCELLED);
+    expect(result.speed).toBe(0);
+    expect(result.error).toBe('管理员手动取消');
+    expect(adminLogRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'cancel',
+        resource: 'download_task',
+      }),
+    );
+  });
+
+  it('handles batch retry actions by delegating to per-task handling', async () => {
+    const taskOne = {
+      id: 31,
+      clientId: 'task-31',
+      userId: 8,
+      status: DownloadTaskStatus.ERROR,
+      progress: 20,
+      speed: 0,
+      downloaded: 20,
+      error: 'timeout',
+    } as DownloadTask;
+    const taskTwo = {
+      id: 32,
+      clientId: 'task-32',
+      userId: 8,
+      status: DownloadTaskStatus.CANCELLED,
+      progress: 0,
+      speed: 0,
+      downloaded: 0,
+      error: 'manual',
+    } as DownloadTask;
+
+    downloadTaskRepository.findOne.mockResolvedValueOnce(taskOne).mockResolvedValueOnce(taskTwo);
+    downloadTaskRepository.save.mockImplementation((item: DownloadTask) => Promise.resolve(item));
+
+    const result = await service.handleDownloadTaskBatchAction({
+      action: 'retry' as never,
+      ids: [31, 32, 31],
+    });
+
+    expect(downloadTaskRepository.findOne).toHaveBeenCalledTimes(2);
+    expect(result).toHaveLength(2);
+    expect(result[0]?.status).toBe(DownloadTaskStatus.PENDING);
+    expect(result[1]?.status).toBe(DownloadTaskStatus.PENDING);
   });
 });

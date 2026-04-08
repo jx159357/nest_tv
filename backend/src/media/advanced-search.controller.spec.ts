@@ -16,7 +16,15 @@ describe('AdvancedSearchController', () => {
   });
 
   it('passes the authenticated user id into advanced search', async () => {
-    advancedSearchService.advancedSearch.mockResolvedValue({ data: [], total: 0, page: 1, pageSize: 10, totalPages: 0, searchTime: 0, filters: { appliedTypes: [], appliedGenres: [] } });
+    advancedSearchService.advancedSearch.mockResolvedValue({
+      data: [],
+      total: 0,
+      page: 1,
+      pageSize: 10,
+      totalPages: 0,
+      searchTime: 0,
+      filters: { appliedTypes: [], appliedGenres: [] },
+    });
 
     await controller.advancedSearch(7, { keyword: '星际穿越' });
 
@@ -28,7 +36,9 @@ describe('AdvancedSearchController', () => {
 
     await controller.recordUserSearchHistory(9, { keyword: '奥本海默' });
 
-    expect(advancedSearchService.recordSearchHistory).toHaveBeenCalledWith(9, { keyword: '奥本海默' });
+    expect(advancedSearchService.recordSearchHistory).toHaveBeenCalledWith(9, {
+      keyword: '奥本海默',
+    });
   });
 
   it('loads search history for the authenticated user', async () => {

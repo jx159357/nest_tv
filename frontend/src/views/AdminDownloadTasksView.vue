@@ -10,7 +10,7 @@
           v-model="search"
           type="text"
           class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-          placeholder="文件名 / 来源 / 链接 / 用户"
+          placeholder="文件名 / clientId / 来源 / 链接 / 用户"
           @keyup.enter="applyFilters(1)"
         />
         <select
@@ -97,6 +97,33 @@
       </button>
     </div>
 
+    <div class="flex flex-wrap gap-2">
+      <button
+        class="rounded-full border px-3 py-1 text-xs font-medium transition"
+        :class="
+          selectedType === ''
+            ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+            : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+        "
+        @click="setTypeFilter('')"
+      >
+        全部类型
+      </button>
+      <button
+        v-for="item in quickTypeFilters"
+        :key="item.value"
+        class="rounded-full border px-3 py-1 text-xs font-medium transition"
+        :class="
+          selectedType === item.value
+            ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+            : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+        "
+        @click="setTypeFilter(item.value)"
+      >
+        {{ item.label }}
+      </button>
+    </div>
+
     <div v-if="activeFilterChips.length > 0" class="flex flex-wrap gap-2">
       <span
         v-for="chip in activeFilterChips"
@@ -106,6 +133,18 @@
         {{ chip.label }}
         <button class="text-slate-400 hover:text-slate-700" @click="chip.clear">×</button>
       </span>
+    </div>
+
+    <div
+      v-if="actionState"
+      class="rounded-xl border px-4 py-3 text-sm"
+      :class="
+        actionState.status === 'success'
+          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+          : 'border-rose-200 bg-rose-50 text-rose-700'
+      "
+    >
+      {{ actionState.message }}
     </div>
 
     <div class="grid grid-cols-1 gap-4 md:grid-cols-3 xl:grid-cols-6">
@@ -127,11 +166,15 @@
       </div>
       <div class="rounded-lg bg-white p-4 shadow">
         <div class="text-sm text-gray-500">覆盖用户 / 媒体</div>
-        <div class="mt-2 text-2xl font-semibold text-slate-900">{{ uniqueUserCount }} / {{ uniqueMediaCount }}</div>
+        <div class="mt-2 text-2xl font-semibold text-slate-900">
+          {{ uniqueUserCount }} / {{ uniqueMediaCount }}
+        </div>
       </div>
       <div class="rounded-lg bg-white p-4 shadow">
         <div class="text-sm text-gray-500">24h 内启动 / Magnet</div>
-        <div class="mt-2 text-2xl font-semibold text-slate-900">{{ startedRecentlyCount }} / {{ magnetCount }}</div>
+        <div class="mt-2 text-2xl font-semibold text-slate-900">
+          {{ startedRecentlyCount }} / {{ magnetCount }}
+        </div>
       </div>
     </div>
 
@@ -156,6 +199,20 @@
           >
             异常优先
           </button>
+          <button
+            class="rounded-lg border border-red-300 bg-white px-3 py-1.5 font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="bulkActionLoading"
+            @click="retryVisibleFailedTasks"
+          >
+            {{ bulkActionLoading ? '处理中...' : '重置当前页异常' }}
+          </button>
+          <button
+            class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="bulkActionLoading || cancellableTaskCount === 0"
+            @click="cancelVisiblePendingTasks"
+          >
+            {{ bulkActionLoading ? '处理中...' : '取消当前页未完成' }}
+          </button>
         </div>
       </div>
     </div>
@@ -168,22 +225,34 @@
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
                   用户 / 媒体
                 </th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
                   文件
                 </th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
                   状态
                 </th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
                   进度
                 </th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
                   类型
                 </th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
                   最近更新
                 </th>
               </tr>
@@ -192,7 +261,9 @@
               <template v-for="task in displayedTasks" :key="task.id">
                 <tr :class="rowClass(task)">
                   <td class="px-4 py-3 text-sm text-gray-900">
-                    <div class="font-medium">{{ task.user?.username || `用户#${task.userId}` }}</div>
+                    <div class="font-medium">
+                      {{ task.user?.username || `用户#${task.userId}` }}
+                    </div>
                     <div class="text-xs text-gray-500">{{ task.user?.email || '—' }}</div>
                     <div class="mt-2 flex flex-wrap gap-2">
                       <button
@@ -208,6 +279,12 @@
                       >
                         同媒体任务
                       </button>
+                      <button
+                        class="rounded-full border border-slate-200 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50"
+                        @click="setTypeFilter(task.type)"
+                      >
+                        同类型任务
+                      </button>
                     </div>
                     <RouterLink
                       v-if="task.mediaResourceId"
@@ -220,7 +297,9 @@
                   </td>
                   <td class="px-4 py-3 text-sm text-gray-900">
                     <div class="font-medium">{{ task.fileName }}</div>
-                    <div class="mt-1 text-xs text-gray-500">{{ task.sourceLabel || '未标记来源' }}</div>
+                    <div class="mt-1 text-xs text-gray-500">
+                      {{ task.sourceLabel || '未标记来源' }}
+                    </div>
                     <div class="mt-1 max-w-md break-all text-xs text-gray-400">{{ task.url }}</div>
                     <div v-if="task.error" class="mt-2 text-xs text-red-600">{{ task.error }}</div>
                     <button
@@ -231,17 +310,26 @@
                     </button>
                   </td>
                   <td class="px-4 py-3 text-sm">
-                    <span :class="statusClass(task.status)" class="rounded-full px-2 py-1 text-xs font-medium">
+                    <span
+                      :class="statusClass(task.status)"
+                      class="rounded-full px-2 py-1 text-xs font-medium"
+                    >
                       {{ task.status }}
                     </span>
-                    <div class="mt-2 text-xs text-gray-500">启动 {{ task.launchCount || 0 }} 次</div>
+                    <div class="mt-2 text-xs text-gray-500">
+                      启动 {{ task.launchCount || 0 }} 次
+                    </div>
                   </td>
                   <td class="px-4 py-3 text-sm text-gray-600">
                     <div class="h-2 w-28 overflow-hidden rounded-full bg-gray-200">
-                      <div class="h-full bg-indigo-600" :style="{ width: `${displayProgress(task)}%` }"></div>
+                      <div
+                        class="h-full bg-indigo-600"
+                        :style="{ width: `${displayProgress(task)}%` }"
+                      ></div>
                     </div>
                     <div class="mt-1 text-xs text-gray-500">
-                      {{ displayProgress(task) }}% · {{ formatBytes(task.downloaded) }} / {{ formatBytes(task.total) }}
+                      {{ displayProgress(task) }}% · {{ formatBytes(task.downloaded) }} /
+                      {{ formatBytes(task.total) }}
                     </div>
                   </td>
                   <td class="px-4 py-3 text-sm text-gray-600">
@@ -251,7 +339,11 @@
                   <td class="px-4 py-3 text-sm text-gray-600">
                     <div>{{ formatDate(task.updatedAt) }}</div>
                     <div class="mt-1 text-xs text-gray-400">
-                      {{ task.lastLaunchedAt ? `启动：${formatDate(task.lastLaunchedAt)}` : '尚未启动' }}
+                      {{
+                        task.lastLaunchedAt
+                          ? `启动：${formatDate(task.lastLaunchedAt)}`
+                          : '尚未启动'
+                      }}
                     </div>
                   </td>
                 </tr>
@@ -265,7 +357,10 @@
                         <div class="text-xs font-medium uppercase tracking-wide text-indigo-500">
                           Recommended Action
                         </div>
-                        <div class="mt-2 text-sm font-semibold text-slate-900" data-testid="task-recommendation-title">
+                        <div
+                          class="mt-2 text-sm font-semibold text-slate-900"
+                          data-testid="task-recommendation-title"
+                        >
                           {{ taskRecommendation(task).title }}
                         </div>
                         <div class="mt-2 text-sm text-slate-600">
@@ -280,28 +375,62 @@
                           >
                             {{ action.label }}
                           </router-link>
+                          <button
+                            v-if="task.status === 'error' || task.status === 'cancelled'"
+                            class="rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            :disabled="actionLoadingTaskId === task.id"
+                            @click="handleTaskAction(task, 'retry')"
+                          >
+                            {{ actionLoadingTaskId === task.id ? '处理中...' : '重置为待处理' }}
+                          </button>
+                          <button
+                            v-if="task.status !== 'completed' && task.status !== 'cancelled'"
+                            class="rounded-full border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            :disabled="actionLoadingTaskId === task.id"
+                            @click="handleTaskAction(task, 'cancel')"
+                          >
+                            {{ actionLoadingTaskId === task.id ? '处理中...' : '标记取消' }}
+                          </button>
                         </div>
                       </div>
                       <div class="space-y-3 text-sm text-slate-700">
                         <div>
-                          <div class="text-xs font-medium uppercase tracking-wide text-slate-400">Task ID</div>
+                          <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            Task ID
+                          </div>
                           <div class="mt-1">{{ task.clientId }}</div>
                         </div>
                         <div>
-                          <div class="text-xs font-medium uppercase tracking-wide text-slate-400">创建 / 完成</div>
+                          <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            创建 / 完成
+                          </div>
                           <div class="mt-1">{{ formatDate(task.createdAt) }}</div>
-                          <div class="mt-1 text-xs text-slate-500">{{ task.completedAt ? `完成：${formatDate(task.completedAt)}` : '尚未完成' }}</div>
+                          <div class="mt-1 text-xs text-slate-500">
+                            {{
+                              task.completedAt
+                                ? `完成：${formatDate(task.completedAt)}`
+                                : '尚未完成'
+                            }}
+                          </div>
                         </div>
                         <div>
-                          <div class="text-xs font-medium uppercase tracking-wide text-slate-400">最近启动</div>
-                          <div class="mt-1">{{ task.lastLaunchedAt ? formatDate(task.lastLaunchedAt) : '尚未启动' }}</div>
+                          <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            最近启动
+                          </div>
+                          <div class="mt-1">
+                            {{ task.lastLaunchedAt ? formatDate(task.lastLaunchedAt) : '尚未启动' }}
+                          </div>
                         </div>
                         <div>
-                          <div class="text-xs font-medium uppercase tracking-wide text-slate-400">保存路径</div>
+                          <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            保存路径
+                          </div>
                           <div class="mt-1 break-all">{{ task.filePath || '未记录' }}</div>
                         </div>
                         <div>
-                          <div class="text-xs font-medium uppercase tracking-wide text-slate-400">原始链接</div>
+                          <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            原始链接
+                          </div>
                           <a
                             :href="task.url"
                             target="_blank"
@@ -314,26 +443,37 @@
                       </div>
                       <div class="space-y-3 text-sm text-slate-700">
                         <div>
-                          <div class="text-xs font-medium uppercase tracking-wide text-slate-400">错误详情</div>
-                          <div class="mt-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                          <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            错误详情
+                          </div>
+                          <div
+                            class="mt-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                          >
                             {{ task.error || '暂无错误信息' }}
                           </div>
                         </div>
                         <div>
-                          <div class="text-xs font-medium uppercase tracking-wide text-slate-400">Metadata</div>
+                          <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            Metadata
+                          </div>
                           <div v-if="metadataEntries(task).length > 0" class="mt-1 space-y-2">
                             <div
                               v-for="item in metadataEntries(task)"
                               :key="item.key"
                               class="rounded-lg border border-slate-200 bg-white px-3 py-2"
                             >
-                              <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                              <div
+                                class="text-xs font-medium uppercase tracking-wide text-slate-400"
+                              >
                                 {{ item.key }}
                               </div>
                               <div class="mt-1 break-all">{{ item.value }}</div>
                             </div>
                           </div>
-                          <div v-else class="mt-1 rounded-lg border border-dashed border-slate-200 bg-white px-3 py-2 text-slate-500">
+                          <div
+                            v-else
+                            class="mt-1 rounded-lg border border-dashed border-slate-200 bg-white px-3 py-2 text-slate-500"
+                          >
                             暂无 metadata
                           </div>
                         </div>
@@ -346,7 +486,9 @@
           </table>
         </div>
 
-        <div class="flex items-center justify-between border-t border-gray-200 px-4 py-3 text-sm text-gray-600">
+        <div
+          class="flex items-center justify-between border-t border-gray-200 px-4 py-3 text-sm text-gray-600"
+        >
           <span>共 {{ total }} 条</span>
           <div class="flex items-center gap-3">
             <button
@@ -374,7 +516,12 @@
 <script setup lang="ts">
   import { computed, onMounted, ref, watch } from 'vue';
   import { RouterLink, useRoute, useRouter } from 'vue-router';
-  import { adminApi, type AdminDownloadTaskItem } from '@/api/admin';
+  import {
+    adminApi,
+    type AdminDownloadTaskActionPayload,
+    type AdminDownloadTaskItem,
+  } from '@/api/admin';
+  import { showConfirm } from '@/composables/useModal';
   import type { User } from '@/types/user';
 
   const route = useRoute();
@@ -393,6 +540,9 @@
   const selectedMediaResourceId = ref('');
   const selectedTaskId = ref<number | null>(null);
   const sortMode = ref<'updated' | 'started' | 'exceptions'>('updated');
+  const actionLoadingTaskId = ref<number | null>(null);
+  const actionState = ref<{ status: 'success' | 'error'; message: string } | null>(null);
+  const bulkActionLoading = ref(false);
 
   const taskStatuses: AdminDownloadTaskItem['status'][] = [
     'pending',
@@ -409,20 +559,36 @@
     { label: '已完成', value: 'completed' },
     { label: '异常', value: 'error' },
   ];
+  const quickTypeFilters: Array<{ label: string; value: AdminDownloadTaskItem['type'] }> = [
+    { label: '直链 / 协议', value: 'direct' },
+    { label: '种子文件', value: 'torrent' },
+    { label: 'Magnet', value: 'magnet' },
+  ];
 
   const activeCount = computed(
-    () => tasks.value.filter(task => task.status === 'pending' || task.status === 'downloading').length,
+    () =>
+      tasks.value.filter(task => task.status === 'pending' || task.status === 'downloading').length,
   );
-  const completedCount = computed(() => tasks.value.filter(task => task.status === 'completed').length);
+  const completedCount = computed(
+    () => tasks.value.filter(task => task.status === 'completed').length,
+  );
   const failedCount = computed(
     () => tasks.value.filter(task => task.status === 'error' || task.status === 'cancelled').length,
   );
   const uniqueUserCount = computed(() => new Set(tasks.value.map(task => task.userId)).size);
   const uniqueMediaCount = computed(
     () =>
-      new Set(tasks.value.map(task => task.mediaResourceId).filter((value): value is number => Boolean(value))).size,
+      new Set(
+        tasks.value
+          .map(task => task.mediaResourceId)
+          .filter((value): value is number => Boolean(value)),
+      ).size,
   );
   const magnetCount = computed(() => tasks.value.filter(task => task.type === 'magnet').length);
+  const cancellableTaskCount = computed(
+    () =>
+      tasks.value.filter(task => task.status !== 'completed' && task.status !== 'cancelled').length,
+  );
   const startedRecentlyCount = computed(() => {
     const now = Date.now();
     const oneDayMs = 24 * 60 * 60 * 1000;
@@ -436,7 +602,8 @@
     }).length;
   });
   const showExceptionBanner = computed(
-    () => failedCount.value > 0 && selectedStatus.value !== 'error' && sortMode.value !== 'exceptions',
+    () =>
+      failedCount.value > 0 && selectedStatus.value !== 'error' && sortMode.value !== 'exceptions',
   );
   const displayedTasks = computed(() => {
     const getTime = (value?: string | null) => {
@@ -483,6 +650,39 @@
 
   const activeFilterChips = computed(() => {
     const chips: Array<{ key: string; label: string; clear: () => Promise<void> }> = [];
+
+    if (search.value.trim()) {
+      chips.push({
+        key: 'search',
+        label: `搜索：${search.value.trim()}`,
+        clear: async () => {
+          search.value = '';
+          await applyFilters(1);
+        },
+      });
+    }
+
+    if (selectedStatus.value) {
+      chips.push({
+        key: 'status',
+        label: `状态：${selectedStatus.value}`,
+        clear: async () => {
+          selectedStatus.value = '';
+          await applyFilters(1);
+        },
+      });
+    }
+
+    if (selectedType.value) {
+      chips.push({
+        key: 'type',
+        label: `类型：${selectedType.value}`,
+        clear: async () => {
+          selectedType.value = '';
+          await applyFilters(1);
+        },
+      });
+    }
 
     if (selectedUserId.value) {
       const matchedUser = users.value.find(user => String(user.id) === selectedUserId.value);
@@ -540,23 +740,28 @@
     const queryUserId = readSingleQuery(route.query.userId);
     const queryMediaResourceId = readSingleQuery(route.query.mediaResourceId);
     const querySort = readSingleQuery(route.query.sort);
+    const queryTaskId = Number(readSingleQuery(route.query.taskId));
 
     page.value = Number.isFinite(queryPage) && queryPage > 0 ? queryPage : 1;
     search.value = typeof querySearch === 'string' ? querySearch : '';
     selectedStatus.value =
-      typeof queryStatus === 'string' && taskStatuses.includes(queryStatus as AdminDownloadTaskItem['status'])
+      typeof queryStatus === 'string' &&
+      taskStatuses.includes(queryStatus as AdminDownloadTaskItem['status'])
         ? (queryStatus as AdminDownloadTaskItem['status'])
         : '';
     selectedType.value =
-      typeof queryType === 'string' && taskTypes.includes(queryType as AdminDownloadTaskItem['type'])
+      typeof queryType === 'string' &&
+      taskTypes.includes(queryType as AdminDownloadTaskItem['type'])
         ? (queryType as AdminDownloadTaskItem['type'])
         : '';
     selectedUserId.value = typeof queryUserId === 'string' ? queryUserId : '';
-    selectedMediaResourceId.value = typeof queryMediaResourceId === 'string' ? queryMediaResourceId : '';
+    selectedMediaResourceId.value =
+      typeof queryMediaResourceId === 'string' ? queryMediaResourceId : '';
     sortMode.value =
       querySort === 'started' || querySort === 'exceptions' || querySort === 'updated'
         ? querySort
         : 'updated';
+    selectedTaskId.value = Number.isFinite(queryTaskId) && queryTaskId > 0 ? queryTaskId : null;
   };
 
   const buildTaskQuery = (nextPage = 1) => {
@@ -579,6 +784,9 @@
     }
     if (selectedMediaResourceId.value) {
       query.mediaResourceId = selectedMediaResourceId.value;
+    }
+    if (selectedTaskId.value) {
+      query.taskId = String(selectedTaskId.value);
     }
     if (sortMode.value !== 'updated') {
       query.sort = sortMode.value;
@@ -610,6 +818,11 @@
     await applyFilters(1);
   };
 
+  const setTypeFilter = async (type: AdminDownloadTaskItem['type'] | '') => {
+    selectedType.value = type;
+    await applyFilters(1);
+  };
+
   const setSortMode = async (mode: 'updated' | 'started' | 'exceptions') => {
     sortMode.value = mode;
     await applyFilters(1);
@@ -625,8 +838,111 @@
     await applyFilters(1);
   };
 
-  const toggleTaskDetails = (taskId: number) => {
+  const toggleTaskDetails = async (taskId: number) => {
     selectedTaskId.value = selectedTaskId.value === taskId ? null : taskId;
+    await router.replace({
+      name: 'admin-download-tasks',
+      query: buildTaskQuery(page.value),
+    });
+  };
+
+  const handleTaskAction = async (
+    task: AdminDownloadTaskItem,
+    action: AdminDownloadTaskActionPayload['action'],
+  ) => {
+    actionLoadingTaskId.value = task.id;
+    actionState.value = null;
+
+    try {
+      await adminApi.handleDownloadTask(task.id, { action });
+      actionState.value = {
+        status: 'success',
+        message:
+          action === 'retry'
+            ? `已将任务「${task.fileName}」重置为待处理。`
+            : `已将任务「${task.fileName}」标记为取消。`,
+      };
+      await loadTasks(page.value);
+      selectedTaskId.value = task.id;
+    } catch (err: unknown) {
+      actionState.value = {
+        status: 'error',
+        message: err instanceof Error ? err.message : '处理下载任务失败',
+      };
+    } finally {
+      actionLoadingTaskId.value = null;
+    }
+  };
+
+  const retryVisibleFailedTasks = async () => {
+    const failedTasks = tasks.value.filter(
+      task => task.status === 'error' || task.status === 'cancelled',
+    );
+
+    if (failedTasks.length === 0) {
+      return;
+    }
+
+    bulkActionLoading.value = true;
+    actionState.value = null;
+
+    try {
+      await adminApi.handleDownloadTasksBatch({
+        action: 'retry',
+        ids: failedTasks.map(task => task.id),
+      });
+      actionState.value = {
+        status: 'success',
+        message: `已将当前页 ${failedTasks.length} 条异常任务重置为待处理。`,
+      };
+      await loadTasks(page.value);
+    } catch (err: unknown) {
+      actionState.value = {
+        status: 'error',
+        message: err instanceof Error ? err.message : '批量重置异常任务失败',
+      };
+    } finally {
+      bulkActionLoading.value = false;
+    }
+  };
+
+  const cancelVisiblePendingTasks = () => {
+    const targetTasks = tasks.value.filter(
+      task => task.status !== 'completed' && task.status !== 'cancelled',
+    );
+
+    if (targetTasks.length === 0) {
+      return;
+    }
+
+    showConfirm(
+      `确定要将当前页 ${targetTasks.length} 条未完成任务标记为取消吗？`,
+      async () => {
+        bulkActionLoading.value = true;
+        actionState.value = null;
+
+        try {
+          await adminApi.handleDownloadTasksBatch({
+            action: 'cancel',
+            ids: targetTasks.map(task => task.id),
+          });
+          actionState.value = {
+            status: 'success',
+            message: `已将当前页 ${targetTasks.length} 条未完成任务标记为取消。`,
+          };
+          await loadTasks(page.value);
+        } catch (err: unknown) {
+          actionState.value = {
+            status: 'error',
+            message: err instanceof Error ? err.message : '批量取消下载任务失败',
+          };
+        } finally {
+          bulkActionLoading.value = false;
+        }
+      },
+      '批量取消任务',
+      '确认取消',
+    );
   };
 
   const loadTasks = async (nextPage = page.value) => {
@@ -641,7 +957,9 @@
         status: selectedStatus.value || undefined,
         type: selectedType.value || undefined,
         userId: selectedUserId.value ? Number(selectedUserId.value) : undefined,
-        mediaResourceId: selectedMediaResourceId.value ? Number(selectedMediaResourceId.value) : undefined,
+        mediaResourceId: selectedMediaResourceId.value
+          ? Number(selectedMediaResourceId.value)
+          : undefined,
       });
 
       tasks.value = response.data;
@@ -754,6 +1072,18 @@
         to: '/admin/media',
       });
     }
+
+    actions.push({
+      label: 'Open download logs',
+      to: {
+        name: 'admin-logs',
+        query: {
+          resource: 'download_task',
+          clientId: task.clientId,
+          taskId: String(task.id),
+        },
+      },
+    });
 
     if (task.status === 'error' || task.status === 'cancelled') {
       return {

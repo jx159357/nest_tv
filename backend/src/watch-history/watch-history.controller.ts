@@ -99,10 +99,7 @@ export class WatchHistoryController {
   @ApiQuery({ name: 'page', required: false, type: Number, description: '页码' })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: '每页数量' })
   @ApiResponse({ status: 200, description: '成功获取用户观看历史' })
-  async findMyHistory(
-    @GetCurrentUserId() userId: number,
-    @Query() queryDto: WatchHistoryQueryDto,
-  ) {
+  async findMyHistory(@GetCurrentUserId() userId: number, @Query() queryDto: WatchHistoryQueryDto) {
     return await this.watchHistoryService.findAll({
       ...queryDto,
       userId,

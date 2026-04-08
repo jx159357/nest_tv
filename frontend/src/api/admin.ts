@@ -33,13 +33,36 @@ export interface AdminHealthStatus {
   };
 }
 
+export interface AdminDanmakuHealthStatus {
+  status: 'healthy';
+  database: 'connected';
+  websocket: 'active';
+  performance: {
+    responseTime: 'normal';
+    memoryUsage: 'normal';
+    activeConnections: number;
+    activeRooms: number;
+    totalMessages: number;
+  };
+  lastUpdate: string;
+  uptime: number;
+  message: string;
+}
+
 export interface AdminLogItem {
   id: number;
   action: string;
   resource: string;
   status: 'success' | 'error' | 'warning';
+  metadata?: Record<string, unknown>;
   description?: string;
   errorMessage?: string;
+  requestInfo?: {
+    ip?: string;
+    userAgent?: string;
+    method?: string;
+    url?: string;
+  };
   roleId: number;
   userId?: number;
   createdAt: string;
@@ -132,10 +155,21 @@ export interface AdminDownloadTaskItem {
   mediaResource?: Pick<MediaResource, 'id' | 'title' | 'type' | 'poster'>;
 }
 
+export interface AdminDownloadTaskActionPayload {
+  action: 'retry' | 'cancel';
+}
+
+export interface AdminBatchDownloadTaskActionPayload extends AdminDownloadTaskActionPayload {
+  ids: number[];
+}
+
 export const adminApi = {
   getStats: () => ApiClient.get<AdminSystemStats>('/admin/stats', undefined, false),
 
   getHealth: () => ApiClient.get<AdminHealthStatus>('/admin/health', undefined, false),
+
+  getDanmakuHealth: () =>
+    ApiClient.get<AdminDanmakuHealthStatus>('/danmaku/health', undefined, false),
 
   getUsers: (params?: { page?: number; limit?: number; search?: string }) =>
     ApiClient.get<AdminPaginatedResponse<User>>('/admin/users', { params }, false),
@@ -145,13 +179,13 @@ export const adminApi = {
 
   getRoles: () => ApiClient.get<AdminRoleItem[]>('/admin/roles', undefined, false),
 
-  createRole: (payload: AdminRolePayload) =>
-    ApiClient.post<AdminRoleItem>('/admin/roles', payload),
+  createRole: (payload: AdminRolePayload) => ApiClient.post<AdminRoleItem>('/admin/roles', payload),
 
   updateRole: (id: number, payload: Partial<AdminRolePayload>) =>
     ApiClient.patch<AdminRoleItem>(`/admin/roles/${id}`, payload),
 
-  getPermissions: () => ApiClient.get<AdminPermissionItem[]>('/admin/permissions', undefined, false),
+  getPermissions: () =>
+    ApiClient.get<AdminPermissionItem[]>('/admin/permissions', undefined, false),
 
   createPermission: (payload: AdminPermissionPayload) =>
     ApiClient.post<AdminPermissionItem>('/admin/permissions', payload),
@@ -169,8 +203,7 @@ export const adminApi = {
     status?: string;
     sortBy?: 'createdAt' | 'lastCheckedAt' | 'priority';
     sortOrder?: 'ASC' | 'DESC';
-  }) =>
-    ApiClient.get<AdminPaginatedResponse<PlaySource>>('/admin/play-sources', { params }, false),
+  }) => ApiClient.get<AdminPaginatedResponse<PlaySource>>('/admin/play-sources', { params }, false),
 
   getWatchHistory: (params?: { page?: number; limit?: number; userId?: number }) =>
     ApiClient.get<AdminPaginatedResponse<AdminWatchHistoryItem>>(
@@ -194,6 +227,12 @@ export const adminApi = {
       false,
     ),
 
+  handleDownloadTask: (id: number, payload: AdminDownloadTaskActionPayload) =>
+    ApiClient.patch<AdminDownloadTaskItem>(`/admin/download-tasks/${id}`, payload),
+
+  handleDownloadTasksBatch: (payload: AdminBatchDownloadTaskActionPayload) =>
+    ApiClient.patch<AdminDownloadTaskItem[]>('/admin/download-tasks/batch', payload),
+
   getLogs: (params?: {
     page?: number;
     limit?: number;
@@ -201,5 +240,7 @@ export const adminApi = {
     resource?: string;
     status?: 'success' | 'error' | 'warning';
     roleId?: number;
+    clientId?: string;
+    downloadTaskId?: number;
   }) => ApiClient.get<AdminPaginatedResponse<AdminLogItem>>('/admin/logs', { params }, false),
 };

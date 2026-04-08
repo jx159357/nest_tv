@@ -11,7 +11,14 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminPermission } from '../entities/admin-permission.entity';
 import { AdminRole } from '../entities/admin-role.entity';
@@ -28,10 +35,13 @@ import {
   AdminLogsQueryDto,
   AdminMediaQueryDto,
   AdminPlaySourcesQueryDto,
-  AdminSortOrderQuery,
   AdminUsersQueryDto,
   AdminWatchHistoryQueryDto,
 } from './dto/admin-query.dto';
+import {
+  AdminBatchDownloadTaskActionDto,
+  AdminDownloadTaskActionDto,
+} from './dto/admin-download-task-action.dto';
 
 @ApiTags('admin')
 @Controller('admin')
@@ -139,10 +149,38 @@ export class AdminController {
   @ApiQuery({ name: 'resource', required: false, type: String, description: 'Resource filter' })
   @ApiQuery({ name: 'status', required: false, type: String, description: 'Status filter' })
   @ApiQuery({ name: 'roleId', required: false, type: Number, description: 'Role id filter' })
+  @ApiQuery({
+    name: 'clientId',
+    required: false,
+    type: String,
+    description: 'Download task client id filter',
+  })
+  @ApiQuery({
+    name: 'downloadTaskId',
+    required: false,
+    type: Number,
+    description: 'Download task id filter',
+  })
   @ApiResponse({ status: 200, description: 'Admin log list loaded successfully' })
   async getAdminLogs(@Query() queryDto: AdminLogsQueryDto) {
-    const { page = 1, limit = 20, action, resource, status, roleId } = queryDto;
-    return await this.adminService.getAdminLogs(page, limit, { action, resource, status, roleId });
+    const {
+      page = 1,
+      limit = 20,
+      action,
+      resource,
+      status,
+      roleId,
+      clientId,
+      downloadTaskId,
+    } = queryDto;
+    return await this.adminService.getAdminLogs(page, limit, {
+      action,
+      resource,
+      status,
+      roleId,
+      clientId,
+      downloadTaskId,
+    });
   }
 
   @Get('users')
@@ -206,7 +244,7 @@ export class AdminController {
       search,
       status,
       sortBy,
-      sortOrder as AdminSortOrderQuery | undefined,
+      sortOrder,
     );
   }
 
@@ -242,15 +280,7 @@ export class AdminController {
   })
   @ApiResponse({ status: 200, description: 'Download task list loaded successfully' })
   getDownloadTasks(@Query() queryDto: AdminDownloadTasksQueryDto) {
-    const {
-      page = 1,
-      limit = 20,
-      status,
-      type,
-      userId,
-      mediaResourceId,
-      search,
-    } = queryDto;
+    const { page = 1, limit = 20, status, type, userId, mediaResourceId, search } = queryDto;
     return this.adminService.getDownloadTasks(
       page,
       limit,
@@ -260,6 +290,46 @@ export class AdminController {
       mediaResourceId,
       search,
     );
+  }
+
+  @Patch('download-tasks/batch')
+  @ApiOperation({ summary: 'Handle download tasks in batch' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        action: { type: 'string', enum: ['retry', 'cancel'], example: 'retry' },
+        ids: {
+          type: 'array',
+          items: { type: 'number' },
+          example: [11, 12],
+        },
+      },
+      required: ['action', 'ids'],
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Download tasks handled successfully' })
+  handleDownloadTasksBatch(@Body() actionDto: AdminBatchDownloadTaskActionDto) {
+    return this.adminService.handleDownloadTaskBatchAction(actionDto);
+  }
+
+  @Patch('download-tasks/:id')
+  @ApiOperation({ summary: 'Handle download task' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        action: { type: 'string', enum: ['retry', 'cancel'], example: 'retry' },
+      },
+      required: ['action'],
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Download task handled successfully' })
+  handleDownloadTask(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() actionDto: AdminDownloadTaskActionDto,
+  ) {
+    return this.adminService.handleDownloadTaskAction(id, actionDto);
   }
 
   @Get('health')

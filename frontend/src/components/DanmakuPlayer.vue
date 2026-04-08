@@ -24,7 +24,7 @@
           type="text"
           :placeholder="inputPlaceholder"
           class="danmaku-input"
-          :disabled="!isConnected || !settings.enabled"
+          :disabled="!canSendDanmaku"
           maxlength="100"
           @keyup.enter="sendDanmaku"
         />
@@ -37,11 +37,28 @@
           <option value="bottom">底部</option>
         </select>
         <button
-          :disabled="!isConnected || !inputText.trim() || !settings.enabled"
+          :disabled="!canSendDanmaku || !inputText.trim()"
           class="danmaku-send-btn"
           @click="sendDanmaku"
         >
           发送
+        </button>
+      </div>
+
+      <div v-if="suggestionChips.length > 0" class="mt-2 flex flex-wrap gap-2">
+        <button
+          v-for="item in suggestionChips"
+          :key="`${item.text}-${item.type}`"
+          class="rounded-full border border-white/20 bg-black/40 px-3 py-1 text-xs text-white transition hover:bg-black/60"
+          @click="applySuggestion(item.text)"
+        >
+          {{ item.text }}
+        </button>
+        <button
+          class="rounded-full border border-white/20 bg-black/20 px-3 py-1 text-xs text-white transition hover:bg-black/40"
+          @click="refreshSuggestions"
+        >
+          刷新建议
         </button>
       </div>
 
@@ -137,13 +154,24 @@
             <input v-model="settings.filter.highlight" type="checkbox" />
             高亮重要弹幕
           </label>
+
+          <div v-if="backendFilterRules" class="room-info mt-3">
+            <p>服务端过滤级别: {{ backendFilterRules.level }}</p>
+            <p>自动拦截: {{ backendFilterRules.autoBlock ? '开启' : '关闭' }}</p>
+            <p>敏感词条数: {{ backendFilterRules.sensitiveWords.length }}</p>
+          </div>
         </div>
 
         <!-- 房间信息 -->
         <div v-if="roomInfo" class="room-info">
           <p>在线用户: {{ roomInfo.onlineCount }}</p>
+          <p v-if="roomInfo.messageCount !== undefined">弹幕总数: {{ roomInfo.messageCount }}</p>
+          <p v-if="roomInfo.lastActivity">最近活跃: {{ formatRoomTime(roomInfo.lastActivity) }}</p>
           <p>房间ID: {{ props.videoId }}</p>
-          <p>连接状态: {{ isConnected ? '已连接' : '未连接' }}</p>
+          <p>连接状态: {{ roomConnectionLabel }}</p>
+          <button v-if="canUseHttpFallback" class="reconnect-btn mt-2" @click="refreshRoomSummary">
+            刷新房间信息
+          </button>
         </div>
       </div>
     </div>
@@ -151,26 +179,43 @@
     <!-- 连接状态提示 -->
     <div v-if="!isConnected && settings.enabled" class="connection-status">
       <div class="status-message">
-        {{ connectionError || '正在连接弹幕服务器...' }}
+        {{ connectionStatusMessage }}
       </div>
-      <button class="reconnect-btn" @click="reconnect">重新连接</button>
+      <button class="reconnect-btn" @click="reconnect">重试实时连接</button>
+    </div>
+
+    <div v-if="sendFeedback" class="connection-status connection-status--success">
+      <div class="status-message">
+        {{ sendFeedback }}
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
+  import {
+    ref,
+    reactive,
+    computed,
+    onMounted,
+    onUnmounted,
+    nextTick,
+    watch,
+    type CSSProperties,
+  } from 'vue';
   import {
     useDanmakuWebSocket,
     type DanmakuMessage,
     type DanmakuSettings,
     type RoomInfo,
   } from '@/services/danmaku-websocket.service';
+  import { danmakuApi } from '@/api/danmaku';
   import { useAuthStore } from '@/stores/auth';
 
   // Props 定义
   interface Props {
     videoId: string;
+    mediaResourceId?: number;
     width?: number;
     height?: number;
     showControls?: boolean;
@@ -194,6 +239,13 @@
   const showSettings = ref(false);
   const roomInfo = ref<RoomInfo | null>(null);
   const connectionError = ref<string | null>(null);
+  const sendFeedback = ref<string | null>(null);
+  const backendFilterRules = ref<Awaited<ReturnType<typeof danmakuApi.getFilterRules>> | null>(
+    null,
+  );
+  const suggestionChips = ref<Awaited<ReturnType<typeof danmakuApi.getSuggestions>>['suggestions']>(
+    [],
+  );
 
   // 弹幕列表管理
   const danmakuList = ref<DanmakuMessage[]>([]);
@@ -254,6 +306,38 @@
   // 用户认证
   const authStore = useAuthStore();
   const userId = computed(() => authStore.user?.id?.toString() || '');
+  const resolvedMediaResourceId = computed(() => {
+    if (typeof props.mediaResourceId === 'number' && Number.isFinite(props.mediaResourceId)) {
+      return props.mediaResourceId;
+    }
+
+    const inferred = Number(props.videoId);
+    return Number.isFinite(inferred) ? inferred : null;
+  });
+  const canUseHttpFallback = computed(() =>
+    Boolean(userId.value && props.videoId && resolvedMediaResourceId.value),
+  );
+  const canSendDanmaku = computed(
+    () => settings.enabled && (isConnected.value || canUseHttpFallback.value),
+  );
+  const roomConnectionLabel = computed(() => {
+    if (isConnected.value) return '已连接';
+    if (canUseHttpFallback.value) return 'HTTP 回退中';
+    return '未连接';
+  });
+  const connectionStatusMessage = computed(() => {
+    if (connectionError.value) {
+      return canUseHttpFallback.value
+        ? `${connectionError.value}，已切换到 HTTP 回退模式。`
+        : connectionError.value;
+    }
+
+    if (canUseHttpFallback.value) {
+      return '实时连接不可用，当前可通过 HTTP 回退发送弹幕。';
+    }
+
+    return '正在连接弹幕服务器...';
+  });
 
   // WebSocket 服务集成
   const {
@@ -313,14 +397,15 @@
     onConnected(() => {
       connectionError.value = null;
       wsGetRoomInfo();
+      void loadHttpRoomInfo();
     });
 
     onDisconnected(() => {
       connectionError.value = '连接已断开';
     });
 
-    onError((error: any) => {
-      connectionError.value = error.message || '连接错误';
+    onError((error: unknown) => {
+      connectionError.value = error instanceof Error ? error.message : '连接错误';
     });
 
     // 心跳响应
@@ -344,25 +429,134 @@
   };
 
   // 发送弹幕
-  const sendDanmaku = () => {
-    if (!inputText.value.trim() || !isConnected.value || !settings.enabled) return;
+  const sendDanmaku = async () => {
+    if (!inputText.value.trim() || !canSendDanmaku.value) return;
 
-    wsSendDanmaku({
-      text: inputText.value.trim(),
+    const text = inputText.value.trim();
+    const basePayload = {
+      text,
       color: selectedColor.value,
       type: selectedType.value,
       priority: 1,
       userId: userId.value,
       videoId: props.videoId,
       isHighlighted: false,
-    });
+    };
 
-    inputText.value = '';
+    if (isConnected.value) {
+      wsSendDanmaku(basePayload);
+      inputText.value = '';
+      sendFeedback.value = '弹幕已发送';
+      window.setTimeout(() => {
+        sendFeedback.value = null;
+      }, 2000);
+      return;
+    }
+
+    if (!resolvedMediaResourceId.value) {
+      connectionError.value = '缺少媒体资源 ID，无法发送弹幕';
+      return;
+    }
+
+    try {
+      const created = await danmakuApi.sendDanmaku({
+        text,
+        color: selectedColor.value,
+        type: selectedType.value,
+        priority: 1,
+        videoId: props.videoId,
+        mediaResourceId: resolvedMediaResourceId.value,
+      });
+
+      addDanmaku({
+        id: String(created.id),
+        userId: String(created.userId || userId.value),
+        videoId: created.videoId,
+        text: created.text,
+        color: created.color,
+        type: created.type,
+        priority: created.priority,
+        timestamp:
+          created.metadata?.timestamp ||
+          (created.createdAt ? new Date(created.createdAt).getTime() : Date.now()),
+        isHighlighted: created.isHighlighted,
+      });
+      inputText.value = '';
+      connectionError.value = null;
+      sendFeedback.value = '弹幕已通过 HTTP 回退发送';
+      window.setTimeout(() => {
+        sendFeedback.value = null;
+      }, 2000);
+      await loadHttpRoomInfo();
+    } catch (error: unknown) {
+      connectionError.value = error instanceof Error ? error.message : '发送弹幕失败';
+    }
+  };
+
+  const loadHttpRoomInfo = async () => {
+    if (!props.videoId) {
+      return;
+    }
+
+    try {
+      const response = await danmakuApi.getRoomInfo(props.videoId);
+      roomInfo.value = {
+        videoId: response.videoId,
+        onlineCount: response.onlineUsers,
+        messageCount: response.messageCount,
+        isActive: response.isActive,
+        lastActivity: response.lastActivity,
+        timestamp: response.lastActivity ? new Date(response.lastActivity).getTime() : Date.now(),
+      };
+    } catch {
+      // ignore fallback fetch failures; websocket state stays primary
+    }
+  };
+
+  const loadFilterRules = async () => {
+    try {
+      backendFilterRules.value = await danmakuApi.getFilterRules();
+    } catch {
+      // ignore rules fetch errors in player surface
+    }
+  };
+
+  const loadSuggestions = async () => {
+    if (!props.videoId) {
+      suggestionChips.value = [];
+      return;
+    }
+
+    try {
+      const response = await danmakuApi.getSuggestions({
+        videoId: props.videoId,
+        mediaResourceId: resolvedMediaResourceId.value || undefined,
+        type: 'relevant',
+        limit: 5,
+      });
+      suggestionChips.value = response.suggestions;
+    } catch {
+      suggestionChips.value = [];
+    }
+  };
+
+  const refreshSuggestions = async () => {
+    await loadSuggestions();
+  };
+
+  const refreshRoomSummary = async () => {
+    await loadHttpRoomInfo();
+    await loadFilterRules();
+    await loadSuggestions();
+  };
+
+  const applySuggestion = (text: string) => {
+    inputText.value = text;
   };
 
   // 弹幕样式计算
   const getDanmakuStyle = (danmaku: DanmakuMessage) => {
-    const baseStyle: any = {
+    const baseStyle: CSSProperties = {
       color: danmaku.color || settings.color,
       fontSize: `${settings.fontSize}px`,
       fontFamily: settings.fontFamily,
@@ -406,7 +600,7 @@
     const scrollDanmaku = visibleDanmaku.value.filter(d => d.type === 'scroll');
     const currentTime = Date.now();
 
-    scrollDanmaku.forEach((danmaku: any) => {
+    scrollDanmaku.forEach((danmaku: DanmakuMessage) => {
       if (!danmaku.position) {
         danmaku.position = {
           x: containerWidth,
@@ -467,10 +661,27 @@
 
   // 计算属性
   const inputPlaceholder = computed(() => {
+    if (!isConnected.value && canUseHttpFallback.value) return '发送弹幕 (HTTP 回退)';
     if (!isConnected.value) return '连接中...';
     if (!settings.enabled) return '弹幕已禁用';
     return '发送弹幕 (按Enter)';
   });
+
+  const formatRoomTime = (value?: string | null) => {
+    if (!value) return '—';
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? '—' : parsed.toLocaleString('zh-CN');
+  };
+
+  watch(
+    () => props.videoId,
+    () => {
+      void loadHttpRoomInfo();
+      void loadFilterRules();
+      void loadSuggestions();
+    },
+    { immediate: true },
+  );
 </script>
 
 <style scoped>

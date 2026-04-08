@@ -19,6 +19,7 @@
             <DanmakuPlayer
               v-if="currentPlaySource"
               :video-id="media.id.toString()"
+              :media-resource-id="media.id"
               :width="1280"
               :height="720"
               :show-controls="true"
@@ -61,7 +62,9 @@
                 >
                   <div class="flex items-start justify-between gap-3">
                     <div>
-                      <div class="font-medium">{{ playSource.sourceName || `播放源 ${playSource.id}` }}</div>
+                      <div class="font-medium">
+                        {{ playSource.sourceName || `播放源 ${playSource.id}` }}
+                      </div>
                       <div class="mt-1 text-xs text-gray-300">
                         {{ playSource.resolution }} · {{ playSource.format }}
                       </div>
@@ -77,13 +80,22 @@
                 <div class="rounded-xl bg-gray-700 p-3">
                   <h3 class="mb-3 font-medium">播放控制</h3>
                   <div class="grid grid-cols-3 gap-2">
-                    <button class="rounded-lg bg-gray-600 p-2 text-white hover:bg-gray-500" @click="togglePlay">
+                    <button
+                      class="rounded-lg bg-gray-600 p-2 text-white hover:bg-gray-500"
+                      @click="togglePlay"
+                    >
                       <span class="text-sm">{{ isPlaying ? '暂停' : '播放' }}</span>
                     </button>
-                    <button class="rounded-lg bg-gray-600 p-2 text-white hover:bg-gray-500" @click="handleVolumeToggle">
+                    <button
+                      class="rounded-lg bg-gray-600 p-2 text-white hover:bg-gray-500"
+                      @click="handleVolumeToggle"
+                    >
                       <span class="text-sm">静音</span>
                     </button>
-                    <button class="rounded-lg bg-gray-600 p-2 text-white hover:bg-gray-500" @click="toggleFullscreen">
+                    <button
+                      class="rounded-lg bg-gray-600 p-2 text-white hover:bg-gray-500"
+                      @click="toggleFullscreen"
+                    >
                       <span class="text-sm">全屏</span>
                     </button>
                   </div>
@@ -97,7 +109,8 @@
               <div>
                 <h2 class="text-lg font-semibold">下载任务</h2>
                 <p class="mt-1 text-sm text-gray-400">
-                  当前资源检测到 {{ availableDownloadUrls.length }} 个可用下载链接，可加入任务列表统一处理。
+                  当前资源检测到
+                  {{ availableDownloadUrls.length }} 个可用下载链接，可加入任务列表统一处理。
                 </p>
               </div>
               <router-link
@@ -447,7 +460,10 @@
         : `已将《${media.value.title}》移出收藏`;
 
       if (nextState) {
-        notifySuccess('收藏已更新', `已将《${media.value.title}》加入收藏，可前往“我的收藏”继续查看。`);
+        notifySuccess(
+          '收藏已更新',
+          `已将《${media.value.title}》加入收藏，可前往“我的收藏”继续查看。`,
+        );
       } else {
         notifyInfo('收藏已更新', `已将《${media.value.title}》从收藏中移除。`);
       }

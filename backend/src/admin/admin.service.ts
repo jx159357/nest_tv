@@ -15,6 +15,11 @@ import {
   UpdatePermissionDto,
   UpdateRoleDto,
 } from './dto/create-admin.dto';
+import {
+  AdminDownloadTaskAction,
+  type AdminBatchDownloadTaskActionDto,
+  type AdminDownloadTaskActionDto,
+} from './dto/admin-download-task-action.dto';
 
 /**
  * 后台管理服务
@@ -273,10 +278,7 @@ export class AdminService {
     }
 
     const pagination = this.resolvePagination(total, page, limit);
-    const data = await queryBuilder
-      .skip(pagination.offset)
-      .take(pagination.limit)
-      .getMany();
+    const data = await queryBuilder.skip(pagination.offset).take(pagination.limit).getMany();
 
     return {
       data,
@@ -356,7 +358,8 @@ export class AdminService {
     if (normalizedSearch) {
       queryBuilder.andWhere(
         `(
-          downloadTask.fileName LIKE :search
+          downloadTask.clientId LIKE :search
+          OR downloadTask.fileName LIKE :search
           OR downloadTask.sourceLabel LIKE :search
           OR downloadTask.url LIKE :search
           OR user.username LIKE :search
@@ -382,6 +385,67 @@ export class AdminService {
       limit: pagination.limit,
       totalPages: pagination.totalPages,
     };
+  }
+
+  async handleDownloadTaskAction(
+    id: number,
+    actionDto: AdminDownloadTaskActionDto,
+  ): Promise<DownloadTask> {
+    const task = await this.downloadTaskRepository.findOne({
+      where: { id },
+      relations: ['user', 'mediaResource'],
+    });
+
+    if (!task) {
+      throw new HttpException('Download task not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (actionDto.action === AdminDownloadTaskAction.RETRY) {
+      task.status = DownloadTaskStatus.PENDING;
+      task.progress = 0;
+      task.speed = 0;
+      task.downloaded = 0;
+      task.error = undefined;
+      task.completedAt = undefined;
+    }
+
+    if (actionDto.action === AdminDownloadTaskAction.CANCEL) {
+      task.status = DownloadTaskStatus.CANCELLED;
+      task.speed = 0;
+      task.error = task.error || '管理员手动取消';
+    }
+
+    const savedTask = await this.downloadTaskRepository.save(task);
+
+    await this.logAction(
+      actionDto.action,
+      'download_task',
+      {
+        downloadTaskId: savedTask.id,
+        clientId: savedTask.clientId,
+        status: savedTask.status,
+      },
+      1,
+      savedTask.userId,
+      'success',
+      `Handle download task: ${actionDto.action}`,
+    );
+
+    return savedTask;
+  }
+
+  async handleDownloadTaskBatchAction(
+    actionDto: AdminBatchDownloadTaskActionDto,
+  ): Promise<DownloadTask[]> {
+    const uniqueIds = [...new Set(actionDto.ids)];
+
+    return await Promise.all(
+      uniqueIds.map(id =>
+        this.handleDownloadTaskAction(id, {
+          action: actionDto.action,
+        }),
+      ),
+    );
   }
 
   private normalizePermissionCodes(permissionCodes?: string[]) {
@@ -754,6 +818,8 @@ export class AdminService {
       resource?: string;
       status?: 'success' | 'error' | 'warning';
       roleId?: number;
+      clientId?: string;
+      downloadTaskId?: number;
       startDate?: Date;
       endDate?: Date;
     },
@@ -783,6 +849,18 @@ export class AdminService {
         }
         if (filters.roleId) {
           queryBuilder.andWhere('adminLog.roleId = :roleId', { roleId: filters.roleId });
+        }
+        if (filters.clientId) {
+          queryBuilder.andWhere(
+            "JSON_UNQUOTE(JSON_EXTRACT(adminLog.metadata, '$.clientId')) = :clientId",
+            { clientId: filters.clientId },
+          );
+        }
+        if (filters.downloadTaskId) {
+          queryBuilder.andWhere(
+            "JSON_UNQUOTE(JSON_EXTRACT(adminLog.metadata, '$.downloadTaskId')) = :downloadTaskId",
+            { downloadTaskId: String(filters.downloadTaskId) },
+          );
         }
         if (filters.startDate) {
           queryBuilder.andWhere('adminLog.createdAt >= :startDate', {
