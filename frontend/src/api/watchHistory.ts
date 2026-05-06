@@ -28,16 +28,25 @@ export interface WatchHistoryStats {
 export const watchHistoryApi = {
   // 获取当前用户观看历史
   getMyWatchHistory: (params?: any) => {
-    return api.get<PaginatedResponse<WatchHistoryItem>>('/watch-history/user/me', { params }, false);
+    return api.get<PaginatedResponse<WatchHistoryItem>>(
+      '/watch-history/user/me',
+      { params },
+      false,
+    );
   },
 
   // 获取用户的观看历史
   getUserWatchHistory: (_userId?: string | number, params?: any) => {
-    return api.get<PaginatedResponse<WatchHistoryItem>>('/watch-history/user/me', { params }, false);
+    return api.get<PaginatedResponse<WatchHistoryItem>>(
+      '/watch-history/user/me',
+      { params },
+      false,
+    );
   },
 
   // 获取用户统计信息
   getUserStats: (_userId?: string | number) => {
+    void _userId;
     return api.get<WatchHistoryStats>('/watch-history/user/me/stats', undefined, false);
   },
 

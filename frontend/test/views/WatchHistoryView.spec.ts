@@ -2,22 +2,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import WatchHistoryView from '@/views/WatchHistoryView.vue';
 
-const { watchHistoryApi, authStore, routeState, routerReplace, routerPush, showConfirm } = vi.hoisted(() => ({
-  watchHistoryApi: {
-    getMyWatchHistory: vi.fn(),
-    deleteWatchHistory: vi.fn(),
-  },
-  authStore: {
-    user: { id: 1 },
-    fetchUserProfile: vi.fn(),
-  },
-  routeState: {
-    query: {} as Record<string, string>,
-  },
-  routerReplace: vi.fn(),
-  routerPush: vi.fn(),
-  showConfirm: vi.fn(),
-}));
+const { watchHistoryApi, authStore, routeState, routerReplace, routerPush, showConfirm } =
+  vi.hoisted(() => ({
+    watchHistoryApi: {
+      getMyWatchHistory: vi.fn(),
+      deleteWatchHistory: vi.fn(),
+    },
+    authStore: {
+      user: { id: 1 },
+      fetchUserProfile: vi.fn(),
+    },
+    routeState: {
+      query: {} as Record<string, string>,
+    },
+    routerReplace: vi.fn(),
+    routerPush: vi.fn(),
+    showConfirm: vi.fn(),
+  }));
 
 vi.mock('@/api/watchHistory', () => ({
   watchHistoryApi,
@@ -161,7 +162,10 @@ describe('WatchHistoryView', () => {
 
     await deleteButton!.trigger('click');
 
-    expect(showConfirm).toHaveBeenCalledWith('确定要删除这条观看历史记录吗？', expect.any(Function));
+    expect(showConfirm).toHaveBeenCalledWith(
+      '确定要删除这条观看历史记录吗？',
+      expect.any(Function),
+    );
 
     const onConfirm = showConfirm.mock.calls[0][1] as () => Promise<void>;
     await onConfirm();

@@ -28,8 +28,18 @@ describe('searchApi', () => {
     await searchApi.recordHistory({ keyword: '奥本海默' });
     await searchApi.clearHistory();
 
-    expect(apiGet).toHaveBeenNthCalledWith(1, '/search/suggestions', { params: { keyword: '星际', limit: 6 } }, false);
-    expect(apiGet).toHaveBeenNthCalledWith(2, '/search/popular-keywords', { params: { limit: 5 } }, false);
+    expect(apiGet).toHaveBeenNthCalledWith(
+      1,
+      '/search/suggestions',
+      { params: { keyword: '星际', limit: 6 } },
+      false,
+    );
+    expect(apiGet).toHaveBeenNthCalledWith(
+      2,
+      '/search/popular-keywords',
+      { params: { limit: 5 } },
+      false,
+    );
     expect(apiGet).toHaveBeenNthCalledWith(3, '/search/history', { params: { limit: 4 } }, false);
     expect(apiGet).toHaveBeenNthCalledWith(
       4,

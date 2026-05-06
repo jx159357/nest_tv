@@ -44,7 +44,7 @@
     "hls.js": "^1.6.11",
     "ioredis": "^5.7.0",
     "m3u8-parser": "^7.2.0",
-    "magnet-uri": "^7.0.7",
+    "magnet-uri": "^6.2.0",
     "mysql2": "^3.14.3",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
@@ -116,7 +116,9 @@
       "lcov",
       "html"
     ],
-    "setupFilesAfterEnv": ["<rootDir>/../test/setup.ts"],
+    "setupFilesAfterEnv": [
+      "<rootDir>/../test/setup.ts"
+    ],
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/$1"
     },

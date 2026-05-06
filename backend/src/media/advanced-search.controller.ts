@@ -172,7 +172,7 @@ export class AdvancedSearchController {
   @ApiOperation({ summary: '获取搜索趋势统计' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiQuery({ name: 'days', description: '统计天数，默认7', required: false })
-  getSearchTrends(@Query('days') days?: string): {
+  async getSearchTrends(@Query('days') days?: string): Promise<{
     totalSearches: number;
     dailyTrends: Array<{
       date: string;
@@ -183,26 +183,10 @@ export class AdvancedSearchController {
       keyword: string;
       count: number;
     }>;
-  } {
+  }> {
     try {
-      void days;
-      // 这里可以实现搜索趋势统计
-      // 暂时返回模拟数据
-      return {
-        totalSearches: 1250,
-        dailyTrends: [
-          { date: '2024-09-11', count: 180, topKeywords: ['复仇者联盟', '阿凡达', '黑豹'] },
-          { date: '2024-09-10', count: 165, topKeywords: ['雷神4', '蜘蛛侠', '奥本海默'] },
-          { date: '2024-09-09', count: 152, topKeywords: ['沙丘', '敦刻尔克', '星际穿越'] },
-        ],
-        popularKeywords: [
-          { keyword: '复仇者联盟', count: 45 },
-          { keyword: '阿凡达', count: 38 },
-          { keyword: '雷神4', count: 32 },
-          { keyword: '黑豹', count: 28 },
-          { keyword: '蜘蛛侠', count: 25 },
-        ],
-      };
+      const parsedDays = days ? parseInt(days, 10) : 7;
+      return await this.advancedSearchService.getSearchTrends(parsedDays);
     } catch (error: unknown) {
       throw toHttpException(error, '获取搜索趋势失败');
     }

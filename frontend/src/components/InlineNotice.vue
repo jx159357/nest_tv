@@ -1,9 +1,5 @@
 <template>
-  <div
-    class="rounded-xl border px-4 py-3 text-sm"
-    :class="noticeClass"
-    role="status"
-  >
+  <div class="rounded-xl border px-4 py-3 text-sm" :class="noticeClass" role="status">
     <div class="flex items-start justify-between gap-4">
       <div class="min-w-0 flex-1">
         <div v-if="title" class="font-semibold">{{ title }}</div>

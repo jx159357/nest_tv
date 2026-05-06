@@ -20,7 +20,6 @@
 
   const authStore = useAuthStore();
   const isVisible = ref(false);
-  const remainingSeconds = ref(0);
 
   // 计算剩余时间（分钟:秒）
   const remainingTime = computed(() => {

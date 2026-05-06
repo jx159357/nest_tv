@@ -163,7 +163,6 @@
 
 <script setup lang="ts">
   import { ref, computed, nextTick } from 'vue';
-  import type { Ref } from 'vue';
   import { showConfirm } from '@/composables/useModal';
 
   interface VideoMetadata {

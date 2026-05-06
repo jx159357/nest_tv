@@ -46,7 +46,9 @@ describe('NavigationLayout', () => {
       },
     });
 
-    const menuButton = wrapper.findAll('button').find(button => !button.classes().includes('mobile-logout-button'));
+    const menuButton = wrapper
+      .findAll('button')
+      .find(button => !button.classes().includes('mobile-logout-button'));
     expect(menuButton).toBeTruthy();
     await menuButton!.trigger('click');
     await flushPromises();

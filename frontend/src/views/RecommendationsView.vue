@@ -37,11 +37,16 @@
         </div>
 
         <div v-if="profileLoading" class="py-8 text-center">
-          <div class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
+          <div
+            class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
+          ></div>
           <p class="mt-2 text-gray-600">正在分析你的推荐画像...</p>
         </div>
 
-        <div v-else-if="profileError" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+        <div
+          v-else-if="profileError"
+          class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+        >
           {{ profileError }}
         </div>
 
@@ -49,11 +54,15 @@
           <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div class="text-xs text-slate-500">观看记录</div>
             <div class="mt-2 text-2xl font-semibold text-slate-900">{{ profile.totalWatched }}</div>
-            <div class="mt-1 text-xs text-slate-500">近期活跃 {{ profile.recentWatchCount }} 条</div>
+            <div class="mt-1 text-xs text-slate-500">
+              近期活跃 {{ profile.recentWatchCount }} 条
+            </div>
           </div>
           <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div class="text-xs text-slate-500">完成度</div>
-            <div class="mt-2 text-2xl font-semibold text-slate-900">{{ profile.averageCompletionRate }}%</div>
+            <div class="mt-2 text-2xl font-semibold text-slate-900">
+              {{ profile.averageCompletionRate }}%
+            </div>
             <div class="mt-1 text-xs text-slate-500">已看完 {{ profile.completedCount }} 条</div>
           </div>
           <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
@@ -61,7 +70,9 @@
             <div class="mt-3 space-y-3 text-sm text-slate-700">
               <div>
                 <span class="font-medium">偏好类型：</span>
-                <span v-if="profile.favoriteTypes.length === 0" class="text-slate-500">暂无明显偏好</span>
+                <span v-if="profile.favoriteTypes.length === 0" class="text-slate-500"
+                  >暂无明显偏好</span
+                >
                 <span v-else class="flex flex-wrap gap-2 pt-2">
                   <span
                     v-for="item in profile.favoriteTypes"
@@ -75,7 +86,9 @@
 
               <div>
                 <span class="font-medium">偏好标签：</span>
-                <span v-if="profile.favoriteGenres.length === 0" class="text-slate-500">暂无明显偏好</span>
+                <span v-if="profile.favoriteGenres.length === 0" class="text-slate-500"
+                  >暂无明显偏好</span
+                >
                 <span v-else class="flex flex-wrap gap-2 pt-2">
                   <span
                     v-for="item in profile.favoriteGenres"
@@ -89,7 +102,9 @@
 
               <div>
                 <span class="font-medium">导演偏好：</span>
-                <span v-if="profile.favoriteDirectors.length === 0" class="text-slate-500">暂无明显偏好</span>
+                <span v-if="profile.favoriteDirectors.length === 0" class="text-slate-500"
+                  >暂无明显偏好</span
+                >
                 <span v-else class="flex flex-wrap gap-2 pt-2">
                   <span
                     v-for="item in profile.favoriteDirectors"
@@ -103,7 +118,9 @@
 
               <div>
                 <span class="font-medium">最近搜索：</span>
-                <span v-if="profile.recentSearchKeywords.length === 0" class="text-slate-500">暂无明显搜索兴趣</span>
+                <span v-if="profile.recentSearchKeywords.length === 0" class="text-slate-500"
+                  >暂无明显搜索兴趣</span
+                >
                 <span v-else class="flex flex-wrap gap-2 pt-2">
                   <span
                     v-for="item in profile.recentSearchKeywords"
@@ -123,7 +140,9 @@
         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h2 class="text-2xl font-semibold text-gray-900">搜索兴趣</h2>
-            <p class="mt-2 text-sm text-gray-600">结合你最近搜索过的内容，提供一个更直接的继续探索入口。</p>
+            <p class="mt-2 text-sm text-gray-600">
+              结合你最近搜索过的内容，提供一个更直接的继续探索入口。
+            </p>
           </div>
           <button
             class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
@@ -135,15 +154,23 @@
         </div>
 
         <div v-if="searchHistoryLoading" class="py-8 text-center">
-          <div class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
+          <div
+            class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
+          ></div>
           <p class="mt-2 text-gray-600">正在加载搜索兴趣...</p>
         </div>
 
-        <div v-else-if="searchHistoryError" class="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+        <div
+          v-else-if="searchHistoryError"
+          class="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+        >
           {{ searchHistoryError }}
         </div>
 
-        <div v-else-if="searchHistory.length === 0" class="mt-6 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+        <div
+          v-else-if="searchHistory.length === 0"
+          class="mt-6 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500"
+        >
           暂无服务端搜索历史。你在顶部搜索或首页搜索后，这里会逐步形成你的搜索兴趣画像。
         </div>
 
@@ -164,7 +191,9 @@
           </div>
 
           <div v-if="relatedKeywords.length > 0">
-            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">继续探索 {{ searchHistory[0] }}</div>
+            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              继续探索 {{ searchHistory[0] }}
+            </div>
             <div class="mt-3 flex flex-wrap gap-2">
               <button
                 v-for="keyword in relatedKeywords"
@@ -184,18 +213,25 @@
         <div class="mb-6 flex items-center justify-between">
           <div>
             <h2 class="text-2xl font-semibold text-gray-900">为你推荐</h2>
-            <p class="mt-1 text-sm text-gray-600">展示推荐理由，帮助你快速理解这条内容为什么值得现在打开。</p>
+            <p class="mt-1 text-sm text-gray-600">
+              展示推荐理由，帮助你快速理解这条内容为什么值得现在打开。
+            </p>
           </div>
         </div>
 
         <div v-if="personalizedLoading" class="py-8 text-center">
-          <div class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
+          <div
+            class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
+          ></div>
           <p class="mt-2 text-gray-600">正在加载个性化推荐...</p>
         </div>
 
         <div v-else-if="personalizedError" class="py-8 text-center">
           <p class="text-red-600">{{ personalizedError }}</p>
-          <button class="mt-2 text-blue-500 hover:underline" @click="loadPersonalizedRecommendations">
+          <button
+            class="mt-2 text-blue-500 hover:underline"
+            @click="loadPersonalizedRecommendations"
+          >
             重试
           </button>
         </div>
@@ -213,7 +249,9 @@
           >
             <template #badge>
               <div class="space-y-2">
-                <div class="text-xs font-medium text-slate-500">推荐分 {{ item.score.toFixed(1) }}</div>
+                <div class="text-xs font-medium text-slate-500">
+                  推荐分 {{ item.score.toFixed(1) }}
+                </div>
                 <div class="flex flex-wrap gap-2">
                   <span
                     v-for="reason in item.reasons"
@@ -233,7 +271,9 @@
         <h2 class="mb-6 text-2xl font-semibold text-gray-900">热门推荐</h2>
 
         <div v-if="popularLoading" class="py-8 text-center">
-          <div class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
+          <div
+            class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
+          ></div>
           <p class="mt-2 text-gray-600">正在加载...</p>
         </div>
 
@@ -246,7 +286,12 @@
         </div>
 
         <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <MediaCard v-for="item in popular" :key="item.id" :media="item" @click="openMediaDetail" />
+          <MediaCard
+            v-for="item in popular"
+            :key="item.id"
+            :media="item"
+            @click="openMediaDetail"
+          />
         </div>
       </section>
 
@@ -254,7 +299,9 @@
         <h2 class="mb-6 text-2xl font-semibold text-gray-900">高分精选</h2>
 
         <div v-if="editorialLoading" class="py-8 text-center">
-          <div class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
+          <div
+            class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
+          ></div>
           <p class="mt-2 text-gray-600">正在加载...</p>
         </div>
 
@@ -267,7 +314,12 @@
         </div>
 
         <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <MediaCard v-for="item in editorial" :key="item.id" :media="item" @click="openMediaDetail" />
+          <MediaCard
+            v-for="item in editorial"
+            :key="item.id"
+            :media="item"
+            @click="openMediaDetail"
+          />
         </div>
       </section>
 
@@ -275,7 +327,9 @@
         <h2 class="mb-6 text-2xl font-semibold text-gray-900">最新上架</h2>
 
         <div v-if="latestLoading" class="py-8 text-center">
-          <div class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
+          <div
+            class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
+          ></div>
           <p class="mt-2 text-gray-600">正在加载...</p>
         </div>
 
@@ -521,7 +575,11 @@
       return;
     }
 
-    await Promise.all([loadPopularRecommendations(), loadEditorialRecommendations(), loadLatestRecommendations()]);
+    await Promise.all([
+      loadPopularRecommendations(),
+      loadEditorialRecommendations(),
+      loadLatestRecommendations(),
+    ]);
   };
 
   onMounted(() => {

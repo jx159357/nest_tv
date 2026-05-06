@@ -4,7 +4,9 @@
       <header class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 class="text-3xl font-bold text-gray-900">我的收藏</h1>
-          <p class="mt-2 text-sm text-gray-600">集中查看你收藏的影视内容，支持翻页分享与刷新后恢复上下文。</p>
+          <p class="mt-2 text-sm text-gray-600">
+            集中查看你收藏的影视内容，支持翻页分享与刷新后恢复上下文。
+          </p>
         </div>
       </header>
 
@@ -50,9 +52,16 @@
           </div>
         </div>
 
-        <div v-if="!highlightedFavoriteInList" class="mt-4 max-w-sm" data-testid="highlighted-favorite-pinned">
+        <div
+          v-if="!highlightedFavoriteInList"
+          class="mt-4 max-w-sm"
+          data-testid="highlighted-favorite-pinned"
+        >
           <div class="rounded-2xl ring-2 ring-amber-300 ring-offset-2 ring-offset-amber-50">
-            <MediaCard :media="highlightedFavoritePreview" @click="goToMediaDetail(highlightedFavoritePreview.id)" />
+            <MediaCard
+              :media="highlightedFavoritePreview"
+              @click="goToMediaDetail(highlightedFavoritePreview.id)"
+            />
           </div>
         </div>
       </section>
@@ -62,7 +71,10 @@
           <LoadingSpinner text="加载中..." />
         </div>
 
-        <div v-else-if="error" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+        <div
+          v-else-if="error"
+          class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+        >
           {{ error }}
         </div>
 
@@ -72,7 +84,11 @@
               v-for="media in favorites"
               :key="media.id"
               class="rounded-2xl transition-all duration-300"
-              :class="media.id === highlightedFavoriteId ? 'ring-2 ring-amber-300 ring-offset-2 ring-offset-amber-50' : ''"
+              :class="
+                media.id === highlightedFavoriteId
+                  ? 'ring-2 ring-amber-300 ring-offset-2 ring-offset-amber-50'
+                  : ''
+              "
               :data-highlighted="media.id === highlightedFavoriteId ? 'true' : undefined"
               :data-testid="media.id === highlightedFavoriteId ? 'favorite-highlighted' : undefined"
             >
@@ -109,7 +125,12 @@
           </div>
         </template>
 
-        <EmptyState v-else title="暂无收藏内容" description="去首页挑一些喜欢的内容收藏起来吧" icon="film" />
+        <EmptyState
+          v-else
+          title="暂无收藏内容"
+          description="去首页挑一些喜欢的内容收藏起来吧"
+          icon="film"
+        />
       </section>
     </div>
   </NavigationLayout>
@@ -206,7 +227,9 @@
     }
 
     try {
-      highlightedPinnedFavorite.value = await mediaApi.getMediaById(String(highlightedFavoriteId.value));
+      highlightedPinnedFavorite.value = await mediaApi.getMediaById(
+        String(highlightedFavoriteId.value),
+      );
     } catch (highlightError) {
       console.error('加载高亮收藏预览失败:', highlightError);
       highlightedPinnedFavorite.value = null;

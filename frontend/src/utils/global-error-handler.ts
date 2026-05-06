@@ -272,7 +272,7 @@ export class GlobalErrorHandler {
       showNotification?: boolean;
     } = {},
   ): Promise<{ success: boolean; data?: T; error?: ApiError }> {
-    const { defaultMessage = '操作失败', showError = true, showNotification = false } = options;
+    const { defaultMessage = '操作失败', showNotification = false } = options;
 
     try {
       const result = await promise;

@@ -65,7 +65,9 @@ describe('SearchHistoryView', () => {
     const wrapper = mount(SearchHistoryView);
     await flushPromises();
 
-    const historyButton = wrapper.findAll('button').find(button => button.text().includes('奥本海默'));
+    const historyButton = wrapper
+      .findAll('button')
+      .find(button => button.text().includes('奥本海默'));
     expect(historyButton).toBeTruthy();
 
     await historyButton!.trigger('click');
@@ -78,7 +80,9 @@ describe('SearchHistoryView', () => {
     const wrapper = mount(SearchHistoryView);
     await flushPromises();
 
-    const clearButton = wrapper.findAll('button').find(button => button.text().includes('清空搜索历史'));
+    const clearButton = wrapper
+      .findAll('button')
+      .find(button => button.text().includes('清空搜索历史'));
     expect(clearButton).toBeTruthy();
 
     await clearButton!.trigger('click');

@@ -262,8 +262,8 @@
         >
           <div
             v-for="target in filteredCrawlerTargets"
-            :key="target.name"
             :id="getSourceCardId(target.name)"
+            :key="target.name"
             :ref="element => setSourceCardRef(target.name, element)"
             :class="getSourceCardClass(target.name)"
           >
@@ -293,15 +293,14 @@
                     当前代理: {{ getSourceHealth(target.name)?.proxyMode }} · 建议代理:
                     {{ getSourceHealth(target.name)?.suggestedProxyMode }}
                   </p>
-                  <p>
-                    代理范围: {{ formatProxyTargets(getSourceHealth(target.name)) }}
-                  </p>
+                  <p>代理范围: {{ formatProxyTargets(getSourceHealth(target.name)) }}</p>
                   <p>
                     提取覆盖: {{ getSourceHealth(target.name)?.extractionCoverage }}% · 近 7 天新增:
                     {{ getSourceHealth(target.name)?.recentMedia7d }}
                   </p>
                   <p class="text-[11px] text-gray-500">
-                    分数组成: {{ formatQualityBreakdown(getSourceHealth(target.name)?.qualityBreakdown) }}
+                    分数组成:
+                    {{ formatQualityBreakdown(getSourceHealth(target.name)?.qualityBreakdown) }}
                   </p>
                   <p>
                     近24h新增源:

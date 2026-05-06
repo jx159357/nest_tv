@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import ProfileView from '@/views/ProfileView.vue';
 
-const { watchHistoryApi, recommendationsApi, searchApi, mediaApi, authStore, routerPush } = vi.hoisted(
-  () => ({
+const { watchHistoryApi, recommendationsApi, searchApi, mediaApi, authStore, routerPush } =
+  vi.hoisted(() => ({
     watchHistoryApi: {
       getUserStats: vi.fn(),
       getContinueWatching: vi.fn(),
@@ -30,8 +30,7 @@ const { watchHistoryApi, recommendationsApi, searchApi, mediaApi, authStore, rou
       logout: vi.fn(),
     },
     routerPush: vi.fn(),
-  }),
-);
+  }));
 
 vi.mock('@/api/watchHistory', () => ({
   watchHistoryApi,
@@ -191,5 +190,3 @@ describe('ProfileView', () => {
     expect(wrapper.text()).toContain('Favorite Movie');
   });
 });
-
-

@@ -15,21 +15,33 @@ export interface SearchHistoryPayload {
 
 export const searchApi = {
   getSuggestions: (keyword: string, limit = 8) => {
-    return ApiClient.get<SearchSuggestionItem[]>('/search/suggestions', {
-      params: { keyword, limit },
-    }, false);
+    return ApiClient.get<SearchSuggestionItem[]>(
+      '/search/suggestions',
+      {
+        params: { keyword, limit },
+      },
+      false,
+    );
   },
 
   getPopularKeywords: (limit = 8) => {
-    return ApiClient.get<string[]>('/search/popular-keywords', {
-      params: { limit },
-    }, false);
+    return ApiClient.get<string[]>(
+      '/search/popular-keywords',
+      {
+        params: { limit },
+      },
+      false,
+    );
   },
 
   getHistory: (limit = 8) => {
-    return ApiClient.get<string[]>('/search/history', {
-      params: { limit },
-    }, false);
+    return ApiClient.get<string[]>(
+      '/search/history',
+      {
+        params: { limit },
+      },
+      false,
+    );
   },
 
   clearHistory: () => {
@@ -37,9 +49,13 @@ export const searchApi = {
   },
 
   getRelatedKeywords: (keyword: string, limit = 6) => {
-    return ApiClient.get<string[]>(`/search/related-keywords/${encodeURIComponent(keyword)}`, {
-      params: { limit },
-    }, false);
+    return ApiClient.get<string[]>(
+      `/search/related-keywords/${encodeURIComponent(keyword)}`,
+      {
+        params: { limit },
+      },
+      false,
+    );
   },
 
   recordHistory: (payload: SearchHistoryPayload) => {

@@ -87,7 +87,10 @@
                     {{ item.description || '暂无描述' }}
                   </div>
                   <router-link
-                    :to="{ name: 'admin-download-tasks', query: { mediaResourceId: String(item.id) } }"
+                    :to="{
+                      name: 'admin-download-tasks',
+                      query: { mediaResourceId: String(item.id) },
+                    }"
                     class="mt-2 inline-flex text-xs text-indigo-600 hover:text-indigo-700"
                   >
                     查看下载任务

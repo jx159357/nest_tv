@@ -194,7 +194,10 @@
                   </span>
                 </div>
               </div>
-              <div v-if="String(currentPlaySource?.id) === 'local'" class="play-source-button__indicator">
+              <div
+                v-if="String(currentPlaySource?.id) === 'local'"
+                class="play-source-button__indicator"
+              >
                 <div class="play-source-button__indicator-dot"></div>
               </div>
             </button>
@@ -367,7 +370,8 @@
   import { notifyError, notifySuccess, showConfirm } from '@/composables/useModal';
   import VideoPlayer from '@/components/ui/VideoPlayer.vue';
   import LocalVideoUpload from '@/components/ui/LocalVideoUpload.vue';
-  import { formatFileSize, formatDuration } from '@/utils/file-size';
+  import { copyTextToClipboard } from '@/utils/clipboard';
+  import { formatFileSize } from '@/utils/file-size';
   import type { MediaResource, PlaySource } from '@/types/media';
 
   interface DanmakuSettings {
@@ -495,24 +499,6 @@
           showPreviewWarning.value = false;
         }, 8000);
       }
-    }
-  };
-
-  // 开始完整观看
-  const startFullVideo = () => {
-    if (!authStore.isAuthenticated) {
-      // 显示登录提示
-      showPreviewModal.value = true;
-      return;
-    }
-
-    isPreviewMode.value = false;
-    showPreviewModal.value = false;
-    showPreviewWarning.value = false;
-
-    // 从暂停位置继续播放
-    if (videoPlayerRef.value) {
-      videoPlayerRef.value.play();
     }
   };
 
@@ -650,7 +636,7 @@
     }
   };
 
-  const onVideoVolumeChange = (_volume: number) => undefined;
+  const onVideoVolumeChange = () => undefined;
 
   const onVideoError = (error: string) => {
     console.error('视频播放错误:', error);
@@ -688,9 +674,7 @@
         })
         .catch(console.error);
     } else {
-      // 复制到剪贴板
-      navigator.clipboard
-        .writeText(url)
+      copyTextToClipboard(url)
         .then(() => {
           notifySuccess('链接已复制', '当前视频链接已复制到剪贴板。');
         })
@@ -759,7 +743,6 @@
     if (String(currentPlaySource.value?.id) === 'local' && playSources.value.length > 0) {
       switchToBestSource();
     }
-
   };
 
   const onLocalVideoPlay = (file: File, url: string) => {
@@ -769,7 +752,7 @@
     switchToLocalVideo();
   };
 
-  const onLocalVideoUploadComplete = (_response: unknown) => undefined;
+  const onLocalVideoUploadComplete = () => undefined;
 
   const onLocalVideoUploadError = (error: string) => {
     console.error('本地视频上传失败:', error);

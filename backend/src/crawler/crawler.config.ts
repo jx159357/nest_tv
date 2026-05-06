@@ -1,7 +1,7 @@
 import { CrawlerTarget } from './crawler.service';
 
 export const CRAWLER_TARGETS: CrawlerTarget[] = [
-  // 电影天堂 - 主站点配置 (默认常驻播放源)
+  // 电影天堂 - 主站点
   {
     name: '电影天堂',
     baseUrl: 'https://www.dytt8899.com',
@@ -17,25 +17,91 @@ export const CRAWLER_TARGETS: CrawlerTarget[] = [
       downloadUrls:
         '.co_content22 a[href*="thunder"], .co_content222 a[href*="magnet"], .down_list a',
     },
-    enabled: true, // 启用此爬虫
-    priority: 1, // 最高优先级
-    maxPages: 100, // 最大爬取页数
+    enabled: true,
+    priority: 1,
+    maxPages: 50,
     respectRobotsTxt: true,
-    requestDelay: 2000, // 请求间隔2秒
+    requestDelay: 2000,
+  },
+  // 电影天堂备用域名
+  {
+    name: '电影天堂备用',
+    baseUrl: 'https://www.dy2018.com',
+    selectors: {
+      title: '.title_all h1, .co_content22 ul li a',
+      description: '.co_content8, .co_content222, .zoomX',
+      poster: '#Zoom img, .co_content8 img',
+      rating: '.rating, .score',
+      director: '.co_content8 p',
+      actors: '.co_content8 p',
+      genres: '.co_content8 p a, .co_content222 p a',
+      releaseDate: '.co_content8 p span',
+      downloadUrls:
+        'a[href*="thunder"], a[href*="magnet"], a[href*="ftp"], a[href*="ed2k"], .down_list a',
+    },
+    enabled: true,
+    priority: 2,
+    maxPages: 30,
+    respectRobotsTxt: true,
+    requestDelay: 2000,
+  },
+  // 阳光电影
+  {
+    name: '阳光电影',
+    baseUrl: 'https://www.ygdy8.com',
+    selectors: {
+      title: '.co_content22 ul li a, .title_all h1',
+      description: '.co_content8, .co_content222, .zoomX',
+      poster: '#Zoom img, .co_content8 img',
+      rating: '.rating, .score',
+      director: '.co_content8 p',
+      actors: '.co_content8 p',
+      genres: '.co_content8 p a',
+      releaseDate: '.co_content8 p span',
+      downloadUrls:
+        'a[href*="thunder"], a[href*="magnet"], a[href*="ftp"], .down_list a',
+    },
+    enabled: true,
+    priority: 3,
+    maxPages: 30,
+    respectRobotsTxt: true,
+    requestDelay: 2000,
+  },
+  // 6v电影
+  {
+    name: '6v电影',
+    baseUrl: 'https://www.hao6v.com',
+    selectors: {
+      title: '.title_all h1, .co_content22 ul li a',
+      description: '.co_content8, .co_content222, .zoom',
+      poster: '#Zoom img, .co_content8 img',
+      rating: '.rating, .score',
+      director: '.co_content8 p',
+      actors: '.co_content8 p',
+      genres: '.co_content8 p a',
+      releaseDate: '.co_content8 p span',
+      downloadUrls:
+        'a[href*="thunder"], a[href*="magnet"], a[href*="ftp"], .down_list a',
+    },
+    enabled: true,
+    priority: 4,
+    maxPages: 20,
+    respectRobotsTxt: true,
+    requestDelay: 2500,
   },
 ];
 
 export const CRAWLER_CONFIG = {
   // 请求配置
   request: {
-    timeout: 30000, // 30秒超时
-    retries: 3, // 重试次数
-    delay: 1000, // 请求间隔（毫秒）
+    timeout: 30000,
+    retries: 3,
+    delay: 1000,
     userAgent:
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     headers: {
       Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-      'Accept-Language': 'en-US,en;q=0.5',
+      'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
       'Accept-Encoding': 'gzip, deflate',
       Connection: 'keep-alive',
     },
@@ -45,8 +111,8 @@ export const CRAWLER_CONFIG = {
   parsing: {
     defaultTimeout: 10000,
     maxRetries: 2,
-    respectRobotsTxt: true, // 遵守robots.txt
-    maxConcurrentRequests: 5, // 最大并发请求数
+    respectRobotsTxt: true,
+    maxConcurrentRequests: 3,
   },
 
   // 数据清洗配置
@@ -54,45 +120,42 @@ export const CRAWLER_CONFIG = {
     removeHtmlTags: true,
     trimWhitespace: true,
     normalizeUrls: true,
-    minTextLength: 10, // 最小文本长度
-    maxTextLength: 5000, // 最大文本长度
+    minTextLength: 2,
+    maxTextLength: 5000,
   },
 
   // 错误处理配置
   errorHandling: {
     logErrors: true,
-    continueOnError: false,
-    maxErrorRate: 0.1, // 最大错误率（10%）
+    continueOnError: true,
+    maxErrorRate: 0.5,
   },
 
   // 缓存配置
   cache: {
     enabled: true,
-    ttl: 3600, // 缓存时间（秒）
-    maxSize: 1000, // 最大缓存条目数
+    ttl: 3600,
+    maxSize: 1000,
   },
 };
 
 export const CRAWLER_RULES = {
-  // URL过滤规则
   urlFilters: {
     allowedExtensions: ['.html', '.htm', ''],
     disallowedPaths: ['/search', '/login', '/admin'],
     requiredParams: [],
   },
 
-  // 内容过滤规则
   contentFilters: {
-    minContentLength: 100,
+    minContentLength: 50,
     maxContentLength: 1000000,
-    requiredKeywords: ['title', 'movie', 'film'],
+    requiredKeywords: [],
     excludedKeywords: ['error', '404', 'not found'],
   },
 
-  // 数据验证规则
   validation: {
     requiredFields: ['title'],
-    optionalFields: ['description', 'poster', 'rating'],
+    optionalFields: ['description', 'poster', 'rating', 'downloadUrls'],
     dataTypes: {
       title: 'string',
       rating: 'number',

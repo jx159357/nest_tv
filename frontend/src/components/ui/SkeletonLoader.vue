@@ -76,7 +76,7 @@
     shimmer?: boolean;
   }
 
-  const props = withDefaults(defineProps<Props>(), {
+  withDefaults(defineProps<Props>(), {
     count: 1,
     type: 'mixed',
     animated: true,

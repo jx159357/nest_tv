@@ -2,11 +2,15 @@
   <div class="min-h-screen bg-slate-950 px-4 py-12 text-slate-50">
     <div class="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1.05fr_460px] lg:items-center">
       <section class="space-y-6">
-        <span class="inline-flex rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium tracking-wide text-emerald-200">
+        <span
+          class="inline-flex rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium tracking-wide text-emerald-200"
+        >
           创建 Nest TV 账号
         </span>
         <div>
-          <h1 class="text-4xl font-bold leading-tight text-white">注册后开始沉淀你的专属观看与推荐体验</h1>
+          <h1 class="text-4xl font-bold leading-tight text-white">
+            注册后开始沉淀你的专属观看与推荐体验
+          </h1>
           <p class="mt-4 max-w-2xl text-base leading-7 text-slate-300">
             注册完成后，你的收藏、搜索历史、偏好设置与推荐画像都会围绕这个账号持续积累，方便后续跨会话继续使用。
           </p>
@@ -14,16 +18,22 @@
         <div class="grid gap-4 sm:grid-cols-2">
           <div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
             <div class="text-xs text-slate-400">同步记录</div>
-            <div class="mt-2 text-sm text-slate-100">搜索历史、收藏反馈、推荐偏好都会进入同一个账号上下文。</div>
+            <div class="mt-2 text-sm text-slate-100">
+              搜索历史、收藏反馈、推荐偏好都会进入同一个账号上下文。
+            </div>
           </div>
           <div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
             <div class="text-xs text-slate-400">后续可配置</div>
-            <div class="mt-2 text-sm text-slate-100">注册后可继续维护昵称、头像、推荐偏好和密码安全。</div>
+            <div class="mt-2 text-sm text-slate-100">
+              注册后可继续维护昵称、头像、推荐偏好和密码安全。
+            </div>
           </div>
         </div>
       </section>
 
-      <section class="rounded-3xl border border-white/10 bg-white p-8 text-slate-900 shadow-2xl shadow-slate-950/40">
+      <section
+        class="rounded-3xl border border-white/10 bg-white p-8 text-slate-900 shadow-2xl shadow-slate-950/40"
+      >
         <div>
           <h2 class="text-3xl font-bold">注册账号</h2>
           <p class="mt-2 text-sm text-slate-500">创建你的账号，开始完整使用 Nest TV。</p>
@@ -101,7 +111,9 @@
 
         <div class="mt-6 text-sm text-slate-500">
           已有账号？
-          <router-link to="/login" class="font-medium text-indigo-600 hover:text-indigo-500">立即登录</router-link>
+          <router-link to="/login" class="font-medium text-indigo-600 hover:text-indigo-500"
+            >立即登录</router-link
+          >
         </div>
       </section>
     </div>

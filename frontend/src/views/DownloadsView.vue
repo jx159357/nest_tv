@@ -94,7 +94,9 @@
                 type="text"
                 class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm text-gray-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
                 placeholder="磁力 Hash，如 hash-demo"
-                @input="selectedHash = normalizeHashInput(($event.target as HTMLInputElement).value)"
+                @input="
+                  selectedHash = normalizeHashInput(($event.target as HTMLInputElement).value)
+                "
               />
             </label>
           </div>
@@ -131,7 +133,10 @@
             <span class="ml-1 text-xs opacity-80">{{ option.count }}</span>
           </button>
         </div>
-        <div v-if="selectedHash" class="mt-3 flex flex-wrap items-center gap-2 text-xs text-indigo-700">
+        <div
+          v-if="selectedHash"
+          class="mt-3 flex flex-wrap items-center gap-2 text-xs text-indigo-700"
+        >
           <span class="rounded-full bg-indigo-50 px-3 py-1.5 font-medium">
             已锁定磁力 Hash：{{ selectedHash }}
           </span>
@@ -342,6 +347,7 @@
   import NavigationLayout from '@/components/NavigationLayout.vue';
   import { useDownloadsStore } from '@/stores/downloads';
   import type { DownloadTask } from '@/types/advanced';
+  import { copyTextToClipboard } from '@/utils/clipboard';
 
   const downloadsStore = useDownloadsStore();
   const actionMessage = ref<string | null>(null);
@@ -552,8 +558,24 @@
     actionMessage.value = message;
   };
 
+  const buildRemoteFailureMessage = (successMessage: string, errorMessage?: string) => {
+    if (errorMessage) {
+      return `${successMessage}，但云端同步失败：${errorMessage}`;
+    }
+
+    return `${successMessage}，但云端同步失败。`;
+  };
+
   const refreshRemoteTasks = async () => {
-    await downloadsStore.hydrateRemote(true);
+    const result = await downloadsStore.hydrateRemote(true);
+
+    if (!result.remoteSucceeded) {
+      updateActionMessage(
+        buildRemoteFailureMessage('已尝试刷新云端下载任务记录', result.errorMessage),
+      );
+      return;
+    }
+
     updateActionMessage('已刷新云端下载任务记录。');
   };
 
@@ -584,8 +606,14 @@
     updateActionMessage('任务记录已移除。');
   };
 
-  const clearCompletedTasks = () => {
-    downloadsStore.clearCompleted();
+  const clearCompletedTasks = async () => {
+    const result = await downloadsStore.clearCompleted();
+
+    if (result.remoteRequested && !result.remoteSucceeded) {
+      updateActionMessage(buildRemoteFailureMessage('已清理本地已完成任务', result.errorMessage));
+      return;
+    }
+
     updateActionMessage('已清理所有已完成任务。');
   };
 
@@ -603,8 +631,14 @@
     }
   };
 
-  const clearFailedTasks = () => {
-    downloadsStore.clearFailed();
+  const clearFailedTasks = async () => {
+    const result = await downloadsStore.clearFailed();
+
+    if (result.remoteRequested && !result.remoteSucceeded) {
+      updateActionMessage(buildRemoteFailureMessage('已清理本地异常任务记录', result.errorMessage));
+      return;
+    }
+
     updateActionMessage('已清理所有异常任务记录。');
   };
 
@@ -682,17 +716,21 @@
 
   const copyTaskUrl = async (url: string) => {
     try {
-      await navigator.clipboard.writeText(url);
+      await copyTextToClipboard(url);
       updateActionMessage('下载链接已复制到剪贴板。');
     } catch {
       updateActionMessage('复制失败，请手动复制页面中的原始链接。');
     }
   };
 
-  onMounted(() => {
+  onMounted(async () => {
     applyFiltersFromLocation();
     hasHydratedFilters.value = true;
     syncFiltersToLocation();
-    void downloadsStore.hydrateRemote();
+
+    const result = await downloadsStore.hydrateRemote();
+    if (result.remoteRequested && !result.remoteSucceeded) {
+      updateActionMessage(buildRemoteFailureMessage('已尝试同步云端下载记录', result.errorMessage));
+    }
   });
 </script>

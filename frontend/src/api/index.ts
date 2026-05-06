@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { RequestInterceptor, RetryHelper } from '@/utils/api-helpers';
 import { GlobalErrorHandler } from '@/utils/global-error-handler';
-import { setupCacheInterceptors, withCache } from '@/utils/api-cache';
+import { setupCacheInterceptors, withCache, apiCacheManager } from '@/utils/api-cache';
 
 // 创建axios实例
 const api = axios.create({
@@ -68,10 +68,7 @@ class ApiClient {
     return RetryHelper.retry(async () => {
       try {
         const response = await this.instance.post(url, data, config);
-
-        // POST请求后清除相关缓存
-        // CacheManager.clearPattern(/^GET:/);
-
+        apiCacheManager.clearCacheByPattern(/^GET:/);
         return response.data;
       } catch (error) {
         GlobalErrorHandler.handle(error, `POST请求失败: ${url}`);
@@ -89,10 +86,7 @@ class ApiClient {
     return RetryHelper.retry(async () => {
       try {
         const response = await this.instance.put(url, data, config);
-
-        // PUT请求后清除相关缓存
-        // CacheManager.clearPattern(/^GET:/);
-
+        apiCacheManager.clearCacheByPattern(/^GET:/);
         return response.data;
       } catch (error) {
         GlobalErrorHandler.handle(error, `PUT请求失败: ${url}`);
@@ -110,10 +104,7 @@ class ApiClient {
     return RetryHelper.retry(async () => {
       try {
         const response = await this.instance.patch(url, data, config);
-
-        // PATCH请求后清除相关缓存
-        // CacheManager.clearPattern(/^GET:/);
-
+        apiCacheManager.clearCacheByPattern(/^GET:/);
         return response.data;
       } catch (error) {
         GlobalErrorHandler.handle(error, `PATCH请求失败: ${url}`);
@@ -127,10 +118,7 @@ class ApiClient {
     return RetryHelper.retry(async () => {
       try {
         const response = await this.instance.delete(url, config);
-
-        // DELETE请求后清除相关缓存
-        // CacheManager.clearPattern(/^GET:/);
-
+        apiCacheManager.clearCacheByPattern(/^GET:/);
         return response.data;
       } catch (error) {
         GlobalErrorHandler.handle(error, `DELETE请求失败: ${url}`);
@@ -162,10 +150,7 @@ class ApiClient {
               'Content-Type': 'multipart/form-data',
             },
           });
-
-          // 上传后清除相关缓存
-          // CacheManager.clearPattern(/^GET:/);
-
+          apiCacheManager.clearCacheByPattern(/^GET:/);
           return response.data;
         } catch (error) {
           GlobalErrorHandler.handle(error, `文件上传失败: ${url}`);
@@ -246,4 +231,3 @@ export { iptvApi } from './iptv';
 export { downloadTasksApi } from './downloadTasks';
 
 export default ApiClient;
-

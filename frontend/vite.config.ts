@@ -28,11 +28,11 @@ export default defineConfig({
         secure: false,
         ws: true,
         rewrite: path => path.replace(/^\/api/, ''),
-        configure: (proxy, _options) => {
-          proxy.on('error', (err, _req, _res) => {
+        configure: proxy => {
+          proxy.on('error', err => {
             console.error('❌ Vite Proxy Error:', err);
           });
-          proxy.on('proxyReq', (proxyReq, req, _res) => {
+          proxy.on('proxyReq', (proxyReq, req) => {
             console.log(`🔄 Proxying ${req.method} ${req.url} to backend`);
             // 确保请求头包含正确的字符集
             proxyReq.setHeader('Accept-Charset', 'utf-8');

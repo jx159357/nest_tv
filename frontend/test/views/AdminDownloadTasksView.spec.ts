@@ -667,7 +667,7 @@ describe('AdminDownloadTasksView', () => {
         totalPages: 1,
       });
 
-    const wrapper = mount(AdminDownloadTasksView);
+    mount(AdminDownloadTasksView);
     await flushPromises();
     await flushPromises();
 

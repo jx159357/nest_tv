@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { mediaApi } from '@/api/media';
-import type { PaginatedResponse, PaginationParams, FilterParams } from '@/types/api';
 import type { MediaResource, MediaQueryParams } from '@/types/media';
 
 // 定义分页类型

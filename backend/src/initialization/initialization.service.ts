@@ -1,9 +1,13 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { MediaResourceService } from '../media/media-resource.service';
 import { MediaQuality, MediaType } from '../entities/media-resource.entity';
 import { PlaySourceService } from '../play-sources/play-source.service';
-import { PlaySourceType } from '../entities/play-source.entity';
+import { PlaySourceType, PlaySourceStatus } from '../entities/play-source.entity';
+import { User } from '../entities/user.entity';
 import { Logger } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class InitializationService implements OnModuleInit {
@@ -12,68 +16,232 @@ export class InitializationService implements OnModuleInit {
   constructor(
     private readonly mediaResourceService: MediaResourceService,
     private readonly playSourceService: PlaySourceService,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   async onModuleInit() {
     try {
+      await this.ensureAdminUser();
       await this.initializeDefaultPlaySources();
-      this.logger.log('默认播放源初始化完成');
+      this.logger.log('初始化完成');
     } catch (error) {
-      this.logger.error('默认播放源初始化失败:', error);
+      this.logger.error('初始化失败:', error);
     }
   }
 
   /**
-   * 初始化默认播放源（仅开发环境）
+   * 确保管理员账号存在
+   */
+  private async ensureAdminUser() {
+    const adminUser = await this.userRepository.findOne({
+      where: { username: 'admin' },
+    });
+
+    if (adminUser) {
+      this.logger.log('管理员账号已存在，跳过创建');
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash('admin123', 10);
+    const admin = this.userRepository.create({
+      username: 'admin',
+      email: 'admin@nest-tv.local',
+      password: hashedPassword,
+      role: 'superAdmin',
+      isActive: true,
+      nickname: '管理员',
+    });
+
+    await this.userRepository.save(admin);
+    this.logger.log('默认管理员账号已创建: admin / admin123');
+  }
+
+  /**
+   * 初始化默认播放源
    */
   private async initializeDefaultPlaySources() {
-    // 生产环境不自动创建默认数据
     if (process.env.NODE_ENV === 'production') {
       this.logger.log('生产环境：跳过默认播放源初始化');
       return;
     }
 
-    // 检查环境变量是否允许初始化默认数据
     const allowInitDefault = process.env.ALLOW_INIT_DEFAULT_DATA === 'true';
     if (!allowInitDefault) {
       this.logger.log('默认数据初始化已禁用');
       return;
     }
 
-    // 检查是否已有播放源数据
     const existingSources = await this.playSourceService.findAll({ pageSize: 1 });
     if (existingSources.data.length > 0) {
       this.logger.log('检测到已有播放源数据，跳过初始化');
       return;
     }
 
-    this.logger.log('开发环境：开始初始化示例播放源');
+    this.logger.log('开始初始化示例数据');
 
-    // 创建示例媒体资源用于演示
-    let mediaResource = await this.mediaResourceService.findByTitle('示例影视资源');
-
-    if (!mediaResource) {
-      mediaResource = await this.mediaResourceService.create({
-        title: '示例影视资源',
-        description: '用于系统测试和演示的示例影视资源',
+    // 免费公共测试视频源
+    const demoMedia = [
+      {
+        title: 'Big Buck Bunny',
+        description: 'Blender 基金会出品的开源动画短片，讲述一只大兔子和三只小动物的故事。',
         type: MediaType.MOVIE,
         quality: MediaQuality.FULL_HD,
-        rating: 8.0,
-        source: '系统示例',
-      });
+        rating: 8.5,
+        director: 'Sacha Goedegebure',
+        genres: ['动画', '喜剧', '短片'],
+        source: '公共测试资源',
+        poster: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Big_buck_bunny_poster_big.jpg/220px-Big_buck_bunny_poster_big.jpg',
+        duration: 9,
+        playSources: [
+          {
+            url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            type: PlaySourceType.ONLINE,
+            resolution: '1080p',
+            sourceName: 'Google Storage',
+          },
+          {
+            url: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_1MB.mp4',
+            type: PlaySourceType.ONLINE,
+            resolution: '1080p',
+            sourceName: 'Test Videos',
+          },
+        ],
+      },
+      {
+        title: 'Sintel',
+        description: 'Blender 基金会出品的开源奇幻动画短片，讲述少女 Sintel 寻找小龙的旅程。',
+        type: MediaType.MOVIE,
+        quality: MediaQuality.FULL_HD,
+        rating: 8.8,
+        director: 'Colin Levy',
+        genres: ['动画', '奇幻', '冒险'],
+        source: '公共测试资源',
+        poster: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Sintel_poster.jpg/220px-Sintel_poster.jpg',
+        duration: 15,
+        playSources: [
+          {
+            url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+            type: PlaySourceType.ONLINE,
+            resolution: '1080p',
+            sourceName: 'Google Storage',
+          },
+        ],
+      },
+      {
+        title: 'Tears of Steel',
+        description: 'Blender 基金会出品的科幻短片，展示了真人与 CGI 结合的视觉效果。',
+        type: MediaType.MOVIE,
+        quality: MediaQuality.FULL_HD,
+        rating: 7.9,
+        director: 'Ian Hubert',
+        genres: ['科幻', '动作', '短片'],
+        source: '公共测试资源',
+        poster: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Tears_of_Steel_poster.jpg/220px-Tears_of_Steel_poster.jpg',
+        duration: 12,
+        playSources: [
+          {
+            url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+            type: PlaySourceType.ONLINE,
+            resolution: '1080p',
+            sourceName: 'Google Storage',
+          },
+        ],
+      },
+      {
+        title: 'Elephant Dream',
+        description: '世界上第一部开源电影，Blender 基金会出品的实验性动画短片。',
+        type: MediaType.MOVIE,
+        quality: MediaQuality.HD,
+        rating: 7.5,
+        director: 'Bassam Kurdali',
+        genres: ['动画', '科幻', '实验'],
+        source: '公共测试资源',
+        poster: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Elephants_Dream_s1_proog.jpg/220px-Elephants_Dream_s1_proog.jpg',
+        duration: 11,
+        playSources: [
+          {
+            url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+            type: PlaySourceType.ONLINE,
+            resolution: '720p',
+            sourceName: 'Google Storage',
+          },
+        ],
+      },
+      {
+        title: 'For Bigger Blazes',
+        description: 'Google 公共测试视频，用于测试流媒体播放功能。',
+        type: MediaType.MOVIE,
+        quality: MediaQuality.HD,
+        rating: 6.0,
+        source: '公共测试资源',
+        duration: 1,
+        playSources: [
+          {
+            url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+            type: PlaySourceType.ONLINE,
+            resolution: '720p',
+            sourceName: 'Google Storage',
+          },
+        ],
+      },
+      {
+        title: 'Subaru Outback On Street',
+        description: 'Google 公共测试视频，展示汽车行驶场景。',
+        type: MediaType.MOVIE,
+        quality: MediaQuality.HD,
+        rating: 5.5,
+        source: '公共测试资源',
+        duration: 1,
+        playSources: [
+          {
+            url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
+            type: PlaySourceType.ONLINE,
+            resolution: '720p',
+            sourceName: 'Google Storage',
+          },
+        ],
+      },
+    ];
+
+    for (const item of demoMedia) {
+      try {
+        const existing = await this.mediaResourceService.findByTitle(item.title);
+        if (existing) {
+          this.logger.log(`示例资源 "${item.title}" 已存在，跳过`);
+          continue;
+        }
+
+        const media = await this.mediaResourceService.create({
+          title: item.title,
+          description: item.description,
+          type: item.type,
+          quality: item.quality,
+          rating: item.rating,
+          director: item.director,
+          genres: item.genres,
+          source: item.source,
+          poster: item.poster,
+          duration: item.duration,
+        });
+
+        for (const ps of item.playSources) {
+          await this.playSourceService.create({
+            mediaResourceId: media.id,
+            url: ps.url,
+            type: ps.type,
+            resolution: ps.resolution,
+            priority: 1,
+            sourceName: ps.sourceName,
+          });
+        }
+
+        this.logger.log(`示例资源 "${item.title}" 创建成功`);
+      } catch (error) {
+        this.logger.warn(`示例资源 "${item.title}" 创建失败:`, error);
+      }
     }
 
-    // 创建示例播放源（不包含实际的第三方URL）
-    await this.playSourceService.create({
-      mediaResourceId: mediaResource.id,
-      url: 'https://example.com/sample-video.mp4',
-      type: PlaySourceType.ONLINE,
-      resolution: '1080p',
-      priority: 1,
-      sourceName: '示例播放源',
-      description: '用于系统测试的示例播放源',
-    });
-
-    this.logger.log('示例播放源初始化完成');
+    this.logger.log('示例数据初始化完成');
   }
 }

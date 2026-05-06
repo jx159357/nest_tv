@@ -26,15 +26,7 @@
 </template>
 
 <script setup lang="ts">
-  import {
-    ref,
-    computed,
-    onMounted,
-    onUnmounted,
-    watch,
-    nextTick,
-    type CSSProperties,
-  } from 'vue';
+  import { ref, computed, onMounted, onUnmounted, watch, nextTick, type CSSProperties } from 'vue';
 
   interface Props {
     src: string;

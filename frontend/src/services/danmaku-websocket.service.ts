@@ -1,4 +1,4 @@
-import { ref, reactive, onUnmounted, onMounted } from 'vue';
+import { ref, onUnmounted, onMounted } from 'vue';
 import io from 'socket.io-client';
 type Socket = any;
 import { useAuthStore } from '@/stores/auth';
@@ -11,14 +11,9 @@ import type {
 } from '@/types/danmaku';
 
 const DEV = import.meta.env.DEV;
+type DanmakuEventListener = (...args: any[]) => void;
 
-export type {
-  DanmakuMessage,
-  RoomInfo,
-  HeartbeatResponse,
-  DanmakuSettings,
-  DanmakuServiceConfig,
-};
+export type { DanmakuMessage, RoomInfo, HeartbeatResponse, DanmakuSettings, DanmakuServiceConfig };
 
 // WebSocket服务类
 export class DanmakuWebSocketService {
@@ -32,7 +27,7 @@ export class DanmakuWebSocketService {
   private userId = ref('');
 
   // 事件监听器
-  private listeners = new Map<string, Set<Function>>();
+  private listeners = new Map<string, Set<DanmakuEventListener>>();
 
   // 消息队列（在重连时暂存）
   private messageQueue: any[] = [];
@@ -54,7 +49,7 @@ export class DanmakuWebSocketService {
       this.userId.value = userId;
 
       const config: DanmakuServiceConfig = {
-        serverUrl: (import.meta.env.VITE_WS_URL || 'ws://localhost:3334') + '/danmaku',
+        serverUrl: (import.meta.env.VITE_WS_URL || (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host) + '/danmaku',
         reconnectDelay: this.options.reconnectDelay,
         heartbeatInterval: this.options.heartbeatInterval,
         maxQueueSize: this.options.maxQueueSize,
@@ -264,14 +259,14 @@ export class DanmakuWebSocketService {
   }
 
   // 事件管理
-  on(event: string, callback: Function) {
+  on(event: string, callback: DanmakuEventListener) {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
     }
     this.listeners.get(event)!.add(callback);
   }
 
-  off(event: string, callback: Function) {
+  off(event: string, callback: DanmakuEventListener) {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       callbacks.delete(callback);

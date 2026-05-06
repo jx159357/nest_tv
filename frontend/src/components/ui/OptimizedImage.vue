@@ -15,7 +15,7 @@
     />
 
     <!-- 加载状态 -->
-    <div v-if="isLoading && showPlaceholder" class="image-placeholder">
+    <div v-if="isLoading && showPlaceholder" class="image-placeholder" :style="placeholderStyle">
       <slot name="placeholder">
         <div class="default-placeholder">
           <svg class="placeholder-icon" fill="currentColor" viewBox="0 0 20 20">

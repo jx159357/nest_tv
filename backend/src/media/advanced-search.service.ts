@@ -558,4 +558,70 @@ export class AdvancedSearchService {
 
     return Array.from(relatedKeywords).slice(0, limit);
   }
+
+  /**
+   * 获取搜索趋势统计（从真实搜索历史数据）
+   */
+  async getSearchTrends(days: number = 7): Promise<{
+    totalSearches: number;
+    dailyTrends: Array<{ date: string; count: number; topKeywords: string[] }>;
+    popularKeywords: Array<{ keyword: string; count: number }>;
+  }> {
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+
+    // 总搜索量
+    const totalSearches = await this.searchHistoryRepository
+      .createQueryBuilder('sh')
+      .where('sh.createdAt >= :since', { since })
+      .getCount();
+
+    // 热门关键词（按频次降序）
+    const popularRows = await this.searchHistoryRepository
+      .createQueryBuilder('sh')
+      .select('sh.keyword', 'keyword')
+      .addSelect('COUNT(*)', 'count')
+      .where('sh.createdAt >= :since', { since })
+      .groupBy('sh.keyword')
+      .orderBy('count', 'DESC')
+      .limit(20)
+      .getRawMany();
+
+    const popularKeywords = popularRows.map(r => ({
+      keyword: r.keyword,
+      count: parseInt(r.count, 10),
+    }));
+
+    // 每日趋势
+    const dailyRows = await this.searchHistoryRepository
+      .createQueryBuilder('sh')
+      .select("DATE_FORMAT(sh.createdAt, '%Y-%m-%d')", 'date')
+      .addSelect('COUNT(*)', 'count')
+      .where('sh.createdAt >= :since', { since })
+      .groupBy('date')
+      .orderBy('date', 'DESC')
+      .getRawMany();
+
+    // 每日 top 关键词
+    const dailyTrends: Array<{ date: string; count: number; topKeywords: string[] }> = [];
+    for (const row of dailyRows) {
+      const topKwRows = await this.searchHistoryRepository
+        .createQueryBuilder('sh')
+        .select('sh.keyword', 'keyword')
+        .addSelect('COUNT(*)', 'cnt')
+        .where("DATE_FORMAT(sh.createdAt, '%Y-%m-%d') = :date", { date: row.date })
+        .groupBy('sh.keyword')
+        .orderBy('cnt', 'DESC')
+        .limit(3)
+        .getRawMany();
+
+      dailyTrends.push({
+        date: row.date,
+        count: parseInt(row.count, 10),
+        topKeywords: topKwRows.map(r => r.keyword),
+      });
+    }
+
+    return { totalSearches, dailyTrends, popularKeywords };
+  }
 }

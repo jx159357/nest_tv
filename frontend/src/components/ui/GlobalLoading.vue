@@ -65,7 +65,6 @@
   const {
     isLoading,
     loadingText,
-    loadingType,
     loadingProgress,
     loadingActions,
     error,

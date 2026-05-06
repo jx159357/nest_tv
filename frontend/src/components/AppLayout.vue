@@ -30,10 +30,15 @@
             <span>🔍</span>
           </button>
 
-          <div v-if="showSearchSuggestions && hasSearchSuggestions" class="app-layout__search-dropdown">
+          <div
+            v-if="showSearchSuggestions && hasSearchSuggestions"
+            class="app-layout__search-dropdown"
+          >
             <section v-if="recentSuggestionItems.length > 0" class="app-layout__search-section">
               <div class="app-layout__search-section-header">
-                <div class="app-layout__search-section-title">{{ t('search.suggestions.recentSearches') }}</div>
+                <div class="app-layout__search-section-title">
+                  {{ t('search.suggestions.recentSearches') }}
+                </div>
                 <button
                   type="button"
                   class="app-layout__search-section-action"
@@ -56,7 +61,11 @@
 
             <section v-if="keywordSuggestionItems.length > 0" class="app-layout__search-section">
               <div class="app-layout__search-section-title">
-                {{ normalizedSearchQuery ? t('search.suggestions.recommended') : t('search.suggestions.trendingSearches') }}
+                {{
+                  normalizedSearchQuery
+                    ? t('search.suggestions.recommended')
+                    : t('search.suggestions.trendingSearches')
+                }}
               </div>
               <button
                 v-for="item in keywordSuggestionItems"
@@ -91,7 +100,9 @@
 
         <div v-if="!authStore.isAuthenticated" class="app-layout__auth">
           <RouterLink to="/login" class="app-layout__login-btn">{{ t('common.login') }}</RouterLink>
-          <RouterLink to="/register" class="app-layout__register-btn">{{ t('common.register') }}</RouterLink>
+          <RouterLink to="/register" class="app-layout__register-btn">{{
+            t('common.register')
+          }}</RouterLink>
         </div>
 
         <div v-else class="app-layout__user">
@@ -101,7 +112,9 @@
               :alt="authStore.user?.nickname || 'User'"
               class="app-layout__user-avatar"
             />
-            <span class="app-layout__user-name">{{ authStore.user?.nickname || authStore.user?.username }}</span>
+            <span class="app-layout__user-name">{{
+              authStore.user?.nickname || authStore.user?.username
+            }}</span>
             <span class="app-layout__user-arrow">▾</span>
           </button>
 
@@ -162,7 +175,9 @@
 
     <footer class="app-layout__footer">
       <div class="app-layout__footer-content">
-        <p class="app-layout__footer-text">© 2024 Nest TV · {{ t('common.about') }} · {{ t('common.help') }}</p>
+        <p class="app-layout__footer-text">
+          © 2024 Nest TV · {{ t('common.about') }} · {{ t('common.help') }}
+        </p>
       </div>
     </footer>
   </div>
@@ -406,7 +421,12 @@
     const menu = document.querySelector('.app-layout__user-menu');
     const dropdown = document.querySelector('.app-layout__user-dropdown');
 
-    if (menu && !menu.contains(event.target as Node) && dropdown && !dropdown.contains(event.target as Node)) {
+    if (
+      menu &&
+      !menu.contains(event.target as Node) &&
+      dropdown &&
+      !dropdown.contains(event.target as Node)
+    ) {
       showUserMenu.value = false;
     }
 
@@ -791,4 +811,3 @@
     }
   }
 </style>
-

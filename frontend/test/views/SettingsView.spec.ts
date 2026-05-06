@@ -144,7 +144,9 @@ describe('SettingsView', () => {
     await inputs[1].setValue('new-pass-123');
     await inputs[2].setValue('new-pass-123');
 
-    const passwordButton = wrapper.findAll('button').find(button => button.text().includes('修改密码'));
+    const passwordButton = wrapper
+      .findAll('button')
+      .find(button => button.text().includes('修改密码'));
     expect(passwordButton).toBeTruthy();
 
     await passwordButton!.trigger('click');

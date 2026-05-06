@@ -160,7 +160,9 @@ describe('FavoritesView', () => {
     await flushPromises();
 
     expect(mediaApi.getMediaById).toHaveBeenCalledWith('99');
-    expect(wrapper.get('[data-testid="highlighted-favorite-pinned"]').text()).toContain('Pinned Favorite');
+    expect(wrapper.get('[data-testid="highlighted-favorite-pinned"]').text()).toContain(
+      'Pinned Favorite',
+    );
   });
 
   it('clears the highlight after the one-time banner is dismissed', async () => {

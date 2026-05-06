@@ -159,9 +159,7 @@ describe('AppLayout', () => {
     await wrapper.get('input[type="text"]').trigger('focus');
     await flushPromises();
 
-    const clearButton = wrapper
-      .findAll('button')
-      .find(button => button.text().includes('清空'));
+    const clearButton = wrapper.findAll('button').find(button => button.text().includes('清空'));
 
     expect(clearButton).toBeTruthy();
 

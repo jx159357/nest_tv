@@ -9,8 +9,18 @@
         <div class="overflow-hidden rounded-2xl bg-white shadow-sm">
           <div class="grid grid-cols-1 gap-6 p-6 md:grid-cols-[320px_minmax(0,1fr)]">
             <div class="overflow-hidden rounded-2xl bg-slate-100">
-              <img v-if="media.poster" :src="media.poster" :alt="media.title" class="h-full w-full object-cover" />
-              <div v-else class="flex aspect-[2/3] items-center justify-center text-sm text-slate-400">暂无封面</div>
+              <img
+                v-if="media.poster"
+                :src="media.poster"
+                :alt="media.title"
+                class="h-full w-full object-cover"
+              />
+              <div
+                v-else
+                class="flex aspect-[2/3] items-center justify-center text-sm text-slate-400"
+              >
+                暂无封面
+              </div>
             </div>
 
             <div class="space-y-5">
@@ -22,7 +32,9 @@
               </div>
 
               <div class="flex flex-wrap items-center gap-4 text-sm text-slate-600">
-                <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-amber-700">
+                <span
+                  class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-amber-700"
+                >
                   ⭐ {{ formatRating(media.rating) }}/10
                 </span>
                 <span>播放 {{ media.viewCount || 0 }}</span>
@@ -84,7 +96,11 @@
                 class="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700"
               >
                 <span>{{ favoriteMessage }}</span>
-                <button v-if="isFavorite" class="font-medium text-amber-800 hover:underline" @click="goToFavorites">
+                <button
+                  v-if="isFavorite"
+                  class="font-medium text-amber-800 hover:underline"
+                  @click="goToFavorites"
+                >
                   查看收藏
                 </button>
               </div>
@@ -103,7 +119,10 @@
           <div v-if="recommendationsLoading" class="py-8 text-center">
             <LoadingSpinner text="加载中..." />
           </div>
-          <div v-else-if="recommendations.length === 0" class="py-8 text-center text-sm text-slate-500">
+          <div
+            v-else-if="recommendations.length === 0"
+            class="py-8 text-center text-sm text-slate-500"
+          >
             暂无相关推荐
           </div>
           <div v-else class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -128,8 +147,12 @@
             >
               <div class="flex items-start justify-between gap-3">
                 <div>
-                  <div class="font-medium text-slate-900">{{ playSource.sourceName || `播放源 ${playSource.id}` }}</div>
-                  <div class="mt-1 text-xs text-slate-500">{{ playSource.resolution }} {{ playSource.format }}</div>
+                  <div class="font-medium text-slate-900">
+                    {{ playSource.sourceName || `播放源 ${playSource.id}` }}
+                  </div>
+                  <div class="mt-1 text-xs text-slate-500">
+                    {{ playSource.resolution }} {{ playSource.format }}
+                  </div>
                 </div>
                 <span
                   :class="[
@@ -149,11 +172,16 @@
           <div v-else class="mt-4 text-sm text-slate-500">暂无可用播放源</div>
         </section>
 
-        <section v-if="media.downloadUrls && media.downloadUrls.length > 0" class="rounded-2xl bg-white p-6 shadow-sm">
+        <section
+          v-if="media.downloadUrls && media.downloadUrls.length > 0"
+          class="rounded-2xl bg-white p-6 shadow-sm"
+        >
           <div class="mb-4 flex items-start justify-between gap-3">
             <div>
               <h2 class="text-lg font-semibold text-slate-900">下载链接</h2>
-              <p class="mt-1 text-sm text-slate-500">可直接打开原始链接，或加入下载任务统一管理。</p>
+              <p class="mt-1 text-sm text-slate-500">
+                可直接打开原始链接，或加入下载任务统一管理。
+              </p>
             </div>
             <router-link
               to="/downloads"
@@ -309,7 +337,10 @@
         : `已将《${media.value.title}》移出收藏`;
 
       if (nextState) {
-        notifySuccess('收藏已更新', `已将《${media.value.title}》加入收藏，可前往“我的收藏”继续查看。`);
+        notifySuccess(
+          '收藏已更新',
+          `已将《${media.value.title}》加入收藏，可前往“我的收藏”继续查看。`,
+        );
       } else {
         notifyInfo('收藏已更新', `已将《${media.value.title}》从收藏中移除。`);
       }

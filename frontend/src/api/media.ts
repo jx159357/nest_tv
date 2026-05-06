@@ -81,7 +81,11 @@ export const mediaApi = {
   },
 
   getFavoriteStatus: (mediaId: string) => {
-    return ApiClient.get<{ isFavorited: boolean }>(`/media/${mediaId}/favorites/status`, undefined, false);
+    return ApiClient.get<{ isFavorited: boolean }>(
+      `/media/${mediaId}/favorites/status`,
+      undefined,
+      false,
+    );
   },
 
   toggleFavorite: async (mediaId: string, currentState?: boolean) => {
@@ -104,7 +108,11 @@ export const mediaApi = {
   },
 
   getWatchHistory: (params?: MediaQueryParams) => {
-    return ApiClient.get<PaginatedResponse<WatchHistoryItem>>('/watch-history/user/me', { params }, false);
+    return ApiClient.get<PaginatedResponse<WatchHistoryItem>>(
+      '/watch-history/user/me',
+      { params },
+      false,
+    );
   },
 
   getStatistics: () => {

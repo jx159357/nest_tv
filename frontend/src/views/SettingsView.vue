@@ -4,7 +4,9 @@
       <header class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h1 class="text-3xl font-bold text-gray-900">偏好设置</h1>
-          <p class="mt-2 text-sm text-gray-600">在这里维护你的公开资料与推荐偏好，让推荐结果更贴近你的真实兴趣。</p>
+          <p class="mt-2 text-sm text-gray-600">
+            在这里维护你的公开资料与推荐偏好，让推荐结果更贴近你的真实兴趣。
+          </p>
         </div>
         <router-link
           :to="{ name: 'recommendations', query: { focus: 'profile' } }"
@@ -35,7 +37,9 @@
           <div class="flex items-center justify-between gap-4">
             <div>
               <h2 class="text-xl font-semibold text-gray-900">公开资料</h2>
-              <p class="mt-2 text-sm text-gray-600">这些信息会影响页面上的个人展示和部分推荐文案。</p>
+              <p class="mt-2 text-sm text-gray-600">
+                这些信息会影响页面上的个人展示和部分推荐文案。
+              </p>
             </div>
           </div>
 
@@ -46,23 +50,40 @@
           <div v-else class="mt-6 space-y-5">
             <label class="block space-y-2">
               <span class="text-sm font-medium text-gray-700">昵称</span>
-              <input v-model="form.nickname" type="text" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100" placeholder="给自己一个更容易识别的昵称" />
+              <input
+                v-model="form.nickname"
+                type="text"
+                class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                placeholder="给自己一个更容易识别的昵称"
+              />
             </label>
 
             <label class="block space-y-2">
               <span class="text-sm font-medium text-gray-700">手机号</span>
-              <input v-model="form.phone" type="text" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100" placeholder="用于找回或联系（选填）" />
+              <input
+                v-model="form.phone"
+                type="text"
+                class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                placeholder="用于找回或联系（选填）"
+              />
             </label>
 
             <label class="block space-y-2">
               <span class="text-sm font-medium text-gray-700">头像链接</span>
-              <input v-model="form.avatar" type="text" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100" placeholder="https://example.com/avatar.png" />
+              <input
+                v-model="form.avatar"
+                type="text"
+                class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                placeholder="https://example.com/avatar.png"
+              />
             </label>
 
             <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <div class="text-sm font-medium text-gray-700">头像预览</div>
               <div class="mt-3 flex items-center gap-4">
-                <div class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm">
+                <div
+                  class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm"
+                >
                   <img
                     v-if="avatarPreviewUrl && !avatarPreviewError"
                     :src="avatarPreviewUrl"
@@ -74,7 +95,9 @@
                 </div>
                 <div class="text-sm text-slate-500">
                   <p>建议使用可公开访问的 `http` / `https` 图片地址。</p>
-                  <p v-if="avatarValidationMessage" class="mt-1 text-red-600">{{ avatarValidationMessage }}</p>
+                  <p v-if="avatarValidationMessage" class="mt-1 text-red-600">
+                    {{ avatarValidationMessage }}
+                  </p>
                 </div>
               </div>
             </div>
@@ -83,7 +106,9 @@
 
         <section class="rounded-2xl bg-white p-6 shadow-sm">
           <h2 class="text-xl font-semibold text-gray-900">推荐偏好</h2>
-          <p class="mt-2 text-sm text-gray-600">显式告诉系统你偏好什么、排斥什么，以及希望推荐更偏“新”还是更偏“经典”。</p>
+          <p class="mt-2 text-sm text-gray-600">
+            显式告诉系统你偏好什么、排斥什么，以及希望推荐更偏“新”还是更偏“经典”。
+          </p>
 
           <div v-if="loading" class="py-8 text-center">
             <LoadingSpinner text="加载中..." />
@@ -98,7 +123,11 @@
                   :key="option.value"
                   type="button"
                   class="rounded-full px-4 py-2 text-sm font-medium transition-colors"
-                  :class="isSelected(form.recommendationSettings.preferredTypes, option.value) ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                  :class="
+                    isSelected(form.recommendationSettings.preferredTypes, option.value)
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  "
                   @click="toggleItem(form.recommendationSettings.preferredTypes, option.value)"
                 >
                   {{ option.label }}
@@ -114,7 +143,11 @@
                   :key="`preferred-${genre}`"
                   type="button"
                   class="rounded-full px-4 py-2 text-sm font-medium transition-colors"
-                  :class="isSelected(form.recommendationSettings.preferredGenres, genre) ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                  :class="
+                    isSelected(form.recommendationSettings.preferredGenres, genre)
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  "
                   @click="toggleItem(form.recommendationSettings.preferredGenres, genre)"
                 >
                   {{ genre }}
@@ -130,7 +163,11 @@
                   :key="`excluded-${genre}`"
                   type="button"
                   class="rounded-full px-4 py-2 text-sm font-medium transition-colors"
-                  :class="isSelected(form.recommendationSettings.excludedGenres, genre) ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                  :class="
+                    isSelected(form.recommendationSettings.excludedGenres, genre)
+                      ? 'bg-rose-100 text-rose-700'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  "
                   @click="toggleItem(form.recommendationSettings.excludedGenres, genre)"
                 >
                   {{ genre }}
@@ -177,7 +214,11 @@
                   :key="option.value"
                   type="button"
                   class="rounded-2xl border px-4 py-3 text-left transition-colors"
-                  :class="form.recommendationSettings.freshnessBias === option.value ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'"
+                  :class="
+                    form.recommendationSettings.freshnessBias === option.value
+                      ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+                      : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                  "
                   @click="form.recommendationSettings.freshnessBias = option.value"
                 >
                   <div class="font-medium">{{ option.label }}</div>
@@ -191,7 +232,9 @@
 
       <section class="rounded-2xl bg-white p-6 shadow-sm">
         <h2 class="text-xl font-semibold text-gray-900">密码安全</h2>
-        <p class="mt-2 text-sm text-gray-600">定期更新密码，避免与当前密码重复，并确保两次输入一致。</p>
+        <p class="mt-2 text-sm text-gray-600">
+          定期更新密码，避免与当前密码重复，并确保两次输入一致。
+        </p>
 
         <div class="mt-6 grid gap-5 md:grid-cols-3">
           <label class="block space-y-2">
@@ -309,7 +352,18 @@
     { value: 'documentary', label: '纪录片' },
   ];
 
-  const genreOptions = ['科幻', '悬疑', '动作', '爱情', '动画', '犯罪', '剧情', '喜剧', '纪录片', '冒险'];
+  const genreOptions = [
+    '科幻',
+    '悬疑',
+    '动作',
+    '爱情',
+    '动画',
+    '犯罪',
+    '剧情',
+    '喜剧',
+    '纪录片',
+    '冒险',
+  ];
 
   const freshnessOptions = [
     { value: 'balanced', label: '平衡', description: '新片和经典内容均衡推荐' },
@@ -354,7 +408,9 @@
     }
   });
 
-  const avatarPreviewUrl = computed(() => (avatarValidationMessage.value ? '' : form.avatar.trim()));
+  const avatarPreviewUrl = computed(() =>
+    avatarValidationMessage.value ? '' : form.avatar.trim(),
+  );
 
   const profileDirty = computed(
     () => JSON.stringify(buildProfilePayload()) !== initialProfileSnapshot.value,
@@ -397,11 +453,20 @@
     form.nickname = user.nickname || '';
     form.phone = user.phone || '';
     form.avatar = user.avatar || '';
-    form.recommendationSettings.preferredTypes = [...(user.recommendationSettings?.preferredTypes || [])];
-    form.recommendationSettings.preferredGenres = [...(user.recommendationSettings?.preferredGenres || [])];
-    form.recommendationSettings.excludedGenres = [...(user.recommendationSettings?.excludedGenres || [])];
-    form.recommendationSettings.preferredKeywords = [...(user.recommendationSettings?.preferredKeywords || [])];
-    form.recommendationSettings.freshnessBias = user.recommendationSettings?.freshnessBias || 'balanced';
+    form.recommendationSettings.preferredTypes = [
+      ...(user.recommendationSettings?.preferredTypes || []),
+    ];
+    form.recommendationSettings.preferredGenres = [
+      ...(user.recommendationSettings?.preferredGenres || []),
+    ];
+    form.recommendationSettings.excludedGenres = [
+      ...(user.recommendationSettings?.excludedGenres || []),
+    ];
+    form.recommendationSettings.preferredKeywords = [
+      ...(user.recommendationSettings?.preferredKeywords || []),
+    ];
+    form.recommendationSettings.freshnessBias =
+      user.recommendationSettings?.freshnessBias || 'balanced';
     keywordInput.value = form.recommendationSettings.preferredKeywords.join(', ');
     avatarPreviewError.value = false;
     initialProfileSnapshot.value = JSON.stringify(buildProfilePayload());

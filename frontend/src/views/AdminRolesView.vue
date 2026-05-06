@@ -3,9 +3,7 @@
     <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">角色权限管理</h1>
-        <p class="mt-2 text-gray-600">
-          维护后台角色、权限字典，以及角色与权限码之间的分配关系。
-        </p>
+        <p class="mt-2 text-gray-600">维护后台角色、权限字典，以及角色与权限码之间的分配关系。</p>
       </div>
       <div class="flex flex-wrap gap-3">
         <button
@@ -27,7 +25,9 @@
       <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div class="text-sm text-slate-500">角色总数</div>
         <div class="mt-3 text-3xl font-semibold text-slate-900">{{ roles.length }}</div>
-        <div class="mt-2 text-xs text-slate-500">启用 {{ activeRoleCount }} / 停用 {{ inactiveRoleCount }}</div>
+        <div class="mt-2 text-xs text-slate-500">
+          启用 {{ activeRoleCount }} / 停用 {{ inactiveRoleCount }}
+        </div>
       </div>
       <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div class="text-sm text-slate-500">权限总数</div>
@@ -53,16 +53,8 @@
     <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div class="border-b border-slate-200 px-6 pt-4">
         <div class="flex flex-wrap gap-6">
-          <button
-            :class="getTabClass('roles')"
-            @click="activeTab = 'roles'"
-          >
-            角色管理
-          </button>
-          <button
-            :class="getTabClass('permissions')"
-            @click="activeTab = 'permissions'"
-          >
+          <button :class="getTabClass('roles')" @click="activeTab = 'roles'">角色管理</button>
+          <button :class="getTabClass('permissions')" @click="activeTab = 'permissions'">
             权限管理
           </button>
         </div>
@@ -88,7 +80,9 @@
       </div>
 
       <div v-if="activeTab === 'roles'" class="p-6">
-        <div v-if="rolesLoading" class="py-16 text-center text-sm text-slate-500">角色列表加载中...</div>
+        <div v-if="rolesLoading" class="py-16 text-center text-sm text-slate-500">
+          角色列表加载中...
+        </div>
         <div v-else-if="roles.length === 0" class="py-16 text-center text-sm text-slate-500">
           暂无角色数据，先创建一个角色吧。
         </div>
@@ -96,12 +90,36 @@
           <table class="min-w-full divide-y divide-slate-200">
             <thead class="bg-slate-50">
               <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">角色</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">描述</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">权限</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">状态</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">更新时间</th>
-                <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-500">操作</th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
+                >
+                  角色
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
+                >
+                  描述
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
+                >
+                  权限
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
+                >
+                  状态
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
+                >
+                  更新时间
+                </th>
+                <th
+                  class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-500"
+                >
+                  操作
+                </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-200 bg-white">
@@ -114,7 +132,9 @@
                   {{ role.description || '暂无描述' }}
                 </td>
                 <td class="px-4 py-4 text-sm text-slate-600">
-                  <div class="font-medium text-slate-900">{{ role.permissions?.length || 0 }} 项</div>
+                  <div class="font-medium text-slate-900">
+                    {{ role.permissions?.length || 0 }} 项
+                  </div>
                   <div class="mt-2 flex flex-wrap gap-2">
                     <span
                       v-for="code in getRolePermissionPreview(role)"
@@ -138,11 +158,18 @@
                 </td>
                 <td class="px-4 py-4 text-sm text-slate-600">{{ formatDate(role.updatedAt) }}</td>
                 <td class="px-4 py-4 text-right text-sm font-medium">
-                  <button class="mr-3 text-indigo-600 hover:text-indigo-800" @click="openEditRole(role)">
+                  <button
+                    class="mr-3 text-indigo-600 hover:text-indigo-800"
+                    @click="openEditRole(role)"
+                  >
                     编辑
                   </button>
                   <button
-                    :class="role.isActive ? 'text-amber-600 hover:text-amber-800' : 'text-emerald-600 hover:text-emerald-800'"
+                    :class="
+                      role.isActive
+                        ? 'text-amber-600 hover:text-amber-800'
+                        : 'text-emerald-600 hover:text-emerald-800'
+                    "
                     @click="toggleRoleStatus(role)"
                   >
                     {{ role.isActive ? '停用' : '启用' }}
@@ -155,7 +182,9 @@
       </div>
 
       <div v-else class="p-6">
-        <div v-if="permissionsLoading" class="py-16 text-center text-sm text-slate-500">权限列表加载中...</div>
+        <div v-if="permissionsLoading" class="py-16 text-center text-sm text-slate-500">
+          权限列表加载中...
+        </div>
         <div v-else-if="permissions.length === 0" class="py-16 text-center text-sm text-slate-500">
           暂无权限数据，先创建一个权限吧。
         </div>
@@ -163,12 +192,36 @@
           <table class="min-w-full divide-y divide-slate-200">
             <thead class="bg-slate-50">
               <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">权限代码</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">名称与描述</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">资源 / 动作</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">状态</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">更新时间</th>
-                <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-500">操作</th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
+                >
+                  权限代码
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
+                >
+                  名称与描述
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
+                >
+                  资源 / 动作
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
+                >
+                  状态
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
+                >
+                  更新时间
+                </th>
+                <th
+                  class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-500"
+                >
+                  操作
+                </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-200 bg-white">
@@ -178,18 +231,24 @@
                 </td>
                 <td class="px-4 py-4 text-sm text-slate-600">
                   <div class="font-medium text-slate-900">{{ permission.name }}</div>
-                  <div class="mt-1 text-xs text-slate-500">{{ permission.description || '暂无描述' }}</div>
+                  <div class="mt-1 text-xs text-slate-500">
+                    {{ permission.description || '暂无描述' }}
+                  </div>
                 </td>
                 <td class="px-4 py-4 text-sm text-slate-600">
                   <div>{{ permission.resource || '通用资源' }}</div>
-                  <div class="mt-1 text-xs text-slate-500">{{ permission.action || '未指定动作' }}</div>
+                  <div class="mt-1 text-xs text-slate-500">
+                    {{ permission.action || '未指定动作' }}
+                  </div>
                 </td>
                 <td class="px-4 py-4 text-sm">
                   <span :class="getStatusClass(permission.isActive)">
                     {{ permission.isActive ? '启用中' : '已停用' }}
                   </span>
                 </td>
-                <td class="px-4 py-4 text-sm text-slate-600">{{ formatDate(permission.updatedAt) }}</td>
+                <td class="px-4 py-4 text-sm text-slate-600">
+                  {{ formatDate(permission.updatedAt) }}
+                </td>
                 <td class="px-4 py-4 text-right text-sm font-medium">
                   <button
                     class="mr-3 text-indigo-600 hover:text-indigo-800"
@@ -198,7 +257,11 @@
                     编辑
                   </button>
                   <button
-                    :class="permission.isActive ? 'text-amber-600 hover:text-amber-800' : 'text-emerald-600 hover:text-emerald-800'"
+                    :class="
+                      permission.isActive
+                        ? 'text-amber-600 hover:text-amber-800'
+                        : 'text-emerald-600 hover:text-emerald-800'
+                    "
                     @click="togglePermissionStatus(permission)"
                   >
                     {{ permission.isActive ? '停用' : '启用' }}
@@ -355,7 +418,11 @@
           </div>
         </div>
         <label class="flex items-center gap-2 text-sm text-slate-600">
-          <input v-model="permissionForm.isActive" type="checkbox" class="rounded border-slate-300" />
+          <input
+            v-model="permissionForm.isActive"
+            type="checkbox"
+            class="rounded border-slate-300"
+          />
           保存后保持权限为启用状态
         </label>
         <div class="flex justify-end gap-3 border-t border-slate-200 pt-4">
@@ -451,9 +518,7 @@
     );
   });
   const roleModalTitle = computed(() => (roleForm.value.id ? '编辑角色' : '新建角色'));
-  const permissionModalTitle = computed(() =>
-    permissionForm.value.id ? '编辑权限' : '新建权限',
-  );
+  const permissionModalTitle = computed(() => (permissionForm.value.id ? '编辑权限' : '新建权限'));
 
   function createEmptyRoleForm(): RoleFormState {
     return {

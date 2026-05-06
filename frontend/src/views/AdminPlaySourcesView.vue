@@ -19,9 +19,13 @@
       v-if="focusedSourceName"
       class="overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950 shadow-lg ring-1 ring-slate-800"
     >
-      <div class="flex flex-col gap-4 px-6 py-5 text-white lg:flex-row lg:items-center lg:justify-between">
+      <div
+        class="flex flex-col gap-4 px-6 py-5 text-white lg:flex-row lg:items-center lg:justify-between"
+      >
         <div>
-          <div class="inline-flex items-center rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-emerald-100">
+          <div
+            class="inline-flex items-center rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-emerald-100"
+          >
             后台首页 · {{ focusOriginLabel }}
           </div>
           <h2 class="mt-3 text-xl font-semibold">当前排障来源：{{ focusedSourceName }}</h2>
@@ -50,9 +54,13 @@
       v-else-if="activeAlertFilter"
       class="overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-rose-950 shadow-lg ring-1 ring-slate-800"
     >
-      <div class="flex flex-col gap-4 px-6 py-5 text-white lg:flex-row lg:items-center lg:justify-between">
+      <div
+        class="flex flex-col gap-4 px-6 py-5 text-white lg:flex-row lg:items-center lg:justify-between"
+      >
         <div>
-          <div class="inline-flex items-center rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-rose-100">
+          <div
+            class="inline-flex items-center rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-rose-100"
+          >
             后台首页 · 告警汇总
           </div>
           <h2 class="mt-3 text-xl font-semibold">当前告警视图：{{ alertFilterLabel }}</h2>
@@ -99,7 +107,9 @@
         class="border-t border-white/10 px-6 py-4 text-sm text-slate-300"
       >
         <details class="group">
-          <summary class="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-white">
+          <summary
+            class="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-white"
+          >
             <span>查看当前命中来源列表（{{ alertFilteredSourceNames.length }}）</span>
             <span class="text-xs text-slate-400 transition group-open:rotate-180">⌄</span>
           </summary>
@@ -120,18 +130,27 @@
       v-if="focusedSourceName"
       class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]"
     >
-      <div class="overflow-hidden rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-5 text-white shadow-lg ring-1 ring-slate-800">
+      <div
+        class="overflow-hidden rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-5 text-white shadow-lg ring-1 ring-slate-800"
+      >
         <div class="flex items-start justify-between gap-3">
           <div>
             <h3 class="text-base font-medium">来源健康摘要</h3>
-            <p class="mt-1 text-sm text-slate-300">把质量分、可用率、最近入库和最近校验集中到同一页</p>
+            <p class="mt-1 text-sm text-slate-300">
+              把质量分、可用率、最近入库和最近校验集中到同一页
+            </p>
           </div>
-          <span class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-slate-200">
+          <span
+            class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-slate-200"
+          >
             {{ sourceHealthTone }}
           </span>
         </div>
 
-        <div v-if="sourceContextLoading" class="mt-5 rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-slate-300">
+        <div
+          v-if="sourceContextLoading"
+          class="mt-5 rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-slate-300"
+        >
           正在加载来源健康摘要...
         </div>
 
@@ -142,13 +161,17 @@
           <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
             <div class="text-xs text-slate-400">质量分</div>
             <div class="mt-2 text-2xl font-semibold text-white">
-              {{ focusedSourceHealth?.qualityScore ?? focusedSourceCollectionStats?.qualityScore ?? 0 }}
+              {{
+                focusedSourceHealth?.qualityScore ?? focusedSourceCollectionStats?.qualityScore ?? 0
+              }}
             </div>
           </div>
           <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
             <div class="text-xs text-slate-400">可用率</div>
             <div class="mt-2 text-2xl font-semibold text-white">
-              {{ focusedSourceHealth?.activeRate ?? focusedSourceCollectionStats?.activeRate ?? 0 }}%
+              {{
+                focusedSourceHealth?.activeRate ?? focusedSourceCollectionStats?.activeRate ?? 0
+              }}%
             </div>
           </div>
           <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -160,8 +183,17 @@
           <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
             <div class="text-xs text-slate-400">活跃源 / 总源</div>
             <div class="mt-2 text-2xl font-semibold text-white">
-              {{ focusedSourceHealth?.activePlaySources ?? focusedSourceCollectionStats?.activePlaySources ?? 0 }}
-              / {{ focusedSourceHealth?.totalPlaySources ?? focusedSourceCollectionStats?.totalPlaySources ?? 0 }}
+              {{
+                focusedSourceHealth?.activePlaySources ??
+                focusedSourceCollectionStats?.activePlaySources ??
+                0
+              }}
+              /
+              {{
+                focusedSourceHealth?.totalPlaySources ??
+                focusedSourceCollectionStats?.totalPlaySources ??
+                0
+              }}
             </div>
           </div>
         </div>
@@ -177,13 +209,23 @@
           <div class="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
             <div class="text-xs text-slate-400">最近校验</div>
             <div class="mt-2">
-              {{ formatDate(focusedSourceHealth?.latestCheckedAt || focusedSourceCollectionStats?.lastCheckedAt) }}
+              {{
+                formatDate(
+                  focusedSourceHealth?.latestCheckedAt ||
+                    focusedSourceCollectionStats?.lastCheckedAt,
+                )
+              }}
             </div>
           </div>
           <div class="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
             <div class="text-xs text-slate-400">代理策略</div>
             <div class="mt-2">
-              当前 {{ focusedSourceHealth?.proxyMode || focusedSourceCollectionStats?.proxyMode || 'direct' }}
+              当前
+              {{
+                focusedSourceHealth?.proxyMode ||
+                focusedSourceCollectionStats?.proxyMode ||
+                'direct'
+              }}
               <span v-if="focusedSourceHealth?.suggestedProxyMode" class="text-slate-400">
                 · 建议 {{ focusedSourceHealth.suggestedProxyMode }}
               </span>
@@ -191,7 +233,13 @@
           </div>
           <div class="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
             <div class="text-xs text-slate-400">近24h新增源</div>
-            <div class="mt-2">{{ focusedSourceHealth?.recentPlaySources24h ?? focusedSourceCollectionStats?.recentPlaySources24h ?? 0 }}</div>
+            <div class="mt-2">
+              {{
+                focusedSourceHealth?.recentPlaySources24h ??
+                focusedSourceCollectionStats?.recentPlaySources24h ??
+                0
+              }}
+            </div>
           </div>
         </div>
       </div>
@@ -200,7 +248,10 @@
         <h3 class="text-base font-medium text-gray-900">运维建议</h3>
         <p class="mt-1 text-sm text-gray-500">结合当前来源健康状态给出处理建议</p>
 
-        <div v-if="sourceContextLoading" class="mt-4 rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
+        <div
+          v-if="sourceContextLoading"
+          class="mt-4 rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500"
+        >
           正在生成来源建议...
         </div>
 
@@ -221,14 +272,14 @@
               {{ focusedSourceAttentionItem.recommendedAction.description }}
             </div>
             <div class="mt-3 flex flex-wrap gap-2">
-              <router-link
-                :to="buildCrawlerLink()"
-                :class="getFocusedSourceActionClass('crawler')"
-              >
+              <router-link :to="buildCrawlerLink()" :class="getFocusedSourceActionClass('crawler')">
                 {{ getFocusedSourceActionLabel('crawler', '来源策略') }}
               </router-link>
               <router-link
-                :to="{ name: 'admin-play-sources', query: { source: focusedSourceName, focus: route.query.focus || 'top' } }"
+                :to="{
+                  name: 'admin-play-sources',
+                  query: { source: focusedSourceName, focus: route.query.focus || 'top' },
+                }"
                 :class="getFocusedSourceActionClass('play-sources')"
               >
                 {{ getFocusedSourceActionLabel('play-sources', '当前播放源视图') }}
@@ -236,7 +287,9 @@
             </div>
           </div>
 
-          <div class="rounded-2xl border border-amber-100 bg-amber-50/80 p-4 text-sm text-amber-800">
+          <div
+            class="rounded-2xl border border-amber-100 bg-amber-50/80 p-4 text-sm text-amber-800"
+          >
             <div class="font-medium">排障建议</div>
             <ul class="mt-2 space-y-1 text-[13px]">
               <li>- 优先查看 `error` 与 `checking` 状态的播放源是否集中在同一批链接。</li>
@@ -246,7 +299,10 @@
           </div>
         </div>
 
-        <div v-else class="mt-4 rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
+        <div
+          v-else
+          class="mt-4 rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500"
+        >
           {{ sourceContextError || '当前来源尚未生成可展示的健康摘要。' }}
         </div>
       </div>
@@ -256,7 +312,9 @@
       class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
       @submit.prevent="applyFilters"
     >
-      <div class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(220px,1fr)_minmax(220px,1fr)_160px_180px_220px_auto]">
+      <div
+        class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(220px,1fr)_minmax(220px,1fr)_160px_180px_220px_auto]"
+      >
         <label class="flex flex-col gap-2">
           <span class="text-sm font-medium text-gray-700">来源筛选</span>
           <input
@@ -340,7 +398,10 @@
         </div>
       </div>
 
-      <div v-if="hasActiveFilters" class="mt-4 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+      <div
+        v-if="hasActiveFilters"
+        class="mt-4 flex flex-wrap items-center gap-2 text-xs text-gray-500"
+      >
         <span class="rounded-full bg-gray-100 px-2.5 py-1">筛选已生效</span>
         <span
           v-if="focusedSourceName"
@@ -348,10 +409,7 @@
         >
           来源：{{ focusedSourceName }}
         </span>
-        <span
-          v-if="appliedSearch"
-          class="rounded-full bg-indigo-50 px-2.5 py-1 text-indigo-700"
-        >
+        <span v-if="appliedSearch" class="rounded-full bg-indigo-50 px-2.5 py-1 text-indigo-700">
           搜索：{{ appliedSearch }}
         </span>
         <span v-if="appliedType" class="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700">
@@ -367,13 +425,17 @@
     </form>
 
     <div class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(320px,0.95fr)_minmax(0,1.05fr)]">
-      <div class="overflow-hidden rounded-2xl bg-gradient-to-r from-slate-950 via-slate-900 to-rose-950 p-5 text-white shadow-lg ring-1 ring-slate-800">
+      <div
+        class="overflow-hidden rounded-2xl bg-gradient-to-r from-slate-950 via-slate-900 to-rose-950 p-5 text-white shadow-lg ring-1 ring-slate-800"
+      >
         <div class="flex items-center justify-between gap-3">
           <div>
             <h3 class="text-base font-medium">快捷切换</h3>
             <p class="mt-1 text-sm text-slate-300">一键切到异常源、检查中或久未校验来源</p>
           </div>
-          <span class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-slate-300">
+          <span
+            class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-slate-300"
+          >
             当前：{{ activeQuickFilterLabel }}
           </span>
         </div>
@@ -469,7 +531,10 @@
               </router-link>
               <router-link
                 v-if="focusedSourceAttentionItem"
-                :to="{ name: 'admin-play-sources', query: { source: focusedSourceName, focus: route.query.focus || 'top' } }"
+                :to="{
+                  name: 'admin-play-sources',
+                  query: { source: focusedSourceName, focus: route.query.focus || 'top' },
+                }"
                 :class="getFocusedSourceActionClass('play-sources')"
               >
                 {{ getFocusedSourceActionLabel('play-sources', '保持播放源视图') }}
@@ -489,41 +554,54 @@
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
                   来源
                 </th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
                   媒体
                 </th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
                   类型
                 </th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
                   状态
                 </th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
                   优先级
                 </th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
                   最后校验
                 </th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
                   创建时间
                 </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 bg-white">
-              <tr
-                v-for="item in playSources"
-                :key="item.id"
-                :class="getPlaySourceRowClass(item)"
-              >
+              <tr v-for="item in playSources" :key="item.id" :class="getPlaySourceRowClass(item)">
                 <td class="px-4 py-3 text-sm text-gray-900">
                   <div class="font-medium">
                     {{ item.sourceName || item.name || '未命名播放源' }}
                   </div>
                   <div class="line-clamp-1 text-xs text-gray-500">{{ item.url }}</div>
-                  <div v-if="getValidationSummary(item)" class="mt-1 line-clamp-2 text-xs text-gray-400">
+                  <div
+                    v-if="getValidationSummary(item)"
+                    class="mt-1 line-clamp-2 text-xs text-gray-400"
+                  >
                     {{ getValidationSummary(item) }}
                   </div>
                 </td>
@@ -540,7 +618,9 @@
                   </span>
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-600">{{ item.priority }}</td>
-                <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(item.lastCheckedAt) }}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">
+                  {{ formatDate(item.lastCheckedAt) }}
+                </td>
                 <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(item.createdAt) }}</td>
               </tr>
             </tbody>
@@ -749,7 +829,9 @@
   });
 
   const activeQuickFilterLabel = computed(() => {
-    const activeOption = quickFilterOptions.find(option => option.key === activeQuickFilterKey.value);
+    const activeOption = quickFilterOptions.find(
+      option => option.key === activeQuickFilterKey.value,
+    );
     return activeOption?.label || '自定义组合';
   });
   const alertFilterLabel = computed(() => {
@@ -763,7 +845,9 @@
     return activeAlertFilter.value ? labelMap[activeAlertFilter.value] : '';
   });
   const alertFilterRecommendation = computed(() => {
-    return activeAlertFilter.value ? getAlertFilterRecommendedAction(activeAlertFilter.value) : null;
+    return activeAlertFilter.value
+      ? getAlertFilterRecommendedAction(activeAlertFilter.value)
+      : null;
   });
   const focusedSourceAttentionItem = computed<AttentionSourceItem | null>(() => {
     return focusedSourceCollectionStats.value
@@ -784,8 +868,12 @@
     return '需要重点处理';
   });
   const defaultSourceRecommendation = computed(() => {
-    const qualityScore = focusedSourceHealth.value?.qualityScore ?? focusedSourceCollectionStats.value?.qualityScore ?? 0;
-    const activeRate = focusedSourceHealth.value?.activeRate ?? focusedSourceCollectionStats.value?.activeRate ?? 0;
+    const qualityScore =
+      focusedSourceHealth.value?.qualityScore ??
+      focusedSourceCollectionStats.value?.qualityScore ??
+      0;
+    const activeRate =
+      focusedSourceHealth.value?.activeRate ?? focusedSourceCollectionStats.value?.activeRate ?? 0;
 
     if (qualityScore >= 85 && activeRate >= 80) {
       return '该来源整体稳定，可继续保持现有采集与校验节奏。';
@@ -912,7 +1000,8 @@
       focusedSourceHealth.value =
         healthSummaries.find(item => item.name === focusedSourceName.value) || null;
       focusedSourceCollectionStats.value =
-        statisticsResponse.data?.sources.find(item => item.name === focusedSourceName.value) || null;
+        statisticsResponse.data?.sources.find(item => item.name === focusedSourceName.value) ||
+        null;
 
       if (!focusedSourceHealth.value && !focusedSourceCollectionStats.value) {
         sourceContextError.value = '暂未匹配到该来源的健康摘要，可能还没有完整采集数据。';
@@ -1073,11 +1162,15 @@
     const message = typeof validation.message === 'string' ? validation.message : '';
     const contentType = typeof validation.contentType === 'string' ? validation.contentType : '';
     const providerName =
-      typeof validation.providerName === 'string' ? validation.providerName : item.providerName || '';
-    const infoHash = typeof validation.infoHash === 'string' ? validation.infoHash : item.magnetInfo?.infoHash;
+      typeof validation.providerName === 'string'
+        ? validation.providerName
+        : item.providerName || '';
+    const infoHash =
+      typeof validation.infoHash === 'string' ? validation.infoHash : item.magnetInfo?.infoHash;
 
     if (strategy === 'parser') {
-      const playUrlCount = typeof validation.playUrlCount === 'number' ? validation.playUrlCount : 0;
+      const playUrlCount =
+        typeof validation.playUrlCount === 'number' ? validation.playUrlCount : 0;
       return ['解析器 ' + (providerName || '未指定'), 'playUrls ' + playUrlCount, message]
         .filter(Boolean)
         .join(' · ');

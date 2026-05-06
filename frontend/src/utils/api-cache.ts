@@ -254,13 +254,12 @@ class APICacheManager {
   /**
    * 获取缓存统计
    */
-  public getStats(): Object {
-    const now = Date.now();
+  public getStats(): Record<string, number> {
     let validCount = 0;
     let expiredCount = 0;
     let totalSize = 0;
 
-    this.cache.forEach((item, key) => {
+    this.cache.forEach(item => {
       totalSize += JSON.stringify(item).length;
       if (this.isCacheValid(item)) {
         validCount++;

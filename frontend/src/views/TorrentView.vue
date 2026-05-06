@@ -192,7 +192,12 @@
                   加入下载任务
                 </button>
                 <RouterLink
-                  :to="buildDownloadsLink(parsedMagnet.name || parsedMagnet.infoHash, parsedMagnet.infoHash)"
+                  :to="
+                    buildDownloadsLink(
+                      parsedMagnet.name || parsedMagnet.infoHash,
+                      parsedMagnet.infoHash,
+                    )
+                  "
                   class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
                 >
                   查看下载任务
@@ -217,6 +222,18 @@
             </button>
           </div>
           <div v-if="popularLoading" class="py-8 text-center text-sm text-slate-500">加载中...</div>
+          <div
+            v-else-if="popularError"
+            class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+          >
+            {{ popularError }}
+          </div>
+          <div
+            v-else-if="popularTorrents.length === 0"
+            class="py-8 text-center text-sm text-slate-500"
+          >
+            当前分类下还没有热门磁力。
+          </div>
           <div v-else class="space-y-3">
             <button
               v-for="item in popularTorrents"
@@ -243,6 +260,18 @@
             </button>
           </div>
           <div v-if="latestLoading" class="py-8 text-center text-sm text-slate-500">加载中...</div>
+          <div
+            v-else-if="latestError"
+            class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+          >
+            {{ latestError }}
+          </div>
+          <div
+            v-else-if="latestTorrents.length === 0"
+            class="py-8 text-center text-sm text-slate-500"
+          >
+            当前分类下还没有最新磁力。
+          </div>
           <div v-else class="space-y-3">
             <button
               v-for="item in latestTorrents"
@@ -349,7 +378,12 @@
                   启动本地客户端
                 </button>
                 <RouterLink
-                  :to="buildDownloadsLink(selectedInfo.name || selectedInfo.infoHash, selectedInfo.infoHash)"
+                  :to="
+                    buildDownloadsLink(
+                      selectedInfo.name || selectedInfo.infoHash,
+                      selectedInfo.infoHash,
+                    )
+                  "
                   class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
                 >
                   查看下载任务
@@ -439,6 +473,7 @@
     type TorrentListItem,
   } from '@/api/torrent';
   import { useDownloadsStore } from '@/stores/downloads';
+  import { copyTextToClipboard } from '@/utils/clipboard';
 
   const keyword = ref('');
   const category = ref('');
@@ -464,9 +499,13 @@
   const parseLoading = ref(false);
 
   const searchError = ref<string | null>(null);
+  const popularError = ref<string | null>(null);
+  const latestError = ref<string | null>(null);
   const selectedError = ref<string | null>(null);
   const parseError = ref<string | null>(null);
   const supportedCategories = ['movie', 'tv_series', 'variety', 'anime', 'documentary'];
+
+  const normalizeHashInput = (value: string) => value.trim().toLowerCase();
 
   const formatDateTime = (value?: string | null) => {
     if (!value) {
@@ -552,14 +591,14 @@
     return task;
   };
 
-  const copyText = async (
+  const copySelectedText = async (
     value: string,
     successMessage: string,
     action: string,
     infoHash: string,
   ) => {
     try {
-      await navigator.clipboard.writeText(value);
+      await copyTextToClipboard(value);
       actionMessage.value = successMessage;
       recordRecentAction(infoHash, action);
     } catch {
@@ -573,7 +612,7 @@
       return;
     }
 
-    await copyText(
+    await copySelectedText(
       getSelectedMagnetUri(),
       'Magnet 链接已复制到剪贴板。',
       '复制 Magnet',
@@ -587,7 +626,7 @@
       return;
     }
 
-    await copyText(
+    await copySelectedText(
       selectedInfo.value.infoHash,
       'InfoHash 已复制到剪贴板。',
       '复制 Hash',
@@ -674,7 +713,7 @@
     query: {
       type: 'magnet',
       ...(keyword?.trim() ? { keyword: keyword.trim() } : {}),
-      ...(infoHash?.trim() ? { hash: infoHash.trim().toLowerCase() } : {}),
+      ...(normalizeHashInput(infoHash || '') ? { hash: normalizeHashInput(infoHash || '') } : {}),
     },
   });
 
@@ -692,7 +731,7 @@
     const params = new URLSearchParams(window.location.search);
     const nextKeyword = params.get('keyword')?.trim() || '';
     const nextCategory = params.get('category')?.trim() || '';
-    const nextHash = params.get('hash')?.trim() || '';
+    const nextHash = normalizeHashInput(params.get('hash') || '');
 
     keyword.value = nextKeyword;
     category.value = supportedCategories.includes(nextCategory) ? nextCategory : '';
@@ -707,7 +746,7 @@
     const url = new URL(window.location.href);
     const params = new URLSearchParams(url.search);
     const normalizedKeyword = keyword.value.trim();
-    const normalizedHash = selectedHash.value.trim();
+    const normalizedHash = normalizeHashInput(selectedHash.value);
 
     if (normalizedKeyword) {
       params.set('keyword', normalizedKeyword);
@@ -765,13 +804,15 @@
 
   const loadPopularTorrents = async () => {
     popularLoading.value = true;
+    popularError.value = null;
     try {
       popularTorrents.value = await torrentApi.getPopular({
         limit: 8,
         category: category.value || undefined,
       });
-    } catch {
+    } catch (error: unknown) {
       popularTorrents.value = [];
+      popularError.value = getErrorMessage(error, '加载热门磁力失败');
     } finally {
       popularLoading.value = false;
     }
@@ -779,20 +820,22 @@
 
   const loadLatestTorrents = async () => {
     latestLoading.value = true;
+    latestError.value = null;
     try {
       latestTorrents.value = await torrentApi.getLatest({
         limit: 8,
         category: category.value || undefined,
       });
-    } catch {
+    } catch (error: unknown) {
       latestTorrents.value = [];
+      latestError.value = getErrorMessage(error, '加载最新磁力失败');
     } finally {
       latestLoading.value = false;
     }
   };
 
   const selectTorrent = async (hash: string) => {
-    const normalizedHash = hash.trim();
+    const normalizedHash = normalizeHashInput(hash);
     if (!normalizedHash) {
       return;
     }
@@ -807,7 +850,7 @@
       ]);
       selectedInfo.value = info;
       selectedHealth.value = health;
-      selectedHash.value = info.infoHash || normalizedHash;
+      selectedHash.value = normalizeHashInput(info.infoHash || normalizedHash);
     } catch (error: unknown) {
       selectedError.value = getErrorMessage(error, '加载磁力详情失败');
       selectedInfo.value = null;

@@ -149,9 +149,7 @@ describe('HomeView', () => {
   });
 
   it('shows remote search suggestions while typing', async () => {
-    searchApi.getSuggestions.mockResolvedValue([
-      { text: '星际迷航', type: 'title', count: 12 },
-    ]);
+    searchApi.getSuggestions.mockResolvedValue([{ text: '星际迷航', type: 'title', count: 12 }]);
 
     const wrapper = mountView();
     await flushPromises();
@@ -174,9 +172,7 @@ describe('HomeView', () => {
     await wrapper.get('input[type="text"]').trigger('focus');
     await flushPromises();
 
-    const clearButton = wrapper
-      .findAll('button')
-      .find(button => button.text().includes('清空'));
+    const clearButton = wrapper.findAll('button').find(button => button.text().includes('清空'));
 
     expect(clearButton).toBeTruthy();
 

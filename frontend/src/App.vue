@@ -52,7 +52,7 @@
 <template>
   <AppLayout />
   <GlobalLoading />
-  
+
   <!-- 全局模态框 -->
   <EnhancedModal
     v-if="modalState.isVisible"
@@ -66,7 +66,7 @@
     @cancel="modalState.onCancel"
     @close="modalState.isVisible = false"
   />
-  
+
   <!-- 全局通知 -->
   <NotificationToast />
 </template>

@@ -262,8 +262,7 @@
 
     pagination.value.page = Number.isFinite(queryPage) && queryPage > 0 ? queryPage : 1;
     filters.value = {
-      isCompleted:
-        queryIsCompleted === 'true' ? true : queryIsCompleted === 'false' ? false : '',
+      isCompleted: queryIsCompleted === 'true' ? true : queryIsCompleted === 'false' ? false : '',
       sortBy:
         querySortBy === 'createdAt' || querySortBy === 'currentTime' || querySortBy === 'updatedAt'
           ? querySortBy
@@ -369,13 +368,6 @@
       sortOrder: 'DESC',
     };
     void applyFilters(1);
-  };
-
-  // 分页导航
-  const goToPage = page => {
-    if (page >= 1 && page <= pagination.value.totalPages) {
-      void applyFilters(page);
-    }
   };
 
   // 获取分页数字

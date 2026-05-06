@@ -4,14 +4,7 @@ import LoginView from '@/views/LoginView.vue';
 import SettingsView from '@/views/SettingsView.vue';
 import AppLayout from '@/components/AppLayout.vue';
 
-const {
-  routeState,
-  routerState,
-  authStore,
-  authApi,
-  searchApi,
-  setLocale,
-} = vi.hoisted(() => {
+const { routeState, routerState, authStore, authApi, searchApi, setLocale } = vi.hoisted(() => {
   const session = {
     password: 'old-pass-123',
     profile: {
@@ -43,7 +36,10 @@ const {
     login: vi.fn(async (credentials: { identifier: string; password: string }) => {
       authStore.isLoading = true;
       try {
-        if (credentials.identifier !== 'demo-user' && credentials.identifier !== 'demo@example.com') {
+        if (
+          credentials.identifier !== 'demo-user' &&
+          credentials.identifier !== 'demo@example.com'
+        ) {
           return { success: false, error: '用户名或密码错误' };
         }
         if (credentials.password !== session.password) {
@@ -210,7 +206,10 @@ describe('Auth profile journey regression', () => {
     await loginWrapper.get('form').trigger('submit.prevent');
     await flushPromises();
 
-    expect(authStore.login).toHaveBeenCalledWith({ identifier: 'demo-user', password: 'old-pass-123' });
+    expect(authStore.login).toHaveBeenCalledWith({
+      identifier: 'demo-user',
+      password: 'old-pass-123',
+    });
     expect(routerState.push).toHaveBeenCalledWith('/settings');
 
     const settingsWrapper = mountWithRouter(SettingsView);
@@ -219,7 +218,9 @@ describe('Auth profile journey regression', () => {
     const textInputs = settingsWrapper.findAll('input[type="text"]');
     await textInputs[0].setValue('新昵称');
 
-    const saveButton = settingsWrapper.findAll('button').find(button => button.text().includes('保存设置'));
+    const saveButton = settingsWrapper
+      .findAll('button')
+      .find(button => button.text().includes('保存设置'));
     expect(saveButton).toBeTruthy();
     await saveButton!.trigger('click');
     await flushPromises();
@@ -269,7 +270,10 @@ describe('Auth profile journey regression', () => {
     await reloginWrapper.get('form').trigger('submit.prevent');
     await flushPromises();
 
-    expect(authStore.login).toHaveBeenCalledWith({ identifier: 'demo-user', password: 'new-pass-456' });
+    expect(authStore.login).toHaveBeenCalledWith({
+      identifier: 'demo-user',
+      password: 'new-pass-456',
+    });
     expect(routerState.push).toHaveBeenCalledWith('/');
     expect(authStore.user.nickname).toBe('新昵称');
   });

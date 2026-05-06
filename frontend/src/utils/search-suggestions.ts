@@ -42,7 +42,10 @@ export const saveRecentSearch = (keyword: string) => {
     return readRecentSearches();
   }
 
-  const nextSearches = dedupeKeywords([nextKeyword, ...readRecentSearches()], DEFAULT_HISTORY_LIMIT);
+  const nextSearches = dedupeKeywords(
+    [nextKeyword, ...readRecentSearches()],
+    DEFAULT_HISTORY_LIMIT,
+  );
 
   try {
     globalThis.localStorage?.setItem(SEARCH_HISTORY_STORAGE_KEY, JSON.stringify(nextSearches));
@@ -69,5 +72,8 @@ export const filterRecentSearches = (keywords: string[], keyword: string, limit 
     return dedupeKeywords(keywords, limit);
   }
 
-  return dedupeKeywords(keywords.filter(item => item.toLocaleLowerCase().includes(normalizedKeyword)), limit);
+  return dedupeKeywords(
+    keywords.filter(item => item.toLocaleLowerCase().includes(normalizedKeyword)),
+    limit,
+  );
 };

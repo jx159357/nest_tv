@@ -170,7 +170,8 @@ export const buildAttentionSourceItem = (
   const needsPlaySourceInvestigation =
     (source.totalPlaySources > 0 && source.activePlaySources === 0) ||
     source.activeRate < 50 ||
-    (source.totalPlaySources > 0 && (hoursSinceLastChecked === null || hoursSinceLastChecked >= 72));
+    (source.totalPlaySources > 0 &&
+      (hoursSinceLastChecked === null || hoursSinceLastChecked >= 72));
 
   const recommendedAction =
     needsPlaySourceInvestigation &&

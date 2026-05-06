@@ -6,14 +6,14 @@
 // 扩展 Vue 组件类型
 declare module '*.vue' {
   import type { DefineComponent } from 'vue';
-  const component: DefineComponent<{}, {}, any>;
+  const component: DefineComponent<Record<string, never>, Record<string, never>, any>;
   export default component;
 }
 
 // 扩展 *.vue 文件的导入类型
 declare module '*.vue' {
   import { DefineComponent } from 'vue';
-  const component: DefineComponent<{}, {}, any>;
+  const component: DefineComponent<Record<string, never>, Record<string, never>, any>;
   export default component;
 }
 

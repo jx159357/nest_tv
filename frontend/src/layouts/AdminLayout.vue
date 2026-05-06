@@ -2,7 +2,7 @@
   <div class="admin-layout">
     <aside class="admin-layout__sidebar" :class="{ 'admin-layout__sidebar--open': sidebarOpen }">
       <div class="admin-layout__sidebar-header">
-        <h2 class="admin-layout__sidebar-title">¹ÜÀíºóÌ¨</h2>
+        <h2 class="admin-layout__sidebar-title">ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì¨</h2>
       </div>
       <nav class="admin-layout__nav">
         <router-link
@@ -22,13 +22,13 @@
       <header class="admin-layout__header">
         <div class="admin-layout__header-left">
           <button class="admin-layout__menu-toggle" @click="toggleSidebar">
-            <span class="admin-layout__menu-icon">¡Ô</span>
+            <span class="admin-layout__menu-icon">ï¿½ï¿½</span>
           </button>
           <h1 class="admin-layout__page-title">{{ currentPageTitle }}</h1>
         </div>
         <div class="admin-layout__header-right">
-          <router-link to="/" class="admin-layout__back-home">·µ»ØÊ×Ò³</router-link>
-          <button class="admin-layout__logout" @click="handleLogout">ÍË³öµÇÂ¼</button>
+          <router-link to="/" class="admin-layout__back-home">ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò³</router-link>
+          <button class="admin-layout__logout" @click="handleLogout">ï¿½Ë³ï¿½ï¿½ï¿½Â¼</button>
         </div>
       </header>
       <div class="admin-layout__content">
@@ -50,19 +50,19 @@
   const sidebarOpen = ref(true);
 
   const navItems = [
-    { path: '/admin', title: 'ÒÇ±íÅÌ', icon: 'DB' },
-    { path: '/admin/users', title: 'ÓÃ»§¹ÜÀí', icon: 'US' },
-    { path: '/admin/media', title: 'Ã½Ìå¹ÜÀí', icon: 'MD' },
-    { path: '/admin/play-sources', title: '²¥·ÅÔ´¹ÜÀí', icon: 'PS' },
-    { path: '/admin/download-tasks', title: 'ÏÂÔØÈÎÎñ', icon: 'DL' },
-    { path: '/admin/watch-history', title: '¹Û¿´ÀúÊ·', icon: 'WH' },
-    { path: '/admin/logs', title: 'ÏµÍ³ÈÕÖ¾', icon: 'LG' },
-    { path: '/admin/crawler', title: 'Êý¾Ý²É¼¯', icon: 'CR' },
+    { path: '/admin', title: 'ï¿½Ç±ï¿½ï¿½ï¿½', icon: 'DB' },
+    { path: '/admin/users', title: 'ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½', icon: 'US' },
+    { path: '/admin/media', title: 'Ã½ï¿½ï¿½ï¿½ï¿½ï¿½', icon: 'MD' },
+    { path: '/admin/play-sources', title: 'ï¿½ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½', icon: 'PS' },
+    { path: '/admin/download-tasks', title: 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½', icon: 'DL' },
+    { path: '/admin/watch-history', title: 'ï¿½Û¿ï¿½ï¿½ï¿½Ê·', icon: 'WH' },
+    { path: '/admin/logs', title: 'ÏµÍ³ï¿½ï¿½Ö¾', icon: 'LG' },
+    { path: '/admin/crawler', title: 'ï¿½ï¿½ï¿½Ý²É¼ï¿½', icon: 'CR' },
   ];
 
   const currentPageTitle = computed(() => {
     const activeItem = navItems.find(item => isActive(item.path));
-    return activeItem ? activeItem.title : '¹ÜÀíºóÌ¨';
+    return activeItem ? activeItem.title : 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì¨';
   });
 
   const isActive = (path: string) => route.path === path || route.path.startsWith(path + '/');

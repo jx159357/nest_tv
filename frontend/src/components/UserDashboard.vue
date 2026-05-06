@@ -185,7 +185,7 @@
   import { notifyInfo } from '@/composables/useModal';
   import { useAuthStore } from '@/stores/auth';
   import { useRecommendationService } from '@/services/recommendation.service';
-  import MediaCard from '@/components/ui/MediaCard.vue';
+  import MediaCard from '@/components/MediaCard.vue';
 
   const router = useRouter();
   const authStore = useAuthStore();
@@ -716,5 +716,3 @@
     }
   }
 </style>
-
-

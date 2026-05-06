@@ -40,7 +40,7 @@
         x5-playsinline
         role="video"
         :aria-label="title || '视频'"
-        :aria-describedby="showControls ? 'video-controls' : undefined"
+        :aria-describedby="props.showControls ? 'video-controls' : undefined"
         @loadedmetadata="onLoadedMetadata"
         @timeupdate="onTimeUpdate"
         @play="onPlay"
@@ -209,7 +209,7 @@
 
     <!-- 控制栏 -->
     <div
-      v-show="showControls || showControlsTemporarily"
+      v-show="props.showControls || showControlsTemporarily"
       id="video-controls"
       ref="controlsRef"
       class="modern-video-player__controls"
@@ -540,7 +540,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, onMounted, onUnmounted, watch, nextTick, reactive } from 'vue';
+  import { ref, computed, onMounted, onUnmounted, watch, reactive } from 'vue';
   import { mobileOptimizations } from '@/utils/mobile-optimizations';
 
   interface VideoSource {
@@ -617,7 +617,10 @@
     (e: 'ended'): void;
     (e: 'timeupdate', time: number): void;
     (e: 'volumechange', volume: number): void;
-    (e: 'loadedmetadata', meta: { duration: number; videoWidth: number; videoHeight: number }): void;
+    (
+      e: 'loadedmetadata',
+      meta: { duration: number; videoWidth: number; videoHeight: number },
+    ): void;
     (e: 'ratechange', rate: number): void;
     (e: 'qualitychange', quality: string): void;
     (e: 'sourcechange', source: VideoSource): void;
@@ -650,7 +653,6 @@
   const error = ref('');
   const isFullscreen = ref(false);
   const isPictureInPicture = ref(false);
-  const showControls = ref(true);
   const showControlsTemporarily = ref(false);
   const showVolumeSlider = ref(false);
   const showPlayHint = ref(false);
@@ -666,13 +668,11 @@
 
   // 缓冲和错误恢复相关
   const isBuffering = ref(false);
-  const bufferHealth = ref(0);
   const networkState = ref('');
   const readyState = ref(0);
   const autoRetryEnabled = ref(true);
   const lastBufferTime = ref(0);
   const bufferWaitTime = ref(0);
-  const adaptiveQuality = ref(false);
 
   // 移动端相关
   const isMobile = ref(mobileOptimizations.isMobileDevice());
@@ -932,7 +932,7 @@
     resetRetryCount();
   };
 
-  const onError = (e: Event) => {
+  const onError = () => {
     const video = videoRef.value;
     if (!video) return;
 
@@ -1388,7 +1388,7 @@
     if (timeSinceLastTap < 300 && timeSinceLastTap > 50) {
       gestureState.tapCount++;
       if (gestureState.tapCount === 2) {
-        handleDoubleTap(touch);
+        handleDoubleTap();
         gestureState.isDoubleTap = true;
       }
     } else {
@@ -1399,7 +1399,7 @@
     // 长按检测
     gestureState.longPressTimer = window.setTimeout(() => {
       if (!isTouchMoving.value) {
-        handleLongPress(touch);
+        handleLongPress();
         gestureState.isLongPress = true;
       }
     }, 500);
@@ -1468,7 +1468,7 @@
     }
   };
 
-  const onTouchEnd = (e: TouchEvent) => {
+  const onTouchEnd = () => {
     // 清理长按定时器
     if (gestureState.longPressTimer) {
       clearTimeout(gestureState.longPressTimer);
@@ -1484,7 +1484,7 @@
     ) {
       const touchDuration = Date.now() - touchStartTime.value;
       if (touchDuration < 200) {
-        handleSingleTap(e.changedTouches[0]);
+        handleSingleTap();
       }
     }
 
@@ -1508,7 +1508,7 @@
   };
 
   // 手势处理函数
-  const handleDoubleTap = (touch: Touch) => {
+  const handleDoubleTap = () => {
     // 双击切换播放/暂停或全屏
     if (isPlaying.value) {
       pause();
@@ -1525,7 +1525,7 @@
     }
   };
 
-  const handleLongPress = (touch: Touch) => {
+  const handleLongPress = () => {
     // 长按显示设置面板
     toggleSettings();
 
@@ -1541,7 +1541,7 @@
     void distance;
   };
 
-  const handleSingleTap = (touch: Touch) => {
+  const handleSingleTap = () => {
     // 单击切换控制栏显示
     showControlsTemporarily.value = !showControlsTemporarily.value;
 
@@ -1638,30 +1638,34 @@
         break;
 
       // 方向键控制
-      case 'ArrowLeft':
+      case 'ArrowLeft': {
         e.preventDefault();
         const seekBackward = e.shiftKey ? 30 : 10; // Shift+左键快退30秒
         videoRef.value.currentTime = Math.max(0, currentTime.value - seekBackward);
         showKeyboardHint(`← ${seekBackward}秒`, '快退');
         break;
-      case 'ArrowRight':
+      }
+      case 'ArrowRight': {
         e.preventDefault();
         const seekForward = e.shiftKey ? 30 : 10; // Shift+右键快进30秒
         videoRef.value.currentTime = Math.min(duration.value, currentTime.value + seekForward);
         showKeyboardHint(`→ ${seekForward}秒`, '快进');
         break;
-      case 'ArrowUp':
+      }
+      case 'ArrowUp': {
         e.preventDefault();
         const volumeUp = e.shiftKey ? 0.2 : 0.1;
         videoRef.value.volume = Math.min(1, volume.value + volumeUp);
         showKeyboardHint('↑', `音量 ${Math.round(videoRef.value.volume * 100)}%`);
         break;
-      case 'ArrowDown':
+      }
+      case 'ArrowDown': {
         e.preventDefault();
         const volumeDown = e.shiftKey ? 0.2 : 0.1;
         videoRef.value.volume = Math.max(0, volume.value - volumeDown);
         showKeyboardHint('↓', `音量 ${Math.round(videoRef.value.volume * 100)}%`);
         break;
+      }
 
       // 音量控制
       case 'm':
@@ -1745,7 +1749,7 @@
       case '6':
       case '7':
       case '8':
-      case '9':
+      case '9': {
         e.preventDefault();
         const percentage = parseInt(e.key) / 10;
         const newTime = duration.value * percentage;
@@ -1753,6 +1757,7 @@
         showKeyboardHint(e.key, `跳转到 ${percentage * 100}%`);
         emit('seek', newTime);
         break;
+      }
 
       // 退出功能
       case 'Escape':

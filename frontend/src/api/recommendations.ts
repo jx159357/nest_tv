@@ -26,15 +26,23 @@ export interface PersonalizedRecommendationItem {
 
 export const recommendationsApi = {
   getPersonalized: (limit = 8) => {
-    return ApiClient.get<MediaResource[]>('/recommendations/personalized', {
-      params: { limit },
-    }, false);
+    return ApiClient.get<MediaResource[]>(
+      '/recommendations/personalized',
+      {
+        params: { limit },
+      },
+      false,
+    );
   },
 
   getPersonalizedDetailed: (limit = 8) => {
-    return ApiClient.get<PersonalizedRecommendationItem[]>('/recommendations/personalized-detailed', {
-      params: { limit },
-    }, false);
+    return ApiClient.get<PersonalizedRecommendationItem[]>(
+      '/recommendations/personalized-detailed',
+      {
+        params: { limit },
+      },
+      false,
+    );
   },
 
   getProfile: () => {

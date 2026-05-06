@@ -28,8 +28,18 @@ describe('watchHistoryApi', () => {
     await watchHistoryApi.getContinueWatching(1, { limit: 3 });
     await watchHistoryApi.getCompleted(1, { page: 2 });
 
-    expect(apiGet).toHaveBeenNthCalledWith(1, '/watch-history/user/me', { params: { page: 2 } }, false);
-    expect(apiGet).toHaveBeenNthCalledWith(2, '/watch-history/user/me', { params: { limit: 5 } }, false);
+    expect(apiGet).toHaveBeenNthCalledWith(
+      1,
+      '/watch-history/user/me',
+      { params: { page: 2 } },
+      false,
+    );
+    expect(apiGet).toHaveBeenNthCalledWith(
+      2,
+      '/watch-history/user/me',
+      { params: { limit: 5 } },
+      false,
+    );
     expect(apiGet).toHaveBeenNthCalledWith(3, '/watch-history/user/me/stats', undefined, false);
     expect(apiGet).toHaveBeenNthCalledWith(
       4,

@@ -223,7 +223,6 @@ export class ResourceCache<T = any> {
   // 清理过期缓存
   cleanup(): number {
     let count = 0;
-    const now = Date.now();
 
     this.cache.forEach((entry, key) => {
       if (this.isExpired(entry)) {
@@ -568,4 +567,3 @@ export const cacheUtils = {
     return config;
   },
 };
-

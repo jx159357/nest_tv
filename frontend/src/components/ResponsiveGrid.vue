@@ -1,5 +1,5 @@
 <template>
-  <div class="responsive-grid" :class="gridClasses">
+  <div class="responsive-grid" :class="gridClasses" :style="style">
     <slot></slot>
   </div>
 </template>

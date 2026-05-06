@@ -2,11 +2,15 @@
   <div class="min-h-screen bg-slate-950 px-4 py-12 text-slate-50">
     <div class="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1.1fr_440px] lg:items-center">
       <section class="space-y-6">
-        <span class="inline-flex rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1 text-xs font-medium tracking-wide text-indigo-200">
+        <span
+          class="inline-flex rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1 text-xs font-medium tracking-wide text-indigo-200"
+        >
           Nest TV 账号中心
         </span>
         <div>
-          <h1 class="text-4xl font-bold leading-tight text-white">登录后继续你的收藏、搜索与推荐链路</h1>
+          <h1 class="text-4xl font-bold leading-tight text-white">
+            登录后继续你的收藏、搜索与推荐链路
+          </h1>
           <p class="mt-4 max-w-2xl text-base leading-7 text-slate-300">
             使用账号登录后，可同步搜索历史、收藏反馈、推荐画像和个人偏好设置，让体验在多次访问间保持连续。
           </p>
@@ -14,20 +18,28 @@
         <div class="grid gap-4 sm:grid-cols-3">
           <div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
             <div class="text-xs text-slate-400">同步收藏</div>
-            <div class="mt-2 text-sm text-slate-100">收藏结果即时反馈，并可回到高亮定位的收藏页。</div>
+            <div class="mt-2 text-sm text-slate-100">
+              收藏结果即时反馈，并可回到高亮定位的收藏页。
+            </div>
           </div>
           <div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
             <div class="text-xs text-slate-400">搜索画像</div>
-            <div class="mt-2 text-sm text-slate-100">登录后搜索会沉淀到服务端历史，并参与推荐生成。</div>
+            <div class="mt-2 text-sm text-slate-100">
+              登录后搜索会沉淀到服务端历史，并参与推荐生成。
+            </div>
           </div>
           <div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
             <div class="text-xs text-slate-400">偏好设置</div>
-            <div class="mt-2 text-sm text-slate-100">登录后可维护资料、推荐偏好和密码安全信息。</div>
+            <div class="mt-2 text-sm text-slate-100">
+              登录后可维护资料、推荐偏好和密码安全信息。
+            </div>
           </div>
         </div>
       </section>
 
-      <section class="rounded-3xl border border-white/10 bg-white p-8 text-slate-900 shadow-2xl shadow-slate-950/40">
+      <section
+        class="rounded-3xl border border-white/10 bg-white p-8 text-slate-900 shadow-2xl shadow-slate-950/40"
+      >
         <div>
           <h2 class="text-3xl font-bold">登录到 Nest TV</h2>
           <p class="mt-2 text-sm text-slate-500">请输入用户名或邮箱与密码。</p>
@@ -78,7 +90,9 @@
 
         <div class="mt-6 text-sm text-slate-500">
           还没有账号？
-          <router-link to="/register" class="font-medium text-indigo-600 hover:text-indigo-500">立即注册</router-link>
+          <router-link to="/register" class="font-medium text-indigo-600 hover:text-indigo-500"
+            >立即注册</router-link
+          >
         </div>
       </section>
     </div>

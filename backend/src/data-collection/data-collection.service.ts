@@ -259,6 +259,72 @@ export class DataCollectionService {
         minimumPlayableUrls: 1,
       },
     },
+    {
+      name: '电影天堂备用',
+      baseUrl: 'https://www.dytt8899.com',
+      enabled: true,
+      maxConcurrent: 3,
+      delay: 2000,
+      config: {
+        selectors: {
+          title: '.co_content22 ul li a, .title_all h1',
+          description: '.co_content8, .co_content222, .zoomX',
+          poster: '#Zoom img, .co_content8 img',
+          rating: '.rating, .score',
+          director: '.co_content8 p',
+          actors: '.co_content8 p',
+          genres: '.co_content8 p a, .co_content222 p a',
+          releaseDate: '.co_content8 p span',
+          downloadUrls:
+            'a[href*="thunder"], a[href*="magnet"], a[href*="ftp"], .down_list a',
+        },
+        listLinkSelectors: ['a[href$=".html"]'],
+        allowedLinkPatterns: [/\/html\//, /\.html$/],
+      },
+      collectionPolicy: {
+        dailyEnabled: true,
+        dailyLimit: 8,
+        proxyMode: 'direct',
+        proxyForDiscovery: false,
+        proxyForDetail: false,
+        proxyForConnectivityCheck: false,
+        requirePlayableUrls: true,
+        minimumPlayableUrls: 1,
+      },
+    },
+    {
+      name: '阳光电影',
+      baseUrl: 'https://www.ygdy8.com',
+      enabled: true,
+      maxConcurrent: 3,
+      delay: 2000,
+      config: {
+        selectors: {
+          title: '.co_content22 ul li a, .title_all h1',
+          description: '.co_content8, .co_content222, .zoomX',
+          poster: '#Zoom img, .co_content8 img',
+          rating: '.rating, .score',
+          director: '.co_content8 p',
+          actors: '.co_content8 p',
+          genres: '.co_content8 p a',
+          releaseDate: '.co_content8 p span',
+          downloadUrls:
+            'a[href*="thunder"], a[href*="magnet"], a[href*="ftp"], .down_list a',
+        },
+        listLinkSelectors: ['a[href$=".html"]'],
+        allowedLinkPatterns: [/\/html\//, /\.html$/],
+      },
+      collectionPolicy: {
+        dailyEnabled: true,
+        dailyLimit: 8,
+        proxyMode: 'direct',
+        proxyForDiscovery: false,
+        proxyForDetail: false,
+        proxyForConnectivityCheck: false,
+        requirePlayableUrls: true,
+        minimumPlayableUrls: 1,
+      },
+    },
   ];
 
   /**

@@ -36,6 +36,16 @@ type DownloadTaskLike = Omit<
   lastLaunchedAt?: string | Date | null;
 };
 
+interface RemoteActionResult {
+  remoteRequested: boolean;
+  remoteSucceeded: boolean;
+  errorMessage?: string;
+}
+
+interface HydrateRemoteResult extends RemoteActionResult {
+  tasks: DownloadTask[];
+}
+
 const canUseStorage = () => typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 const hasAuthToken = () => canUseStorage() && Boolean(localStorage.getItem('token'));
 const createTaskId = () => `download-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
@@ -229,6 +239,14 @@ const mergeTasks = (localTasks: DownloadTask[], remoteTasks: DownloadTask[]) => 
   );
 };
 
+const getRemoteActionErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message.trim();
+  }
+
+  return fallback;
+};
+
 const triggerDownload = (task: DownloadTask) => {
   if (typeof document === 'undefined') {
     return;
@@ -348,14 +366,22 @@ export const useDownloadsStore = defineStore('downloads', () => {
     return updatedTask;
   };
 
-  const hydrateRemote = async (force = false) => {
+  const hydrateRemote = async (force = false): Promise<HydrateRemoteResult> => {
     if (!hasAuthToken()) {
       remoteHydrated.value = false;
-      return tasks.value;
+      return {
+        tasks: tasks.value,
+        remoteRequested: false,
+        remoteSucceeded: true,
+      };
     }
 
     if (!force && (remoteHydrated.value || isSyncingRemote.value)) {
-      return tasks.value;
+      return {
+        tasks: tasks.value,
+        remoteRequested: false,
+        remoteSucceeded: true,
+      };
     }
 
     isSyncingRemote.value = true;
@@ -374,10 +400,19 @@ export const useDownloadsStore = defineStore('downloads', () => {
         return !remoteTask || task.updatedAt.getTime() > remoteTask.updatedAt.getTime();
       });
       await Promise.all(unsyncedLocalTasks.map(task => upsertRemoteTask(task)));
-      return tasks.value;
+      return {
+        tasks: tasks.value,
+        remoteRequested: true,
+        remoteSucceeded: true,
+      };
     } catch (error) {
       console.error('拉取远程下载任务失败:', error);
-      return tasks.value;
+      return {
+        tasks: tasks.value,
+        remoteRequested: true,
+        remoteSucceeded: false,
+        errorMessage: getRemoteActionErrorMessage(error, '拉取远程下载任务失败'),
+      };
     } finally {
       isSyncingRemote.value = false;
     }
@@ -386,9 +421,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
   const enqueueTask = (input: DownloadTaskInput) => {
     const normalizedUrl = input.url.trim();
     const nextType = input.type ?? inferDownloadType(input.url);
-    const existingTask = tasks.value.find(task =>
-      isSameTaskSource(task, normalizedUrl, nextType),
-    );
+    const existingTask = tasks.value.find(task => isSameTaskSource(task, normalizedUrl, nextType));
 
     if (existingTask) {
       return (
@@ -464,31 +497,55 @@ export const useDownloadsStore = defineStore('downloads', () => {
     void removeRemoteTask(taskId);
   };
 
-  const clearCompleted = () => {
+  const clearCompleted = async (): Promise<RemoteActionResult> => {
     syncTasks(tasks.value.filter(task => task.status !== 'completed'));
-    if (hasAuthToken()) {
-      void downloadTasksApi
-        .clearCompleted()
-        .then(() => {
-          lastRemoteSyncAt.value = new Date();
-        })
-        .catch(error => {
-          console.error('清理远程已完成下载任务失败:', error);
-        });
+    if (!hasAuthToken()) {
+      return {
+        remoteRequested: false,
+        remoteSucceeded: true,
+      };
+    }
+
+    try {
+      await downloadTasksApi.clearCompleted();
+      lastRemoteSyncAt.value = new Date();
+      return {
+        remoteRequested: true,
+        remoteSucceeded: true,
+      };
+    } catch (error) {
+      console.error('清理远程已完成下载任务失败:', error);
+      return {
+        remoteRequested: true,
+        remoteSucceeded: false,
+        errorMessage: getRemoteActionErrorMessage(error, '清理远程已完成下载任务失败'),
+      };
     }
   };
 
-  const clearFailed = () => {
+  const clearFailed = async (): Promise<RemoteActionResult> => {
     syncTasks(tasks.value.filter(task => task.status !== 'error' && task.status !== 'cancelled'));
-    if (hasAuthToken()) {
-      void downloadTasksApi
-        .clearFailed()
-        .then(() => {
-          lastRemoteSyncAt.value = new Date();
-        })
-        .catch(error => {
-          console.error('清理远程异常下载任务失败:', error);
-        });
+    if (!hasAuthToken()) {
+      return {
+        remoteRequested: false,
+        remoteSucceeded: true,
+      };
+    }
+
+    try {
+      await downloadTasksApi.clearFailed();
+      lastRemoteSyncAt.value = new Date();
+      return {
+        remoteRequested: true,
+        remoteSucceeded: true,
+      };
+    } catch (error) {
+      console.error('清理远程异常下载任务失败:', error);
+      return {
+        remoteRequested: true,
+        remoteSucceeded: false,
+        errorMessage: getRemoteActionErrorMessage(error, '清理远程异常下载任务失败'),
+      };
     }
   };
 

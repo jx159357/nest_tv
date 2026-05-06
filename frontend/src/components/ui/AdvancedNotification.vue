@@ -9,9 +9,9 @@
       <div v-show="isVisible" class="notification-container" :class="[position, type, size]">
         <div class="notification-content" @click="handleClick">
           <!-- 图标区域 -->
-          <div v-if="icon" class="notification-icon" :class="`icon-${type}`">
-            <span v-if="typeof icon === 'string'">{{ icon }}</span>
-            <component :is="icon" v-else v-else />
+          <div v-if="displayIcon" class="notification-icon" :class="`icon-${type}`">
+            <span v-if="typeof displayIcon === 'string'">{{ displayIcon }}</span>
+            <component :is="displayIcon" v-else />
           </div>
 
           <!-- 主要内容 -->
@@ -118,18 +118,6 @@
 
   const isVisible = ref(true);
   const timer = ref<number>();
-
-  // 计算属性
-  const notificationClasses = computed(() => [
-    `notification-${props.type}`,
-    `notification-${props.size}`,
-    `notification-${props.position.includes('top') ? 'top' : 'bottom'}`,
-    {
-      'notification-persistent': props.persistent,
-      'notification-has-action': !!props.action,
-      'notification-has-progress': props.showProgress,
-    },
-  ]);
 
   // 图标映射
   const iconMap = {

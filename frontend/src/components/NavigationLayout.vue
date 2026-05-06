@@ -102,10 +102,7 @@
           </nav>
 
           <div class="px-4 py-6 bg-gray-50">
-            <button
-              class="mobile-logout-button"
-              @click="handleLogout"
-            >
+            <button class="mobile-logout-button" @click="handleLogout">
               <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   stroke-linecap="round"

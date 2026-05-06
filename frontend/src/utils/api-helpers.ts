@@ -46,10 +46,10 @@ export class ApiErrorHandler {
       if (process.env.NODE_ENV === 'development') {
         console.warn('Authentication failed, clearing token and redirecting to login');
       }
-      
+
       // 未授权，清除本地存储并重定向到登录页
       localStorage.removeItem('token');
-      
+
       // 使用更友好的方式重定向，避免直接 location.href
       if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
         window.location.href = '/login';
@@ -221,7 +221,7 @@ export class RetryHelper {
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
     }
-    
+
     // TypeScript 要求必须有返回值，但实际上永远不会到达这里
     throw lastError;
   }

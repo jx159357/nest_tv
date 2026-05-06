@@ -4,7 +4,9 @@
       <header class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 class="text-3xl font-bold text-gray-900">搜索历史</h1>
-          <p class="mt-2 text-sm text-gray-600">集中查看你最近搜索过的关键词，并快速继续探索相关内容。</p>
+          <p class="mt-2 text-sm text-gray-600">
+            集中查看你最近搜索过的关键词，并快速继续探索相关内容。
+          </p>
         </div>
         <button
           class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
@@ -29,8 +31,15 @@
           @dismiss="clearNotice"
         />
 
-        <div v-else-if="searchHistory.length === 0" class="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-10">
-          <EmptyState title="暂无搜索历史" description="从首页或顶部搜索框开始搜索后，这里会沉淀你的搜索兴趣。" icon="search" />
+        <div
+          v-else-if="searchHistory.length === 0"
+          class="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-10"
+        >
+          <EmptyState
+            title="暂无搜索历史"
+            description="从首页或顶部搜索框开始搜索后，这里会沉淀你的搜索兴趣。"
+            icon="search"
+          />
         </div>
 
         <div v-else class="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
@@ -57,11 +66,19 @@
           <section class="rounded-2xl bg-white p-6 shadow-sm">
             <h2 class="text-lg font-semibold text-gray-900">继续探索</h2>
             <p class="mt-2 text-sm text-slate-500">
-              {{ activeKeyword ? `基于“${activeKeyword}”的相关搜索建议` : '选择一个最近搜索的关键词后，这里会展示继续探索建议。' }}
+              {{
+                activeKeyword
+                  ? `基于“${activeKeyword}”的相关搜索建议`
+                  : '选择一个最近搜索的关键词后，这里会展示继续探索建议。'
+              }}
             </p>
 
-            <div v-if="relatedLoading" class="py-8 text-center text-sm text-slate-500">正在加载相关建议...</div>
-            <div v-else-if="relatedKeywords.length === 0" class="py-8 text-sm text-slate-500">暂无相关建议</div>
+            <div v-if="relatedLoading" class="py-8 text-center text-sm text-slate-500">
+              正在加载相关建议...
+            </div>
+            <div v-else-if="relatedKeywords.length === 0" class="py-8 text-sm text-slate-500">
+              暂无相关建议
+            </div>
             <div v-else class="mt-4 flex flex-wrap gap-3">
               <button
                 v-for="keyword in relatedKeywords"

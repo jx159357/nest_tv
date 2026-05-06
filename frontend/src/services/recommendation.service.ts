@@ -28,7 +28,7 @@ export const useRecommendationService = () => {
       const favorites = await mediaApi.getFavorites({ limit: 20 });
 
       // 提取用户偏好的类型和标签
-      const userPreferences = analyzeUserPreferences([
+      analyzeUserPreferences([
         ...watchHistory.data.map(item => item.mediaResource),
         ...favorites.data,
       ]);
@@ -219,7 +219,7 @@ export const useRecommendationService = () => {
     try {
       // 获取用户历史数据
       const userHistory = await mediaApi.getWatchHistory({ limit: 50 });
-      const userFavorites = await mediaApi.getFavorites({ limit: 30 });
+      await mediaApi.getFavorites({ limit: 30 });
 
       // 构建用户画像
       const userProfile = {
@@ -266,7 +266,11 @@ export const useRecommendationService = () => {
       return scoredMedia
         .sort((a, b) => b.score - a.score)
         .slice(0, limit)
-        .map(({ score, ...media }) => media);
+        .map(item => {
+          const media = { ...item };
+          delete (media as Partial<typeof item>).score;
+          return media;
+        });
     } catch (err) {
       console.error('ML推荐失败:', err);
       return [];

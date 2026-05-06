@@ -45,7 +45,10 @@
             </button>
           </section>
 
-          <section v-if="keywordSuggestionItems.length > 0" :class="{ 'mt-3 border-t border-gray-100 pt-3': recentSuggestionItems.length > 0 }">
+          <section
+            v-if="keywordSuggestionItems.length > 0"
+            :class="{ 'mt-3 border-t border-gray-100 pt-3': recentSuggestionItems.length > 0 }"
+          >
             <div class="mb-2 text-xs font-semibold text-gray-400">
               {{ normalizedSearchQuery ? '推荐搜索' : '热门搜索' }}
             </div>

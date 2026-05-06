@@ -42,8 +42,12 @@ describe('recommendationsApi', () => {
     await recommendationsApi.getLatest(4);
     await recommendationsApi.getTopRated(4);
 
-    expect(apiGet).toHaveBeenNthCalledWith(1, '/recommendations/trending', { params: { limit: 4 } });
+    expect(apiGet).toHaveBeenNthCalledWith(1, '/recommendations/trending', {
+      params: { limit: 4 },
+    });
     expect(apiGet).toHaveBeenNthCalledWith(2, '/recommendations/latest', { params: { limit: 4 } });
-    expect(apiGet).toHaveBeenNthCalledWith(3, '/recommendations/top-rated', { params: { limit: 4 } });
+    expect(apiGet).toHaveBeenNthCalledWith(3, '/recommendations/top-rated', {
+      params: { limit: 4 },
+    });
   });
 });
