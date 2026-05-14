@@ -1,6 +1,5 @@
 <template>
-  <div class="bg-gray-50">
-    <div class="container mx-auto px-4 py-8">
+  <div class="page-container">
       <header class="mb-8">
         <h1 class="mb-3 text-3xl font-bold text-gray-900">磁力资源</h1>
         <p class="text-gray-600">浏览站内已入库磁力源，支持搜索、热门榜、最新榜和磁力链接解析。</p>
@@ -458,7 +457,6 @@
           </div>
         </div>
       </section>
-    </div>
   </div>
 </template>
 

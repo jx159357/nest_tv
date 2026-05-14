@@ -1,5 +1,5 @@
 <template>
-  <NavigationLayout>
+  <div class="page-container">
     <div class="space-y-6">
       <header class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
@@ -338,13 +338,12 @@
         </article>
       </div>
     </div>
-  </NavigationLayout>
+  </div>
 </template>
 
 <script setup lang="ts">
   import { computed, onMounted, ref, watch } from 'vue';
   import { RouterLink } from 'vue-router';
-  import NavigationLayout from '@/components/NavigationLayout.vue';
   import { useDownloadsStore } from '@/stores/downloads';
   import type { DownloadTask } from '@/types/advanced';
   import { copyTextToClipboard } from '@/utils/clipboard';

@@ -58,8 +58,7 @@ export const CRAWLER_TARGETS: CrawlerTarget[] = [
       actors: '.co_content8 p',
       genres: '.co_content8 p a',
       releaseDate: '.co_content8 p span',
-      downloadUrls:
-        'a[href*="thunder"], a[href*="magnet"], a[href*="ftp"], .down_list a',
+      downloadUrls: 'a[href*="thunder"], a[href*="magnet"], a[href*="ftp"], .down_list a',
     },
     enabled: true,
     priority: 3,
@@ -80,8 +79,7 @@ export const CRAWLER_TARGETS: CrawlerTarget[] = [
       actors: '.co_content8 p',
       genres: '.co_content8 p a',
       releaseDate: '.co_content8 p span',
-      downloadUrls:
-        'a[href*="thunder"], a[href*="magnet"], a[href*="ftp"], .down_list a',
+      downloadUrls: 'a[href*="thunder"], a[href*="magnet"], a[href*="ftp"], .down_list a',
     },
     enabled: true,
     priority: 4,

@@ -1,13 +1,15 @@
 /**
  * 安全的本地存储工具（生产环境增强）
  */
+import { log } from '@/utils/logger';
+
 export const nextLocalStorage = {
   getItem(key: string): string | null {
     if (typeof window === 'undefined') return null;
     try {
       return localStorage.getItem(key);
     } catch (error) {
-      console.warn('localStorage访问失败:', error);
+      log.warn('Storage', 'localStorage访问失败:', error);
       return null;
     }
   },
@@ -17,7 +19,7 @@ export const nextLocalStorage = {
     try {
       localStorage.setItem(key, value);
     } catch (error) {
-      console.warn('localStorage写入失败:', error);
+      log.warn('Storage', 'localStorage写入失败:', error);
       // 可能是存储空间不足或隐私模式
     }
   },
@@ -27,7 +29,7 @@ export const nextLocalStorage = {
     try {
       localStorage.removeItem(key);
     } catch (error) {
-      console.warn('localStorage删除失败:', error);
+      log.warn('Storage', 'localStorage删除失败:', error);
     }
   },
 
@@ -36,14 +38,14 @@ export const nextLocalStorage = {
     try {
       localStorage.clear();
     } catch (error) {
-      console.warn('localStorage清空失败:', error);
+      log.warn('Storage', 'localStorage清空失败:', error);
     }
   },
 
   // 安全的JWT存储（生产环境使用httpOnly cookie更安全）
   setJWT(token: string, key: string = import.meta.env.VITE_JWT_STORAGE_KEY || 'jwt_token'): void {
     if (import.meta.env.PROD) {
-      console.warn('生产环境建议使用httpOnly cookie存储JWT令牌');
+      log.warn('Storage', '生产环境建议使用httpOnly cookie存储JWT令牌');
     }
     this.setItem(key, token);
   },

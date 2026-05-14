@@ -1,5 +1,5 @@
 <template>
-  <NavigationLayout>
+  <div class="page-container">
     <div class="space-y-8">
       <header class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
@@ -133,7 +133,7 @@
         />
       </section>
     </div>
-  </NavigationLayout>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -141,11 +141,11 @@
   import { useRoute, useRouter } from 'vue-router';
   import { mediaApi } from '@/api/media';
   import { useMediaStore } from '@/stores/media';
-  import NavigationLayout from '@/components/NavigationLayout.vue';
   import MediaCard from '@/components/MediaCard.vue';
   import LoadingSpinner from '@/components/LoadingSpinner.vue';
   import EmptyState from '@/components/EmptyState.vue';
   import type { MediaResource } from '@/types/media';
+  import { log } from '@/utils/logger';
 
   const route = useRoute();
   const router = useRouter();
@@ -231,7 +231,7 @@
         String(highlightedFavoriteId.value),
       );
     } catch (highlightError) {
-      console.error('加载高亮收藏预览失败:', highlightError);
+      log.error('Favorites', '加载高亮收藏预览失败:', highlightError);
       highlightedPinnedFavorite.value = null;
     }
   };

@@ -7,13 +7,17 @@ import {
   Param,
   Body,
   Query,
+  Req,
+  Res,
   UseGuards,
   UsePipes,
   ValidationPipe,
+  Header,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TorrentService } from './torrent.service';
+import { TorrentStreamService } from './torrent-stream.service';
 import { TorrentSearchQueryDto } from './dtos/torrent-search-query.dto';
 import { TorrentRankQueryDto } from './dtos/torrent-rank-query.dto';
 
@@ -21,7 +25,10 @@ import { TorrentRankQueryDto } from './dtos/torrent-rank-query.dto';
 @Controller('torrent')
 @UseGuards(JwtAuthGuard)
 export class TorrentController {
-  constructor(private readonly torrentService: TorrentService) {}
+  constructor(
+    private readonly torrentService: TorrentService,
+    private readonly torrentStreamService: TorrentStreamService,
+  ) {}
 
   /**
    * 获取磁力链接信息
@@ -108,5 +115,90 @@ export class TorrentController {
   @UsePipes(new ValidationPipe({ transform: true }))
   async getLatestTorrents(@Query() queryDto: TorrentRankQueryDto) {
     return this.torrentService.getLatestTorrents(queryDto.limit, queryDto.category);
+  }
+
+  /**
+   * 获取种子文件列表（不下载）
+   */
+  @Post('stream/info')
+  @ApiOperation({ summary: '获取种子文件列表' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getStreamInfo(@Body() body: { magnetUri: string }) {
+    if (!body.magnetUri?.startsWith('magnet:')) {
+      throw new BadRequestException('无效的磁力链接');
+    }
+    return this.torrentStreamService.getTorrentInfo(body.magnetUri);
+  }
+
+  /**
+   * 流式播放磁力链接视频（支持 token query 参数认证，兼容 video 标签）
+   */
+  @Get('stream/:infoHash')
+  @ApiOperation({ summary: '流式播放视频' })
+  async streamVideo(
+    @Param('infoHash') infoHash: string,
+    @Query('magnet') magnetUri: string,
+    @Query('file') fileIndex: string = '0',
+    @Req() req: any,
+    @Res() res: any,
+  ) {
+    if (!magnetUri?.startsWith('magnet:')) {
+      throw new BadRequestException('需要提供有效的磁力链接');
+    }
+
+    try {
+      const { stream, mimeType, fileSize, fileName } = await this.torrentStreamService.createStream(
+        magnetUri,
+        parseInt(fileIndex, 10) || 0,
+      );
+
+      // 处理 HTTP Range 请求（视频拖拽）
+      const range = req.headers.range;
+      if (range) {
+        const parts = range.replace(/bytes=/, '').split('-');
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+        const chunkSize = end - start + 1;
+
+        res.status(206);
+        res.set({
+          'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': chunkSize,
+          'Content-Type': mimeType,
+          'Content-Disposition': `inline; filename="${encodeURIComponent(fileName)}"`,
+        });
+
+        // WebTorrent createReadStream 支持 start/end 选项
+        const rangedStream = (stream as any).file?.createReadStream?.({ start, end }) || stream;
+        rangedStream.pipe(res);
+      } else {
+        res.status(200);
+        res.set({
+          'Accept-Ranges': 'bytes',
+          'Content-Length': fileSize,
+          'Content-Type': mimeType,
+          'Content-Disposition': `inline; filename="${encodeURIComponent(fileName)}"`,
+        });
+        stream.pipe(res);
+      }
+
+      // 客户端断开时清理
+      res.on('close', () => {
+        const hash = infoHash.toLowerCase();
+        this.torrentStreamService.releaseTorrent(hash, 'stream');
+      });
+    } catch (error: any) {
+      throw new BadRequestException(`流式播放失败: ${error.message}`);
+    }
+  }
+
+  /**
+   * 获取活跃种子统计
+   */
+  @Get('stream-stats')
+  @ApiOperation({ summary: '获取活跃种子统计' })
+  getStreamStats() {
+    return this.torrentStreamService.getStats();
   }
 }

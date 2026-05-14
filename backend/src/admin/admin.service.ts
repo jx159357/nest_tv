@@ -8,7 +8,11 @@ import { User } from '../entities/user.entity';
 import { MediaResource } from '../entities/media-resource.entity';
 import { PlaySource } from '../entities/play-source.entity';
 import { WatchHistory } from '../entities/watch-history.entity';
-import { DownloadTask, DownloadTaskStatus, DownloadTaskType } from '../entities/download-task.entity';
+import {
+  DownloadTask,
+  DownloadTaskStatus,
+  DownloadTaskType,
+} from '../entities/download-task.entity';
 import {
   CreatePermissionDto,
   CreateRoleDto,
@@ -81,7 +85,10 @@ export class AdminService {
       return 0;
     }
 
-    const value = task.updatedAt instanceof Date ? task.updatedAt.getTime() : new Date(task.updatedAt).getTime();
+    const value =
+      task.updatedAt instanceof Date
+        ? task.updatedAt.getTime()
+        : new Date(task.updatedAt).getTime();
     return Number.isFinite(value) ? value : 0;
   }
 
@@ -119,7 +126,9 @@ export class AdminService {
     });
 
     const duplicateIds = tasks
-      .filter(task => task.id !== keeperTask.id && this.extractMagnetInfoHash(task.url) === keeperHash)
+      .filter(
+        task => task.id !== keeperTask.id && this.extractMagnetInfoHash(task.url) === keeperHash,
+      )
       .map(task => task.id)
       .filter((id): id is number => typeof id === 'number');
 

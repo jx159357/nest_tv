@@ -8,6 +8,70 @@ import { i18n } from './i18n';
 import { useAuthStore } from './stores/auth';
 import { initPreloadService } from './utils/preload-service';
 import { PerformanceService } from './services/performance.service';
+import { log } from './utils/logger';
+import { getAppVersion } from './utils/version';
+
+// 注册Service Worker
+const registerServiceWorker = async () => {
+  if ('serviceWorker' in navigator && import.meta.env.PROD) {
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js', {
+        scope: '/',
+      });
+
+      log.info('SW', 'Service Worker registered:', registration.scope);
+
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'activated') {
+              log.info('SW', 'New version activated');
+            }
+          });
+        }
+      });
+
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data.type === 'CACHE_CLEARED') {
+          log.info('SW', 'Cache cleared at:', new Date(event.data.timestamp));
+        }
+      });
+
+      if (registration.active) {
+        registration.active.postMessage({
+          type: 'SET_VERSION',
+          version: getAppVersion(),
+        });
+        registration.active.postMessage({
+          type: 'PRECACHE',
+          urls: ['/', '/media', '/watch', '/recommendations'],
+        });
+      }
+    } catch (error) {
+      log.error('SW', 'Service Worker registration failed:', error);
+    }
+  }
+};
+
+// 清理应用缓存
+const clearAppCache = async () => {
+  if ('caches' in window) {
+    try {
+      const cacheNames = await caches.keys();
+      await Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName.startsWith('nest-tv-')) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+      log.info('Cache', 'App cache cleared');
+    } catch (error) {
+      log.error('Cache', 'Failed to clear cache:', error);
+    }
+  }
+};
 
 const bootstrap = async () => {
   const app = createApp(App);
@@ -16,9 +80,7 @@ const bootstrap = async () => {
   app.use(pinia);
 
   const authStore = useAuthStore(pinia);
-  if (authStore.token && !authStore.user) {
-    await authStore.fetchUserProfile();
-  }
+  await authStore.initAuth();
 
   app.use(i18n);
   app.use(router);
@@ -49,22 +111,25 @@ const bootstrap = async () => {
       const metrics = performanceService.getCurrentMetrics();
       if (metrics) {
         const score = performanceService.getPerformanceScore();
-        console.log(`[Performance] Score: ${score}/100`, metrics);
+        log.performance('Performance', `Score: ${score}/100`, 0);
       }
     }, 30000);
   }
 
   app.config.errorHandler = err => {
-    console.error('[Vue Error]', err);
+    log.error('Vue', 'Unhandled error:', err);
   };
 
   app.config.warnHandler = (msg, vm, trace) => {
     void vm;
-    console.warn('[Vue Warning]', msg);
-    console.warn('Trace:', trace);
+    log.warn('Vue', msg);
+    log.debug('Vue', 'Trace:', trace);
   };
 
   app.mount('#app');
+
+  // 注册Service Worker
+  await registerServiceWorker();
 };
 
 void bootstrap();

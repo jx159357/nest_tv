@@ -23,6 +23,10 @@ import { SchedulerModule } from './scheduler/scheduler.module';
 import { ProxyPoolModule } from './modules/proxy-pool/proxy-pool.module';
 import { DownloadTasksModule } from './download-tasks/download-tasks.module';
 import { DanmakuModule } from './danmaku/danmaku.module';
+import { StorageModule } from './storage/storage.module';
+import { WatchRoomModule } from './watch-room/watch-room.module';
+import { SourceScriptModule } from './source-script/source-script.module';
+import { AiChatModule } from './ai-chat/ai-chat.module';
 import { User } from './entities/user.entity';
 import { MediaResource } from './entities/media-resource.entity';
 import { PlaySource } from './entities/play-source.entity';
@@ -35,6 +39,7 @@ import { AdminPermission } from './entities/admin-permission.entity';
 import { AdminLog } from './entities/admin-log.entity';
 import { SearchHistory } from './entities/search-history.entity';
 import { DownloadTask } from './entities/download-task.entity';
+import { SourceScript } from './entities/source-script.entity';
 import { Danmaku } from './danmaku/entities/danmaku.entity';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -78,6 +83,7 @@ interface MysqlTypeCastField {
           IPTVChannel,
           ParseProvider,
           DownloadTask,
+          SourceScript,
         ], // 所有实体类
 
         // 连接池优化配置（生产环境增强）
@@ -244,6 +250,18 @@ interface MysqlTypeCastField {
 
     // 弹幕模块 - 弹幕接口与实时房间统计
     DanmakuModule,
+
+    // 存储模块 - 文件存储适配器
+    StorageModule,
+
+    // 一起看模块 - 同步观看功能
+    WatchRoomModule,
+
+    // 源脚本模块 - 自定义视频源插件系统
+    SourceScriptModule,
+
+    // AI 推荐模块 - 智能影片推荐
+    AiChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],

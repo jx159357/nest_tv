@@ -164,6 +164,7 @@
 <script setup lang="ts">
   import { ref, computed, nextTick } from 'vue';
   import { showConfirm } from '@/composables/useModal';
+  import { log } from '@/utils/logger';
 
   interface VideoMetadata {
     width: number;
@@ -394,7 +395,7 @@
       }
     } catch (error) {
       videoLoadError.value = error instanceof Error ? error.message : '视频信息加载失败';
-      console.error('视频信息加载失败:', error);
+      log.error('LocalVideoUpload', '视频信息加载失败:', error);
     } finally {
       isLoadingVideoInfo.value = false;
     }
@@ -409,13 +410,13 @@
   const onVideoError = (event: Event) => {
     videoLoadError.value = '视频文件损坏或格式不支持';
     isLoadingVideoInfo.value = false;
-    console.error('视频加载错误:', event);
+    log.error('LocalVideoUpload', '视频加载错误:', event);
   };
 
   // 上传文件
   const uploadFile = async (file: File): Promise<void> => {
     if (!props.uploadEndpoint) {
-      console.warn('未配置上传接口地址');
+      log.warn('LocalVideoUpload', '未配置上传接口地址');
       return;
     }
 

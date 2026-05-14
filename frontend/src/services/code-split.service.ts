@@ -2,6 +2,8 @@
  * 代码分割和懒加载服务
  */
 
+import { log } from '@/utils/logger';
+
 // 路由定义类型
 export interface RouteDefinition {
   path: string;
@@ -169,12 +171,12 @@ export class CodeSplitService {
       ]);
 
       const loadTime = Date.now() - startTime;
-      console.log(`Module ${name} loaded in ${loadTime}ms`);
+      log.performance('CodeSplit', `Module ${name} loaded`, loadTime);
 
       return result;
     } catch (error) {
       if (retryCount < (module.strategy.retryCount || this.config.retryCount)) {
-        console.warn(`Retrying module ${name}, attempt ${retryCount + 1}`);
+        log.warn('CodeSplit', `Retrying module ${name}, attempt ${retryCount + 1}`);
         return this.loadWithRetry(name, retryCount + 1);
       }
       throw error;
@@ -333,7 +335,7 @@ export class CodeSplitService {
       await Promise.allSettled(
         batch.map(name =>
           this.loadModule(name).catch(error => {
-            console.warn(`Failed to preload module ${name}:`, error);
+            log.warn('CodeSplit', `Failed to preload module ${name}:`, error);
           }),
         ),
       );
@@ -404,9 +406,7 @@ export class CodeSplitService {
     };
 
     // 发送到分析服务
-    if (typeof console === 'object' && console.log) {
-      console.log('Module load metrics:', metrics);
-    }
+    log.debug('CodeSplit', 'Module load metrics:', metrics);
 
     // 这里可以发送到实际的分析服务
     // this.sendToAnalytics(metrics);

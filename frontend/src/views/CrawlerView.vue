@@ -1,5 +1,5 @@
 <template>
-  <NavigationLayout>
+  <div class="page-container">
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-900">爬虫管理</h1>
@@ -207,7 +207,7 @@
                 回到首页告警区
               </router-link>
               <router-link
-                :to="{ name: 'crawler', query: { alertFilter: activeAlertFilter } }"
+                :to="{ name: 'admin-crawler', query: { alertFilter: activeAlertFilter } }"
                 :class="getAlertActionClass('crawler')"
               >
                 {{ getAlertActionLabel('crawler', '当前来源视图') }}
@@ -845,13 +845,12 @@
         </div>
       </div>
     </main>
-  </NavigationLayout>
+  </div>
 </template>
 
 <script setup lang="ts">
   import { computed, nextTick, onMounted, ref, watch } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
-  import NavigationLayout from '@/components/NavigationLayout.vue';
   import {
     crawlerApi,
     type BatchCrawlResponse,
@@ -872,6 +871,7 @@
     type AttentionSourceItem,
     type CrawlerAlertFilter,
   } from '@/utils/collection-source-alerts';
+  import { log } from '@/utils/logger';
 
   const route = useRoute();
   const router = useRouter();
@@ -922,7 +922,7 @@
         status: 'unknown', // 默认状态
       }));
     } catch (error) {
-      console.error('加载爬虫目标失败:', error);
+      log.error('Crawler', '加载爬虫目标失败:', error);
       crawlerTargets.value = [];
     } finally {
       targetsLoading.value = false;
@@ -933,7 +933,7 @@
     try {
       dailySummary.value = await schedulerApi.getDailySourceCollectionSummary();
     } catch (error) {
-      console.error('加载每日采集摘要失败:', error);
+      log.error('Crawler', '加载每日采集摘要失败:', error);
     }
   };
 
@@ -942,7 +942,7 @@
       const response = await crawlerApi.getStatistics();
       collectionStatistics.value = response.data || null;
     } catch (error) {
-      console.error('加载采集概览失败:', error);
+      log.error('Crawler', '加载采集概览失败:', error);
       collectionStatistics.value = null;
     }
   };
@@ -963,7 +963,7 @@
         };
       });
     } catch (error) {
-      console.error('加载来源健康摘要失败:', error);
+      log.error('Crawler', '加载来源健康摘要失败:', error);
     }
   };
 
@@ -1157,7 +1157,7 @@
 
   const buildCrawlerSourceLink = (sourceName: string, focus: 'top' | 'attention' = 'top') => {
     return {
-      name: 'crawler',
+      name: 'admin-crawler',
       query: {
         source: sourceName,
         focus,
@@ -1241,7 +1241,7 @@
       await crawlerApi.updateSourcePolicy(targetName, getPolicyDraft(targetName));
       await loadSourceHealth();
     } catch (error) {
-      console.error('保存来源策略失败:', error);
+      log.error('Crawler', '保存来源策略失败:', error);
     } finally {
       savingPolicyFor.value = '';
     }
@@ -1267,7 +1267,7 @@
       await loadSourceHealth();
       await loadDailySummary();
     } catch (error) {
-      console.error('按来源采集失败:', error);
+      log.error('Crawler', '按来源采集失败:', error);
     } finally {
       collectingSource.value = '';
     }
@@ -1280,7 +1280,7 @@
       await loadCollectionStatistics();
       await loadSourceHealth();
     } catch (error) {
-      console.error('手动触发每日采集失败:', error);
+      log.error('Crawler', '手动触发每日采集失败:', error);
     } finally {
       dailyRunning.value = false;
     }
@@ -1298,7 +1298,7 @@
         crawlerTargets.value[targetIndex].status = response.success ? 'online' : 'offline';
       }
     } catch (error) {
-      console.error('测试连接失败:', error);
+      log.error('Crawler', '测试连接失败:', error);
       // 更新目标状态为离线
       const targetIndex = crawlerTargets.value.findIndex(t => t.name === targetName);
       if (targetIndex !== -1) {
@@ -1331,7 +1331,7 @@
 
       crawlResult.value = response;
     } catch (error: unknown) {
-      console.error('快速爬取失败:', error);
+      log.error('Crawler', '快速爬取失败:', error);
       crawlResult.value = {
         success: false,
         message: error instanceof Error ? error.message : '爬取失败',
@@ -1359,7 +1359,7 @@
 
       batchCrawlResult.value = response;
     } catch (error: unknown) {
-      console.error('批量爬取失败:', error);
+      log.error('Crawler', '批量爬取失败:', error);
       batchCrawlResult.value = {
         success: false,
         message: error instanceof Error ? error.message : '批量爬取失败',

@@ -1,0 +1,139 @@
+- generic [ref=e33]:
+  - banner [ref=e34]:
+    - generic [ref=e35]:
+      - link "Nest TV" [ref=e36] [cursor=pointer]:
+        - /url: /
+        - img [ref=e37]
+        - generic [ref=e39]: Nest TV
+      - navigation [ref=e40]:
+        - link "首页" [ref=e41] [cursor=pointer]:
+          - /url: /
+          - img [ref=e42]
+          - generic [ref=e45]: 首页
+        - link "推荐" [ref=e46] [cursor=pointer]:
+          - /url: /recommendations
+          - img [ref=e47]
+          - generic [ref=e49]: 推荐
+        - link "IPTV" [ref=e50] [cursor=pointer]:
+          - /url: /iptv
+          - img [ref=e51]
+          - generic [ref=e53]: IPTV
+        - link "下载" [ref=e54] [cursor=pointer]:
+          - /url: /torrent
+          - img [ref=e55]
+          - generic [ref=e58]: 下载
+      - generic [ref=e59]:
+        - generic [ref=e60]:
+          - img [ref=e61]
+          - textbox "搜索影视、电视剧..." [ref=e64]
+        - button "管 管理员" [ref=e66] [cursor=pointer]:
+          - generic [ref=e67]: 管
+          - generic [ref=e68]: 管理员
+  - main [ref=e69]:
+    - generic [ref=e506]:
+      - generic [ref=e509]:
+        - img "Big Buck Bunny" [ref=e511]
+        - generic [ref=e512]:
+          - heading "Big Buck Bunny" [level=1] [ref=e513]
+          - paragraph [ref=e514]: Blender 基金会出品的开源动画短片，讲述一只大兔子和三只小动物的故事。
+          - generic [ref=e515]:
+            - generic [ref=e516]:
+              - img [ref=e517]
+              - text: "8.0"
+            - generic [ref=e519]: 电影
+            - generic [ref=e520]: 1 次播放
+          - generic [ref=e521]:
+            - generic [ref=e522]: 动画
+            - generic [ref=e523]: 喜剧
+            - generic [ref=e524]: 短片
+          - generic [ref=e525]:
+            - generic [ref=e526]:
+              - strong [ref=e527]: 导演：
+              - text: Sacha Goedegebure
+            - generic [ref=e528]:
+              - strong [ref=e529]: 来源：
+              - text: 公共测试资源
+          - generic [ref=e530]:
+            - button "立即观看" [ref=e531] [cursor=pointer]:
+              - img [ref=e532]
+              - text: 立即观看
+            - button "收藏" [ref=e534] [cursor=pointer]:
+              - img [ref=e535]
+              - text: 收藏
+      - generic [ref=e537]:
+        - generic [ref=e538]:
+          - heading "相关推荐" [level=2] [ref=e539]
+          - generic [ref=e540]:
+            - generic [ref=e541] [cursor=pointer]:
+              - generic [ref=e542]:
+                - img [ref=e544]
+                - img [ref=e548]
+                - generic [ref=e550]:
+                  - img [ref=e551]
+                  - generic [ref=e553]: "8.0"
+                - generic [ref=e554]: 电影
+              - generic [ref=e555]:
+                - heading "Sintel" [level=3] [ref=e556]
+                - generic [ref=e558]: 1次播放
+            - generic [ref=e559] [cursor=pointer]:
+              - generic [ref=e560]:
+                - img [ref=e562]
+                - img [ref=e566]
+                - generic [ref=e568]:
+                  - img [ref=e569]
+                  - generic [ref=e571]: "7.0"
+                - generic [ref=e572]: 电影
+              - generic [ref=e573]:
+                - heading "Tears of Steel" [level=3] [ref=e574]
+                - generic [ref=e576]: 5次播放
+            - generic [ref=e577] [cursor=pointer]:
+              - generic [ref=e578]:
+                - img [ref=e580]
+                - img [ref=e584]
+                - generic [ref=e586]:
+                  - img [ref=e587]
+                  - generic [ref=e589]: "7.0"
+                - generic [ref=e590]: 电影
+              - generic [ref=e591]:
+                - heading "Elephant Dream" [level=3] [ref=e592]
+                - generic [ref=e594]: 1次播放
+            - generic [ref=e595] [cursor=pointer]:
+              - generic [ref=e596]:
+                - img [ref=e600]
+                - generic [ref=e602]:
+                  - img [ref=e603]
+                  - generic [ref=e605]: "6.0"
+                - generic [ref=e606]: 电影
+              - heading "For Bigger Blazes" [level=3] [ref=e608]
+            - generic [ref=e609] [cursor=pointer]:
+              - generic [ref=e610]:
+                - img [ref=e614]
+                - generic [ref=e616]:
+                  - img [ref=e617]
+                  - generic [ref=e619]: "5.0"
+                - generic [ref=e620]: 电影
+              - heading "Subaru Outback On Street" [level=3] [ref=e622]
+        - complementary [ref=e623]:
+          - generic [ref=e624]:
+            - heading "播放源" [level=3] [ref=e625]
+            - generic [ref=e626]:
+              - generic [ref=e627]:
+                - generic [ref=e628]: Test Videos1080p mp4
+                - generic [ref=e629]: 可用
+              - generic [ref=e630]:
+                - generic [ref=e631]: Test Videos1080p mp4
+                - generic [ref=e632]: 可用
+      - button "AI" [ref=e633] [cursor=pointer]
+  - contentinfo [ref=e497]:
+    - generic [ref=e498]:
+      - generic [ref=e499]:
+        - text: Nest TV
+        - paragraph [ref=e500]: 高清影视在线观看平台
+      - generic [ref=e501]:
+        - link "首页" [ref=e502] [cursor=pointer]:
+          - /url: /
+        - link "推荐" [ref=e503] [cursor=pointer]:
+          - /url: /recommendations
+        - link "IPTV" [ref=e504] [cursor=pointer]:
+          - /url: /iptv
+      - generic [ref=e505]: © 2026 Nest TV. All rights reserved.

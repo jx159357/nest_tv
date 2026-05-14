@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/auth';
 import { mediaApi } from '@/api';
 import type { MediaResource } from '@/types/media';
 import type { Recommendation, RecommendationType } from '@/types/history';
+import { log } from '@/utils/logger';
 
 export const useRecommendationService = () => {
   const authStore = useAuthStore();
@@ -41,7 +42,7 @@ export const useRecommendationService = () => {
       personalizedMedia.value = recommendedMedia;
       return recommendedMedia;
     } catch (err) {
-      console.error('生成个性化推荐失败:', err);
+      log.error('Recommendation', '生成个性化推荐失败:', err);
       error.value = '获取推荐失败';
       return [];
     } finally {
@@ -118,7 +119,7 @@ export const useRecommendationService = () => {
 
       return similarMedia.data.filter(m => m.id !== parseInt(mediaId));
     } catch (err) {
-      console.error('获取相似媒体失败:', err);
+      log.error('Recommendation', '获取相似媒体失败:', err);
       return [];
     }
   };
@@ -132,7 +133,7 @@ export const useRecommendationService = () => {
       });
       return trending;
     } catch (err) {
-      console.error('获取趋势内容失败:', err);
+      log.error('Recommendation', '获取趋势内容失败:', err);
       return [];
     }
   };
@@ -272,7 +273,7 @@ export const useRecommendationService = () => {
           return media;
         });
     } catch (err) {
-      console.error('ML推荐失败:', err);
+      log.error('Recommendation', 'ML推荐失败:', err);
       return [];
     }
   };

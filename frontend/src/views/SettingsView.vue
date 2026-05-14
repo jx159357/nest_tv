@@ -1,5 +1,5 @@
 <template>
-  <NavigationLayout>
+  <div class="page-container">
     <div class="space-y-8">
       <header class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
@@ -293,14 +293,13 @@
         </button>
       </div>
     </div>
-  </NavigationLayout>
+  </div>
 </template>
 
 <script setup lang="ts">
   import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
   import { onBeforeRouteLeave } from 'vue-router';
   import InlineNotice from '@/components/InlineNotice.vue';
-  import NavigationLayout from '@/components/NavigationLayout.vue';
   import LoadingSpinner from '@/components/LoadingSpinner.vue';
   import { authApi } from '@/api/auth';
   import { searchApi } from '@/api/search';

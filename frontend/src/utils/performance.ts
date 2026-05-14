@@ -1,4 +1,5 @@
 import { ref, onMounted, onUnmounted } from 'vue';
+import { log } from './logger';
 
 const DEV = import.meta.env.DEV;
 
@@ -24,15 +25,11 @@ export class PerformanceMonitor {
     if (navigation) {
       this.metrics.pageLoad = navigation.loadEventEnd - navigation.loadEventStart;
 
-      if (DEV) {
-        console.log(`[Performance] page load: ${this.metrics.pageLoad}ms`);
-      }
+      log.performance('Performance', 'page load', this.metrics.pageLoad);
 
       // 如果加载时间过长，发出警告
       if (this.metrics.pageLoad > 3000) {
-        if (DEV) {
-          console.warn('页面加载时间过长，建议优化');
-        }
+        log.warn('Performance', '页面加载时间过长，建议优化');
         this.metrics.warnings++;
       }
     }
@@ -45,15 +42,11 @@ export class PerformanceMonitor {
 
     const avgTime = this.metrics.apiTotalTime / this.metrics.apiCalls;
 
-    if (DEV) {
-      console.log(`[Performance] API ${endpoint}: ${duration}ms (avg ${avgTime.toFixed(2)}ms)`);
-    }
+    log.performance('Performance', `API ${endpoint}`, duration);
 
     // 如果API调用时间过长，发出警告
     if (duration > 5000) {
-      if (DEV) {
-        console.warn(`API调用时间过长: ${endpoint} - ${duration}ms`);
-      }
+      log.warn('Performance', `API调用时间过长: ${endpoint} - ${duration}ms`);
       this.metrics.warnings++;
     }
   }
@@ -62,15 +55,11 @@ export class PerformanceMonitor {
   static trackComponentRender(componentName: string, duration: number) {
     this.metrics.renderTime = duration;
 
-    if (DEV) {
-      console.log(`[Performance] component ${componentName}: ${duration}ms`);
-    }
+    log.performance('Performance', `component ${componentName}`, duration);
 
     // 如果渲染时间过长，发出警告
     if (duration > 100) {
-      if (DEV) {
-        console.warn(`组件渲染时间过长: ${componentName} - ${duration}ms`);
-      }
+      log.warn('Performance', `组件渲染时间过长: ${componentName} - ${duration}ms`);
       this.metrics.warnings++;
     }
   }
@@ -92,17 +81,11 @@ export class PerformanceMonitor {
         this.metrics.memoryUsage = this.metrics.memoryUsage.slice(-100);
       }
 
-      if (DEV) {
-        console.log(
-          `[Performance] memory: ${usedMB.toFixed(2)}MB / ${totalMB.toFixed(2)}MB (limit ${limitMB.toFixed(2)}MB)`,
-        );
-      }
+      log.performance('Performance', 'memory', usedMB);
 
       // 如果内存使用过高，发出警告
       if (usedMB > totalMB * 0.9) {
-        if (DEV) {
-          console.warn('内存使用过高，建议检查内存泄漏');
-        }
+        log.warn('Performance', '内存使用过高，建议检查内存泄漏');
         this.metrics.warnings++;
       }
     }
@@ -111,7 +94,7 @@ export class PerformanceMonitor {
   // 监控错误
   static trackError(error: Error, context?: string) {
     this.metrics.errors++;
-    console.error(`❌ 错误 [${context || '未知'}]:`, error);
+    log.error('Performance', `错误 [${context || '未知'}]:`, error);
   }
 
   // 获取性能报告

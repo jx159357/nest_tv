@@ -2,17 +2,87 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/icon-192.svg" />
+    <link rel="apple-touch-icon" href="/icon-192.svg" />
+    <link rel="manifest" href="/manifest.json" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#4caf50" />
+    <meta name="theme-color" content="#0a0f1a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <title>视频平台 - 在线影视观看</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Nest TV - 在线影视观看</title>
+
+    <!-- DNS预解析和预连接 -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="//cdn.jsdelivr.net" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- 关键资源预加载 -->
+    <link rel="preload" href="/src/main.ts" as="script" type="module" crossorigin />
+    <link rel="preload" href="/src/style.css" as="style" />
+    <link rel="preload" href="/src/styles/responsive.css" as="style" />
+    <link rel="preload" href="/src/styles/design-system.css" as="style" />
+
+    <!-- 关键CSS预加载 -->
     <link rel="stylesheet" href="/src/style.css" />
     <link rel="stylesheet" href="/src/styles/responsive.css" />
+
+    <!-- 性能优化提示 -->
+    <link rel="modulepreload" href="/src/main.ts" />
+
+    <!-- PWA相关 -->
+    <meta name="description" content="Nest TV - 高清在线影视观看平台" />
+    <meta name="keywords" content="视频, 电影, 电视剧, 在线观看, 流媒体" />
+
+    <!-- 结构化数据 -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Nest TV",
+      "description": "高清在线影视观看平台",
+      "url": "/",
+      "applicationCategory": "MultimediaApplication",
+      "operatingSystem": "Web Browser"
+    }
+    </script>
   </head>
   <body>
     <div id="app"></div>
+
+    <!-- 关键渲染路径优化 -->
+    <script>
+      // 预加载关键资源
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => {
+          // 预加载路由组件
+          const routes = ['/', '/media', '/watch', '/recommendations'];
+          routes.forEach(route => {
+            const link = document.createElement('link');
+            link.rel = 'prefetch';
+            link.href = route;
+            document.head.appendChild(link);
+          });
+        });
+      }
+
+      // 性能监控
+      if ('performance' in window && 'PerformanceObserver' in window) {
+        try {
+          const observer = new PerformanceObserver((list) => {
+            for (const entry of list.getEntries()) {
+              if (entry.entryType === 'largest-contentful-paint') {
+                console.debug('[Performance] LCP:', entry.startTime);
+              }
+            }
+          });
+          observer.observe({ entryTypes: ['largest-contentful-paint'] });
+        } catch (e) {
+          // 静默失败
+        }
+      }
+    </script>
+
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

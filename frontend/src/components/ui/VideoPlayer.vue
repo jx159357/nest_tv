@@ -542,6 +542,7 @@
 <script setup lang="ts">
   import { ref, computed, onMounted, onUnmounted, watch, reactive } from 'vue';
   import { mobileOptimizations } from '@/utils/mobile-optimizations';
+  import { log } from '@/utils/logger';
 
   interface VideoSource {
     url: string;
@@ -1003,7 +1004,7 @@
   const handleBufferTimeout = () => {
     if (!isBuffering.value) return;
 
-    console.warn('缓冲超时，尝试恢复播放');
+    log.warn('VideoPlayer', '缓冲超时，尝试恢复播放');
 
     // 尝试调整播放位置
     if (videoRef.value && currentTime.value > 5) {
@@ -1044,7 +1045,7 @@
 
     // 恢复播放
     videoRef.value.play().catch(error => {
-      console.error('自动恢复播放失败:', error);
+      log.error('VideoPlayer', '自动恢复播放失败:', error);
     });
   };
 
@@ -1091,7 +1092,7 @@
         videoRef.value.pause();
       } else {
         videoRef.value.play().catch(error => {
-          console.error('播放失败:', error);
+          log.error('VideoPlayer', '播放失败:', error);
         });
       }
     }
@@ -1171,7 +1172,7 @@
             emit('pipchange', true);
           })
           .catch(error => {
-            console.error('画中画模式启动失败:', error);
+            log.error('VideoPlayer', '画中画模式启动失败:', error);
           });
       }
     } else {
@@ -1183,7 +1184,7 @@
             emit('pipchange', false);
           })
           .catch(error => {
-            console.error('退出画中画模式失败:', error);
+            log.error('VideoPlayer', '退出画中画模式失败:', error);
           });
       }
     }

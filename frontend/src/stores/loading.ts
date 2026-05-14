@@ -191,6 +191,13 @@ export const useLoadingStore = defineStore('loading', {
         type: 'route',
         showProgress: false,
       });
+
+      // 安全兜底：路由加载超过 3 秒自动关闭
+      setTimeout(() => {
+        if (this.loadingType === 'route' && this.isLoading) {
+          this.finishRouteLoading();
+        }
+      }, 3000);
     },
 
     /**

@@ -373,6 +373,7 @@
   import { copyTextToClipboard } from '@/utils/clipboard';
   import { formatFileSize } from '@/utils/file-size';
   import type { MediaResource, PlaySource } from '@/types/media';
+  import { log } from '@/utils/logger';
 
   interface DanmakuSettings {
     enabled: boolean;
@@ -531,7 +532,7 @@
       // 这里应该调用API检查收藏状态
       isFavorite.value = false;
     } catch (error) {
-      console.error('获取视频信息失败:', error);
+      log.error('VideoWatchView', '获取视频信息失败:', error);
       // 这里可以添加错误处理逻辑，比如显示错误提示
     }
   };
@@ -568,7 +569,7 @@
         await videoPlayerRef.value.play();
       }
     } catch (error) {
-      console.error('播放源切换失败:', error);
+      log.error('VideoWatchView', '播放源切换失败:', error);
       sourceSwitchError.value = '播放源切换失败，请重试';
 
       // 切换回上一个可用源
@@ -639,7 +640,7 @@
   const onVideoVolumeChange = () => undefined;
 
   const onVideoError = (error: string) => {
-    console.error('视频播放错误:', error);
+    log.error('VideoWatchView', '视频播放错误:', error);
     // 这里可以添加视频播放错误处理逻辑
   };
 
@@ -657,7 +658,7 @@
       await mediaApi.toggleFavorite(media.value!.id.toString());
       isFavorite.value = !isFavorite.value;
     } catch (error) {
-      console.error('收藏操作失败:', error);
+      log.error('VideoWatchView', '收藏操作失败:', error);
       // 这里可以添加收藏失败的处理逻辑
     }
   };
@@ -755,14 +756,14 @@
   const onLocalVideoUploadComplete = () => undefined;
 
   const onLocalVideoUploadError = (error: string) => {
-    console.error('本地视频上传失败:', error);
+    log.error('VideoWatchView', '本地视频上传失败:', error);
     // 可以在这里显示错误提示
   };
 
   // 切换到本地视频播放源
   const switchToLocalVideo = async () => {
     if (!localVideoFile.value || !localVideoUrl.value) {
-      console.warn('没有可用的本地视频文件');
+      log.warn('VideoWatchView', '没有可用的本地视频文件');
       return;
     }
 
@@ -801,7 +802,7 @@
         await videoPlayerRef.value.play();
       }
     } catch (error) {
-      console.error('本地视频切换失败:', error);
+      log.error('VideoWatchView', '本地视频切换失败:', error);
       sourceSwitchError.value = '本地视频切换失败，请重试';
     } finally {
       isSourceSwitching.value = false;

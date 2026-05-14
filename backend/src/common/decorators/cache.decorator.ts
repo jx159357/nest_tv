@@ -11,7 +11,7 @@ interface CacheEnabledInstance {
 type AsyncMethod = (...args: unknown[]) => Promise<unknown>;
 
 /**
- * 缓存装饰器 - 方法结果缓存
+ * 缓存装饰器 - 方法结果缓存（使用多层缓存）
  */
 export const Cacheable = (options: CacheableOptions = {}) => {
   return (_target: object, propertyKey: string, descriptor: PropertyDescriptor) => {
@@ -29,8 +29,8 @@ export const Cacheable = (options: CacheableOptions = {}) => {
       // 简化的缓存键生成
       const cacheKey = options.key || `${this.constructor.name}.${propertyKey}`;
 
-      // 尝试从缓存获取
-      const cached: unknown = await cacheService.get<unknown>(cacheKey, options);
+      // 尝试从多层缓存获取
+      const cached: unknown = await cacheService.multiGet<unknown>(cacheKey, options);
       if (cached !== null) {
         return cached;
       }
@@ -41,8 +41,8 @@ export const Cacheable = (options: CacheableOptions = {}) => {
       ) => Promise<unknown>;
       const result: unknown = await boundMethod(...args);
 
-      // 设置缓存
-      await cacheService.set(cacheKey, result, options);
+      // 设置多层缓存
+      await cacheService.multiSet(cacheKey, result, options);
 
       return result;
     };
@@ -52,7 +52,7 @@ export const Cacheable = (options: CacheableOptions = {}) => {
 };
 
 /**
- * 缓存清除装饰器 - 方法执行后清除缓存
+ * 缓存清除装饰器 - 方法执行后清除缓存（使用多层缓存）
  */
 export const CacheEvict = (options: CacheEvictOptions = {}) => {
   return (_target: object, propertyKey: string, descriptor: PropertyDescriptor) => {
@@ -73,7 +73,7 @@ export const CacheEvict = (options: CacheEvictOptions = {}) => {
       ) => Promise<unknown>;
       const result: unknown = await boundMethod(...args);
 
-      // 清除缓存
+      // 清除多层缓存
       if (options.all) {
         // 简化的模式清除
         const pattern = options.key || `${this.constructor.name}.${propertyKey}:*`;
@@ -81,7 +81,7 @@ export const CacheEvict = (options: CacheEvictOptions = {}) => {
       } else {
         // 清除特定缓存
         const cacheKey = options.key || `${this.constructor.name}.${propertyKey}`;
-        await cacheService.delete(cacheKey, options);
+        await cacheService.multiDelete(cacheKey, options);
       }
 
       return result;
@@ -92,7 +92,7 @@ export const CacheEvict = (options: CacheEvictOptions = {}) => {
 };
 
 /**
- * 缓存装饰器 - 自动管理缓存生命周期
+ * 缓存装饰器 - 自动管理缓存生命周期（使用多层缓存）
  */
 export const CacheRefresh = (options: CacheableOptions = {}) => {
   return (_target: object, propertyKey: string, descriptor: PropertyDescriptor) => {
@@ -110,8 +110,8 @@ export const CacheRefresh = (options: CacheableOptions = {}) => {
       // 简化的缓存键生成
       const cacheKey = options.key || `${this.constructor.name}.${propertyKey}`;
 
-      // 尝试从缓存获取
-      const cached: unknown = await cacheService.get<unknown>(cacheKey, options);
+      // 尝试从多层缓存获取
+      const cached: unknown = await cacheService.multiGet<unknown>(cacheKey, options);
       if (cached !== null) {
         // 异步刷新缓存（不阻塞请求）
         const boundMethod = originalMethod.bind(this) as (
@@ -120,7 +120,7 @@ export const CacheRefresh = (options: CacheableOptions = {}) => {
         const refreshPromise: Promise<unknown> = boundMethod(...args);
         void refreshPromise
           .then(async (newResult: unknown) => {
-            await cacheService.set(cacheKey, newResult, options);
+            await cacheService.multiSet(cacheKey, newResult, options);
           })
           .catch((error: unknown) => {
             console.error(`缓存刷新失败: ${cacheKey}`, error);
@@ -133,7 +133,7 @@ export const CacheRefresh = (options: CacheableOptions = {}) => {
         ...methodArgs: unknown[]
       ) => Promise<unknown>;
       const result: unknown = await boundMethod(...args);
-      await cacheService.set(cacheKey, result, options);
+      await cacheService.multiSet(cacheKey, result, options);
 
       return result;
     };

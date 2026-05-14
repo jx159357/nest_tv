@@ -142,7 +142,9 @@ describe('AdminController (e2e)', () => {
 
   it('coerces valid admin query params before calling the service', async () => {
     await request(app.getHttpServer())
-      .get('/admin/download-tasks?page=2&limit=10&status=error&userId=8&clientId=task-21&hash=hash-demo&taskId=21')
+      .get(
+        '/admin/download-tasks?page=2&limit=10&status=error&userId=8&clientId=task-21&hash=hash-demo&taskId=21',
+      )
       .set('x-test-role', 'admin')
       .expect(200);
 
@@ -214,7 +216,9 @@ describe('AdminController (e2e)', () => {
 
   it('passes admin log metadata filters through ValidationPipe and service handling', async () => {
     await request(app.getHttpServer())
-      .get('/admin/logs?action=retry&resource=download_task&clientId=task-21&hash=hash-demo&downloadTaskId=21&logId=7')
+      .get(
+        '/admin/logs?action=retry&resource=download_task&clientId=task-21&hash=hash-demo&downloadTaskId=21&logId=7',
+      )
       .set('x-test-role', 'admin')
       .expect(200);
 

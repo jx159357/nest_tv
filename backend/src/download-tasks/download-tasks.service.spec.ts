@@ -118,11 +118,36 @@ describe('DownloadTasksService', () => {
 
   it('aggregates my task stats by status group', async () => {
     downloadTaskRepository.find.mockResolvedValue([
-      { status: DownloadTaskStatus.PENDING, type: DownloadTaskType.DIRECT, id: 1, url: 'https://example.com/a' },
-      { status: DownloadTaskStatus.DOWNLOADING, type: DownloadTaskType.DIRECT, id: 2, url: 'https://example.com/b' },
-      { status: DownloadTaskStatus.COMPLETED, type: DownloadTaskType.DIRECT, id: 3, url: 'https://example.com/c' },
-      { status: DownloadTaskStatus.ERROR, type: DownloadTaskType.DIRECT, id: 4, url: 'https://example.com/d' },
-      { status: DownloadTaskStatus.CANCELLED, type: DownloadTaskType.DIRECT, id: 5, url: 'https://example.com/e' },
+      {
+        status: DownloadTaskStatus.PENDING,
+        type: DownloadTaskType.DIRECT,
+        id: 1,
+        url: 'https://example.com/a',
+      },
+      {
+        status: DownloadTaskStatus.DOWNLOADING,
+        type: DownloadTaskType.DIRECT,
+        id: 2,
+        url: 'https://example.com/b',
+      },
+      {
+        status: DownloadTaskStatus.COMPLETED,
+        type: DownloadTaskType.DIRECT,
+        id: 3,
+        url: 'https://example.com/c',
+      },
+      {
+        status: DownloadTaskStatus.ERROR,
+        type: DownloadTaskType.DIRECT,
+        id: 4,
+        url: 'https://example.com/d',
+      },
+      {
+        status: DownloadTaskStatus.CANCELLED,
+        type: DownloadTaskType.DIRECT,
+        id: 5,
+        url: 'https://example.com/e',
+      },
     ] as DownloadTask[]);
 
     const result = await service.getMineStats(3);

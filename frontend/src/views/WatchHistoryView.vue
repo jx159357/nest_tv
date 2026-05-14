@@ -1,5 +1,5 @@
 <template>
-  <NavigationLayout>
+  <div class="page-container">
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-900">观看历史</h1>
@@ -218,16 +218,16 @@
         </div>
       </div>
     </main>
-  </NavigationLayout>
+  </div>
 </template>
 
 <script setup>
   import { ref, watch } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
-  import NavigationLayout from '@/components/NavigationLayout.vue';
   import { showConfirm } from '@/composables/useModal';
   import { useAuthStore } from '@/stores/auth';
   import { watchHistoryApi } from '@/api/watchHistory';
+  import { log } from '@/utils/logger';
 
   const route = useRoute();
   const router = useRouter();
@@ -353,7 +353,7 @@
         };
       }
     } catch (error) {
-      console.error('加载观看历史失败:', error);
+      log.error('WatchHistoryView', '加载观看历史失败:', error);
       watchHistory.value = [];
     } finally {
       loading.value = false;
@@ -438,7 +438,7 @@
         await watchHistoryApi.deleteWatchHistory(String(id));
         await loadWatchHistory(pagination.value.page);
       } catch (error) {
-        console.error('删除观看历史失败:', error);
+        log.error('WatchHistoryView', '删除观看历史失败:', error);
       } finally {
         deletingId.value = null;
       }

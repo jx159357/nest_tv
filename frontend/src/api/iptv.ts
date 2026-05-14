@@ -89,4 +89,13 @@ export const iptvApi = {
 
   importFromM3U: (m3uUrl: string) =>
     ApiClient.post<IPTVChannel[]>(`/iptv/import/m3u?m3uUrl=${encodeURIComponent(m3uUrl)}`, {}),
+
+  deleteChannel: (id: number) => ApiClient.delete(`/iptv/${id}`),
+
+  getEpg: (id: number, epgUrl?: string) =>
+    ApiClient.get<{ channelId: number; epgId: string | null; programs: { start: number; end: number; title: string }[] }>(
+      `/iptv/${id}/epg`,
+      epgUrl ? { params: { epgUrl } } : undefined,
+      false,
+    ),
 };

@@ -284,9 +284,19 @@ export class AdminController {
     type: String,
     description: 'File/source/url/user search',
   })
-  @ApiQuery({ name: 'clientId', required: false, type: String, description: 'Exact download task client id' })
+  @ApiQuery({
+    name: 'clientId',
+    required: false,
+    type: String,
+    description: 'Exact download task client id',
+  })
   @ApiQuery({ name: 'hash', required: false, type: String, description: 'Exact magnet infoHash' })
-  @ApiQuery({ name: 'taskId', required: false, type: Number, description: 'Exact download task id' })
+  @ApiQuery({
+    name: 'taskId',
+    required: false,
+    type: Number,
+    description: 'Exact download task id',
+  })
   @ApiResponse({ status: 200, description: 'Download task list loaded successfully' })
   getDownloadTasks(@Query() queryDto: AdminDownloadTasksQueryDto) {
     const {

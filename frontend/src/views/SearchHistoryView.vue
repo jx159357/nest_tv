@@ -1,5 +1,5 @@
 <template>
-  <NavigationLayout>
+  <div class="page-container">
     <div class="space-y-8">
       <header class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
@@ -94,7 +94,7 @@
         </div>
       </section>
     </div>
-  </NavigationLayout>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -102,11 +102,11 @@
   import { useRouter } from 'vue-router';
   import { searchApi } from '@/api/search';
   import InlineNotice from '@/components/InlineNotice.vue';
-  import NavigationLayout from '@/components/NavigationLayout.vue';
   import LoadingSpinner from '@/components/LoadingSpinner.vue';
   import EmptyState from '@/components/EmptyState.vue';
   import { usePageNotice } from '@/composables/usePageNotice';
   import { getErrorMessage } from '@/utils/error-message';
+  import { log } from '@/utils/logger';
 
   const router = useRouter();
   const { notice, setNotice, clearNotice } = usePageNotice();
@@ -122,7 +122,7 @@
     try {
       relatedKeywords.value = await searchApi.getRelatedKeywords(keyword, 8);
     } catch (loadError) {
-      console.error('加载相关搜索建议失败:', loadError);
+      log.error('SearchHistoryView', '加载相关搜索建议失败:', loadError);
       relatedKeywords.value = [];
     } finally {
       relatedLoading.value = false;

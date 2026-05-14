@@ -1,0 +1,146 @@
+- generic [ref=e4]:
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - link "Nest TV" [ref=e7] [cursor=pointer]:
+        - /url: /
+        - img [ref=e8]
+        - generic [ref=e10]: Nest TV
+      - navigation [ref=e11]:
+        - link "首页" [ref=e12] [cursor=pointer]:
+          - /url: /
+          - img [ref=e13]
+          - generic [ref=e16]: 首页
+        - link "推荐" [ref=e17] [cursor=pointer]:
+          - /url: /recommendations
+          - img [ref=e18]
+          - generic [ref=e20]: 推荐
+        - link "IPTV" [ref=e21] [cursor=pointer]:
+          - /url: /iptv
+          - img [ref=e22]
+          - generic [ref=e24]: IPTV
+        - link "下载" [ref=e25] [cursor=pointer]:
+          - /url: /torrent
+          - img [ref=e26]
+          - generic [ref=e29]: 下载
+      - generic [ref=e30]:
+        - generic [ref=e31]:
+          - img [ref=e32]
+          - textbox "搜索影视、电视剧..." [ref=e35]
+        - button "管 管理员" [ref=e37] [cursor=pointer]:
+          - generic [ref=e38]: 管
+          - generic [ref=e39]: 管理员
+  - main [ref=e40]:
+    - generic [ref=e41]:
+      - navigation [ref=e42]:
+        - generic [ref=e43]:
+          - link "Nest TV" [ref=e44] [cursor=pointer]:
+            - /url: /
+          - link "返回首页" [ref=e45] [cursor=pointer]:
+            - /url: /
+            - img [ref=e46]
+            - text: 返回首页
+      - main [ref=e48]:
+        - generic [ref=e49]:
+          - generic [ref=e50]:
+            - generic [ref=e51]:
+              - generic [ref=e53]:
+                - generic:
+                  - generic [ref=e62] [cursor=pointer]: 00:09
+                  - generic [ref=e63]:
+                    - generic [ref=e64]:
+                      - generic "暂停" [ref=e186] [cursor=pointer]
+                      - generic [ref=e67] [cursor=pointer]:
+                        - generic:
+                          - generic:
+                            - generic: "70"
+                      - generic [ref=e69]: 00:01 / 00:10
+                    - generic [ref=e70]:
+                      - generic "截图" [ref=e71] [cursor=pointer]
+                      - generic "显示设置" [ref=e73] [cursor=pointer]
+                      - generic "开启画中画" [ref=e75] [cursor=pointer]
+                      - generic "网页全屏" [ref=e77] [cursor=pointer]:
+                        - img [ref=e79]
+                      - generic "全屏" [ref=e81] [cursor=pointer]:
+                        - img [ref=e83]
+                - generic:
+                  - generic: 播放
+              - generic:
+                - generic [ref=e85]:
+                  - generic [ref=e86]:
+                    - textbox "发送弹幕 (HTTP 回退)" [ref=e87]
+                    - textbox "选择颜色" [ref=e89] [cursor=pointer]: "#ffffff"
+                    - combobox "弹幕类型" [ref=e90]:
+                      - option "滚动" [selected]
+                      - option "顶部"
+                      - option "底部"
+                    - button "发送" [disabled] [ref=e91]
+                  - generic [ref=e93] [cursor=pointer]: ⚙️
+                - generic:
+                  - generic: timeout，已切换到 HTTP 回退模式。
+                  - button "重试实时连接"
+            - generic [ref=e94]:
+              - generic [ref=e95]:
+                - heading "播放源" [level=2] [ref=e96]
+                - generic [ref=e97]:
+                  - button "测速" [ref=e98] [cursor=pointer]
+                  - generic [ref=e99]: 当前：Test Videos
+              - generic [ref=e100]:
+                - button "Test Videos 1080p · mp4 在线" [ref=e101] [cursor=pointer]:
+                  - generic [ref=e102]:
+                    - generic [ref=e103]: Test Videos
+                    - generic [ref=e104]: 1080p · mp4
+                  - generic [ref=e106]: 在线
+                - button "Test Videos 1080p · mp4 在线" [ref=e107] [cursor=pointer]:
+                  - generic [ref=e108]:
+                    - generic [ref=e109]: Test Videos
+                    - generic [ref=e110]: 1080p · mp4
+                  - generic [ref=e112]: 在线
+            - generic [ref=e113]:
+              - generic [ref=e114]:
+                - generic [ref=e115]:
+                  - heading "下载任务" [level=2] [ref=e116]
+                  - paragraph [ref=e117]: 当前资源检测到 0 个可用下载链接
+                - link "查看列表" [ref=e118] [cursor=pointer]:
+                  - /url: /downloads
+              - button "加入下载任务" [disabled] [ref=e120]
+              - paragraph [ref=e121]: 当前播放源和媒体详情里都没有可用下载链接。
+          - complementary [ref=e122]:
+            - generic [ref=e123]:
+              - heading "Big Buck Bunny" [level=1] [ref=e124]
+              - generic [ref=e125]:
+                - generic [ref=e126]:
+                  - generic [ref=e127]: 类型
+                  - generic [ref=e128]: 电影
+                - generic [ref=e129]:
+                  - generic [ref=e130]: 评分
+                  - generic [ref=e131]: 8.0/10
+                - generic [ref=e132]:
+                  - generic [ref=e133]: 观看次数
+                  - generic [ref=e134]: "1"
+                - generic [ref=e135]:
+                  - generic [ref=e136]: 导演
+                  - generic [ref=e137]: Sacha Goedegebure
+              - button "加入收藏" [ref=e139] [cursor=pointer]
+            - generic [ref=e140]:
+              - heading "剧情简介" [level=2] [ref=e141]
+              - paragraph [ref=e142]: Blender 基金会出品的开源动画短片，讲述一只大兔子和三只小动物的故事。
+            - generic [ref=e143]:
+              - generic [ref=e144]:
+                - heading "一起看" [level=3] [ref=e145]
+                - button "创建房间" [ref=e147] [cursor=pointer]
+              - generic [ref=e149]:
+                - paragraph [ref=e150]: 暂无活跃房间
+                - generic [ref=e151]: 创建一个房间邀请朋友一起看吧
+  - contentinfo [ref=e152]:
+    - generic [ref=e153]:
+      - generic [ref=e154]:
+        - text: Nest TV
+        - paragraph [ref=e155]: 高清影视在线观看平台
+      - generic [ref=e156]:
+        - link "首页" [ref=e157] [cursor=pointer]:
+          - /url: /
+        - link "推荐" [ref=e158] [cursor=pointer]:
+          - /url: /recommendations
+        - link "IPTV" [ref=e159] [cursor=pointer]:
+          - /url: /iptv
+      - generic [ref=e160]: © 2026 Nest TV. All rights reserved.

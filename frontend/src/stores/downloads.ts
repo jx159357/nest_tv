@@ -6,6 +6,7 @@ import {
   type DownloadTaskRecord,
 } from '@/api/downloadTasks';
 import type { DownloadMetadata, DownloadTask } from '@/types/advanced';
+import { log } from '@/utils/logger';
 
 const STORAGE_KEY = 'nest-tv-download-tasks';
 const REMOTE_PAGE_SIZE = 200;
@@ -218,7 +219,7 @@ const loadStoredTasks = (): DownloadTask[] => {
       .filter((item): item is DownloadTask => Boolean(item))
       .sort((left, right) => right.updatedAt.getTime() - left.updatedAt.getTime());
   } catch (error) {
-    console.error('读取下载任务失败:', error);
+    log.error('Downloads', '读取下载任务失败:', error);
     return [];
   }
 };
@@ -288,7 +289,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
       await downloadTasksApi.upsert(toRemotePayload(task));
       lastRemoteSyncAt.value = new Date();
     } catch (error) {
-      console.error('同步下载任务失败:', error);
+      log.error('Downloads', '同步下载任务失败:', error);
     }
   };
 
@@ -301,7 +302,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
       await downloadTasksApi.remove(taskId);
       lastRemoteSyncAt.value = new Date();
     } catch (error) {
-      console.error('删除远程下载任务失败:', error);
+      log.error('Downloads', '删除远程下载任务失败:', error);
     }
   };
 
@@ -406,7 +407,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
         remoteSucceeded: true,
       };
     } catch (error) {
-      console.error('拉取远程下载任务失败:', error);
+      log.error('Downloads', '拉取远程下载任务失败:', error);
       return {
         tasks: tasks.value,
         remoteRequested: true,
@@ -514,7 +515,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
         remoteSucceeded: true,
       };
     } catch (error) {
-      console.error('清理远程已完成下载任务失败:', error);
+      log.error('Downloads', '清理远程已完成下载任务失败:', error);
       return {
         remoteRequested: true,
         remoteSucceeded: false,
@@ -540,7 +541,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
         remoteSucceeded: true,
       };
     } catch (error) {
-      console.error('清理远程异常下载任务失败:', error);
+      log.error('Downloads', '清理远程异常下载任务失败:', error);
       return {
         remoteRequested: true,
         remoteSucceeded: false,

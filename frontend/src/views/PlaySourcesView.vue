@@ -1,5 +1,5 @@
 <template>
-  <NavigationLayout>
+  <div class="page-container">
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="mb-6 flex justify-between items-center">
         <h1 class="text-2xl font-bold text-gray-900">播放源管理</h1>
@@ -359,14 +359,14 @@
         </div>
       </div>
     </div>
-  </NavigationLayout>
+  </div>
 </template>
 
 <script setup>
   import { ref, onMounted } from 'vue';
   import { playSourceApi } from '@/api';
   import { showConfirm } from '@/composables/useModal';
-  import NavigationLayout from '@/components/NavigationLayout.vue';
+  import { log } from '@/utils/logger';
 
   // 状态管理
   const playSources = ref([]);
@@ -443,7 +443,7 @@
         };
       }
     } catch (error) {
-      console.error('加载播放源失败:', error);
+      log.error('PlaySources', '加载播放源失败:', error);
       playSources.value = [];
     } finally {
       loading.value = false;
@@ -510,7 +510,7 @@
       await playSourceApi.testPlaySource(String(id));
       loadPlaySources(); // 重新加载数据以更新状态
     } catch (error) {
-      console.error('验证播放源失败:', error);
+      log.error('PlaySources', '验证播放源失败:', error);
     } finally {
       validatingSourceId.value = null;
     }
@@ -524,7 +524,7 @@
         await playSourceApi.deletePlaySource(String(id));
         await loadPlaySources();
       } catch (error) {
-        console.error('删除播放源失败:', error);
+        log.error('PlaySources', '删除播放源失败:', error);
       } finally {
         deletingSourceId.value = null;
       }
@@ -578,7 +578,7 @@
       closeModal();
       loadPlaySources(); // 重新加载数据
     } catch (error) {
-      console.error('保存播放源失败:', error);
+      log.error('PlaySources', '保存播放源失败:', error);
     } finally {
       saving.value = false;
     }

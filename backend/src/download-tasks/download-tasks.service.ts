@@ -1,7 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { DownloadTask, DownloadTaskStatus, DownloadTaskType } from '../entities/download-task.entity';
+import {
+  DownloadTask,
+  DownloadTaskStatus,
+  DownloadTaskType,
+} from '../entities/download-task.entity';
 import { CreateDownloadTaskDto } from './dtos/create-download-task.dto';
 import { UpdateDownloadTaskDto } from './dtos/update-download-task.dto';
 import { DownloadTaskQueryDto } from './dtos/download-task-query.dto';
@@ -86,8 +90,7 @@ export class DownloadTasksService {
     });
     const existingMagnetTasks = await this.findExistingMagnetTasksByHash(userId, dto);
 
-    const existingTask =
-      existingTaskByClientId ?? existingMagnetTasks[0] ?? null;
+    const existingTask = existingTaskByClientId ?? existingMagnetTasks[0] ?? null;
 
     if (existingTask) {
       Object.assign(existingTask, this.normalizePayload(dto));
@@ -122,9 +125,7 @@ export class DownloadTasksService {
       type: task.type,
     });
 
-    const duplicateIds = duplicateMagnetTasks
-      .filter(item => item.id)
-      .map(item => item.id);
+    const duplicateIds = duplicateMagnetTasks.filter(item => item.id).map(item => item.id);
 
     if (duplicateIds.length > 0) {
       await this.downloadTaskRepository.delete(duplicateIds);
@@ -235,7 +236,10 @@ export class DownloadTasksService {
       return 0;
     }
 
-    const value = task.updatedAt instanceof Date ? task.updatedAt.getTime() : new Date(task.updatedAt).getTime();
+    const value =
+      task.updatedAt instanceof Date
+        ? task.updatedAt.getTime()
+        : new Date(task.updatedAt).getTime();
     return Number.isFinite(value) ? value : 0;
   }
 

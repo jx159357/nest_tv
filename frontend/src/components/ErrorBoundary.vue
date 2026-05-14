@@ -1,34 +1,69 @@
 <template>
-  <div v-if="showError" class="error-boundary" :class="errorClasses">
-    <div class="error-container">
-      <div class="error-icon">
-        <svg class="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-          />
+  <div v-if="error" class="error-boundary" :class="errorClasses">
+    <div class="error-boundary__container">
+      <!-- 错误图标 -->
+      <div class="error-boundary__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
       </div>
 
-      <div class="error-content">
-        <h3 class="error-title">{{ title }}</h3>
-        <p class="error-message">{{ message }}</p>
+      <!-- 错误内容 -->
+      <div class="error-boundary__content">
+        <h3 class="error-boundary__title">{{ title }}</h3>
+        <p class="error-boundary__message">{{ message }}</p>
 
-        <div v-if="showDetails && errorDetails" class="error-details">
-          <details>
-            <summary>错误详情</summary>
-            <pre class="error-stack">{{ errorDetails }}</pre>
-          </details>
+        <!-- 错误详情 -->
+        <div v-if="showDetails && errorDetails" class="error-boundary__details">
+          <button
+            class="error-boundary__details-toggle"
+            @click="isDetailsOpen = !isDetailsOpen"
+          >
+            {{ isDetailsOpen ? '隐藏详情' : '查看详情' }}
+            <svg
+              class="error-boundary__details-arrow"
+              :class="{ 'error-boundary__details-arrow--open': isDetailsOpen }"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <div v-if="isDetailsOpen" class="error-boundary__details-content">
+            <pre class="error-boundary__stack">{{ errorDetails }}</pre>
+          </div>
         </div>
 
-        <div class="error-actions">
-          <button v-if="retryable" class="btn-retry" @click="handleRetry">重试</button>
-
-          <button v-if="showHome" class="btn-home" @click="goHome">返回首页</button>
-
-          <button v-if="dismissible" class="btn-dismiss" @click="dismiss">关闭</button>
+        <!-- 操作按钮 -->
+        <div class="error-boundary__actions">
+          <button
+            v-if="retryable"
+            class="error-boundary__button error-boundary__button--primary"
+            @click="handleRetry"
+          >
+            <svg class="error-boundary__button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            重试
+          </button>
+          <button
+            v-if="showHome"
+            class="error-boundary__button error-boundary__button--secondary"
+            @click="goHome"
+          >
+            <svg class="error-boundary__button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            返回首页
+          </button>
+          <button
+            v-if="dismissible"
+            class="error-boundary__button error-boundary__button--ghost"
+            @click="dismiss"
+          >
+            关闭
+          </button>
         </div>
       </div>
     </div>
@@ -36,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue';
+  import { computed, ref } from 'vue';
   import { useRouter } from 'vue-router';
 
   interface Props {
@@ -59,7 +94,7 @@
     retryable: false,
     showHome: true,
     dismissible: true,
-    showDetails: false,
+    showDetails: true,
     size: 'medium',
     centered: true,
   });
@@ -70,14 +105,13 @@
   }>();
 
   const router = useRouter();
-
-  const showError = computed(() => props.error !== null && props.error !== undefined);
+  const isDetailsOpen = ref(false);
 
   const errorClasses = computed(() => [
-    `error-${props.type}`,
-    `error-${props.size}`,
+    `error-boundary--${props.type}`,
+    `error-boundary--${props.size}`,
     {
-      'error-centered': props.centered,
+      'error-boundary--centered': props.centered,
     },
   ]);
 
@@ -106,183 +140,237 @@
 
 <style scoped>
   .error-boundary {
-    @apply p-4 rounded-lg border;
+    background: var(--bg-card);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border-primary);
+    overflow: hidden;
+    animation: error-slide-in 0.3s ease-out;
   }
 
-  .error-error {
-    @apply bg-red-50 border-red-200;
+  .error-boundary--centered {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-overlay);
+    z-index: var(--z-modal);
+    padding: var(--spacing-4);
   }
 
-  .error-warning {
-    @apply bg-yellow-50 border-yellow-200;
+  .error-boundary--centered .error-boundary__container {
+    max-width: 28rem;
+    width: 100%;
+    background: var(--bg-card);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl);
   }
 
-  .error-info {
-    @apply bg-blue-50 border-blue-200;
+  .error-boundary__container {
+    padding: var(--spacing-6);
   }
 
-  .error-centered {
-    @apply fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50;
+  .error-boundary__icon {
+    display: flex;
+    justify-content: center;
+    margin-bottom: var(--spacing-4);
   }
 
-  .error-small {
-    @apply max-w-sm;
+  .error-boundary__icon svg {
+    width: 3rem;
+    height: 3rem;
   }
 
-  .error-medium {
-    @apply max-w-md;
+  .error-boundary--error .error-boundary__icon svg {
+    color: var(--color-error);
   }
 
-  .error-large {
-    @apply max-w-lg;
+  .error-boundary--warning .error-boundary__icon svg {
+    color: var(--color-warning);
   }
 
-  .error-container {
-    @apply bg-white rounded-lg shadow-lg p-6;
+  .error-boundary--info .error-boundary__icon svg {
+    color: var(--color-info);
   }
 
-  .error-centered .error-container {
-    @apply transform scale-100 transition-transform;
+  .error-boundary__content {
+    text-align: center;
   }
 
-  .error-icon {
-    @apply flex justify-center mb-4;
+  .error-boundary__title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-2);
   }
 
-  .error-error .error-icon svg {
-    @apply text-red-600;
+  .error-boundary__message {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-4);
+    line-height: var(--line-height-relaxed);
   }
 
-  .error-warning .error-icon svg {
-    @apply text-yellow-600;
+  .error-boundary__details {
+    margin-bottom: var(--spacing-4);
+    text-align: left;
   }
 
-  .error-info .error-icon svg {
-    @apply text-blue-600;
+  .error-boundary__details-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-1);
+    width: 100%;
+    padding: var(--spacing-2);
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    background: var(--bg-secondary);
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
   }
 
-  .error-content {
-    @apply text-center;
+  .error-boundary__details-toggle:hover {
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
   }
 
-  .error-title {
-    @apply text-lg font-semibold mb-2;
+  .error-boundary__details-arrow {
+    width: 1rem;
+    height: 1rem;
+    transition: transform var(--transition-fast);
   }
 
-  .error-error .error-title {
-    @apply text-red-900;
+  .error-boundary__details-arrow--open {
+    transform: rotate(180deg);
   }
 
-  .error-warning .error-title {
-    @apply text-yellow-900;
+  .error-boundary__details-content {
+    margin-top: var(--spacing-2);
+    padding: var(--spacing-3);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    overflow: auto;
   }
 
-  .error-info .error-title {
-    @apply text-blue-900;
-  }
-
-  .error-message {
-    @apply text-sm mb-4;
-  }
-
-  .error-error .error-message {
-    @apply text-red-700;
-  }
-
-  .error-warning .error-message {
-    @apply text-yellow-700;
-  }
-
-  .error-info .error-message {
-    @apply text-blue-700;
-  }
-
-  .error-details {
-    @apply mb-4 text-left;
-  }
-
-  .error-details details {
-    @apply bg-gray-50 rounded border border-gray-200 p-2;
-  }
-
-  .error-details summary {
-    @apply cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900;
-  }
-
-  .error-stack {
-    @apply mt-2 text-xs text-gray-600 bg-gray-100 p-2 rounded overflow-x-auto;
-    max-height: 32;
+  .error-boundary__stack {
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 10rem;
     overflow-y: auto;
   }
 
-  .error-actions {
-    @apply flex justify-center gap-2 flex-wrap;
+  .error-boundary__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-2);
   }
 
-  .btn-retry,
-  .btn-home,
-  .btn-dismiss {
-    @apply px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200;
+  .error-boundary__button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-4);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    border-radius: var(--radius-lg);
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-fast);
   }
 
-  .btn-retry {
-    @apply bg-red-600 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
+  .error-boundary__button-icon {
+    width: 1rem;
+    height: 1rem;
   }
 
-  .btn-home {
-    @apply bg-gray-600 text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
+  .error-boundary__button--primary {
+    background: var(--color-brand-primary);
+    color: var(--text-inverse);
   }
 
-  .btn-dismiss {
-    @apply bg-gray-300 text-gray-700 hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
+  .error-boundary__button--primary:hover {
+    background: var(--color-brand-primary-dark);
   }
 
-  /* Size variants */
-  .error-small .error-container {
-    @apply p-4;
+  .error-boundary__button--secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-primary);
   }
 
-  .error-small .error-icon svg {
-    @apply w-8 h-8;
+  .error-boundary__button--secondary:hover {
+    background: var(--bg-tertiary);
   }
 
-  .error-small .error-title {
-    @apply text-base;
+  .error-boundary__button--ghost {
+    background: transparent;
+    color: var(--text-muted);
   }
 
-  .error-small .error-message {
-    @apply text-xs;
+  .error-boundary__button--ghost:hover {
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
   }
 
-  .error-large .error-container {
-    @apply p-8;
+  /* 尺寸变体 */
+  .error-boundary--small .error-boundary__container {
+    padding: var(--spacing-4);
   }
 
-  .error-large .error-icon svg {
-    @apply w-20 h-20;
+  .error-boundary--small .error-boundary__icon svg {
+    width: 2rem;
+    height: 2rem;
   }
 
-  .error-large .error-title {
-    @apply text-xl;
+  .error-boundary--small .error-boundary__title {
+    font-size: var(--font-size-base);
   }
 
-  .error-large .error-message {
-    @apply text-base;
+  .error-boundary--large .error-boundary__container {
+    padding: var(--spacing-8);
   }
 
-  /* Animation */
-  @keyframes slideIn {
+  .error-boundary--large .error-boundary__icon svg {
+    width: 4rem;
+    height: 4rem;
+  }
+
+  .error-boundary--large .error-boundary__title {
+    font-size: var(--font-size-xl);
+  }
+
+  @keyframes error-slide-in {
     from {
-      transform: translateY(-20px);
       opacity: 0;
+      transform: translateY(-1rem);
     }
     to {
-      transform: translateY(0);
       opacity: 1;
+      transform: translateY(0);
     }
   }
 
-  .error-boundary {
-    animation: slideIn 0.3s ease-out;
+  /* 暗色模式 */
+  [data-theme="dark"] .error-boundary,
+  .dark .error-boundary {
+    background: var(--bg-card);
+    border-color: var(--border-primary);
+  }
+
+  [data-theme="dark"] .error-boundary__title,
+  .dark .error-boundary__title {
+    color: var(--text-primary);
+  }
+
+  [data-theme="dark"] .error-boundary__message,
+  .dark .error-boundary__message {
+    color: var(--text-secondary);
   }
 </style>

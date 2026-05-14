@@ -1,4 +1,5 @@
-import { ElMessage, ElNotification } from 'element-plus';
+import { showNotification } from '@/composables/useModal';
+import { log } from '@/utils/logger';
 // import type { AxiosError } from 'axios'; // 暂时注释，以后可能用到
 
 // 定义错误类型
@@ -23,7 +24,7 @@ export class GlobalErrorHandler {
 
   // 处理API错误
   static handleApiError(error: any, defaultMessage: string = '操作失败'): ApiError {
-    console.error('API Error:', error);
+    log.error('GlobalErrorHandler', 'API Error:', error);
 
     // 提取错误信息
     let message = defaultMessage;
@@ -83,11 +84,10 @@ export class GlobalErrorHandler {
     }
 
     // 显示错误提示
-    ElMessage({
-      message,
+    showNotification({
       type: 'error',
-      duration: 5000,
-      showClose: true,
+      title: '请求错误',
+      message,
     });
 
     // 特殊错误处理
@@ -109,10 +109,10 @@ export class GlobalErrorHandler {
     localStorage.removeItem('token');
 
     // 显示通知
-    ElNotification({
+    showNotification({
+      type: 'warning',
       title: '会话过期',
       message: '您的登录会话已过期，请重新登录',
-      type: 'warning',
       duration: 0, // 持续显示直到用户操作
     });
 
@@ -124,7 +124,7 @@ export class GlobalErrorHandler {
 
   // 处理表单验证错误
   static handleValidationError(errors: Record<string, string[]>) {
-    console.error('Validation Errors:', errors);
+    log.error('GlobalErrorHandler', 'Validation Errors:', errors);
 
     // 构建错误消息
     const errorMessages = Object.entries(errors)
@@ -132,11 +132,10 @@ export class GlobalErrorHandler {
       .join('\n');
 
     // 显示错误提示
-    ElMessage({
-      message: `表单验证失败:\n${errorMessages}`,
+    showNotification({
       type: 'error',
-      duration: 5000,
-      showClose: true,
+      title: '表单验证失败',
+      message: errorMessages,
     });
 
     return errorMessages;
@@ -144,7 +143,7 @@ export class GlobalErrorHandler {
 
   // 处理业务逻辑错误
   static handleBusinessError(error: BusinessError) {
-    console.error('Business Error:', error);
+    log.error('GlobalErrorHandler', 'Business Error:', error);
 
     // 根据错误代码显示特定消息
     const errorMap: Record<string, string> = {
@@ -169,11 +168,10 @@ export class GlobalErrorHandler {
     const message = errorMap[error.code] || error.message || '操作失败';
 
     // 显示错误提示
-    ElMessage({
-      message,
+    showNotification({
       type: 'warning',
-      duration: 5000,
-      showClose: true,
+      title: '业务错误',
+      message,
     });
 
     return message;
@@ -181,7 +179,7 @@ export class GlobalErrorHandler {
 
   // 处理网络错误
   static handleNetworkError(error: any) {
-    console.error('Network Error:', error);
+    log.error('GlobalErrorHandler', 'Network Error:', error);
 
     let message = '网络连接失败';
 
@@ -211,11 +209,10 @@ export class GlobalErrorHandler {
     }
 
     // 显示错误提示
-    ElMessage({
-      message,
+    showNotification({
       type: 'error',
-      duration: 5000,
-      showClose: true,
+      title: '网络错误',
+      message,
     });
 
     return message;
@@ -223,7 +220,7 @@ export class GlobalErrorHandler {
 
   // 处理播放错误
   static handlePlaybackError(error: any) {
-    console.error('Playback Error:', error);
+    log.error('GlobalErrorHandler', 'Playback Error:', error);
 
     let message = '视频播放失败';
 
@@ -253,11 +250,10 @@ export class GlobalErrorHandler {
     }
 
     // 显示错误提示
-    ElMessage({
-      message,
+    showNotification({
       type: 'error',
-      duration: 5000,
-      showClose: true,
+      title: '播放错误',
+      message,
     });
 
     return message;
@@ -269,10 +265,10 @@ export class GlobalErrorHandler {
     options: {
       defaultMessage?: string;
       showError?: boolean;
-      showNotification?: boolean;
+      showNotice?: boolean;
     } = {},
   ): Promise<{ success: boolean; data?: T; error?: ApiError }> {
-    const { defaultMessage = '操作失败', showNotification = false } = options;
+    const { defaultMessage = '操作失败', showNotice = false } = options;
 
     try {
       const result = await promise;
@@ -280,11 +276,11 @@ export class GlobalErrorHandler {
     } catch (error) {
       const errorInfo = this.handleApiError(error, defaultMessage);
 
-      if (showNotification) {
-        ElNotification({
+      if (showNotice) {
+        showNotification({
+          type: 'error',
           title: '操作失败',
           message: errorInfo.message,
-          type: 'error',
         });
       }
 

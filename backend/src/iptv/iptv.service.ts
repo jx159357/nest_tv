@@ -1,6 +1,7 @@
 import { Injectable, HttpException, HttpStatus, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Like, Repository } from 'typeorm';
+import type { Response } from 'express';
 import { IPTVChannel } from '../entities/iptv-channel.entity';
 import { CreateIPTVChannelDto } from './dto/create-iptv-channel.dto';
 import { UpdateIPTVChannelDto } from './dto/update-iptv-channel.dto';
@@ -27,8 +28,15 @@ interface M3UPlaylist {
   attributes?: M3UPlaylistAttributes;
 }
 
+interface M3USegment {
+  uri?: string;
+  duration?: number;
+  title?: string;
+}
+
 interface M3UManifest {
   playlists?: M3UPlaylist[];
+  segments?: M3USegment[];
 }
 
 interface M3U8ParserInstance {
@@ -45,6 +53,10 @@ export class IPTVService {
     @InjectRepository(IPTVChannel)
     private iptvChannelRepository: Repository<IPTVChannel>,
   ) {}
+
+  private toError(error: unknown): Error {
+    return error instanceof Error ? error : new Error(String(error));
+  }
 
   /**
    * 创建IPTV频道
@@ -65,8 +77,8 @@ export class IPTVService {
     totalPages: number;
   }> {
     const {
-      page = 1,
-      limit = 10,
+      page: rawPage = 1,
+      limit: rawLimit = 10,
       group,
       language,
       country,
@@ -79,6 +91,9 @@ export class IPTVService {
       sortOrder = 'DESC',
       search,
     } = queryDto;
+
+    const page = Number(rawPage) || 1;
+    const limit = Number(rawLimit) || 10;
 
     const queryBuilder = this.iptvChannelRepository.createQueryBuilder('iptv');
 
@@ -271,7 +286,7 @@ export class IPTVService {
       const manifest = parser.manifest;
       const channels: IPTVChannel[] = [];
 
-      if (manifest.playlists) {
+      if (manifest.playlists && manifest.playlists.length > 0) {
         for (const playlist of manifest.playlists) {
           if (playlist.uri && playlist.attributes) {
             const channelData: CreateIPTVChannelDto = {
@@ -292,12 +307,69 @@ export class IPTVService {
             };
 
             try {
+              const existing = await this.iptvChannelRepository.findOne({
+                where: { url: channelData.url },
+              });
+              if (existing) {
+                this.logger.log(`频道已存在，跳过: ${channelData.name}`);
+                continue;
+              }
               const channel = await this.create(channelData);
               channels.push(channel);
             } catch (error: unknown) {
               this.logger.warn(`导入频道失败: ${channelData.name}`, this.toError(error).message);
             }
           }
+        }
+      } else if (manifest.segments && manifest.segments.length > 0) {
+        const urlObj = new URL(m3uUrl);
+        const channelName = urlObj.hostname + urlObj.pathname.split('/').slice(0, -1).join('/');
+        const channelData: CreateIPTVChannelDto = {
+          name: channelName || `频道${Date.now()}`,
+          url: m3uUrl,
+          group: 'M3U导入',
+          streamFormat: 'hls',
+          isActive: true,
+          isLive: true,
+          viewCount: 0,
+        };
+
+        try {
+          const existing = await this.iptvChannelRepository.findOne({
+            where: { url: channelData.url },
+          });
+          if (existing) {
+            this.logger.log(`频道已存在，跳过: ${channelData.name}`);
+          } else {
+            const channel = await this.create(channelData);
+            channels.push(channel);
+          }
+        } catch (error: unknown) {
+          this.logger.warn(`导入频道失败: ${channelData.name}`, this.toError(error).message);
+        }
+      } else {
+        const channelData: CreateIPTVChannelDto = {
+          name: `频道${Date.now()}`,
+          url: m3uUrl,
+          group: 'M3U导入',
+          streamFormat: 'hls',
+          isActive: true,
+          isLive: true,
+          viewCount: 0,
+        };
+
+        try {
+          const existing = await this.iptvChannelRepository.findOne({
+            where: { url: channelData.url },
+          });
+          if (existing) {
+            this.logger.log(`频道已存在，跳过: ${channelData.name}`);
+          } else {
+            const channel = await this.create(channelData);
+            channels.push(channel);
+          }
+        } catch (error: unknown) {
+          this.logger.warn(`导入频道失败: ${channelData.name}`, this.toError(error).message);
         }
       }
 
@@ -394,7 +466,117 @@ export class IPTVService {
     });
   }
 
-  private toError(error: unknown): Error {
-    return error instanceof Error ? error : new Error(String(error));
+  /**
+   * 代理IPTV流媒体
+   */
+  async proxyStream(url: string, res: Response): Promise<void> {
+    try {
+      const response = await axios.get(url, {
+        responseType: 'stream',
+        timeout: 30000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        },
+      });
+
+      res.set({
+        'Content-Type': response.headers['content-type'] || 'application/octet-stream',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Range',
+        'Cache-Control': 'no-cache',
+      });
+
+      response.data.pipe(res);
+    } catch (error) {
+      this.logger.error(`代理流媒体失败: ${url}`, this.toError(error).message);
+      throw new HttpException('代理流媒体失败', HttpStatus.BAD_GATEWAY);
+    }
   }
+
+  async getChannelEpg(
+    channelId: number,
+    epgUrl?: string,
+  ): Promise<{ channelId: number; epgId: string | null; programs: EpgProgram[] }> {
+    const channel = await this.findById(channelId);
+    const epgId = channel.epgId || null;
+
+    if (!epgUrl) {
+      return { channelId, epgId, programs: this.generateDemoEpg(channel.name) };
+    }
+
+    try {
+      const response = await axios.get(epgUrl, {
+        timeout: 15000,
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        responseType: 'text',
+      });
+      const xml = String(response.data);
+      const programs = this.parseEpgXml(xml, epgId || channel.name);
+      return { channelId, epgId, programs };
+    } catch {
+      return { channelId, epgId, programs: this.generateDemoEpg(channel.name) };
+    }
+  }
+
+  private parseEpgXml(xml: string, channelId: string): EpgProgram[] {
+    const programs: EpgProgram[] = [];
+    const channelLower = channelId.toLowerCase();
+
+    const programmeRegex =
+      /<programme[^>]*start="([^"]*)"[^>]*stop="([^"]*)"[^>]*channel="([^"]*)"[^>]*>([\s\S]*?)<\/programme>/gi;
+    let match: RegExpExecArray | null;
+
+    while ((match = programmeRegex.exec(xml)) !== null) {
+      const progChannel = (match[3] || '').toLowerCase();
+      if (!progChannel.includes(channelLower) && !channelLower.includes(progChannel)) continue;
+
+      const titleMatch = match[4].match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+      const title = titleMatch ? titleMatch[1].trim() : '未知节目';
+
+      programs.push({
+        start: this.parseEpgTime(match[1]),
+        end: this.parseEpgTime(match[2]),
+        title,
+      });
+    }
+
+    programs.sort((a, b) => a.start - b.start);
+    return programs;
+  }
+
+  private parseEpgTime(raw: string): number {
+    if (!raw) return 0;
+    const clean = raw.replace(/\s/g, '');
+    const m = clean.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/);
+    if (!m) return 0;
+    return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6])).getTime();
+  }
+
+  private generateDemoEpg(channelName: string): EpgProgram[] {
+    const now = Date.now();
+    const hour = 3600_000;
+    const base = Math.floor(now / hour) * hour;
+    const titles = [
+      `${channelName} 新闻联播`,
+      `${channelName} 焦点访谈`,
+      `${channelName} 今日说法`,
+      `${channelName} 电视剧场`,
+      `${channelName} 综艺节目`,
+      `${channelName} 纪录片`,
+      `${channelName} 晚间新闻`,
+      `${channelName} 深夜剧场`,
+    ];
+    return titles.map((title, i) => ({
+      start: base + i * hour,
+      end: base + (i + 1) * hour,
+      title,
+    }));
+  }
+}
+
+export interface EpgProgram {
+  start: number;
+  end: number;
+  title: string;
 }

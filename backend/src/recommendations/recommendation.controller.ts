@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@ne
 import { RecommendationService } from './recommendation.service';
 import { MediaResource } from '../entities/media-resource.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Public } from '../auth/public.decorator';
 import { GetCurrentUserId } from '../decorators/current-user.decorator';
 
 @ApiTags('推荐系统')
@@ -39,6 +40,7 @@ export class RecommendationController {
   }
 
   @Get('trending')
+  @Public()
   @ApiOperation({ summary: '获取热门推荐' })
   @ApiResponse({ status: 200, description: '成功获取热门推荐', type: [MediaResource] })
   @ApiQuery({ name: 'limit', required: false, description: '返回数量限制' })
@@ -47,6 +49,7 @@ export class RecommendationController {
   }
 
   @Get('latest')
+  @Public()
   @ApiOperation({ summary: '获取最新推荐' })
   @ApiResponse({ status: 200, description: '成功获取最新推荐', type: [MediaResource] })
   @ApiQuery({ name: 'limit', required: false, description: '返回数量限制' })
@@ -55,6 +58,7 @@ export class RecommendationController {
   }
 
   @Get('top-rated')
+  @Public()
   @ApiOperation({ summary: '获取高分推荐' })
   @ApiResponse({ status: 200, description: '成功获取高分推荐', type: [MediaResource] })
   @ApiQuery({ name: 'limit', required: false, description: '返回数量限制' })

@@ -33,10 +33,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        // 支持从 query 参数提取 token（用于 video/audio 标签无法发 header 的场景）
+        request => (request.query?.token as string) || null,
+      ]),
       ignoreExpiration: false,
       secretOrKey: jwtSecret,
-      algorithms: ['HS256'], // 指定算法
+      algorithms: ['HS256'],
       audience: configService.get<string>('JWT_AUDIENCE', 'nest-tv-client'),
       issuer: configService.get<string>('JWT_ISSUER', 'nest-tv-server'),
     });

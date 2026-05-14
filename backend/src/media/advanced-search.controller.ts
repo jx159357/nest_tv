@@ -11,6 +11,8 @@ import {
   ValidationPipe,
   HttpStatus,
   HttpException,
+  Res,
+  Sse,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -20,11 +22,16 @@ import {
   ApiQuery,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import type { Response } from 'express';
+import { Observable, Subscriber } from 'rxjs';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Public } from '../auth/public.decorator';
 import { GetCurrentUserId } from '../decorators/current-user.decorator';
 import { AdvancedSearchService, SearchResult } from './advanced-search.service';
 import type { AdvancedSearchParams } from './advanced-search.service';
 import { CreateSearchHistoryDto } from './dtos/search-history.dto';
+import { MediaResourceService } from './media-resource.service';
+import { TorrentService } from '../torrent/torrent.service';
 
 const toHttpException = (error: unknown, fallbackMessage: string): HttpException => {
   const message = error instanceof Error ? error.message : fallbackMessage;
@@ -39,7 +46,11 @@ const toHttpException = (error: unknown, fallbackMessage: string): HttpException
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class AdvancedSearchController {
-  constructor(private readonly advancedSearchService: AdvancedSearchService) {}
+  constructor(
+    private readonly advancedSearchService: AdvancedSearchService,
+    private readonly mediaResourceService: MediaResourceService,
+    private readonly torrentService: TorrentService,
+  ) {}
 
   /**
    * 执行高级搜索
@@ -286,6 +297,110 @@ export class AdvancedSearchController {
     } catch (error: unknown) {
       throw toHttpException(error, '获取搜索过滤器预设失败');
     }
+  }
+
+  /**
+   * SSE 多源流式搜索
+   */
+  @Sse('stream')
+  @Public()
+  @ApiOperation({ summary: 'SSE 多源流式搜索' })
+  @ApiQuery({ name: 'keyword', description: '搜索关键词' })
+  @ApiQuery({ name: 'type', description: '类型筛选', required: false })
+  @ApiQuery({ name: 'limit', description: '每源返回数量', required: false })
+  streamSearch(
+    @Query('keyword') keyword: string,
+    @Query('type') type?: string,
+    @Query('limit') limit?: string,
+  ): Observable<{ data: Record<string, unknown> }> {
+    const parsedLimit = limit ? parseInt(limit, 10) : 20;
+    const types = type ? type.split(',').filter(Boolean) : [];
+
+    return new Observable<{ data: Record<string, unknown> }>(subscriber => {
+      let completed = 0;
+      const totalSources = 2;
+      const emitted = new Set<string>();
+
+      const finish = () => {
+        completed++;
+        if (completed >= totalSources) {
+          subscriber.next({ data: { type: 'done', keyword } });
+          subscriber.complete();
+        }
+      };
+
+      const safeNext = (payload: Record<string, unknown>) => {
+        const key = JSON.stringify(payload);
+        if (!emitted.has(key)) {
+          emitted.add(key);
+          subscriber.next({ data: payload });
+        }
+      };
+
+      // 1) 媒体库搜索
+      this.advancedSearchService
+        .advancedSearch(
+          {
+            keyword,
+            type: types,
+            page: 1,
+            pageSize: parsedLimit,
+            sortBy: 'relevance',
+            sortOrder: 'DESC',
+          },
+          undefined,
+        )
+        .then(result => {
+          safeNext({
+            type: 'media',
+            source: 'media_library',
+            data: result.data,
+            total: result.total,
+            searchTime: result.searchTime,
+          });
+          finish();
+        })
+        .catch(err => {
+          safeNext({
+            type: 'error',
+            source: 'media_library',
+            message: err instanceof Error ? err.message : '媒体库搜索失败',
+          });
+          finish();
+        });
+
+      // 2) 磁力资源搜索
+      this.torrentService
+        .searchTorrents(keyword, 1, parsedLimit, types[0])
+        .then(result => {
+          safeNext({
+            type: 'torrents',
+            source: 'torrent',
+            data: result.data,
+            total: result.total,
+          });
+          finish();
+        })
+        .catch(err => {
+          safeNext({
+            type: 'error',
+            source: 'torrent',
+            message: err instanceof Error ? err.message : '磁力搜索失败',
+          });
+          finish();
+        });
+
+      // 超时保护
+      const timeout = setTimeout(() => {
+        if (completed < totalSources) {
+          safeNext({ type: 'timeout', message: '部分搜索源响应超时' });
+          subscriber.next({ data: { type: 'done', keyword } });
+          subscriber.complete();
+        }
+      }, 15000);
+
+      return () => clearTimeout(timeout);
+    });
   }
 
   /**

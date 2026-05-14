@@ -2,144 +2,27 @@
   <div class="space-y-6">
     <!-- 页面标题 -->
     <div>
-      <h1 class="text-2xl font-bold text-gray-900">仪表盘</h1>
-      <p class="mt-2 text-gray-600">系统概览和关键数据统计</p>
+      <h1 class="text-xl font-semibold text-slate-100">仪表盘</h1>
+      <p class="mt-1 text-sm text-slate-400">系统概览和关键数据统计</p>
     </div>
 
     <!-- 统计卡片 -->
-    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-      <!-- 用户总数 -->
-      <div class="bg-white overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
-                <svg
-                  class="w-5 h-5 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 4.354a4 4 0 110 5.292 0 4.465 4.465 0 00.702-.052l4.335-3.511c.287-.268.508-.767.508-1.251V6.5a.5.5 0 00-2.249-.83L9.876 2.69a.5.5 0 00-1.752 0L2.25 5.67A.5.5 0 000 6.5v7.656a5.5 0 001.752 0l4.335 3.511a.5.5 0 001.752 0L21.75 14.33a.5.5 0 002.249-.83V6.5z"
-                  />
-                </svg>
-              </div>
-            </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 truncate">用户总数</dt>
-                <dd class="flex items-baseline">
-                  <div class="text-2xl font-semibold text-gray-900">{{ stats.userCount }}</div>
-                </dd>
-              </dl>
-            </div>
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div
+        v-for="card in statCards"
+        :key="card.label"
+        class="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4"
+      >
+        <div class="flex items-center gap-3">
+          <div
+            class="flex h-9 w-9 items-center justify-center rounded-lg text-sm"
+            :class="card.iconBg"
+          >
+            {{ card.icon }}
           </div>
-        </div>
-      </div>
-
-      <!-- 媒体资源数 -->
-      <div class="bg-white overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
-                <svg
-                  class="w-5 h-5 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M7 4v16M17 4v16M3 8h4m10 0h4M7 12h10M7 16h10"
-                  />
-                </svg>
-              </div>
-            </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 truncate">媒体资源</dt>
-                <dd class="flex items-baseline">
-                  <div class="text-2xl font-semibold text-gray-900">{{ stats.mediaCount }}</div>
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 播放源数 -->
-      <div class="bg-white overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
-                <svg
-                  class="w-5 h-5 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18l8.553-4.276A1 1 0 0015 8.618v-6.764a1 1 0 00-1.447-.894L5 10z"
-                  />
-                </svg>
-              </div>
-            </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 truncate">播放源</dt>
-                <dd class="flex items-baseline">
-                  <div class="text-2xl font-semibold text-gray-900">
-                    {{ stats.playSourceCount }}
-                  </div>
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 观看历史数 -->
-      <div class="bg-white overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-orange-500 rounded-md flex items-center justify-center">
-                <svg
-                  class="w-5 h-5 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-            </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 truncate">观看历史</dt>
-                <dd class="flex items-baseline">
-                  <div class="text-2xl font-semibold text-gray-900">
-                    {{ stats.watchHistoryCount }}
-                  </div>
-                </dd>
-              </dl>
-            </div>
+          <div>
+            <div class="text-xs text-slate-400">{{ card.label }}</div>
+            <div class="mt-1 text-xl font-semibold text-slate-100">{{ card.value }}</div>
           </div>
         </div>
       </div>
@@ -237,7 +120,7 @@
                 </p>
               </div>
               <router-link
-                to="/crawler"
+                to="/admin/crawler"
                 class="inline-flex items-center justify-center rounded-full border border-indigo-400/30 bg-indigo-500/10 px-4 py-2 text-sm font-medium text-indigo-100 transition hover:bg-indigo-500/20"
               >
                 前往爬虫管理
@@ -564,7 +447,7 @@
                 <span class="text-xs text-slate-500">Top {{ topCollectionSources.length }}</span>
               </div>
 
-              <div v-if="topCollectionSources.length > 0" class="mt-4 space-y-3">
+              <div v-if="topCollectionSources.length > 0" class="mt-4 max-h-[400px] space-y-3 overflow-y-auto">
                 <div
                   v-for="source in topCollectionSources"
                   :key="source.name"
@@ -865,7 +748,7 @@
           </p>
         </div>
         <router-link
-          to="/crawler"
+          to="/admin/crawler"
           class="inline-flex items-center justify-center rounded-full border border-amber-300 bg-white px-4 py-2 text-sm font-medium text-amber-900 transition hover:bg-amber-100"
         >
           打开爬虫管理
@@ -874,165 +757,109 @@
     </div>
 
     <!-- 最近活动 -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <!-- 最近管理活动 -->
-      <div class="bg-white shadow rounded-lg">
-        <div class="px-4 py-5 sm:px-6">
-          <h3 class="text-lg leading-6 font-medium text-gray-900">最近管理活动</h3>
+      <div class="rounded-xl border border-white/[0.06] bg-white/[0.03]">
+        <div class="px-4 py-3 border-b border-white/[0.06]">
+          <h3 class="text-sm font-medium text-slate-200">最近管理活动</h3>
         </div>
-        <div class="border-t border-gray-200">
+        <div>
           <div v-if="loading" class="text-center py-8">
-            <div
-              class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"
-            ></div>
-            <p class="mt-2 text-gray-500">加载中...</p>
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500 mx-auto"></div>
+            <p class="mt-2 text-xs text-slate-400">加载中...</p>
           </div>
-          <div v-else-if="stats.recentActivity.length > 0" class="px-4 py-5 sm:p-6">
-            <ul class="divide-y divide-gray-200">
-              <li v-for="log in stats.recentActivity" :key="log.id" class="py-4">
-                <div class="flex items-center space-x-4">
-                  <div class="flex-shrink-0">
-                    <div
-                      :class="[
-                        'w-8 h-8 rounded-full flex items-center justify-center',
-                        log.status === 'success'
-                          ? 'bg-green-100'
-                          : log.status === 'error'
-                            ? 'bg-red-100'
-                            : 'bg-yellow-100',
-                      ]"
-                    >
-                      <svg
-                        class="w-5 h-5"
-                        :class="[
-                          log.status === 'success'
-                            ? 'text-green-600'
-                            : log.status === 'error'
-                              ? 'text-red-600'
-                              : 'text-yellow-600',
-                        ]"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          :d="
-                            log.status === 'success'
-                              ? 'M5 13l4 4L19 7'
-                              : log.status === 'error'
-                                ? 'M6 18L18 6M6 6l12 12'
-                                : 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 3.035-1.666 3.035-3.657 0 1.337-.645 3.228-2.42 3.228-3.657z'
-                          "
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <p class="text-sm font-medium text-gray-900">
-                      {{ getActionText(log.action) }} - {{ getResourceText(log.resource) }}
-                    </p>
-                    <p class="text-sm text-gray-500">{{ formatDate(log.createdAt) }}</p>
-                    <p v-if="log.description" class="text-sm text-gray-600 mt-1">
-                      {{ log.description }}
-                    </p>
-                    <p
-                      v-if="log.status === 'error' && log.errorMessage"
-                      class="text-sm text-red-600 mt-1"
-                    >
-                      {{ log.errorMessage }}
-                    </p>
-                  </div>
+          <div v-else-if="stats.recentActivity.length > 0" class="divide-y divide-white/[0.06]">
+            <div v-for="log in stats.recentActivity" :key="log.id" class="px-4 py-3">
+              <div class="flex items-start gap-3">
+                <div
+                  class="mt-0.5 h-2 w-2 rounded-full flex-shrink-0"
+                  :class="
+                    log.status === 'success'
+                      ? 'bg-emerald-400'
+                      : log.status === 'error'
+                        ? 'bg-rose-400'
+                        : 'bg-amber-400'
+                  "
+                ></div>
+                <div class="min-w-0 flex-1">
+                  <p class="text-sm text-slate-200">
+                    {{ getActionText(log.action) }} - {{ getResourceText(log.resource) }}
+                  </p>
+                  <p class="text-xs text-slate-500">{{ formatDate(log.createdAt) }}</p>
+                  <p v-if="log.description" class="mt-1 text-xs text-slate-400">
+                    {{ log.description }}
+                  </p>
                 </div>
-              </li>
-            </ul>
+              </div>
+            </div>
           </div>
-          <div v-else class="px-4 py-5 sm:p-6 text-center">
-            <p class="text-gray-500">暂无管理活动记录</p>
+          <div v-else class="px-4 py-8 text-center">
+            <p class="text-sm text-slate-500">暂无管理活动记录</p>
           </div>
         </div>
       </div>
 
       <!-- 系统健康状态 -->
-      <div class="bg-white shadow rounded-lg">
-        <div class="px-4 py-5 sm:px-6">
-          <h3 class="text-lg leading-6 font-medium text-gray-900">系统状态</h3>
+      <div class="rounded-xl border border-white/[0.06] bg-white/[0.03]">
+        <div class="px-4 py-3 border-b border-white/[0.06]">
+          <h3 class="text-sm font-medium text-slate-200">系统状态</h3>
         </div>
-        <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
+        <div class="p-4">
           <div v-if="healthLoading" class="text-center py-8">
-            <div
-              class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"
-            ></div>
-            <p class="mt-2 text-gray-500">检测中...</p>
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500 mx-auto"></div>
+            <p class="mt-2 text-xs text-slate-400">检测中...</p>
           </div>
-          <div v-else-if="health" class="space-y-4">
+          <div v-else-if="health" class="space-y-3">
             <div class="flex items-center justify-between">
-              <span class="text-sm font-medium text-gray-900">服务状态</span>
+              <span class="text-sm text-slate-400">服务状态</span>
               <span
                 :class="[
-                  'px-2 inline-flex text-xs leading-5 font-semibold rounded-full',
+                  'rounded-full px-2 py-0.5 text-xs font-medium',
                   health.status === 'ok'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800',
+                    ? 'bg-emerald-500/15 text-emerald-400'
+                    : 'bg-rose-500/15 text-rose-400',
                 ]"
               >
                 {{ health.status === 'ok' ? '正常' : '异常' }}
               </span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-sm font-medium text-gray-900">运行时间</span>
-              <span class="text-sm text-gray-600">{{ formatUptime(health.uptime) }}</span>
+              <span class="text-sm text-slate-400">运行时间</span>
+              <span class="text-sm text-slate-200">{{ formatUptime(health.uptime) }}</span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-sm font-medium text-gray-900">内存使用</span>
-              <span class="text-sm text-gray-600">{{ formatMemory(health.memory) }}</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm font-medium text-gray-900">检查时间</span>
-              <span class="text-sm text-gray-600">{{ formatDateTime(health.timestamp) }}</span>
+              <span class="text-sm text-slate-400">内存使用</span>
+              <span class="text-sm text-slate-200">{{ formatMemory(health.memory) }}</span>
             </div>
             <div
               v-if="danmakuHealth"
-              class="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3"
+              class="mt-3 rounded-lg border border-indigo-500/20 bg-indigo-500/5 p-3"
             >
-              <div class="text-xs font-medium uppercase tracking-wide text-indigo-500">
-                弹幕运行态
-              </div>
-              <div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div class="text-xs font-medium text-indigo-400">弹幕运行态</div>
+              <div class="mt-2 grid grid-cols-3 gap-2">
                 <div>
                   <div class="text-xs text-slate-500">活跃房间</div>
-                  <div class="mt-1 text-lg font-semibold text-slate-900">
+                  <div class="text-sm font-semibold text-slate-200">
                     {{ danmakuHealth.performance.activeRooms }}
                   </div>
                 </div>
                 <div>
                   <div class="text-xs text-slate-500">在线连接</div>
-                  <div class="mt-1 text-lg font-semibold text-slate-900">
+                  <div class="text-sm font-semibold text-slate-200">
                     {{ danmakuHealth.performance.activeConnections }}
                   </div>
                 </div>
                 <div>
-                  <div class="text-xs text-slate-500">房间消息</div>
-                  <div class="mt-1 text-lg font-semibold text-slate-900">
+                  <div class="text-xs text-slate-500">消息数</div>
+                  <div class="text-sm font-semibold text-slate-200">
                     {{ danmakuHealth.performance.totalMessages }}
                   </div>
                 </div>
               </div>
-              <div class="mt-3 text-xs text-slate-600">
-                {{ danmakuHealth.message }}
-              </div>
-              <router-link
-                to="/admin/danmaku"
-                class="mt-3 inline-flex rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
-              >
-                打开弹幕管理
-              </router-link>
             </div>
           </div>
-          <div v-else class="text-center">
-            <p class="text-red-600">无法获取系统状态</p>
+          <div v-else class="text-center py-8">
+            <p class="text-sm text-rose-400">无法获取系统状态</p>
           </div>
         </div>
       </div>
@@ -1051,6 +878,7 @@
     type DailySourceCollectionRunRecord,
     type DailySourceCollectionRunSummary,
   } from '@/api/scheduler';
+  import { log } from '@/utils/logger';
   import {
     buildAttentionSourceItem,
     compareAttentionSources,
@@ -1081,6 +909,13 @@
       heapTotal: number;
     };
   }
+
+  const statCards = computed(() => [
+    { label: '用户总数', value: stats.value.userCount, icon: '👥', iconBg: 'bg-blue-500/15 text-blue-400' },
+    { label: '媒体资源', value: stats.value.mediaCount, icon: '🎬', iconBg: 'bg-emerald-500/15 text-emerald-400' },
+    { label: '播放源', value: stats.value.playSourceCount, icon: '🔗', iconBg: 'bg-purple-500/15 text-purple-400' },
+    { label: '观看历史', value: stats.value.watchHistoryCount, icon: '🕘', iconBg: 'bg-amber-500/15 text-amber-400' },
+  ]);
 
   // 状态管理
   const stats = ref({
@@ -1174,7 +1009,7 @@
     try {
       stats.value = await adminApi.getStats();
     } catch (error) {
-      console.error('加载统计数据失败:', error);
+      log.error('AdminDashboard', '加载统计数据失败:', error);
     } finally {
       loading.value = false;
     }
@@ -1191,7 +1026,7 @@
       health.value = systemHealth;
       danmakuHealth.value = nextDanmakuHealth;
     } catch (error) {
-      console.error('加载系统状态失败:', error);
+      log.error('AdminDashboard', '加载系统状态失败:', error);
       health.value = null;
       danmakuHealth.value = null;
     } finally {
@@ -1211,7 +1046,7 @@
         collectionError.value = '当前暂无真实采集统计结果。';
       }
     } catch (error) {
-      console.error('加载稳定源采集监控失败:', error);
+      log.error('AdminDashboard', '加载稳定源采集监控失败:', error);
       collectionError.value = collectionStatistics.value
         ? '统计刷新失败，当前显示最近一次成功结果。'
         : '加载真实采集统计失败，请稍后重试。';
@@ -1227,7 +1062,7 @@
     try {
       dailySummary.value = await schedulerApi.getDailySourceCollectionSummary();
     } catch (error) {
-      console.error('加载每日采集任务状态失败:', error);
+      log.error('AdminDashboard', '加载每日采集任务状态失败:', error);
       dailySummaryError.value = dailySummary.value
         ? '任务状态刷新失败，当前显示最近一次成功结果。'
         : '加载每日采集任务状态失败，请稍后重试。';
@@ -1254,7 +1089,7 @@
         taskDashboard.value = null;
       }
     } catch (error) {
-      console.error('加载任务结果看板失败:', error);
+      log.error('AdminDashboard', '加载任务结果看板失败:', error);
       taskDashboardError.value = taskDashboard.value
         ? '任务看板刷新失败，当前保留最近一次成功结果。'
         : '加载任务看板失败，请稍后重试。';
@@ -1276,7 +1111,7 @@
       dailySummary.value = await schedulerApi.runDailySourceCollection();
       await loadTaskDashboard();
     } catch (error) {
-      console.error('手动触发每日采集任务失败:', error);
+      log.error('AdminDashboard', '手动触发每日采集任务失败:', error);
       taskDashboardError.value =
         error instanceof Error ? error.message : '手动触发每日采集任务失败，请稍后重试。';
     } finally {
@@ -1451,7 +1286,7 @@
 
   const buildCrawlerAlertLink = (alertFilter: CrawlerAlertFilter) => {
     return {
-      name: 'crawler',
+      name: 'admin-crawler',
       query: {
         alertFilter,
       },
@@ -1502,7 +1337,7 @@
 
   const buildCrawlerSourceLink = (sourceName: string, focus: 'top' | 'attention') => {
     return {
-      name: 'crawler',
+      name: 'admin-crawler',
       query: {
         source: sourceName,
         focus,

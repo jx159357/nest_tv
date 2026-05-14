@@ -1,4 +1,5 @@
 import type { Router } from 'vue-router';
+import { log } from '@/utils/logger';
 
 export interface RouteMeta {
   title?: string;
@@ -94,7 +95,7 @@ export class PreloadService {
         setTimeout(() => this.doPreload(route), 100);
       }
     } catch (error) {
-      console.warn(`预加载路由 ${routeName} 失败:`, error);
+      log.warn('PreloadService', `预加载路由 ${routeName} 失败:`, error);
       this.preloadQueue.delete(routeName);
     }
   }
@@ -119,7 +120,7 @@ export class PreloadService {
         }),
       );
     } catch (error) {
-      console.warn('路由预加载失败:', error);
+      log.warn('PreloadService', '路由预加载失败:', error);
     }
   }
 

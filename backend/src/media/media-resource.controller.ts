@@ -22,6 +22,7 @@ import {
 } from '@nestjs/swagger';
 import { MediaResourceService } from './media-resource.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Public } from '../auth/public.decorator';
 import { RateLimitGuard, RateLimit } from '../common/guards/rate-limit.guard';
 import { GetCurrentUserId } from '../decorators/current-user.decorator';
 import { CreateMediaResourceDto } from './dtos/create-media-resource.dto';
@@ -43,6 +44,7 @@ export class MediaResourceController {
    * 获取影视资源列表（支持筛选和分页）
    */
   @Get()
+  @Public()
   @ApiOperation({
     summary: '获取影视资源列表',
     description: '支持分页、搜索、分类筛选、评分范围、日期范围等多种筛选条件的影视资源列表查询',
@@ -144,6 +146,7 @@ export class MediaResourceController {
    * 搜索影视资源
    */
   @Get('search')
+  @Public()
   @ApiOperation({ summary: '搜索影视资源' })
   @ApiResponse({ status: 200, description: '搜索成功' })
   @ApiQuery({ name: 'keyword', description: '搜索关键词' })
@@ -165,6 +168,7 @@ export class MediaResourceController {
    * 获取热门影视
    */
   @Get('popular')
+  @Public()
   @ApiOperation({ summary: '获取热门影视' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiQuery({ name: 'limit', description: '限制数量', required: false })
@@ -181,6 +185,7 @@ export class MediaResourceController {
    * 获取最新影视
    */
   @Get('latest')
+  @Public()
   @ApiOperation({ summary: '获取最新影视' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiQuery({ name: 'limit', description: '限制数量', required: false })
@@ -192,6 +197,7 @@ export class MediaResourceController {
    * 获取影视统计信息
    */
   @Get('statistics')
+  @Public()
   @ApiOperation({ summary: '获取影视统计信息' })
   @ApiResponse({ status: 200, description: '获取成功' })
   async getStatistics() {
@@ -253,6 +259,7 @@ export class MediaResourceController {
    * 根据ID获取影视资源
    */
   @Get(':id')
+  @Public()
   @ApiOperation({
     summary: '根据ID获取影视资源',
     description: '通过ID获取单个影视资源的详细信息，包括推荐和相关播放源',
@@ -512,6 +519,7 @@ export class MediaResourceController {
    * 获取相似影视
    */
   @Get(':id/similar')
+  @Public()
   @ApiOperation({ summary: '获取相似影视' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 404, description: '影视资源不存在' })
@@ -525,6 +533,7 @@ export class MediaResourceController {
    * 增加观看次数
    */
   @Put(':id/views')
+  @Public()
   @ApiOperation({ summary: '增加观看次数' })
   @ApiResponse({ status: 200, description: '增加成功' })
   @ApiResponse({ status: 404, description: '影视资源不存在' })

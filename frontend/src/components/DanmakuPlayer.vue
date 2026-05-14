@@ -162,6 +162,34 @@
           </div>
         </div>
 
+        <!-- 自定义过滤规则 -->
+        <div class="setting-group">
+          <h4 class="setting-group-title">自定义过滤</h4>
+          <div class="custom-filter-input">
+            <input
+              v-model="newFilterKeyword"
+              type="text"
+              placeholder="输入关键词或正则表达式"
+              class="filter-input"
+              @keyup.enter="addFilterKeyword"
+            />
+            <button class="filter-add-btn" @click="addFilterKeyword">添加</button>
+          </div>
+          <div v-if="customFilterKeywords.length > 0" class="filter-keyword-list">
+            <span
+              v-for="(kw, idx) in customFilterKeywords"
+              :key="idx"
+              class="filter-keyword-tag"
+            >
+              {{ kw }}
+              <button class="tag-remove" @click="removeFilterKeyword(idx)">&times;</button>
+            </span>
+          </div>
+          <p v-if="customFilterKeywords.length > 0" class="filter-count">
+            已过滤 {{ filteredCount }} 条弹幕
+          </p>
+        </div>
+
         <!-- 房间信息 -->
         <div v-if="roomInfo" class="room-info">
           <p>在线用户: {{ roomInfo.onlineCount }}</p>
@@ -249,12 +277,12 @@
 
   // 弹幕列表管理
   const danmakuList = ref<DanmakuMessage[]>([]);
-  const visibleDanmaku = computed(() => {
+
+  const getFilteredDanmaku = () => {
     if (!settings.enabled) return [];
 
     let filtered = danmakuList.value;
 
-    // 应用类型过滤
     if (!settings.display.scroll) {
       filtered = filtered.filter(d => d.type !== 'scroll');
     }
@@ -265,7 +293,6 @@
       filtered = filtered.filter(d => d.type !== 'bottom');
     }
 
-    // 应用内容过滤
     if (settings.filter.profanity) {
       filtered = filtered.filter(d => !d.filters?.containsSensitive);
     }
@@ -273,7 +300,15 @@
       filtered = filtered.filter(d => !d.filters?.containsSpam);
     }
 
-    // 限制显示数量
+    if (customFilterKeywords.value.length > 0) {
+      filtered = filtered.filter(d => !matchesCustomFilter(d.text));
+    }
+
+    return filtered;
+  };
+
+  const visibleDanmaku = computed(() => {
+    const filtered = getFilteredDanmaku();
     return filtered.slice(-props.maxDanmakuCount);
   });
 
@@ -302,6 +337,77 @@
     ...initialDefaultSettings,
     ...props.defaultSettings,
   });
+
+  // 自定义过滤关键词
+  const newFilterKeyword = ref('');
+  const customFilterKeywords = ref<string[]>([]);
+  const filteredCount = computed(() => {
+    const all = getFilteredDanmaku();
+    const visible = visibleDanmaku.value;
+    return all.length - visible.length;
+  });
+
+  const SESSION_KEY = `danmaku_filters_${props.videoId}`;
+
+  const loadSessionFilters = () => {
+    try {
+      const saved = sessionStorage.getItem(SESSION_KEY);
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (data.keywords) customFilterKeywords.value = data.keywords;
+        if (data.settings) {
+          Object.assign(settings.filter, data.settings.filter || {});
+          Object.assign(settings.display, data.settings.display || {});
+          settings.opacity = data.settings.opacity ?? settings.opacity;
+          settings.fontSize = data.settings.fontSize ?? settings.fontSize;
+          settings.speed = data.settings.speed ?? settings.speed;
+        }
+      }
+    } catch {}
+  };
+
+  const saveSessionFilters = () => {
+    try {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+        keywords: customFilterKeywords.value,
+        settings: {
+          filter: { ...settings.filter },
+          display: { ...settings.display },
+          opacity: settings.opacity,
+          fontSize: settings.fontSize,
+          speed: settings.speed,
+        },
+      }));
+    } catch {}
+  };
+
+  const addFilterKeyword = () => {
+    const kw = newFilterKeyword.value.trim();
+    if (!kw || customFilterKeywords.value.includes(kw)) return;
+    customFilterKeywords.value.push(kw);
+    newFilterKeyword.value = '';
+    saveSessionFilters();
+  };
+
+  const removeFilterKeyword = (idx: number) => {
+    customFilterKeywords.value.splice(idx, 1);
+    saveSessionFilters();
+  };
+
+  const matchesCustomFilter = (text: string): boolean => {
+    if (customFilterKeywords.value.length === 0) return false;
+    return customFilterKeywords.value.some(kw => {
+      try {
+        return new RegExp(kw, 'i').test(text);
+      } catch {
+        return text.toLowerCase().includes(kw.toLowerCase());
+      }
+    });
+  };
+
+  watch(() => [settings.filter, settings.display, settings.opacity, settings.fontSize, settings.speed], () => {
+    saveSessionFilters();
+  }, { deep: true });
 
   // 用户认证
   const authStore = useAuthStore();
@@ -357,6 +463,7 @@
 
   // 事件监听设置
   onMounted(() => {
+    loadSessionFilters();
     setupEventListeners();
 
     if (userId.value && props.videoId) {
@@ -749,17 +856,19 @@
 
   .danmaku-controls {
     position: absolute;
-    bottom: 10px;
+    bottom: 60px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     align-items: center;
     gap: 10px;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.9);
     padding: 10px 15px;
     border-radius: 25px;
-    z-index: 100;
+    z-index: 9999;
     pointer-events: all;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   .danmaku-input-container {
@@ -865,7 +974,7 @@
     max-width: 500px;
     max-height: 80vh;
     overflow-y: auto;
-    z-index: 1000;
+    z-index: 10000;
     backdrop-filter: blur(10px);
     color: white;
   }
@@ -936,6 +1045,87 @@
     accent-color: #667eea;
   }
 
+  .setting-group-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+
+  .custom-filter-input {
+    display: flex;
+    gap: 8px;
+  }
+
+  .filter-input {
+    flex: 1;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #e2e8f0;
+    font-size: 13px;
+    outline: none;
+  }
+
+  .filter-input:focus {
+    border-color: #6366f1;
+  }
+
+  .filter-add-btn {
+    padding: 8px 16px;
+    background: #6366f1;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .filter-add-btn:hover {
+    background: #5558e6;
+  }
+
+  .filter-keyword-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .filter-keyword-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 20px;
+    font-size: 12px;
+    color: #fca5a5;
+  }
+
+  .tag-remove {
+    background: none;
+    border: none;
+    color: #fca5a5;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0 2px;
+  }
+
+  .tag-remove:hover {
+    color: #ef4444;
+  }
+
+  .filter-count {
+    font-size: 12px;
+    color: #64748b;
+  }
+
   .room-info {
     background: rgba(102, 126, 234, 0.1);
     border: 1px solid rgba(102, 126, 234, 0.3);
@@ -989,6 +1179,7 @@
       flex-direction: column;
       gap: 8px;
       padding: 8px 12px;
+      bottom: 50px;
     }
 
     .danmaku-input-container {
@@ -998,11 +1189,19 @@
 
     .danmaku-input {
       width: 150px;
+      padding: 6px 10px;
+      font-size: 12px;
     }
 
     .danmaku-settings-panel {
       min-width: 300px;
       max-width: 90vw;
+    }
+  }
+
+  @media (min-width: 1400px) {
+    .danmaku-controls {
+      bottom: 80px;
     }
   }
 

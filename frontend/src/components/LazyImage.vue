@@ -27,6 +27,7 @@
 
 <script setup lang="ts">
   import { ref, computed, onMounted, onUnmounted, watch, nextTick, type CSSProperties } from 'vue';
+  import { log } from '@/utils/logger';
 
   interface Props {
     src: string;
@@ -155,7 +156,7 @@
   };
 
   const handleError = (event: Event) => {
-    console.error('图片加载失败:', props.src, event);
+    log.error('LazyImage', '图片加载失败:', props.src, event);
 
     if (currentRetryCount.value < props.retryCount) {
       currentRetryCount.value++;

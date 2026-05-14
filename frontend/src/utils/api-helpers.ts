@@ -1,5 +1,6 @@
 import type { AxiosResponse, AxiosError } from 'axios';
 import type { ApiResponse } from '@/types/api';
+import { log } from '@/utils/logger';
 
 // 重新定义 ApiError 接口以兼容使用方式
 interface ApiError {
@@ -44,7 +45,7 @@ export class ApiErrorHandler {
     if (error.response && error.response.status === 401) {
       // 调试信息
       if (process.env.NODE_ENV === 'development') {
-        console.warn('Authentication failed, clearing token and redirecting to login');
+        log.warn('ApiHelpers', 'Authentication failed, clearing token and redirecting to login');
       }
 
       // 未授权，清除本地存储并重定向到登录页
@@ -100,7 +101,7 @@ export class RequestInterceptor {
 
         // 调试信息，生产环境可删除
         if (process.env.NODE_ENV === 'development') {
-          console.error('API Error:', {
+          log.error('ApiHelpers', 'API Error:', {
             url: error.config?.url,
             method: error.config?.method,
             status: error.response?.status,

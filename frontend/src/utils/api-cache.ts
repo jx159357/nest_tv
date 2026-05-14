@@ -307,6 +307,128 @@ class APICacheManager {
 export const apiCacheManager = new APICacheManager();
 
 /**
+ * 混合缓存管理器 - 内存 + localStorage + 请求去重
+ */
+export class HybridCacheManager {
+  private memoryCache = new Map<string, { data: unknown; timestamp: number; ttl: number }>();
+  private pendingRequests = new Map<string, Promise<unknown>>();
+  private storagePrefix = 'nest_tv_cache_';
+  private maxMemoryItems = 200;
+  private maxStorageItems = 500;
+
+  constructor(private username?: string) {}
+
+  private getStorageKey(key: string): string {
+    const prefix = this.username ? `${this.storagePrefix}${this.username}_` : this.storagePrefix;
+    return `${prefix}${key}`;
+  }
+
+  get<T>(key: string): T | null {
+    const mem = this.memoryCache.get(key);
+    if (mem && Date.now() - mem.timestamp < mem.ttl) return mem.data as T;
+
+    try {
+      const raw = localStorage.getItem(this.getStorageKey(key));
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Date.now() - parsed.timestamp < parsed.ttl) {
+          this.memoryCache.set(key, parsed);
+          return parsed.data as T;
+        }
+        localStorage.removeItem(this.getStorageKey(key));
+      }
+    } catch {}
+
+    return null;
+  }
+
+  set<T>(key: string, data: T, ttl = 300000): void {
+    const entry = { data, timestamp: Date.now(), ttl };
+    this.memoryCache.set(key, entry);
+
+    if (this.memoryCache.size > this.maxMemoryItems) {
+      const oldest = this.memoryCache.keys().next().value;
+      if (oldest) this.memoryCache.delete(oldest);
+    }
+
+    try {
+      localStorage.setItem(this.getStorageKey(key), JSON.stringify(entry));
+      this.pruneStorage();
+    } catch {
+      this.pruneStorage();
+    }
+  }
+
+  delete(key: string): void {
+    this.memoryCache.delete(key);
+    localStorage.removeItem(this.getStorageKey(key));
+  }
+
+  clear(): void {
+    this.memoryCache.clear();
+    const prefix = this.getStorageKey('');
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k?.startsWith(prefix)) keysToRemove.push(k);
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+  }
+
+  private pruneStorage(): void {
+    const prefix = this.getStorageKey('');
+    const items: { key: string; timestamp: number }[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k?.startsWith(prefix)) {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(k) || '{}');
+          items.push({ key: k, timestamp: parsed.timestamp || 0 });
+        } catch {}
+      }
+    }
+    if (items.length > this.maxStorageItems) {
+      items.sort((a, b) => a.timestamp - b.timestamp);
+      const toRemove = items.slice(0, items.length - this.maxStorageItems);
+      toRemove.forEach(item => localStorage.removeItem(item.key));
+    }
+  }
+
+  async dedup<T>(key: string, fetcher: () => Promise<T>, ttl = 300000): Promise<T> {
+    const cached = this.get<T>(key);
+    if (cached) return cached;
+
+    if (this.pendingRequests.has(key)) {
+      return this.pendingRequests.get(key) as Promise<T>;
+    }
+
+    const promise = fetcher().then(data => {
+      this.set(key, data, ttl);
+      this.pendingRequests.delete(key);
+      return data;
+    }).catch(err => {
+      this.pendingRequests.delete(key);
+      throw err;
+    });
+
+    this.pendingRequests.set(key, promise);
+    return promise;
+  }
+
+  update<T>(key: string, updater: (prev: T | null) => T): void {
+    const prev = this.get<T>(key);
+    const next = updater(prev);
+    this.set(key, next);
+  }
+
+  setUser(username: string | undefined): void {
+    this.username = username;
+  }
+}
+
+export const hybridCache = new HybridCacheManager();
+
+/**
  * 为axios实例添加缓存拦截器
  */
 export const setupCacheInterceptors = (instance: AxiosInstance): void => {

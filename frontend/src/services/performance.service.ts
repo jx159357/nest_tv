@@ -2,6 +2,8 @@
  * 性能监控和优化服务
  */
 
+import { log } from '@/utils/logger';
+
 const DEV = import.meta.env.DEV;
 
 // 性能指标类型定义
@@ -132,7 +134,7 @@ export class PerformanceService {
   private init() {
     if (typeof window === 'undefined' || !('performance' in window)) {
       if (DEV) {
-        console.warn('Performance API not supported');
+        log.warn('Performance', 'Performance API not supported');
       }
       return;
     }
@@ -147,7 +149,7 @@ export class PerformanceService {
   private setupObservers() {
     if (!('PerformanceObserver' in window)) {
       if (DEV) {
-        console.warn('PerformanceObserver not supported');
+        log.warn('Performance', 'PerformanceObserver not supported');
       }
       return;
     }
@@ -165,7 +167,7 @@ export class PerformanceService {
       this.observers.push(lcpObserver);
     } catch (e) {
       if (DEV) {
-        console.warn('Failed to observe LCP:', e);
+        log.warn('Performance', 'Failed to observe LCP:', e);
       }
     }
 
@@ -186,7 +188,7 @@ export class PerformanceService {
       this.observers.push(clsObserver);
     } catch (e) {
       if (DEV) {
-        console.warn('Failed to observe CLS:', e);
+        log.warn('Performance', 'Failed to observe CLS:', e);
       }
     }
 
@@ -205,7 +207,7 @@ export class PerformanceService {
       this.observers.push(fidObserver);
     } catch (e) {
       if (DEV) {
-        console.warn('Failed to observe FID:', e);
+        log.warn('Performance', 'Failed to observe FID:', e);
       }
     }
 
@@ -220,7 +222,7 @@ export class PerformanceService {
       this.observers.push(resourceObserver);
     } catch (e) {
       if (DEV) {
-        console.warn('Failed to observe resources:', e);
+        log.warn('Performance', 'Failed to observe resources:', e);
       }
     }
   }
@@ -394,7 +396,7 @@ export class PerformanceService {
       // 内存警告
       if (this.metrics && this.metrics.memory.percentage > 90) {
         if (DEV) {
-          console.warn('Memory usage high:', this.metrics.memory.percentage.toFixed(2) + '%');
+          log.warn('Performance', 'Memory usage high:', this.metrics.memory.percentage.toFixed(2) + '%');
         }
         this.optimizeMemory();
       }
@@ -441,7 +443,7 @@ export class PerformanceService {
 
     if (warnings.length > 0) {
       if (DEV) {
-        console.warn('Performance warnings:', warnings);
+        log.warn('Performance', 'Performance warnings:', warnings);
       }
       this.reportWarnings(warnings);
     }
@@ -451,7 +453,7 @@ export class PerformanceService {
   private reportWarnings(warnings: string[]) {
     if (typeof console.warn === 'function') {
       if (DEV) {
-        console.warn('Performance issues detected:', warnings.join(', '));
+        log.warn('Performance', 'Performance issues detected:', warnings.join(', '));
       }
     }
 
@@ -524,14 +526,10 @@ export class PerformanceService {
       navigator.serviceWorker
         .register('/sw.js')
         .then(registration => {
-          if (DEV) {
-            console.log('Service Worker registered:', registration);
-          }
+          log.info('Performance', 'Service Worker registered:', registration);
         })
         .catch(error => {
-          if (DEV) {
-            console.warn('Service Worker registration failed:', error);
-          }
+          log.warn('Performance', 'Service Worker registration failed:', error);
         });
     }
   }
@@ -579,7 +577,7 @@ export class PerformanceService {
       });
     } catch (error) {
       if (DEV) {
-        console.warn('Failed to send performance metrics:', error);
+        log.warn('Performance', 'Failed to send performance metrics:', error);
       }
     }
   }

@@ -2,6 +2,7 @@ import { ref, onUnmounted, onMounted } from 'vue';
 import io from 'socket.io-client';
 type Socket = any;
 import { useAuthStore } from '@/stores/auth';
+import { log } from '@/utils/logger';
 import type {
   DanmakuMessage,
   RoomInfo,
@@ -72,7 +73,7 @@ export class DanmakuWebSocketService {
 
       this.setupEventHandlers();
     } catch (error) {
-      console.error('❌ WebSocket连接失败:', error);
+      log.error('DanmakuWS', 'WebSocket连接失败:', error);
       this.handleConnectionError(error);
     }
   }
@@ -83,9 +84,7 @@ export class DanmakuWebSocketService {
 
     // 连接成功
     this.socket.on('connect', () => {
-      if (DEV) {
-        console.log('[DanmakuWS] connected');
-      }
+      log.debug('DanmakuWS', 'connected');
       this.isConnected.value = true;
       this.reconnectAttempts = 0;
 
@@ -107,9 +106,7 @@ export class DanmakuWebSocketService {
 
     // 连接断开
     this.socket.on('disconnect', reason => {
-      if (DEV) {
-        console.log('[DanmakuWS] disconnected:', reason);
-      }
+      log.debug('DanmakuWS', 'disconnected:', reason);
       this.isConnected.value = false;
       this.stopHeartbeat();
       this.emit('disconnected', reason);
@@ -122,13 +119,18 @@ export class DanmakuWebSocketService {
 
     // 连接错误
     this.socket.on('connect_error', error => {
-      console.error('❌ WebSocket连接错误:', error);
+      log.error('DanmakuWS', 'WebSocket连接错误:', error);
       this.handleConnectionError(error);
     });
 
     // 接收弹幕消息
     this.socket.on('danmaku-message', (message: DanmakuMessage) => {
-      this.emit('message', message);
+      this.emit('danmaku-message', message);
+    });
+
+    // 接收系统消息
+    this.socket.on('system-message', (message: DanmakuMessage) => {
+      this.emit('system-message', message);
     });
 
     // 接收房间信息
@@ -138,12 +140,12 @@ export class DanmakuWebSocketService {
 
     // 心跳响应
     this.socket.on('heartbeat-response', (response: HeartbeatResponse) => {
-      this.emit('heartbeat', response);
+      this.emit('heartbeat-response', response);
     });
 
     // 错误消息
     this.socket.on('error', error => {
-      console.error('❌ WebSocket错误:', error);
+      log.error('DanmakuWS', 'WebSocket错误:', error);
       this.emit('error', error);
     });
   }
@@ -201,19 +203,13 @@ export class DanmakuWebSocketService {
   // 重连处理
   private handleReconnect() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      if (DEV) {
-        console.warn('[DanmakuWS] reached max reconnect attempts');
-      }
+      log.warn('DanmakuWS', 'reached max reconnect attempts');
       this.emit('reconnect-failed');
       return;
     }
 
     this.reconnectAttempts++;
-    if (DEV) {
-      console.log(
-        `[DanmakuWS] reconnecting (${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
-      );
-    }
+    log.debug('DanmakuWS', `reconnecting (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
 
     this.reconnectInterval = window.setTimeout(() => {
       if (this.roomId.value && this.userId.value) {
@@ -280,7 +276,7 @@ export class DanmakuWebSocketService {
         try {
           callback(...args);
         } catch (error) {
-          console.error('❌ 事件回调执行错误:', error);
+          log.error('DanmakuWS', '事件回调执行错误:', error);
         }
       });
     }

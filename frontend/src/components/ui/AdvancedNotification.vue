@@ -66,6 +66,7 @@
 <script setup lang="ts">
   import { ref, computed, watch, onMounted, onUnmounted, type Component } from 'vue';
   import { useI18n } from 'vue-i18n';
+  import { log } from '@/utils/logger';
 
   interface Props {
     id?: string;
@@ -169,7 +170,7 @@
         await props.action.onClick();
         emit('action');
       } catch (error) {
-        console.error('Notification action error:', error);
+        log.error('AdvancedNotification', 'Notification action error:', error);
       }
     }
   };

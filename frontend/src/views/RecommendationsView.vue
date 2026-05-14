@@ -1,6 +1,5 @@
 <template>
-  <div class="bg-gray-50">
-    <div class="container mx-auto px-4 py-8">
+  <div class="page-container">
       <header class="mb-8">
         <h1 class="mb-4 text-3xl font-bold text-gray-900">推荐中心</h1>
         <p class="text-gray-600">
@@ -345,7 +344,6 @@
           <MediaCard v-for="item in latest" :key="item.id" :media="item" @click="openMediaDetail" />
         </div>
       </section>
-    </div>
   </div>
 </template>
 
@@ -361,6 +359,7 @@
   } from '@/api/recommendations';
   import MediaCard from '@/components/MediaCard.vue';
   import type { MediaResource } from '@/types/media';
+  import { log } from '@/utils/logger';
 
   const route = useRoute();
   const router = useRouter();
@@ -444,7 +443,7 @@
     try {
       relatedKeywords.value = await searchApi.getRelatedKeywords(keyword, 6);
     } catch (error: unknown) {
-      console.error('加载相关搜索建议失败:', error);
+      log.error('Recommendations', '加载相关搜索建议失败:', error);
       relatedKeywords.value = [];
     }
   };
@@ -467,7 +466,7 @@
         relatedKeywords.value = [];
       }
     } catch (error: unknown) {
-      console.error('加载搜索历史失败:', error);
+      log.error('Recommendations', '加载搜索历史失败:', error);
       searchHistory.value = [];
       relatedKeywords.value = [];
       searchHistoryError.value = getErrorMessage(error, '加载搜索历史失败');
@@ -489,7 +488,7 @@
       searchHistory.value = [];
       relatedKeywords.value = [];
     } catch (error: unknown) {
-      console.error('清空搜索历史失败:', error);
+      log.error('Recommendations', '清空搜索历史失败:', error);
       searchHistoryError.value = getErrorMessage(error, '清空搜索历史失败');
     } finally {
       searchHistoryLoading.value = false;
@@ -502,7 +501,7 @@
     try {
       personalizedItems.value = await recommendationsApi.getPersonalizedDetailed(8);
     } catch (error: unknown) {
-      console.error('加载个性化推荐失败:', error);
+      log.error('Recommendations', '加载个性化推荐失败:', error);
       personalizedItems.value = [];
       personalizedError.value = getErrorMessage(error, '加载个性化推荐失败');
     } finally {
@@ -521,7 +520,7 @@
     try {
       profile.value = await recommendationsApi.getProfile();
     } catch (error: unknown) {
-      console.error('加载推荐画像失败:', error);
+      log.error('Recommendations', '加载推荐画像失败:', error);
       profile.value = null;
       profileError.value = getErrorMessage(error, '加载推荐画像失败');
     } finally {
@@ -535,7 +534,7 @@
     try {
       popular.value = await recommendationsApi.getTrending(8);
     } catch (error: unknown) {
-      console.error('加载热门推荐失败:', error);
+      log.error('Recommendations', '加载热门推荐失败:', error);
       popularError.value = getErrorMessage(error, '加载热门推荐失败');
     } finally {
       popularLoading.value = false;
@@ -548,7 +547,7 @@
     try {
       editorial.value = await recommendationsApi.getTopRated(8);
     } catch (error: unknown) {
-      console.error('加载高分推荐失败:', error);
+      log.error('Recommendations', '加载高分推荐失败:', error);
       editorialError.value = getErrorMessage(error, '加载高分推荐失败');
     } finally {
       editorialLoading.value = false;
@@ -561,7 +560,7 @@
     try {
       latest.value = await recommendationsApi.getLatest(8);
     } catch (error: unknown) {
-      console.error('加载最新推荐失败:', error);
+      log.error('Recommendations', '加载最新推荐失败:', error);
       latestError.value = getErrorMessage(error, '加载最新推荐失败');
     } finally {
       latestLoading.value = false;

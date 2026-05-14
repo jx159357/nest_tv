@@ -144,6 +144,7 @@
   import { adminApi } from '@/api/admin';
   import type { AdminWatchHistoryItem } from '@/api/admin';
   import type { User } from '@/types/user';
+  import { log } from '@/utils/logger';
 
   const route = useRoute();
   const router = useRouter();
@@ -196,7 +197,7 @@
       const response = await adminApi.getUsers({ page: 1, limit: 100 });
       users.value = response.data;
     } catch (err) {
-      console.error('加载用户列表失败:', err);
+      log.error('AdminWatchHistory', '加载用户列表失败:', err);
     }
   };
 

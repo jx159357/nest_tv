@@ -1,50 +1,47 @@
 <template>
-  <div class="fixed top-4 right-4 z-50 space-y-2">
-    <transition-group name="notification" tag="div">
+  <div class="notification-wrapper">
+    <transition-group name="notification" tag="div" class="notification-list">
       <div
         v-for="notification in notifications"
         :key="notification.id"
         class="notification-item"
-        :class="getNotificationClass(notification.type)"
+        :class="`notification-${notification.type}`"
         role="alert"
       >
-        <div class="flex items-start">
+        <div class="notification-content">
           <!-- 图标 -->
-          <div class="flex-shrink-0 mr-3">
+          <div class="notification-icon">
             <svg
               v-if="notification.type === 'success'"
-              class="w-5 h-5 text-green-500"
+              viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              viewBox="0 0 24 24"
             >
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="2"
-                d="M5 13l4 4L19 7"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
             <svg
               v-else-if="notification.type === 'error'"
-              class="w-5 h-5 text-red-500"
+              viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              viewBox="0 0 24 24"
             >
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="2"
-                d="M6 18L18 6M6 6l12 12"
+                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
             <svg
               v-else-if="notification.type === 'warning'"
-              class="w-5 h-5 text-yellow-500"
+              viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              viewBox="0 0 24 24"
             >
               <path
                 stroke-linecap="round"
@@ -54,11 +51,10 @@
               />
             </svg>
             <svg
-              v-else-if="notification.type === 'info'"
-              class="w-5 h-5 text-blue-500"
+              v-else
+              viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              viewBox="0 0 24 24"
             >
               <path
                 stroke-linecap="round"
@@ -70,31 +66,25 @@
           </div>
 
           <!-- 内容 -->
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-gray-900">
-              {{ notification.title }}
-            </p>
-            <p class="text-sm text-gray-500 mt-1">
-              {{ notification.message }}
-            </p>
+          <div class="notification-body">
+            <p class="notification-title">{{ notification.title }}</p>
+            <p class="notification-message">{{ notification.message }}</p>
           </div>
 
           <!-- 关闭按钮 -->
-          <div class="flex-shrink-0 ml-4">
-            <button
-              class="text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600"
-              @click="removeNotification(notification.id)"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
+          <button
+            class="notification-close"
+            @click="removeNotification(notification.id)"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
         </div>
       </div>
     </transition-group>
@@ -103,30 +93,127 @@
 
 <script setup lang="ts">
   import { notifications, removeNotification } from '@/composables/useModal';
-
-  const getNotificationClass = (type: string) => {
-    const baseClasses =
-      'max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden';
-
-    switch (type) {
-      case 'success':
-        return `${baseClasses} border-l-4 border-green-500`;
-      case 'error':
-        return `${baseClasses} border-l-4 border-red-500`;
-      case 'warning':
-        return `${baseClasses} border-l-4 border-yellow-500`;
-      case 'info':
-        return `${baseClasses} border-l-4 border-blue-500`;
-      default:
-        return baseClasses;
-    }
-  };
 </script>
 
 <style scoped>
+  .notification-wrapper {
+    position: fixed;
+    top: var(--spacing-4);
+    right: var(--spacing-4);
+    z-index: var(--z-toast);
+    pointer-events: none;
+  }
+
+  .notification-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+    max-width: 24rem;
+    width: 100%;
+  }
+
   .notification-item {
-    transition: all 0.3s ease;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    padding: var(--spacing-4);
+    background: var(--bg-card);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-primary);
+    pointer-events: auto;
+    overflow: hidden;
     transform-origin: top right;
+    transition: all 0.3s ease;
+  }
+
+  .notification-content {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-3);
+    width: 100%;
+  }
+
+  .notification-icon {
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .notification-icon svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .notification-success {
+    border-left: 4px solid var(--color-success);
+  }
+
+  .notification-success .notification-icon {
+    color: var(--color-success);
+  }
+
+  .notification-error {
+    border-left: 4px solid var(--color-error);
+  }
+
+  .notification-error .notification-icon {
+    color: var(--color-error);
+  }
+
+  .notification-warning {
+    border-left: 4px solid var(--color-warning);
+  }
+
+  .notification-warning .notification-icon {
+    color: var(--color-warning);
+  }
+
+  .notification-info {
+    border-left: 4px solid var(--color-info);
+  }
+
+  .notification-info .notification-icon {
+    color: var(--color-info);
+  }
+
+  .notification-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .notification-title {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-1);
+  }
+
+  .notification-message {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    line-height: var(--line-height-relaxed);
+  }
+
+  .notification-close {
+    flex-shrink: 0;
+    width: 1rem;
+    height: 1rem;
+    padding: 0;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color var(--transition-fast);
+  }
+
+  .notification-close:hover {
+    color: var(--text-secondary);
+  }
+
+  .notification-close svg {
+    width: 100%;
+    height: 100%;
   }
 
   .notification-enter-from {

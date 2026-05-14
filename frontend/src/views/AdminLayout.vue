@@ -226,6 +226,7 @@
   import { computed, onMounted } from 'vue';
   import { useRouter, useRoute } from 'vue-router';
   import { useAuthStore } from '@/stores/auth';
+  import { log } from '@/utils/logger';
 
   const router = useRouter();
   const route = useRoute();
@@ -250,7 +251,7 @@
       await authStore.logout();
       router.push('/login');
     } catch (error) {
-      console.error('退出登录失败:', error);
+      log.error('AdminLayout', '退出登录失败:', error);
     }
   };
 

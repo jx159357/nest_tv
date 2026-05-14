@@ -1,522 +1,441 @@
 <template>
-  <NavigationLayout>
-    <div class="container mx-auto px-4 py-8">
-      <header class="mb-8">
-        <h1 class="mb-3 text-3xl font-bold text-gray-900">IPTV 频道</h1>
-        <p class="text-gray-600">浏览、筛选和校验已入库 IPTV 频道，并支持从 M3U 链接快速导入。</p>
-      </header>
+  <div class="iptv-view">
+    <header class="iptv-header">
+      <h1 class="iptv-title">IPTV 频道</h1>
+      <p class="iptv-subtitle">浏览和播放 IPTV 频道，支持 M3U 导入</p>
+    </header>
 
-      <section class="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <div class="rounded-2xl bg-white p-5 shadow-sm">
-          <div class="text-sm text-slate-500">频道总数</div>
-          <div class="mt-2 text-3xl font-semibold text-slate-900">
-            {{ stats?.totalChannels || 0 }}
-          </div>
+    <!-- 统计卡片 -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">频道总数</div>
+        <div class="stat-value">{{ stats?.totalChannels || 0 }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">活跃频道</div>
+        <div class="stat-value">{{ stats?.activeChannels || 0 }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">频道分组</div>
+        <div class="stat-value">{{ stats?.totalGroups || 0 }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">当前筛选</div>
+        <div class="stat-value text-sm">{{ selectedGroup || '全部' }}</div>
+      </div>
+    </div>
+
+    <!-- 搜索和筛选 -->
+    <div class="filter-section">
+      <form class="filter-form" @submit.prevent="loadChannels(1)">
+        <input v-model="search" type="text" class="filter-input" placeholder="搜索频道..." />
+        <select v-model="selectedGroup" class="filter-select">
+          <option value="">全部分组</option>
+          <option v-for="group in groups" :key="group" :value="group">{{ group }}</option>
+        </select>
+        <input v-model="country" type="text" class="filter-input" placeholder="国家" />
+        <input v-model="resolution" type="text" class="filter-input" placeholder="清晰度" />
+        <button type="submit" class="btn-filter" :disabled="loading">
+          {{ loading ? '加载中...' : '筛选' }}
+        </button>
+      </form>
+      <label class="checkbox-label">
+        <input v-model="activeOnly" type="checkbox" @change="loadChannels(1)" />
+        仅活跃频道
+      </label>
+    </div>
+
+    <!-- 批量操作栏 -->
+    <div v-if="selectedIds.size > 0" class="batch-bar">
+      <span class="batch-count">已选择 {{ selectedIds.size }} 个频道</span>
+      <button class="btn-batch-delete" @click="batchDelete">批量删除</button>
+      <button class="btn-batch-cancel" @click="clearSelection">取消选择</button>
+    </div>
+
+    <!-- 错误提示 -->
+    <div v-if="pageError" class="error-banner">{{ pageError }}</div>
+
+    <!-- 频道列表和详情 -->
+    <div class="content-grid">
+      <!-- 频道列表 -->
+      <div class="channel-list-wrapper">
+        <div class="list-header">
+          <h2 class="section-title">频道列表</h2>
+          <label v-if="channels.length > 0" class="checkbox-label select-all">
+            <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" />
+            全选
+          </label>
         </div>
-        <div class="rounded-2xl bg-white p-5 shadow-sm">
-          <div class="text-sm text-slate-500">活跃频道</div>
-          <div class="mt-2 text-3xl font-semibold text-slate-900">
-            {{ stats?.activeChannels || 0 }}
-          </div>
-        </div>
-        <div class="rounded-2xl bg-white p-5 shadow-sm">
-          <div class="text-sm text-slate-500">频道分组</div>
-          <div class="mt-2 text-3xl font-semibold text-slate-900">
-            {{ stats?.totalGroups || 0 }}
-          </div>
-        </div>
-        <div class="rounded-2xl bg-white p-5 shadow-sm">
-          <div class="text-sm text-slate-500">当前筛选</div>
-          <div class="mt-2 text-base font-semibold text-slate-900">
-            {{ selectedGroup || '全部分组' }}
-          </div>
-          <div class="mt-1 text-xs text-slate-500">
-            {{ activeOnly ? '仅看活跃频道' : '包含停用频道' }}
-          </div>
-        </div>
-        <div class="rounded-2xl bg-white p-5 shadow-sm">
-          <div class="text-sm text-slate-500">校验操作</div>
-          <button
-            class="mt-3 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-            :disabled="selectedChannelId === null || validatingChannel"
-            @click="validateSelectedChannel"
+        <div v-if="loading" class="loading-state">加载中...</div>
+        <div v-else-if="channels.length === 0" class="empty-state">暂无匹配频道</div>
+        <div v-else class="channel-list">
+          <div
+            v-for="channel in channels"
+            :key="channel.id"
+            class="channel-item"
+            :class="{ 'channel-item--active': channel.id === selectedChannelId }"
           >
-            {{ validatingChannel ? '校验中...' : '校验当前频道' }}
+            <label class="channel-checkbox" @click.stop>
+              <input
+                type="checkbox"
+                :checked="selectedIds.has(channel.id)"
+                @change="toggleSelect(channel.id)"
+              />
+            </label>
+            <button class="channel-content" @click="selectChannel(channel.id)">
+              <div class="channel-info">
+                <span class="channel-name">{{ channel.name }}</span>
+                <span class="channel-meta">{{ channel.group }} · {{ channel.country || '未知' }}</span>
+              </div>
+              <div class="channel-tags">
+                <span class="tag-status" :class="channel.isActive ? 'tag--active' : 'tag--inactive'">
+                  {{ channel.isActive ? '活跃' : '停用' }}
+                </span>
+                <span class="tag-format">{{ channel.resolution || channel.streamFormat || '未知' }}</span>
+              </div>
+            </button>
+          </div>
+        </div>
+        <!-- 分页 -->
+        <div v-if="pagination.totalPages > 1" class="pagination">
+          <button :disabled="pagination.page <= 1" @click="loadChannels(pagination.page - 1)">上一页</button>
+          <span>{{ pagination.page }} / {{ pagination.totalPages }}</span>
+          <button :disabled="pagination.page >= pagination.totalPages" @click="loadChannels(pagination.page + 1)">下一页</button>
+        </div>
+      </div>
+
+      <!-- M3U 导入 -->
+      <div class="import-panel">
+        <h2 class="section-title">M3U 导入</h2>
+        <form class="import-form" @submit.prevent="importM3UPlaylist">
+          <input v-model="m3uUrl" type="url" class="filter-input" placeholder="https://example.com/playlist.m3u" />
+          <button type="submit" class="btn-import" :disabled="importing">
+            {{ importing ? '导入中...' : '导入 M3U' }}
+          </button>
+        </form>
+        <div v-if="importMessage" class="import-msg">{{ importMessage }}</div>
+
+        <!-- 热门频道 -->
+        <div class="mini-list">
+          <h3 class="mini-title">热门频道</h3>
+          <button
+            v-for="ch in stats?.popularChannels || []"
+            :key="`pop-${ch.id}`"
+            class="mini-item"
+            @click="selectChannel(ch.id)"
+          >
+            <span>{{ ch.name }}</span>
+            <span class="mini-meta">{{ ch.viewCount }}</span>
           </button>
         </div>
-      </section>
-
-      <section class="mb-8 rounded-2xl bg-white p-6 shadow-sm">
-        <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.1fr)_360px]">
-          <div>
-            <div class="mb-4 flex items-center justify-between">
-              <div>
-                <h2 class="text-xl font-semibold text-gray-900">频道检索</h2>
-                <p class="mt-1 text-sm text-gray-600">按名称、分组、国家、清晰度检索 IPTV 频道。</p>
-              </div>
-            </div>
-
-            <form
-              class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5"
-              @submit.prevent="loadChannels(1)"
-            >
-              <input
-                v-model="search"
-                type="text"
-                class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                placeholder="搜索频道名 / 描述 / 分组"
-              />
-              <select
-                v-model="selectedGroup"
-                class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              >
-                <option value="">全部分组</option>
-                <option v-for="group in groups" :key="group" :value="group">{{ group }}</option>
-              </select>
-              <input
-                v-model="country"
-                type="text"
-                class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                placeholder="国家，如 CN"
-              />
-              <input
-                v-model="resolution"
-                type="text"
-                class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                placeholder="清晰度，如 1080p"
-              />
-              <button
-                type="submit"
-                class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-                :disabled="loading"
-              >
-                {{ loading ? '加载中...' : '筛选频道' }}
-              </button>
-            </form>
-
-            <label class="mt-3 inline-flex items-center gap-2 text-sm text-slate-600">
-              <input
-                v-model="activeOnly"
-                type="checkbox"
-                class="rounded border-slate-300"
-                @change="loadChannels(1)"
-              />
-              仅看活跃频道
-            </label>
-
-            <div
-              v-if="pageError"
-              class="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
-            >
-              {{ pageError }}
-            </div>
-
-            <div class="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white">
-              <div
-                class="border-b border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700"
-              >
-                频道列表
-              </div>
-              <div v-if="loading" class="px-4 py-10 text-center text-sm text-slate-500">
-                加载中...
-              </div>
-              <div
-                v-else-if="channels.length === 0"
-                class="px-4 py-10 text-center text-sm text-slate-500"
-              >
-                暂无匹配频道
-              </div>
-              <div v-else class="divide-y divide-slate-200">
-                <button
-                  v-for="channel in channels"
-                  :key="channel.id"
-                  class="flex w-full flex-col gap-2 px-4 py-4 text-left transition hover:bg-slate-50"
-                  :class="channel.id === selectedChannelId ? 'bg-blue-50/70' : ''"
-                  @click="selectChannel(channel.id)"
-                >
-                  <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div class="min-w-0">
-                      <div class="truncate font-medium text-slate-900">{{ channel.name }}</div>
-                      <div class="mt-1 text-xs text-slate-500">
-                        {{ channel.group }} · {{ channel.country || '未知国家' }} ·
-                        {{ channel.language || '未知语言' }}
-                      </div>
-                    </div>
-                    <div class="flex shrink-0 flex-wrap gap-2 text-xs">
-                      <span
-                        :class="[
-                          'rounded-full px-2.5 py-1 font-medium',
-                          channel.isActive
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-slate-200 text-slate-600',
-                        ]"
-                      >
-                        {{ channel.isActive ? '活跃' : '停用' }}
-                      </span>
-                      <span class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
-                        {{ channel.resolution || channel.streamFormat || '未标记' }}
-                      </span>
-                    </div>
-                  </div>
-                  <div class="text-xs text-slate-400">
-                    {{ channel.url }}
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            <div
-              v-if="pagination.totalPages > 1"
-              class="mt-4 flex items-center justify-between text-sm text-slate-600"
-            >
-              <span
-                >第 {{ pagination.page }} / {{ pagination.totalPages }} 页，共
-                {{ pagination.total }} 条</span
-              >
-              <div class="flex gap-2">
-                <button
-                  class="rounded border border-slate-300 px-3 py-1.5 disabled:opacity-50"
-                  :disabled="pagination.page <= 1 || loading"
-                  @click="loadChannels(pagination.page - 1)"
-                >
-                  上一页
-                </button>
-                <button
-                  class="rounded border border-slate-300 px-3 py-1.5 disabled:opacity-50"
-                  :disabled="pagination.page >= pagination.totalPages || loading"
-                  @click="loadChannels(pagination.page + 1)"
-                >
-                  下一页
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <h2 class="text-xl font-semibold text-gray-900">M3U 导入</h2>
-            <p class="mt-1 text-sm text-gray-600">
-              输入 M3U 播放列表地址，快速导入新的 IPTV 频道。
-            </p>
-
-            <form class="mt-4 space-y-3" @submit.prevent="importM3UPlaylist">
-              <input
-                v-model="m3uUrl"
-                type="url"
-                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                placeholder="https://example.com/playlist.m3u"
-              />
-              <button
-                type="submit"
-                class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-                :disabled="importing"
-              >
-                {{ importing ? '导入中...' : '导入 M3U' }}
-              </button>
-            </form>
-
-            <div
-              v-if="importMessage"
-              class="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
-            >
-              {{ importMessage }}
-            </div>
-
-            <div class="mt-6 space-y-4">
-              <div>
-                <div class="mb-2 text-sm font-medium text-slate-900">热门频道</div>
-                <div class="space-y-2 text-sm text-slate-600">
-                  <button
-                    v-for="channel in stats?.popularChannels || []"
-                    :key="`popular-${channel.id}`"
-                    class="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-left transition hover:bg-slate-50"
-                    @click="selectChannel(channel.id)"
-                  >
-                    <span>{{ channel.name }}</span>
-                    <span class="text-xs text-slate-400">{{ channel.viewCount }}</span>
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <div class="mb-2 text-sm font-medium text-slate-900">最近导入</div>
-                <div class="space-y-2 text-sm text-slate-600">
-                  <button
-                    v-for="channel in stats?.recentChannels || []"
-                    :key="`recent-${channel.id}`"
-                    class="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-left transition hover:bg-slate-50"
-                    @click="selectChannel(channel.id)"
-                  >
-                    <span>{{ channel.name }}</span>
-                    <span class="text-xs text-slate-400">{{
-                      formatDateTime(channel.createdAt)
-                    }}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="rounded-2xl bg-white p-6 shadow-sm">
-        <h2 class="mb-4 text-xl font-semibold text-gray-900">频道详情</h2>
-
-        <div v-if="selectedLoading" class="py-10 text-center text-sm text-slate-500">
-          加载详情中...
-        </div>
-        <div
-          v-else-if="selectedError"
-          class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
-        >
-          {{ selectedError }}
-        </div>
-        <div
-          v-else-if="selectedChannel"
-          class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]"
-        >
-          <div class="space-y-4">
-            <div>
-              <div class="text-2xl font-semibold text-slate-900">{{ selectedChannel.name }}</div>
-              <div class="mt-2 flex flex-wrap gap-2 text-xs">
-                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">{{
-                  selectedChannel.group
-                }}</span>
-                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">{{
-                  selectedChannel.country || '未知国家'
-                }}</span>
-                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">{{
-                  selectedChannel.language || '未知语言'
-                }}</span>
-                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">{{
-                  selectedChannel.resolution || selectedChannel.streamFormat || '未标记'
-                }}</span>
-              </div>
-            </div>
-
-            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-              <div>
-                <span class="font-medium text-slate-900">主流地址：</span>{{ selectedChannel.url }}
-              </div>
-              <div class="mt-2">
-                <span class="font-medium text-slate-900">描述：</span
-                >{{ selectedChannel.description || '暂无描述' }}
-              </div>
-              <div class="mt-2">
-                <span class="font-medium text-slate-900">最近校验：</span
-                >{{ formatDateTime(selectedChannel.lastCheckedAt) }}
-              </div>
-            </div>
-
-            <div
-              v-if="selectedChannel.backupUrls && selectedChannel.backupUrls.length > 0"
-              class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"
-            >
-              <div class="mb-2 font-medium text-slate-900">备用地址</div>
-              <div class="space-y-2">
-                <div
-                  v-for="item in selectedChannel.backupUrls"
-                  :key="item"
-                  class="rounded-lg bg-white px-3 py-2 text-xs text-slate-600"
-                >
-                  {{ item }}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <div class="text-sm font-medium text-slate-900">操作</div>
-            <div class="mt-4 space-y-3 text-sm">
-              <button
-                class="w-full rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-                :disabled="validatingChannel"
-                @click="validateSelectedChannel"
-              >
-                {{ validatingChannel ? '校验中...' : '校验频道可用性' }}
-              </button>
-              <button
-                class="w-full rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-white"
-                @click="openChannelUrl(selectedChannel.url)"
-              >
-                在新窗口打开主流
-              </button>
-            </div>
-
-            <div
-              class="mt-5 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700"
-            >
-              <div>
-                <span class="font-medium text-slate-900">观看数：</span
-                >{{ selectedChannel.viewCount }}
-              </div>
-              <div class="mt-2">
-                <span class="font-medium text-slate-900">创建时间：</span
-                >{{ formatDateTime(selectedChannel.createdAt) }}
-              </div>
-              <div class="mt-2">
-                <span class="font-medium text-slate-900">更新时间：</span
-                >{{ formatDateTime(selectedChannel.updatedAt) }}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div v-else class="py-10 text-center text-sm text-slate-500">
-          从上方频道列表中选择一个频道查看详情。
-        </div>
-      </section>
+      </div>
     </div>
-  </NavigationLayout>
+
+    <!-- 播放器 -->
+    <div v-if="showPlayer && selectedChannel" class="player-section">
+      <div class="player-header">
+        <span>正在播放：{{ selectedChannel.name }}</span>
+        <button class="btn-close" @click="showPlayer = false">关闭</button>
+      </div>
+      <IPTVPlayer :src="selectedChannel.url" :autoplay="true" />
+    </div>
+
+    <!-- 频道详情 -->
+    <div v-if="selectedChannel" class="detail-section">
+      <h2 class="section-title">频道详情</h2>
+      <div v-if="selectedLoading" class="loading-state">加载中...</div>
+      <div v-else-if="selectedError" class="error-banner">{{ selectedError }}</div>
+      <div v-else class="detail-content">
+        <div class="detail-main">
+          <h3 class="detail-name">{{ selectedChannel.name }}</h3>
+          <div class="detail-tags">
+            <span class="tag">{{ selectedChannel.group }}</span>
+            <span class="tag">{{ selectedChannel.country || '未知' }}</span>
+            <span class="tag">{{ selectedChannel.resolution || '未知' }}</span>
+          </div>
+          <div class="detail-url">
+            <strong>地址：</strong>{{ selectedChannel.url }}
+          </div>
+          <div class="detail-desc">
+            <strong>描述：</strong>{{ selectedChannel.description || '暂无' }}
+          </div>
+          <EpgTimeline :channel-id="selectedChannel.id" class="mt-4" />
+        </div>
+        <div class="detail-actions">
+          <button class="btn-play" @click="showPlayer = true">播放频道</button>
+          <button class="btn-validate" :disabled="validatingChannel" @click="validateSelectedChannel">
+            {{ validatingChannel ? '校验中...' : '校验' }}
+          </button>
+          <button class="btn-open" @click="openChannelUrl(selectedChannel.url)">新窗口打开</button>
+          <button class="btn-delete" @click="deleteSingleChannel(selectedChannel.id)">删除此频道</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue';
-  import NavigationLayout from '@/components/NavigationLayout.vue';
-  import { iptvApi, type IPTVChannel, type IPTVStats } from '@/api/iptv';
+import { computed, onMounted, ref } from 'vue';
+import { iptvApi, type IPTVChannel, type IPTVStats } from '@/api/iptv';
+import IPTVPlayer from '@/components/IPTVPlayer.vue';
+import EpgTimeline from '@/components/EpgTimeline.vue';
+import { log } from '@/utils/logger';
 
-  const channels = ref<IPTVChannel[]>([]);
-  const groups = ref<string[]>([]);
-  const stats = ref<IPTVStats | null>(null);
-  const selectedChannel = ref<IPTVChannel | null>(null);
-  const selectedChannelId = ref<number | null>(null);
+const channels = ref<IPTVChannel[]>([]);
+const groups = ref<string[]>([]);
+const stats = ref<IPTVStats | null>(null);
+const selectedChannel = ref<IPTVChannel | null>(null);
+const selectedChannelId = ref<number | null>(null);
+const selectedIds = ref(new Set<number>());
 
-  const search = ref('');
-  const selectedGroup = ref('');
-  const country = ref('');
-  const resolution = ref('');
-  const activeOnly = ref(true);
-  const m3uUrl = ref('');
+const search = ref('');
+const selectedGroup = ref('');
+const country = ref('');
+const resolution = ref('');
+const activeOnly = ref(true);
+const m3uUrl = ref('');
+const showPlayer = ref(false);
 
-  const loading = ref(false);
-  const selectedLoading = ref(false);
-  const validatingChannel = ref(false);
-  const importing = ref(false);
+const loading = ref(false);
+const selectedLoading = ref(false);
+const validatingChannel = ref(false);
+const importing = ref(false);
 
-  const pageError = ref<string | null>(null);
-  const selectedError = ref<string | null>(null);
-  const importMessage = ref<string | null>(null);
+const pageError = ref<string | null>(null);
+const selectedError = ref<string | null>(null);
+const importMessage = ref<string | null>(null);
 
-  const pagination = ref({ page: 1, totalPages: 1, total: 0, limit: 10 });
+const pagination = ref({ page: 1, totalPages: 1, total: 0, limit: 10 });
 
-  const formatDateTime = (value?: string | null) => {
-    if (!value) {
-      return '—';
-    }
+const isAllSelected = computed(() => {
+  return channels.value.length > 0 && channels.value.every(ch => selectedIds.value.has(ch.id));
+});
 
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-      return '—';
-    }
+const toggleSelect = (id: number) => {
+  const newSet = new Set(selectedIds.value);
+  if (newSet.has(id)) {
+    newSet.delete(id);
+  } else {
+    newSet.add(id);
+  }
+  selectedIds.value = newSet;
+};
 
-    return parsed.toLocaleString('zh-CN');
-  };
+const toggleSelectAll = () => {
+  if (isAllSelected.value) {
+    selectedIds.value = new Set();
+  } else {
+    selectedIds.value = new Set(channels.value.map(ch => ch.id));
+  }
+};
 
-  const getErrorMessage = (error: unknown, fallback: string) => {
-    return error instanceof Error ? error.message : fallback;
-  };
+const clearSelection = () => {
+  selectedIds.value = new Set();
+};
 
-  const loadGroups = async () => {
-    try {
-      groups.value = await iptvApi.getGroups();
-    } catch {
-      groups.value = [];
-    }
-  };
+const loadGroups = async () => {
+  try { groups.value = await iptvApi.getGroups(); } catch { groups.value = []; }
+};
 
-  const loadStats = async () => {
-    try {
-      stats.value = await iptvApi.getStats();
-    } catch {
-      stats.value = null;
-    }
-  };
+const loadStats = async () => {
+  try { stats.value = await iptvApi.getStats(); } catch { stats.value = null; }
+};
 
-  const loadChannels = async (page = pagination.value.page) => {
-    loading.value = true;
-    pageError.value = null;
-    try {
-      const response = await iptvApi.getChannels({
-        page,
-        limit: 12,
-        group: selectedGroup.value || undefined,
-        country: country.value || undefined,
-        resolution: resolution.value || undefined,
-        activeOnly: activeOnly.value,
-        search: search.value || undefined,
-      });
+const loadChannels = async (page = pagination.value.page) => {
+  loading.value = true;
+  pageError.value = null;
+  try {
+    const response = await iptvApi.getChannels({
+      page, limit: 12,
+      group: selectedGroup.value || undefined,
+      country: country.value || undefined,
+      resolution: resolution.value || undefined,
+      activeOnly: activeOnly.value,
+      search: search.value || undefined,
+    });
+    channels.value = response.data;
+    pagination.value = { page: response.page, totalPages: Math.max(response.totalPages, 1), total: response.total, limit: response.limit };
+  } catch (e) {
+    channels.value = [];
+    pageError.value = e instanceof Error ? e.message : '加载失败';
+  } finally { loading.value = false; }
+};
 
-      channels.value = response.data;
-      pagination.value = {
-        page: response.page,
-        totalPages: Math.max(response.totalPages, 1),
-        total: response.total,
-        limit: response.limit,
-      };
-    } catch (error: unknown) {
-      channels.value = [];
-      pageError.value = getErrorMessage(error, '加载 IPTV 频道失败');
-    } finally {
-      loading.value = false;
-    }
-  };
+const selectChannel = async (id: number) => {
+  selectedLoading.value = true;
+  selectedError.value = null;
+  selectedChannelId.value = id;
+  try { selectedChannel.value = await iptvApi.getChannel(id); }
+  catch (e) { selectedChannel.value = null; selectedError.value = e instanceof Error ? e.message : '加载失败'; }
+  finally { selectedLoading.value = false; }
+};
 
-  const selectChannel = async (id: number) => {
-    selectedLoading.value = true;
-    selectedError.value = null;
-    selectedChannelId.value = id;
-    try {
-      selectedChannel.value = await iptvApi.getChannel(id);
-    } catch (error: unknown) {
+const validateSelectedChannel = async () => {
+  if (!selectedChannelId.value) return;
+  validatingChannel.value = true;
+  try {
+    const result = await iptvApi.validateChannel(selectedChannelId.value);
+    importMessage.value = result.isValid ? '频道可用' : '频道不可用';
+    await Promise.all([loadChannels(pagination.value.page), loadStats(), selectChannel(selectedChannelId.value)]);
+  } catch (e) { importMessage.value = e instanceof Error ? e.message : '校验失败'; }
+  finally { validatingChannel.value = false; }
+};
+
+const importM3UPlaylist = async () => {
+  if (!m3uUrl.value.trim()) { importMessage.value = '请输入 M3U 地址'; return; }
+  importing.value = true;
+  try {
+    const result = await iptvApi.importFromM3U(m3uUrl.value.trim());
+    importMessage.value = `已导入 ${result.length} 个频道`;
+    await Promise.all([loadChannels(1), loadGroups(), loadStats()]);
+  } catch (e) { importMessage.value = e instanceof Error ? e.message : '导入失败'; }
+  finally { importing.value = false; }
+};
+
+const deleteSingleChannel = async (id: number) => {
+  const channel = channels.value.find(ch => ch.id === id);
+  const name = channel?.name || '此频道';
+  if (!confirm(`确定删除频道 "${name}" 吗？`)) return;
+  try {
+    await iptvApi.deleteChannel(id);
+    if (selectedChannelId.value === id) {
       selectedChannel.value = null;
-      selectedError.value = getErrorMessage(error, '加载频道详情失败');
-    } finally {
-      selectedLoading.value = false;
+      selectedChannelId.value = null;
     }
-  };
+    await Promise.all([loadChannels(1), loadGroups(), loadStats()]);
+  } catch (e) {
+    pageError.value = e instanceof Error ? e.message : '删除失败';
+  }
+};
 
-  const validateSelectedChannel = async () => {
-    if (!selectedChannelId.value) {
-      return;
-    }
-
-    validatingChannel.value = true;
+const batchDelete = async () => {
+  const count = selectedIds.value.size;
+  if (!confirm(`确定删除选中的 ${count} 个频道吗？`)) return;
+  const ids = [...selectedIds.value];
+  let success = 0;
+  let failed = 0;
+  for (const id of ids) {
     try {
-      const result = await iptvApi.validateChannel(selectedChannelId.value);
-      importMessage.value = result.isValid ? '频道校验通过' : '频道当前不可用';
-      await Promise.all([
-        loadChannels(pagination.value.page),
-        loadStats(),
-        selectChannel(selectedChannelId.value),
-      ]);
-    } catch (error: unknown) {
-      importMessage.value = getErrorMessage(error, '频道校验失败');
-    } finally {
-      validatingChannel.value = false;
+      await iptvApi.deleteChannel(id);
+      success++;
+      if (selectedChannelId.value === id) {
+        selectedChannel.value = null;
+        selectedChannelId.value = null;
+      }
+    } catch (e) {
+      failed++;
+      log.error('IPTV', `删除频道 ${id} 失败`, e);
     }
-  };
+  }
+  selectedIds.value = new Set();
+  importMessage.value = failed > 0 ? `成功删除 ${success} 个，失败 ${failed} 个` : `成功删除 ${success} 个频道`;
+  await Promise.all([loadChannels(1), loadGroups(), loadStats()]);
+};
 
-  const importM3UPlaylist = async () => {
-    if (!m3uUrl.value.trim()) {
-      importMessage.value = '请先输入 M3U 地址';
-      return;
-    }
+const openChannelUrl = (url: string) => window.open(url, '_blank', 'noopener,noreferrer');
 
-    importing.value = true;
-    try {
-      const channels = await iptvApi.importFromM3U(m3uUrl.value.trim());
-      importMessage.value = `已导入 ${channels.length} 个频道`;
-      await Promise.all([loadChannels(1), loadGroups(), loadStats()]);
-    } catch (error: unknown) {
-      importMessage.value = getErrorMessage(error, 'M3U 导入失败');
-    } finally {
-      importing.value = false;
-    }
-  };
-
-  const openChannelUrl = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
-  onMounted(() => {
-    void Promise.all([loadGroups(), loadStats(), loadChannels(1)]);
-  });
+onMounted(() => void Promise.all([loadGroups(), loadStats(), loadChannels(1)]));
 </script>
+
+<style scoped>
+.iptv-view { min-height: 100vh; background: #0a0f1a; color: #e2e8f0; padding: 24px; max-width: 1400px; margin: 0 auto; }
+.iptv-header { margin-bottom: 24px; }
+.iptv-title { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+.iptv-subtitle { font-size: 14px; color: #94a3b8; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.stat-card { background: #141a2a; border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.06); }
+.stat-label { font-size: 13px; color: #64748b; margin-bottom: 8px; }
+.stat-value { font-size: 28px; font-weight: 700; }
+.stat-value.text-sm { font-size: 14px; }
+
+.filter-section { margin-bottom: 24px; }
+.filter-form { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.filter-input, .filter-select { padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #e2e8f0; font-size: 14px; outline: none; }
+.filter-input:focus, .filter-select:focus { border-color: #6366f1; }
+.filter-select { cursor: pointer; }
+.btn-filter, .btn-import { padding: 10px 20px; background: #6366f1; border: none; border-radius: 10px; color: white; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+.btn-filter:hover, .btn-import:hover { background: #4f46e5; }
+.btn-filter:disabled, .btn-import:disabled { opacity: 0.5; cursor: not-allowed; }
+.checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 14px; color: #94a3b8; cursor: pointer; }
+.checkbox-label input { accent-color: #6366f1; }
+
+.batch-bar { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2); border-radius: 10px; margin-bottom: 16px; }
+.batch-count { font-size: 14px; color: #a5b4fc; }
+.btn-batch-delete { padding: 8px 16px; background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; color: #f87171; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+.btn-batch-delete:hover { background: rgba(239,68,68,0.3); }
+.btn-batch-cancel { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #94a3b8; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+.btn-batch-cancel:hover { background: rgba(255,255,255,0.1); }
+
+.error-banner { padding: 12px 16px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); border-radius: 10px; color: #f87171; font-size: 14px; margin-bottom: 24px; }
+
+.content-grid { display: grid; grid-template-columns: 1fr 320px; gap: 24px; margin-bottom: 24px; }
+.list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.section-title { font-size: 18px; font-weight: 600; }
+.select-all { font-size: 13px; }
+
+.loading-state { text-align: center; padding: 40px 0; color: #64748b; }
+.empty-state { text-align: center; padding: 40px 0; color: #64748b; }
+
+.channel-list { display: flex; flex-direction: column; gap: 8px; max-height: 600px; overflow-y: auto; }
+.channel-item { display: flex; align-items: center; gap: 10px; padding: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; transition: all 0.2s; }
+.channel-item:hover { background: rgba(255,255,255,0.06); }
+.channel-item--active { border-color: #6366f1; background: rgba(99,102,241,0.1); }
+.channel-checkbox { display: flex; align-items: center; cursor: pointer; }
+.channel-checkbox input { accent-color: #6366f1; width: 16px; height: 16px; }
+.channel-content { flex: 1; display: flex; align-items: center; justify-content: space-between; background: none; border: none; cursor: pointer; text-align: left; width: 100%; color: #e2e8f0; padding: 0; }
+.channel-info { display: flex; flex-direction: column; }
+.channel-name { font-size: 14px; font-weight: 500; }
+.channel-meta { font-size: 12px; color: #64748b; margin-top: 2px; }
+.channel-tags { display: flex; gap: 6px; }
+.tag-status { font-size: 11px; padding: 2px 8px; border-radius: 20px; }
+.tag--active { background: rgba(16,185,129,0.15); color: #34d399; }
+.tag--inactive { background: rgba(100,116,139,0.15); color: #94a3b8; }
+.tag-format { font-size: 11px; padding: 2px 8px; background: rgba(255,255,255,0.06); border-radius: 20px; color: #94a3b8; }
+
+.pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 16px; font-size: 14px; color: #94a3b8; }
+.pagination button { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #e2e8f0; cursor: pointer; transition: all 0.2s; }
+.pagination button:hover { background: rgba(255,255,255,0.1); }
+.pagination button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.import-panel { background: #141a2a; border-radius: 14px; padding: 20px; border: 1px solid rgba(255,255,255,0.06); }
+.import-form { display: flex; flex-direction: column; gap: 10px; }
+.import-msg { margin-top: 12px; padding: 10px; background: rgba(99,102,241,0.1); border-radius: 8px; font-size: 13px; color: #a5b4fc; }
+
+.mini-list { margin-top: 20px; }
+.mini-title { font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+.mini-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 6px; font-size: 13px; cursor: pointer; transition: all 0.2s; width: 100%; color: #e2e8f0; border: none; text-align: left; }
+.mini-item:hover { background: rgba(255,255,255,0.06); }
+.mini-meta { color: #64748b; font-size: 12px; }
+
+.player-section { margin-bottom: 24px; background: #000; border-radius: 14px; overflow: hidden; }
+.player-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; font-size: 14px; }
+.btn-close { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 13px; }
+.btn-close:hover { color: #e2e8f0; }
+
+.detail-section { background: #141a2a; border-radius: 14px; padding: 20px; border: 1px solid rgba(255,255,255,0.06); }
+.detail-content { display: flex; gap: 24px; }
+.detail-main { flex: 1; }
+.detail-name { font-size: 20px; font-weight: 600; margin-bottom: 12px; }
+.detail-tags { display: flex; gap: 8px; margin-bottom: 16px; }
+.tag { padding: 4px 12px; background: rgba(99,102,241,0.15); color: #a5b4fc; border-radius: 20px; font-size: 12px; }
+.detail-url, .detail-desc { font-size: 13px; color: #94a3b8; margin-bottom: 8px; }
+.detail-url strong, .detail-desc strong { color: #e2e8f0; }
+.detail-actions { display: flex; flex-direction: column; gap: 10px; min-width: 140px; }
+.btn-play, .btn-validate, .btn-open { padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; border: none; }
+.btn-play { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; }
+.btn-play:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(99,102,241,0.4); }
+.btn-validate { background: #10b981; color: white; }
+.btn-validate:hover { background: #059669; }
+.btn-validate:disabled { opacity: 0.5; }
+.btn-open { background: rgba(255,255,255,0.06); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.15); }
+.btn-open:hover { background: rgba(255,255,255,0.1); }
+.btn-delete { padding: 12px 20px; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; color: #f87171; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+.btn-delete:hover { background: rgba(239,68,68,0.25); }
+
+@media (max-width: 1024px) {
+  .content-grid { grid-template-columns: 1fr; }
+  .detail-content { flex-direction: column; }
+  .detail-actions { flex-direction: row; flex-wrap: wrap; }
+}
+</style>

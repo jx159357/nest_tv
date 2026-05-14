@@ -432,3 +432,18 @@
 - Follow-up one-click startup scripts completed: `start-dev.bat` (local development) and `start-docker.bat` (Docker deployment) now exist at the project root, so non-technical users can start the platform with a double-click.
 - Follow-up root `.env` for Docker completed: a root-level `.env` file now provides default passwords/ports for Docker Compose, so `docker compose up -d` works without editing any files.
 - Backend build, frontend type-check, frontend build, backend unit tests (97 passed), and frontend tests (174 passed) are all green after the out-of-box enhancement batch.
+
+## 2026-05-06 响应式布局与硬编码清理 + 爬虫验证
+
+- WatchView.vue 响应式修复：剧集选择网格从固定 `grid-cols-4` 改为 `grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-4`，移动端不再拥挤；移除 DanmakuPlayer 硬编码的 `:width="1280" :height="720"` 属性（组件内部已用 100% 自适应）；新增 scoped CSS 媒体查询。
+- AppLayout.vue 移动端体验优化：侧边栏打开时新增半透明遮罩层（backdrop），点击遮罩可关闭侧边栏，防止移动端误操作。
+- 硬编码密码安全修复：`initialization.service.ts` 中管理员默认密码从硬编码 `'admin123'` 改为读取 `process.env.DEFAULT_ADMIN_PASSWORD` 环境变量，后端 `.env` 和 `.env.example` 均已添加该配置项。
+- 爬虫真实资源验证通过：成功爬取电影天堂（dytt8899.com）两部电影，提取到磁力链接并保存到数据库（资源ID 27、28），爬虫统计从 6 增长到 8 条资源，端到端流程（爬取 → 解析 → 保存 → 播放源关联）全部打通。
+- 爬虫 GBK 编码修复：crawler.service.ts 的 `fetchWithRetry` 改用 `responseType: 'arraybuffer'` 获取原始字节，新增 `decodeResponse` 方法自动检测 charset 并用 iconv-lite 解码 GBK/GB2312 为 UTF-8，中文标题和描述不再乱码。
+- 爬虫目标匹配修复：新增 URL 域名回退匹配逻辑，避免请求体中文编码问题导致动态目标名乱码。
+- 磁力链接流式播放实现：新增 `TorrentStreamService`（使用 WebTorrent），新增 `GET /torrent/stream/:infoHash` 流式端点支持 HTTP Range 请求，前端 WatchView 自动将 magnet URL 转换为流式播放 URL，JWT 策略支持 query token 认证。
+- npm install 修复：移除 backend/package.json 中未安装的 husky 的 prepare 脚本。
+- iconv-lite 添加为显式依赖。
+- 视频源修复：Google Storage 返回 403，全部示例视频 URL 替换为稳定可访问源（test-videos.co.uk、filesamples.com、w3schools.com），数据库中已有的播放源同步更新。
+- AppLayout 图标样式修复：新增 `.app-layout__nav-icon` CSS（固定宽高 1.5rem、inline-flex 居中），搜索按钮和下拉菜单图标 span 添加尺寸约束，防止 emoji 播放布局。
+- 播放源激活：所有 online 类型播放源 isActive 从 0 更新为 1。

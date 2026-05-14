@@ -2,6 +2,8 @@
  * 资源缓存管理器
  */
 
+import { log } from '@/utils/logger';
+
 // 缓存配置
 export interface CacheConfig {
   name: string;
@@ -293,7 +295,7 @@ export class ResourceCache<T = any> {
         sessionStorage.setItem(`cache_${this.config.name}`, serialized);
       }
     } catch (error) {
-      console.warn(`Failed to save cache ${this.config.name} to storage:`, error);
+      log.warn('ResourceCache', `Failed to save cache ${this.config.name} to storage:`, error);
     }
   }
 
@@ -331,7 +333,7 @@ export class ResourceCache<T = any> {
       // 清理过期条目
       this.cleanup();
     } catch (error) {
-      console.warn(`Failed to load cache ${this.config.name} from storage:`, error);
+      log.warn('ResourceCache', `Failed to load cache ${this.config.name} from storage:`, error);
     }
   }
 
@@ -444,7 +446,7 @@ export class ResourceCache<T = any> {
       try {
         callback(key, value);
       } catch (error) {
-        console.error(`Cache change listener error for key ${key}:`, error);
+        log.error('ResourceCache', `Cache change listener error for key ${key}:`, error);
       }
     }
   }

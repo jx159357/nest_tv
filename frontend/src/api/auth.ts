@@ -7,6 +7,11 @@ export const authApi = {
     return ApiClient.post<AuthResponse>('/users/login', credentials);
   },
 
+  // 刷新令牌
+  refreshToken: (refreshToken: string) => {
+    return ApiClient.post<AuthResponse>('/auth/refresh', { refreshToken });
+  },
+
   // 用户注册
   register: (userData: RegisterUserData) => {
     return ApiClient.post<User>('/users/register', userData);

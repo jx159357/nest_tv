@@ -275,8 +275,7 @@ export class DataCollectionService {
           actors: '.co_content8 p',
           genres: '.co_content8 p a, .co_content222 p a',
           releaseDate: '.co_content8 p span',
-          downloadUrls:
-            'a[href*="thunder"], a[href*="magnet"], a[href*="ftp"], .down_list a',
+          downloadUrls: 'a[href*="thunder"], a[href*="magnet"], a[href*="ftp"], .down_list a',
         },
         listLinkSelectors: ['a[href$=".html"]'],
         allowedLinkPatterns: [/\/html\//, /\.html$/],
@@ -308,8 +307,7 @@ export class DataCollectionService {
           actors: '.co_content8 p',
           genres: '.co_content8 p a',
           releaseDate: '.co_content8 p span',
-          downloadUrls:
-            'a[href*="thunder"], a[href*="magnet"], a[href*="ftp"], .down_list a',
+          downloadUrls: 'a[href*="thunder"], a[href*="magnet"], a[href*="ftp"], .down_list a',
         },
         listLinkSelectors: ['a[href$=".html"]'],
         allowedLinkPatterns: [/\/html\//, /\.html$/],

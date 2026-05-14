@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { mediaApi } from '@/api/media';
 import type { MediaResource, MediaQueryParams } from '@/types/media';
+import { log } from '@/utils/logger';
 
 // 定义分页类型
 interface Pagination {
@@ -39,7 +40,7 @@ export const useMediaStore = defineStore('media', () => {
       };
       return response;
     } catch (error) {
-      console.error('获取媒体列表失败:', error);
+      log.error('MediaStore', '获取媒体列表失败:', error);
       throw error;
     } finally {
       loading.value = false;
@@ -53,7 +54,7 @@ export const useMediaStore = defineStore('media', () => {
       currentMedia.value = response;
       return response;
     } catch (error) {
-      console.error('获取媒体详情失败:', error);
+      log.error('MediaStore', '获取媒体详情失败:', error);
       throw error;
     } finally {
       loading.value = false;
@@ -65,7 +66,7 @@ export const useMediaStore = defineStore('media', () => {
       const response = await mediaApi.getPopularMedia(limit, params);
       return response;
     } catch (error) {
-      console.error('获取热门媒体失败:', error);
+      log.error('MediaStore', '获取热门媒体失败:', error);
       throw error;
     }
   };
@@ -75,7 +76,7 @@ export const useMediaStore = defineStore('media', () => {
       const response = await mediaApi.getLatestMedia(limit, params);
       return response;
     } catch (error) {
-      console.error('获取最新媒体失败:', error);
+      log.error('MediaStore', '获取最新媒体失败:', error);
       throw error;
     }
   };
@@ -85,7 +86,7 @@ export const useMediaStore = defineStore('media', () => {
       const response = await mediaApi.getTopRatedMedia(limit, minRating, params);
       return response;
     } catch (error) {
-      console.error('获取高评分媒体失败:', error);
+      log.error('MediaStore', '获取高评分媒体失败:', error);
       throw error;
     }
   };
@@ -94,7 +95,7 @@ export const useMediaStore = defineStore('media', () => {
     try {
       return await mediaApi.getSimilarMedia(mediaId, limit);
     } catch (error) {
-      console.error('获取推荐媒体失败:', error);
+      log.error('MediaStore', '获取推荐媒体失败:', error);
       throw error;
     }
   };
@@ -112,7 +113,7 @@ export const useMediaStore = defineStore('media', () => {
       };
       return response;
     } catch (error) {
-      console.error('搜索媒体失败:', error);
+      log.error('MediaStore', '搜索媒体失败:', error);
       throw error;
     } finally {
       loading.value = false;
@@ -132,7 +133,7 @@ export const useMediaStore = defineStore('media', () => {
       };
       return response;
     } catch (error) {
-      console.error('获取类型媒体失败:', error);
+      log.error('MediaStore', '获取类型媒体失败:', error);
       throw error;
     } finally {
       loading.value = false;
@@ -143,7 +144,7 @@ export const useMediaStore = defineStore('media', () => {
     try {
       await mediaApi.incrementViewCount(id);
     } catch (error) {
-      console.error('增加观看次数失败:', error);
+      log.error('MediaStore', '增加观看次数失败:', error);
     }
   };
 
@@ -154,7 +155,7 @@ export const useMediaStore = defineStore('media', () => {
       mediaApi.clearCache();
       return response.isFavorited;
     } catch (error) {
-      console.error('切换收藏状态失败:', error);
+      log.error('MediaStore', '切换收藏状态失败:', error);
       throw error;
     }
   };
@@ -164,7 +165,7 @@ export const useMediaStore = defineStore('media', () => {
       const response = await mediaApi.getFavoriteStatus(id);
       return response.isFavorited;
     } catch (error) {
-      console.error('获取收藏状态失败:', error);
+      log.error('MediaStore', '获取收藏状态失败:', error);
       throw error;
     }
   };
@@ -182,7 +183,7 @@ export const useMediaStore = defineStore('media', () => {
       };
       return response;
     } catch (error) {
-      console.error('获取收藏媒体失败:', error);
+      log.error('MediaStore', '获取收藏媒体失败:', error);
       throw error;
     } finally {
       loading.value = false;
@@ -224,7 +225,7 @@ export const useMediaStore = defineStore('media', () => {
       };
       return response;
     } catch (error) {
-      console.error('加载更多媒体失败:', error);
+      log.error('MediaStore', '加载更多媒体失败:', error);
       throw error;
     } finally {
       loading.value = false;

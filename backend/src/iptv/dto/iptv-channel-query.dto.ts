@@ -47,11 +47,13 @@ export class IPTVChannelQueryDto {
 
   @ApiProperty({ description: '是否可用', default: true })
   @IsOptional()
+  @Type(() => Boolean)
   @IsBoolean()
   activeOnly?: boolean = true;
 
   @ApiProperty({ description: '是否为直播', required: false })
   @IsOptional()
+  @Type(() => Boolean)
   @IsBoolean()
   isLive?: boolean;
 

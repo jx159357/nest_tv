@@ -156,7 +156,10 @@ export class CrawlerController {
     // 将爬取的数据保存到数据库
     let saveResult: SaveResult | null = null;
     try {
-      saveResult = await this.saveToDatabase(result.data!, crawlRequest.targetName);
+      saveResult = await this.saveToDatabase(
+        result.data!,
+        result.data!.source || crawlRequest.targetName,
+      );
     } catch (error: unknown) {
       this.logger.warn(`保存数据失败: ${getErrorMessage(error)}`);
       // 继续返回爬取结果，不因为保存失败而影响用户
@@ -352,7 +355,8 @@ export class CrawlerController {
 
     // 实现保存到数据库的逻辑
     try {
-      const saveResult = await this.saveToDatabase(result.data!, targetName);
+      // 使用爬取结果中的 source（已正确解码），避免请求体编码问题
+      const saveResult = await this.saveToDatabase(result.data!, result.data!.source || targetName);
       return {
         success: true,
         message: '爬取并保存成功',

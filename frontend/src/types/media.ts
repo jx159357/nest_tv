@@ -18,7 +18,8 @@ export interface MediaResource {
   metadata?: any;
   episodeCount?: number;
   downloadUrls?: string[];
-  duration?: number; // 添加时长字段
+  duration?: number;
+  playSources?: PlaySource[];
   createdAt: Date;
   updatedAt: Date;
 }

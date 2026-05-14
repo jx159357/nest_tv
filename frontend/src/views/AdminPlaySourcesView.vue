@@ -82,7 +82,7 @@
             回到首页告警区
           </router-link>
           <router-link
-            :to="{ name: 'crawler', query: { alertFilter: activeAlertFilter } }"
+            :to="{ name: 'admin-crawler', query: { alertFilter: activeAlertFilter } }"
             :class="getAlertActionClass('crawler')"
           >
             {{ getAlertActionLabel('crawler', '来源视图') }}
@@ -541,7 +541,7 @@
               </router-link>
               <router-link
                 v-else-if="alertFilterRecommendation"
-                :to="{ name: 'crawler', query: { alertFilter: activeAlertFilter } }"
+                :to="{ name: 'admin-crawler', query: { alertFilter: activeAlertFilter } }"
                 :class="getAlertActionClass('crawler')"
               >
                 {{ getAlertActionLabel('crawler', '来源视图') }}
@@ -672,6 +672,7 @@
     type CrawlerAlertFilter,
   } from '@/utils/collection-source-alerts';
   import type { PlaySource } from '@/types/media';
+  import { log } from '@/utils/logger';
 
   const route = useRoute();
   const router = useRouter();
@@ -1007,7 +1008,7 @@
         sourceContextError.value = '暂未匹配到该来源的健康摘要，可能还没有完整采集数据。';
       }
     } catch (error) {
-      console.error('加载来源健康摘要失败:', error);
+      log.error('AdminPlaySources', '加载来源健康摘要失败:', error);
       focusedSourceHealth.value = null;
       focusedSourceCollectionStats.value = null;
       sourceContextError.value = '加载来源健康摘要失败，请稍后重试。';
@@ -1030,7 +1031,7 @@
         .filter(source => matchesCrawlerAlertFilter(source, alertFilter))
         .map(source => source.name);
     } catch (error) {
-      console.error('加载告警来源筛选失败:', error);
+      log.error('AdminPlaySources', '加载告警来源筛选失败:', error);
       alertFilteredSourceNames.value = [];
     }
   };
@@ -1128,7 +1129,7 @@
 
   const buildCrawlerLink = () => {
     return {
-      name: 'crawler',
+      name: 'admin-crawler',
       query: {
         source: focusedSourceName.value,
         focus: route.query.focus === 'attention' ? 'attention' : 'top',

@@ -1,72 +1,57 @@
 <script setup lang="ts">
-  import { onBeforeRouteUpdate } from 'vue-router';
-  import { onMounted } from 'vue';
-  import { useAuthStore } from '@/stores/auth';
-  import { useThemeStore } from '@/stores/theme';
-  import { useI18n } from 'vue-i18n';
-  import { useLoadingStore } from '@/stores/loading';
-  import AppLayout from '@/components/AppLayout.vue';
-  import GlobalLoading from '@/components/ui/GlobalLoading.vue';
-  import EnhancedModal from '@/components/EnhancedModal.vue';
-  import NotificationToast from '@/components/NotificationToast.vue';
-  import { modalState } from '@/composables/useModal';
+import { onMounted, ref } from 'vue';
+import { useAuthStore } from '@/stores/auth';
+import EnhancedModal from '@/components/EnhancedModal.vue';
+import UpdateNotification from '@/components/UpdateNotification.vue';
+import Toast from '@/components/Toast.vue';
+import NotificationToast from '@/components/NotificationToast.vue';
+import { log } from '@/utils/logger';
+import { modalState } from '@/composables/useModal';
 
-  const authStore = useAuthStore();
-  const themeStore = useThemeStore();
-  const { locale } = useI18n();
-  const loadingStore = useLoadingStore();
+const authStore = useAuthStore();
+const toastRef = ref<InstanceType<typeof Toast> | null>(null);
 
-  // 初始化应用
-  const initializeApp = async () => {
-    try {
-      // 初始化主题
-      themeStore.initTheme();
+const initializeApp = async () => {
+  try {
+    await authStore.initAuth();
+  } catch (error) {
+    log.error('App', '应用初始化失败:', error);
+    toastRef.value?.error('应用初始化失败，请刷新页面重试');
+  }
+};
 
-      // 加载保存的语言设置
-      const savedLocale = localStorage.getItem('app-locale');
-      if (savedLocale && savedLocale !== locale.value) {
-        locale.value = savedLocale;
-      }
-
-      // 如果已登录，获取用户信息
-      if (authStore.token && !authStore.user) {
-        await authStore.fetchUserProfile();
-      }
-    } catch (error) {
-      console.error('App initialization error:', error);
-    }
-  };
-
-  onMounted(() => {
-    initializeApp();
-  });
-
-  // 路由更新前的加载状态管理
-  onBeforeRouteUpdate((to, from) => {
-    if (to.name !== from?.name) {
-      loadingStore.startRouteLoading(String(from?.name || ''), String(to.name || ''));
-    }
-  });
+onMounted(() => {
+  initializeApp();
+});
 </script>
 
 <template>
-  <AppLayout />
-  <GlobalLoading />
+  <div id="app-root">
+    <RouterView />
 
-  <!-- 全局模态框 -->
-  <EnhancedModal
-    v-if="modalState.isVisible"
-    :type="modalState.type"
-    :title="modalState.title"
-    :message="modalState.message"
-    :confirm-text="modalState.confirmText"
-    :cancel-text="modalState.cancelText"
-    :show-action="modalState.showAction"
-    @confirm="modalState.onConfirm"
-    @cancel="modalState.onCancel"
-    @close="modalState.isVisible = false"
-  />
+    <EnhancedModal
+      v-if="modalState.isVisible"
+      :type="modalState.type"
+      :title="modalState.title"
+      :message="modalState.message"
+      :confirm-text="modalState.confirmText"
+      :cancel-text="modalState.cancelText"
+      :show-action="modalState.showAction"
+      @confirm="modalState.onConfirm"
+      @cancel="modalState.onCancel"
+      @close="modalState.isVisible = false"
+    />
 
-  <!-- 全局通知 -->
-  <NotificationToast />
+    <UpdateNotification />
+    <Toast ref="toastRef" position="top-right" />
+    <NotificationToast />
+  </div>
 </template>
+
+<style>
+#app-root {
+  min-height: 100vh;
+  background: var(--bg-page);
+  color: var(--text-primary);
+}
+</style>

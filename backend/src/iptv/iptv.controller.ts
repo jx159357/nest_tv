@@ -1,11 +1,24 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  Res,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { IPTVService } from './iptv.service';
 import { CreateIPTVChannelDto } from './dto/create-iptv-channel.dto';
 import { UpdateIPTVChannelDto } from './dto/update-iptv-channel.dto';
 import { IPTVChannelQueryDto } from './dto/iptv-channel-query.dto';
 import { IPTVChannel } from '../entities/iptv-channel.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Public } from '../auth/public.decorator';
 
 @ApiTags('IPTV频道管理')
 @Controller('iptv')
@@ -21,13 +34,91 @@ export class IPTVController {
   }
 
   @Get()
+  @Public()
   @ApiOperation({ summary: '分页查询IPTV频道' })
   @ApiResponse({ status: 200, description: '查询成功' })
   async findAll(@Query() queryDto: IPTVChannelQueryDto) {
     return await this.iptvService.findAll(queryDto);
   }
 
+  @Get('stats')
+  @Public()
+  @ApiOperation({ summary: '获取IPTV频道统计信息' })
+  @ApiResponse({ status: 200, description: '查询成功' })
+  async getStats(): Promise<any> {
+    return await this.iptvService.getStats();
+  }
+
+  @Get('groups/list')
+  @Public()
+  @ApiOperation({ summary: '获取所有频道分组' })
+  @ApiResponse({ status: 200, description: '查询成功' })
+  async getAllGroups(): Promise<string[]> {
+    return await this.iptvService.getAllGroups();
+  }
+
+  @Get('group/:group')
+  @Public()
+  @ApiOperation({ summary: '根据分组获取频道' })
+  @ApiParam({ name: 'group', description: '频道分组' })
+  @ApiQuery({ name: 'activeOnly', description: '只查询活跃频道', required: false, type: Boolean })
+  @ApiResponse({ status: 200, description: '查询成功' })
+  async getByGroup(
+    @Param('group') group: string,
+    @Query('activeOnly') activeOnly: boolean = true,
+  ): Promise<IPTVChannel[]> {
+    return await this.iptvService.getByGroup(group, activeOnly);
+  }
+
+  @Get('search/:keyword')
+  @Public()
+  @ApiOperation({ summary: '搜索频道' })
+  @ApiParam({ name: 'keyword', description: '搜索关键词' })
+  @ApiQuery({ name: 'limit', description: '返回数量限制', required: false, type: Number })
+  @ApiResponse({ status: 200, description: '搜索成功' })
+  async searchChannels(
+    @Param('keyword') keyword: string,
+    @Query('limit') limit: number = 20,
+  ): Promise<IPTVChannel[]> {
+    return await this.iptvService.searchChannels(keyword, limit);
+  }
+
+  @Post('bulk')
+  @ApiOperation({ summary: '批量创建IPTV频道' })
+  @ApiResponse({ status: 201, description: '批量创建成功' })
+  async createBulk(@Body() createIPTVChannelDtos: CreateIPTVChannelDto[]): Promise<IPTVChannel[]> {
+    return await this.iptvService.createBulk(createIPTVChannelDtos);
+  }
+
+  @Put('bulk/status')
+  @ApiOperation({ summary: '批量更新频道状态' })
+  @ApiResponse({ status: 200, description: '批量更新成功' })
+  async updateBulkStatus(
+    @Body('ids') ids: number[],
+    @Body('isActive') isActive: boolean,
+  ): Promise<void> {
+    await this.iptvService.updateBulkStatus(ids, isActive);
+  }
+
+  @Post('import/m3u')
+  @ApiOperation({ summary: '导入M3U播放列表' })
+  @ApiQuery({ name: 'm3uUrl', description: 'M3U播放列表URL' })
+  @ApiResponse({ status: 201, description: '导入成功' })
+  async importFromM3U(@Query('m3uUrl') m3uUrl: string): Promise<IPTVChannel[]> {
+    return await this.iptvService.importFromM3U(m3uUrl);
+  }
+
+  @Get('stream/proxy')
+  @Public()
+  @ApiOperation({ summary: '代理IPTV流媒体' })
+  @ApiQuery({ name: 'url', description: '流媒体URL', required: true })
+  @ApiResponse({ status: 200, description: '流媒体内容' })
+  async proxyStream(@Query('url') url: string, @Res() res: Response) {
+    return this.iptvService.proxyStream(url, res);
+  }
+
   @Get(':id')
+  @Public()
   @ApiOperation({ summary: '根据ID查找IPTV频道' })
   @ApiParam({ name: 'id', description: 'IPTV频道ID' })
   @ApiResponse({ status: 200, description: '查询成功', type: IPTVChannel })
@@ -63,6 +154,7 @@ export class IPTVController {
   }
 
   @Put(':id/view')
+  @Public()
   @ApiOperation({ summary: '增加观看次数' })
   @ApiParam({ name: 'id', description: 'IPTV频道ID' })
   @ApiResponse({ status: 200, description: '观看次数增加成功' })
@@ -70,51 +162,8 @@ export class IPTVController {
     await this.iptvService.incrementViewCount(id);
   }
 
-  @Get('groups/list')
-  @ApiOperation({ summary: '获取所有频道分组' })
-  @ApiResponse({ status: 200, description: '查询成功' })
-  async getAllGroups(): Promise<string[]> {
-    return await this.iptvService.getAllGroups();
-  }
-
-  @Get('group/:group')
-  @ApiOperation({ summary: '根据分组获取频道' })
-  @ApiParam({ name: 'group', description: '频道分组' })
-  @ApiQuery({ name: 'activeOnly', description: '只查询活跃频道', required: false, type: Boolean })
-  @ApiResponse({ status: 200, description: '查询成功' })
-  async getByGroup(
-    @Param('group') group: string,
-    @Query('activeOnly') activeOnly: boolean = true,
-  ): Promise<IPTVChannel[]> {
-    return await this.iptvService.getByGroup(group, activeOnly);
-  }
-
-  @Post('bulk')
-  @ApiOperation({ summary: '批量创建IPTV频道' })
-  @ApiResponse({ status: 201, description: '批量创建成功' })
-  async createBulk(@Body() createIPTVChannelDtos: CreateIPTVChannelDto[]): Promise<IPTVChannel[]> {
-    return await this.iptvService.createBulk(createIPTVChannelDtos);
-  }
-
-  @Put('bulk/status')
-  @ApiOperation({ summary: '批量更新频道状态' })
-  @ApiResponse({ status: 200, description: '批量更新成功' })
-  async updateBulkStatus(
-    @Body('ids') ids: number[],
-    @Body('isActive') isActive: boolean,
-  ): Promise<void> {
-    await this.iptvService.updateBulkStatus(ids, isActive);
-  }
-
-  @Post('import/m3u')
-  @ApiOperation({ summary: '导入M3U播放列表' })
-  @ApiQuery({ name: 'm3uUrl', description: 'M3U播放列表URL' })
-  @ApiResponse({ status: 201, description: '导入成功' })
-  async importFromM3U(@Query('m3uUrl') m3uUrl: string): Promise<IPTVChannel[]> {
-    return await this.iptvService.importFromM3U(m3uUrl);
-  }
-
   @Get(':id/validate')
+  @Public()
   @ApiOperation({ summary: '验证频道链接有效性' })
   @ApiParam({ name: 'id', description: 'IPTV频道ID' })
   @ApiResponse({ status: 200, description: '验证成功' })
@@ -123,22 +172,13 @@ export class IPTVController {
     return { isValid };
   }
 
-  @Get('stats')
-  @ApiOperation({ summary: '获取IPTV频道统计信息' })
-  @ApiResponse({ status: 200, description: '查询成功' })
-  async getStats(): Promise<any> {
-    return await this.iptvService.getStats();
-  }
-
-  @Get('search/:keyword')
-  @ApiOperation({ summary: '搜索频道' })
-  @ApiParam({ name: 'keyword', description: '搜索关键词' })
-  @ApiQuery({ name: 'limit', description: '返回数量限制', required: false, type: Number })
-  @ApiResponse({ status: 200, description: '搜索成功' })
-  async searchChannels(
-    @Param('keyword') keyword: string,
-    @Query('limit') limit: number = 20,
-  ): Promise<IPTVChannel[]> {
-    return await this.iptvService.searchChannels(keyword, limit);
+  @Get(':id/epg')
+  @Public()
+  @ApiOperation({ summary: '获取频道节目单' })
+  @ApiParam({ name: 'id', description: 'IPTV频道ID' })
+  @ApiQuery({ name: 'epgUrl', description: 'EPG XML 数据源 URL', required: false })
+  @ApiResponse({ status: 200, description: '节目单查询成功' })
+  async getEpg(@Param('id') id: number, @Query('epgUrl') epgUrl?: string) {
+    return this.iptvService.getChannelEpg(id, epgUrl);
   }
 }

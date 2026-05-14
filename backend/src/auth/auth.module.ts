@@ -28,6 +28,6 @@ import { UserModule } from '../users/user.module';
   ],
   providers: [AuthService, JwtStrategy, LocalStrategy],
   controllers: [AuthController],
-  exports: [AuthService], // 导出AuthService供其他模块使用
+  exports: [AuthService, JwtModule], // 导出AuthService和JwtModule供其他模块使用
 })
 export class AuthModule {}

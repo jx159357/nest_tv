@@ -28,4 +28,3 @@ export class TorrentSearchQueryDto {
   @Max(100)
   pageSize?: number = 10;
 }
-

@@ -8,6 +8,7 @@
  */
 import { createI18n } from 'vue-i18n';
 import { nextLocalStorage } from '@/utils/storage';
+import { log } from '@/utils/logger';
 import { zhCN } from './locales/zh-CN';
 import { en } from './locales/en';
 
@@ -59,7 +60,7 @@ export const getBrowserLocale = (): 'zh-CN' | 'en' => {
 // 设置语言
 export const setLocale = (locale: 'zh-CN' | 'en') => {
   if (!isLocaleSupported(locale)) {
-    console.warn(`Unsupported locale: ${locale}`);
+    log.warn('I18n', `Unsupported locale: ${locale}`);
     return;
   }
 

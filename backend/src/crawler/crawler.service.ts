@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import * as cheerio from 'cheerio';
+import * as iconv from 'iconv-lite';
 import { CRAWLER_TARGETS, CRAWLER_CONFIG, CRAWLER_RULES } from './crawler.config';
 import { MediaResourceService } from '../media/media-resource.service';
 import { MediaQuality } from '../entities/media-resource.entity';
@@ -247,7 +248,7 @@ export class CrawlerService {
     options: AxiosRequestConfig = {},
     maxRetries: number = 3,
     retryDelay: number = 2000,
-  ): Promise<AxiosResponse<string>> {
+  ): Promise<AxiosResponse<Buffer>> {
     let lastError: Error = new Error('Unknown error');
     const requestId = this.generateRequestId();
 
@@ -255,7 +256,8 @@ export class CrawlerService {
       try {
         this.appLogger.log(`尝试请求 (尝试 ${attempt}/${maxRetries}): ${url}`, 'CRAWLER_FETCH');
 
-        const response = await this.httpClient.get<string>(url, {
+        const response = await this.httpClient.get<Buffer>(url, {
+          responseType: 'arraybuffer',
           timeout: CRAWLER_CONFIG.request.timeout,
           ...options,
         });
@@ -284,6 +286,42 @@ export class CrawlerService {
 
     this.appLogger.error(`所有重试失败: ${url}`, 'CRAWLER_FAILED', lastError.stack, requestId);
     throw lastError;
+  }
+
+  /**
+   * 检测响应编码并将字节解码为 UTF-8 字符串
+   */
+  private decodeResponse(response: AxiosResponse<Buffer>): string {
+    const buf = Buffer.from(response.data);
+
+    // 1. 从 Content-Type 头检测 charset
+    const contentType = response.headers['content-type'] || '';
+    const charsetMatch = contentType.match(/charset=([^\s;]+)/i);
+    let charset = charsetMatch ? charsetMatch[1].toLowerCase() : '';
+
+    // 2. 从 HTML meta 标签检测 charset
+    if (!charset) {
+      const head = buf.slice(0, 1024).toString('ascii');
+      const metaCharset = head.match(/<meta[^>]+charset=["']?([^"'\s;>]+)/i);
+      if (metaCharset) {
+        charset = metaCharset[1].toLowerCase();
+      }
+      const metaHttpEquiv = head.match(/<meta[^>]+content=["'][^"']*charset=([^"'\s;]+)/i);
+      if (!charset && metaHttpEquiv) {
+        charset = metaHttpEquiv[1].toLowerCase();
+      }
+    }
+
+    // 3. GBK/GB2312/GB18030 使用 iconv-lite 解码
+    if (
+      charset &&
+      (charset.includes('gbk') || charset.includes('gb2312') || charset.includes('gb18030'))
+    ) {
+      return iconv.decode(buf, 'gbk');
+    }
+
+    // 4. 默认 UTF-8
+    return buf.toString('utf-8');
   }
 
   /**
@@ -364,11 +402,16 @@ export class CrawlerService {
         return { success: true, data: cached };
       }
 
-      // 获取目标配置（优先从预定义配置中查找，否则创建动态配置）
+      // 获取目标配置（优先从预定义配置中查找，否则按URL域名匹配，最后创建动态配置）
       let target = CRAWLER_TARGETS.find(t => t.name === targetName);
 
       if (!target) {
-        // 创建动态目标配置
+        // 尝试按 URL 域名匹配已知目标（处理请求体编码导致的名称不匹配）
+        const urlOrigin = new URL(url).origin;
+        target = CRAWLER_TARGETS.find(t => t.baseUrl === urlOrigin || url.startsWith(t.baseUrl));
+      }
+
+      if (!target) {
         target = this.createDynamicTarget(targetName, url);
         this.appLogger.log(`创建动态爬虫目标: ${targetName}`, 'CRAWLER_DYNAMIC');
       }
@@ -387,7 +430,8 @@ export class CrawlerService {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const $ = cheerio.load(response.data);
+      const html = this.decodeResponse(response);
+      const $ = cheerio.load(html);
 
       // 提取数据
       let crawledData: CrawledData;

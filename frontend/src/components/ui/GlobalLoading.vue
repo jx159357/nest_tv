@@ -94,15 +94,20 @@
   }
 
   .loading-overlay--global {
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(2px);
   }
 
   .loading-overlay--partial {
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(255, 255, 255, 0.4);
   }
 
   .loading-overlay--route {
-    background: rgba(0, 0, 0, 0.3);
+    background: transparent;
+  }
+
+  .loading-overlay--route .loading-backdrop {
+    display: none;
   }
 
   .loading-container {
@@ -257,29 +262,21 @@
   }
 
   .loading-backdrop {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.3);
-    pointer-events: none;
+    display: none;
   }
 
   /* 过渡动画 */
-  .loading-overlay-enter-active,
+  .loading-overlay-enter-active {
+    transition: opacity 0.2s ease;
+  }
+
   .loading-overlay-leave-active {
-    transition: all 0.3s ease;
+    transition: opacity 0.15s ease;
   }
 
-  .loading-overlay-enter-from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-
+  .loading-overlay-enter-from,
   .loading-overlay-leave-to {
     opacity: 0;
-    transform: scale(1.1);
   }
 
   /* 响应式设计 */

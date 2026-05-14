@@ -9,9 +9,12 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './local-auth.guard';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { Public } from './public.decorator';
+import { UserService } from '../users/user.service';
 import { UserResponseDto } from '../users/dtos/user-response.dto';
 
 interface AuthenticatedRequest {
@@ -25,7 +28,11 @@ interface AuthenticatedRequest {
 @ApiTags('用户认证')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private jwtService: JwtService,
+    private userService: UserService,
+  ) {}
 
   /**
    * 用户登录接口
@@ -137,6 +144,57 @@ export class AuthController {
   })
   getProfile(@Request() req: AuthenticatedRequest): Record<string, any> {
     return req.user;
+  }
+
+  /**
+   * 刷新访问令牌
+   * 使用刷新令牌获取新的访问令牌
+   */
+  @Public()
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '刷新令牌',
+    description: '使用刷新令牌获取新的访问令牌',
+  })
+  @ApiBody({
+    description: '刷新令牌请求体',
+    schema: {
+      type: 'object',
+      properties: {
+        refreshToken: {
+          type: 'string',
+          description: '刷新令牌',
+        },
+      },
+      required: ['refreshToken'],
+    },
+  })
+  @ApiResponse({ status: 200, description: '刷新成功' })
+  @ApiResponse({ status: 401, description: '刷新令牌无效或已过期' })
+  async refresh(@Body() body: { refreshToken: string }) {
+    try {
+      const payload = this.jwtService.verify(body.refreshToken);
+      const user = await this.userService.findById(payload.sub);
+
+      if (!user || !user.isActive) {
+        throw new HttpException('用户不存在或已被禁用', HttpStatus.UNAUTHORIZED);
+      }
+
+      const userDto: UserResponseDto = {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive,
+        createdAt: user.createdAt ?? new Date(),
+        updatedAt: user.updatedAt ?? new Date(),
+      };
+
+      return this.authService.login(userDto);
+    } catch {
+      throw new HttpException('刷新令牌无效或已过期', HttpStatus.UNAUTHORIZED);
+    }
   }
 
   /**

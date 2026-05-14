@@ -1,7 +1,11 @@
 import type { Repository } from 'typeorm';
 import { AdminService } from './admin.service';
 import { AdminLog } from '../entities/admin-log.entity';
-import { DownloadTask, DownloadTaskStatus, DownloadTaskType } from '../entities/download-task.entity';
+import {
+  DownloadTask,
+  DownloadTaskStatus,
+  DownloadTaskType,
+} from '../entities/download-task.entity';
 import { User } from '../entities/user.entity';
 
 describe('AdminService', () => {
@@ -185,9 +189,12 @@ describe('AdminService', () => {
       'downloadTask.mediaResourceId = :mediaResourceId',
       { mediaResourceId: 15 },
     );
-    expect(downloadTaskQueryBuilder.andWhere).toHaveBeenCalledWith('downloadTask.clientId = :clientId', {
-      clientId: 'task-21',
-    });
+    expect(downloadTaskQueryBuilder.andWhere).toHaveBeenCalledWith(
+      'downloadTask.clientId = :clientId',
+      {
+        clientId: 'task-21',
+      },
+    );
     expect(downloadTaskQueryBuilder.andWhere).toHaveBeenCalledWith(
       'downloadTask.status = :status',
       {
@@ -306,9 +313,12 @@ describe('AdminService', () => {
       'task-21',
     );
 
-    expect(downloadTaskQueryBuilder.andWhere).toHaveBeenCalledWith('downloadTask.clientId = :clientId', {
-      clientId: 'task-21',
-    });
+    expect(downloadTaskQueryBuilder.andWhere).toHaveBeenCalledWith(
+      'downloadTask.clientId = :clientId',
+      {
+        clientId: 'task-21',
+      },
+    );
     expect(result.total).toBe(1);
     expect(result.data[0]?.clientId).toBe('task-21');
   });

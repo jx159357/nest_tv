@@ -127,14 +127,6 @@
               <span>⚙️</span>
               {{ t('navigation.settings') }}
             </RouterLink>
-            <RouterLink to="/favorites" class="app-layout__user-dropdown-item">
-              <span>❤️</span>
-              {{ t('navigation.favorites') }}
-            </RouterLink>
-            <RouterLink to="/watch-history" class="app-layout__user-dropdown-item">
-              <span>🕘</span>
-              {{ t('navigation.history') }}
-            </RouterLink>
             <RouterLink v-if="isAdmin" to="/admin" class="app-layout__user-dropdown-item">
               <span>🛡️</span>
               {{ t('navigation.dashboard') }}
@@ -152,24 +144,50 @@
       </div>
     </header>
 
+    <div
+      v-if="isMobile && sidebarOpen"
+      class="app-layout__backdrop"
+      @click="sidebarOpen = false"
+    ></div>
     <aside class="app-layout__sidebar">
       <nav class="app-layout__nav">
-        <RouterLink
-          v-for="item in navigationItems"
-          :key="item.path"
-          :to="item.path"
-          class="app-layout__nav-item"
-          :class="{ 'app-layout__nav-item--active': isActiveRoute(item.path) }"
-        >
-          <span class="app-layout__nav-icon">{{ item.icon }}</span>
-          <span class="app-layout__nav-text">{{ t(item.titleKey) }}</span>
-        </RouterLink>
+        <div class="app-layout__nav-section">
+          <div class="app-layout__nav-section-label">{{ t('navigation.home') }}</div>
+          <RouterLink
+            v-for="item in userNavItems"
+            :key="item.path"
+            :to="item.path"
+            class="app-layout__nav-item"
+            :class="{ 'app-layout__nav-item--active': isActiveRoute(item.path) }"
+          >
+            <span class="app-layout__nav-icon">{{ item.icon }}</span>
+            <span class="app-layout__nav-text">{{ t(item.titleKey) }}</span>
+          </RouterLink>
+        </div>
+
+        <div v-if="adminNavItems.length > 0" class="app-layout__nav-section">
+          <div class="app-layout__nav-section-label">{{ t('navigation.dashboard') }}</div>
+          <RouterLink
+            v-for="item in adminNavItems"
+            :key="item.path"
+            :to="item.path"
+            class="app-layout__nav-item"
+            :class="{ 'app-layout__nav-item--active': isActiveRoute(item.path) }"
+          >
+            <span class="app-layout__nav-icon">{{ item.icon }}</span>
+            <span class="app-layout__nav-text">{{ t(item.titleKey) }}</span>
+          </RouterLink>
+        </div>
       </nav>
     </aside>
 
     <main class="app-layout__main">
       <div class="app-layout__content">
-        <RouterView />
+        <RouterView v-slot="{ Component, route }">
+          <Transition name="page-fade" mode="out-in">
+            <component :is="Component" :key="route.path" />
+          </Transition>
+        </RouterView>
       </div>
     </main>
 
@@ -192,6 +210,7 @@
   import { useI18n } from 'vue-i18n';
   import { availableLocales, getCurrentLocale, setLocale } from '@/i18n';
   import ThemeToggle from '@/components/ui/ThemeToggle.vue';
+  import { log } from '@/utils/logger';
   import {
     clearRecentSearches,
     dedupeKeywords,
@@ -206,7 +225,8 @@
   const router = useRouter();
   const authStore = useAuthStore();
 
-  const sidebarOpen = ref(false);
+  const isMobile = ref(window.innerWidth <= 768);
+  const sidebarOpen = ref(!isMobile.value);
   const showUserMenu = ref(false);
   const searchQuery = ref('');
   const searchPanelRef = ref<HTMLElement | null>(null);
@@ -224,13 +244,22 @@
     () => authStore.user?.role === 'admin' || authStore.user?.role === 'superAdmin',
   );
 
-  const navigationItems = [
+  const userNavItems = computed(() => [
     { path: '/', titleKey: 'navigation.home', icon: '🏠' },
-    { path: '/media', titleKey: 'navigation.media', icon: '🎬' },
     { path: '/recommendations', titleKey: 'navigation.recommendations', icon: '✨' },
-    { path: '/favorites', titleKey: 'navigation.favorites', icon: '❤️' },
     { path: '/watch-history', titleKey: 'navigation.history', icon: '🕘' },
-  ];
+    { path: '/favorites', titleKey: 'navigation.favorites', icon: '❤️' },
+    { path: '/downloads', titleKey: 'navigation.downloads', icon: '📥' },
+    { path: '/torrent', titleKey: 'navigation.magnets', icon: '🧲' },
+    { path: '/iptv', titleKey: 'navigation.iptv', icon: '📺' },
+  ]);
+
+  const adminNavItems = computed(() => {
+    if (!isAdmin.value) return [];
+    return [
+      { path: '/admin', titleKey: 'navigation.dashboard', icon: '🛡️' },
+    ];
+  });
 
   const normalizedSearchQuery = computed(() => normalizeSearchKeyword(searchQuery.value));
 
@@ -291,7 +320,10 @@
     currentLocale.value = locale;
   };
 
-  const isActiveRoute = (path: string) => route.path === path;
+  const isActiveRoute = (path: string) => {
+    if (path === '/') return route.path === '/';
+    return route.path.startsWith(path);
+  };
 
   const loadPopularKeywords = async () => {
     if (hasLoadedPopularKeywords.value || !authStore.isAuthenticated) {
@@ -303,7 +335,7 @@
     try {
       popularKeywords.value = dedupeKeywords(await searchApi.getPopularKeywords(6), 6);
     } catch (error) {
-      console.error('加载热门搜索失败:', error);
+      log.error('AppLayout', '加载热门搜索失败:', error);
       popularKeywords.value = [];
     }
   };
@@ -318,7 +350,7 @@
     try {
       serverRecentSearches.value = dedupeKeywords(await searchApi.getHistory(8), 8);
     } catch (error) {
-      console.error('加载搜索历史失败:', error);
+      log.error('AppLayout', '加载搜索历史失败:', error);
       serverRecentSearches.value = [];
     }
   };
@@ -332,7 +364,7 @@
     hasLoadedSearchHistory.value = true;
 
     void searchApi.recordHistory({ keyword }).catch(error => {
-      console.error('记录搜索历史失败:', error);
+      log.error('AppLayout', '记录搜索历史失败:', error);
     });
   };
 
@@ -343,7 +375,7 @@
 
     if (authStore.isAuthenticated) {
       void searchApi.clearHistory().catch(error => {
-        console.error('清空搜索历史失败:', error);
+        log.error('AppLayout', '清空搜索历史失败:', error);
         notifyError('清空失败', '搜索历史清空失败，请稍后重试。');
       });
     }
@@ -375,7 +407,7 @@
         return;
       }
 
-      console.error('加载搜索建议失败:', error);
+      log.error('AppLayout', '加载搜索建议失败:', error);
       remoteSuggestions.value = [];
     }
   };
@@ -414,7 +446,8 @@
   };
 
   const handleResize = () => {
-    sidebarOpen.value = window.innerWidth > 768;
+    isMobile.value = window.innerWidth <= 768;
+    sidebarOpen.value = !isMobile.value;
   };
 
   const handleClickOutside = (event: MouseEvent) => {
@@ -473,9 +506,10 @@
     display: flex;
     min-height: 100vh;
     flex-direction: column;
-    background: #f5f5f5;
+    background: #f8fafc;
   }
 
+  /* ── Header ── */
   .app-layout__header {
     position: fixed;
     top: 0;
@@ -483,12 +517,13 @@
     right: 0;
     z-index: 1000;
     display: flex;
-    height: 60px;
+    height: 56px;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    border-bottom: 1px solid #ddd;
-    background: #fff;
+    background: rgba(15, 17, 23, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     padding: 0 20px;
   }
 
@@ -501,7 +536,7 @@
 
   .app-layout__header-center {
     flex: 1;
-    max-width: 520px;
+    max-width: 480px;
   }
 
   .app-layout__menu-toggle {
@@ -509,6 +544,7 @@
     border: none;
     background: none;
     cursor: pointer;
+    padding: 4px;
   }
 
   .app-layout__menu-icon,
@@ -518,7 +554,7 @@
     width: 20px;
     height: 2px;
     border-radius: 999px;
-    background: #333;
+    background: #e2e8f0;
     content: '';
   }
 
@@ -534,40 +570,63 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #111827;
+    color: #f1f5f9;
     text-decoration: none;
   }
 
   .app-layout__logo-img {
     width: 28px;
     height: 28px;
+    border-radius: 6px;
   }
 
   .app-layout__logo-text {
     font-weight: 700;
+    font-size: 1.125rem;
+    letter-spacing: -0.02em;
   }
 
+  /* ── Search ── */
   .app-layout__search-input-wrapper {
     display: flex;
     align-items: center;
     overflow: visible;
-    border: 1px solid #ddd;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    background: #fff;
+    background: rgba(255, 255, 255, 0.05);
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .app-layout__search-input-wrapper:focus-within {
+    border-color: rgba(99, 102, 241, 0.5);
+    background: rgba(255, 255, 255, 0.08);
   }
 
   .app-layout__search-input {
     flex: 1;
     border: none;
-    padding: 10px 12px;
+    padding: 8px 12px;
     outline: none;
+    background: transparent;
+    color: #e2e8f0;
+    font-size: 0.875rem;
+  }
+
+  .app-layout__search-input::placeholder {
+    color: #64748b;
   }
 
   .app-layout__search-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     border: none;
     background: transparent;
     cursor: pointer;
-    padding: 10px 12px;
+    padding: 8px 12px;
+    font-size: 0.875rem;
+    line-height: 1;
   }
 
   .app-layout__search-dropdown {
@@ -576,23 +635,23 @@
     right: 0;
     top: calc(100% + 8px);
     z-index: 20;
-    border: 1px solid #e5e7eb;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
-    background: #fff;
-    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+    background: #1e2028;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
     padding: 12px;
   }
 
   .app-layout__search-section + .app-layout__search-section {
     margin-top: 12px;
     padding-top: 12px;
-    border-top: 1px solid #f1f5f9;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
   }
 
   .app-layout__search-section-title {
     font-size: 12px;
     font-weight: 600;
-    color: #64748b;
+    color: #94a3b8;
   }
 
   .app-layout__search-section-header {
@@ -607,12 +666,12 @@
     background: transparent;
     font-size: 12px;
     font-weight: 600;
-    color: #94a3b8;
+    color: #64748b;
     cursor: pointer;
   }
 
   .app-layout__search-section-action:hover {
-    color: #475569;
+    color: #94a3b8;
   }
 
   .app-layout__search-suggestion {
@@ -624,39 +683,49 @@
     border-radius: 8px;
     background: transparent;
     padding: 8px 10px;
-    color: #1f2937;
+    color: #e2e8f0;
     text-align: left;
     cursor: pointer;
+    font-size: 0.875rem;
   }
 
   .app-layout__search-suggestion:hover {
-    background: #f8fafc;
+    background: rgba(255, 255, 255, 0.06);
   }
 
   .app-layout__search-suggestion-meta {
     flex-shrink: 0;
     margin-left: 12px;
     font-size: 12px;
-    color: #94a3b8;
+    color: #64748b;
   }
 
+  /* ── Language & Auth ── */
   .app-layout__language-switcher {
     display: flex;
     gap: 4px;
   }
 
   .app-layout__language-button {
-    border: 1px solid #ddd;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 4px;
-    background: #fff;
+    background: transparent;
     padding: 4px 8px;
     cursor: pointer;
+    color: #94a3b8;
+    font-size: 0.75rem;
+    transition: all 0.2s;
+  }
+
+  .app-layout__language-button:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #e2e8f0;
   }
 
   .app-layout__language-button--active {
-    border-color: #4f46e5;
-    background: #eef2ff;
-    color: #4f46e5;
+    border-color: #6366f1;
+    background: rgba(99, 102, 241, 0.15);
+    color: #a5b4fc;
   }
 
   .app-layout__auth {
@@ -667,20 +736,33 @@
   .app-layout__login-btn,
   .app-layout__register-btn {
     border-radius: 6px;
-    padding: 8px 12px;
+    padding: 6px 14px;
     text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s;
   }
 
   .app-layout__login-btn {
-    border: 1px solid #4f46e5;
-    color: #4f46e5;
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    color: #a5b4fc;
+  }
+
+  .app-layout__login-btn:hover {
+    border-color: #6366f1;
+    background: rgba(99, 102, 241, 0.1);
   }
 
   .app-layout__register-btn {
-    background: #4f46e5;
+    background: #6366f1;
     color: white;
   }
 
+  .app-layout__register-btn:hover {
+    background: #4f46e5;
+  }
+
+  /* ── User Menu ── */
   .app-layout__user {
     position: relative;
   }
@@ -692,6 +774,13 @@
     border: none;
     background: transparent;
     cursor: pointer;
+    padding: 4px;
+    border-radius: 8px;
+    transition: background 0.2s;
+  }
+
+  .app-layout__user-menu:hover {
+    background: rgba(255, 255, 255, 0.06);
   }
 
   .app-layout__user-avatar {
@@ -699,6 +788,18 @@
     height: 32px;
     border-radius: 999px;
     object-fit: cover;
+    border: 2px solid rgba(99, 102, 241, 0.3);
+  }
+
+  .app-layout__user-name {
+    color: #e2e8f0;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .app-layout__user-arrow {
+    color: #64748b;
+    font-size: 0.75rem;
   }
 
   .app-layout__user-dropdown {
@@ -706,88 +807,160 @@
     right: 0;
     top: calc(100% + 8px);
     min-width: 180px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background: #fff;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    background: #1e2028;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    padding: 4px;
   }
 
   .app-layout__user-dropdown-item {
     display: flex;
     width: 100%;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     border: none;
     background: transparent;
     padding: 10px 12px;
-    color: #374151;
+    color: #cbd5e1;
     text-align: left;
     text-decoration: none;
     cursor: pointer;
+    font-size: 0.875rem;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+
+  .app-layout__user-dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #f1f5f9;
+  }
+
+  .app-layout__user-dropdown-item span:first-child {
+    display: inline-flex;
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    line-height: 1;
   }
 
   .app-layout__user-dropdown-item--logout {
-    color: #dc2626;
+    color: #f87171;
+  }
+
+  .app-layout__user-dropdown-item--logout:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #fca5a5;
   }
 
   .app-layout__user-dropdown-divider {
     height: 1px;
-    background: #eee;
+    background: rgba(255, 255, 255, 0.06);
+    margin: 4px 0;
   }
 
+  /* ── Sidebar ── */
   .app-layout__sidebar {
     position: fixed;
     left: 0;
-    top: 60px;
+    top: 56px;
     bottom: 0;
-    width: 240px;
-    border-right: 1px solid #ddd;
-    background: #fff;
+    width: 220px;
+    background: #13141b;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
     transition: transform 0.3s ease;
+    overflow-y: auto;
+    z-index: 900;
   }
 
   .app-layout__nav {
-    padding: 20px 0;
+    padding: 16px 0;
+  }
+
+  .app-layout__nav-section {
+    padding: 0 12px;
+    margin-bottom: 8px;
+  }
+
+  .app-layout__nav-section-label {
+    padding: 8px 12px 6px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #475569;
   }
 
   .app-layout__nav-item {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 20px;
-    color: #374151;
+    padding: 10px 12px;
+    color: #94a3b8;
     text-decoration: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.15s;
+    margin-bottom: 2px;
+  }
+
+  .app-layout__nav-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: #e2e8f0;
+  }
+
+  .app-layout__nav-icon {
+    display: inline-flex;
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    line-height: 1;
   }
 
   .app-layout__nav-item--active {
-    border-left: 3px solid #4f46e5;
-    background: #eef2ff;
-    color: #4f46e5;
+    background: rgba(99, 102, 241, 0.12);
+    color: #a5b4fc;
   }
 
+  .app-layout__nav-item--active .app-layout__nav-icon {
+    color: #818cf8;
+  }
+
+  /* ── Main Content ── */
   .app-layout__main {
-    margin-top: 60px;
-    margin-left: 240px;
+    margin-top: 56px;
+    margin-left: 220px;
     flex: 1;
+    min-height: calc(100vh - 56px);
   }
 
   .app-layout__content {
-    padding: 20px;
+    padding: 24px;
   }
 
+  /* ── Footer ── */
   .app-layout__footer {
-    border-top: 1px solid #ddd;
+    margin-left: 220px;
+    border-top: 1px solid #e2e8f0;
     background: #fff;
-    padding: 10px 20px;
+    padding: 12px 20px;
     text-align: center;
   }
 
   .app-layout__footer-text {
     margin: 0;
-    font-size: 14px;
-    color: #6b7280;
+    font-size: 0.75rem;
+    color: #94a3b8;
   }
 
+  /* ── Mobile ── */
   @media (max-width: 768px) {
     .app-layout__menu-toggle {
       display: inline-flex;
@@ -795,13 +968,15 @@
 
     .app-layout__sidebar {
       transform: translateX(-100%);
+      z-index: 999;
     }
 
     .app-layout--sidebar-open .app-layout__sidebar {
       transform: translateX(0);
     }
 
-    .app-layout__main {
+    .app-layout__main,
+    .app-layout__footer {
       margin-left: 0;
     }
 
@@ -809,5 +984,41 @@
     .app-layout__language-switcher {
       display: none;
     }
+
+    .app-layout__backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 998;
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .app-layout__content {
+      padding: 16px;
+    }
+  }
+
+  /* ── Dark theme support ── */
+  :global(.dark) .app-layout {
+    background: #0f1117;
+  }
+
+  /* ── Page Transitions ── */
+  .page-fade-enter-active,
+  .page-fade-leave-active {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .page-fade-enter-from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  .page-fade-leave-to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  .page-fade-move {
+    transition: transform 0.3s ease;
   }
 </style>

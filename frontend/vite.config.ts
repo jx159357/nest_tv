@@ -73,9 +73,14 @@ export default defineConfig({
         },
       },
     },
+    // 生产环境优化
+    chunkSizeWarningLimit: 1000,
+    reportCompressedSize: false,
   },
   optimizeDeps: {
     include: ['vue', 'vue-router', 'pinia', 'axios', 'element-plus', '@vueuse/core'],
     force: true,
   },
+  // 静态资源处理
+  assetsInclude: ['**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.gif', '**/*.svg', '**/*.webp'],
 });

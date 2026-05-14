@@ -1,0 +1,120 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - link "Logo Nest TV" [ref=e6] [cursor=pointer]:
+      - /url: /
+      - img "Logo" [ref=e7]
+      - generic [ref=e8]: Nest TV
+    - generic [ref=e10]:
+      - textbox "搜索视频、演员、导演..." [ref=e11]
+      - button "🔍" [ref=e12] [cursor=pointer]:
+        - generic [ref=e13]: 🔍
+    - generic [ref=e14]:
+      - generic [ref=e15]:
+        - button "🇨🇳" [ref=e16] [cursor=pointer]
+        - button "🇺🇸" [ref=e17] [cursor=pointer]
+      - button "☀️" [ref=e18] [cursor=pointer]:
+        - generic [ref=e19]: ☀️
+      - button "管理员 管理员 ▾" [ref=e21] [cursor=pointer]:
+        - img "管理员" [ref=e22]
+        - generic [ref=e23]: 管理员
+        - generic [ref=e24]: ▾
+  - complementary [ref=e25]:
+    - navigation [ref=e26]:
+      - generic [ref=e27]:
+        - generic [ref=e28]: 首页
+        - link "🏠 首页" [ref=e29] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e30]: 🏠
+          - generic [ref=e31]: 首页
+        - link "✨ 推荐" [ref=e32] [cursor=pointer]:
+          - /url: /recommendations
+          - generic [ref=e33]: ✨
+          - generic [ref=e34]: 推荐
+        - link "🕘 观看历史" [ref=e35] [cursor=pointer]:
+          - /url: /watch-history
+          - generic [ref=e36]: 🕘
+          - generic [ref=e37]: 观看历史
+        - link "❤️ 我的收藏" [ref=e38] [cursor=pointer]:
+          - /url: /favorites
+          - generic [ref=e39]: ❤️
+          - generic [ref=e40]: 我的收藏
+        - link "📥 下载" [active] [ref=e41] [cursor=pointer]:
+          - /url: /downloads
+          - generic [ref=e42]: 📥
+          - generic [ref=e43]: 下载
+        - link "🧲 磁力链接" [ref=e44] [cursor=pointer]:
+          - /url: /torrent
+          - generic [ref=e45]: 🧲
+          - generic [ref=e46]: 磁力链接
+        - link "📺 IPTV" [ref=e47] [cursor=pointer]:
+          - /url: /iptv
+          - generic [ref=e48]: 📺
+          - generic [ref=e49]: IPTV
+      - generic [ref=e50]:
+        - generic [ref=e51]: 控制台
+        - link "🛡️ 控制台" [ref=e52] [cursor=pointer]:
+          - /url: /admin
+          - generic [ref=e53]: 🛡️
+          - generic [ref=e54]: 控制台
+  - main [ref=e55]:
+    - generic [ref=e90]:
+      - generic [ref=e91]:
+        - generic [ref=e92]:
+          - heading "下载任务" [level=1] [ref=e93]
+          - paragraph [ref=e94]: 统一查看来自详情页、播放页和磁力页的下载任务。浏览器或本地客户端下载会接管真实下载进度。
+          - paragraph [ref=e95]: 最近同步：2026/5/7 15:14:24
+        - generic [ref=e96]:
+          - link "去磁力资源" [ref=e97] [cursor=pointer]:
+            - /url: /torrent
+          - button "同步云端记录" [ref=e98]
+          - button "重试异常任务" [disabled] [ref=e99]
+          - button "清理异常记录" [disabled] [ref=e100]
+          - button "清理已完成" [disabled] [ref=e101]
+      - generic [ref=e102]:
+        - generic [ref=e103]:
+          - generic [ref=e104]: 全部任务
+          - generic [ref=e105]: "0"
+          - generic [ref=e106]: 按最近操作时间排序
+        - generic [ref=e107]:
+          - generic [ref=e108]: 进行中 / 待处理
+          - generic [ref=e109]: "0"
+          - generic [ref=e110]: 支持登录后多端同步任务记录
+        - generic [ref=e111]:
+          - generic [ref=e112]: 已完成 / 已中断
+          - generic [ref=e113]: 0 / 0
+          - generic [ref=e114]: 完成可清理，异常任务可重试
+      - generic [ref=e115]:
+        - generic [ref=e116]:
+          - generic [ref=e117]:
+            - heading "任务筛选" [level=2] [ref=e118]
+            - paragraph [ref=e119]: 按状态或关键词快速收窄当前任务列表。
+          - generic [ref=e120]:
+            - generic [ref=e121]:
+              - generic [ref=e122]: 搜索任务
+              - textbox "搜索任务" [ref=e123]:
+                - /placeholder: 搜索文件名、来源或链接
+            - generic [ref=e124]:
+              - generic [ref=e125]: 磁力 Hash
+              - textbox "磁力 Hash" [ref=e126]:
+                - /placeholder: 磁力 Hash，如 hash-demo
+        - generic [ref=e127]:
+          - button "全部 0" [ref=e128]
+          - button "进行中 / 待处理 0" [ref=e129]
+          - button "异常 / 已取消 0" [ref=e130]
+          - button "已完成 0" [ref=e131]
+        - generic [ref=e132]:
+          - button "全部类型 0" [ref=e133]
+          - button "直链 / 协议 0" [ref=e134]
+          - button "种子文件 0" [ref=e135]
+          - button "Magnet 0" [ref=e136]
+      - generic [ref=e137]:
+        - generic [ref=e138]: ⬇️
+        - heading "还没有下载任务" [level=2] [ref=e139]
+        - paragraph [ref=e140]: 可以在影视详情、播放页或磁力资源页把链接加入任务列表，再回来统一处理。
+        - generic [ref=e141]:
+          - link "浏览内容" [ref=e142] [cursor=pointer]:
+            - /url: /
+          - link "浏览磁力资源" [ref=e143] [cursor=pointer]:
+            - /url: /torrent
+  - contentinfo [ref=e86]:
+    - paragraph [ref=e88]: © 2024 Nest TV · 关于 · 帮助

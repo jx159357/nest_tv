@@ -1,5 +1,5 @@
 <template>
-  <NavigationLayout>
+  <div class="page-container">
     <div class="space-y-8">
       <header class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
@@ -334,13 +334,12 @@
         </div>
       </div>
     </div>
-  </NavigationLayout>
+  </div>
 </template>
 
 <script setup lang="ts">
   import { onMounted, ref } from 'vue';
   import { useRouter } from 'vue-router';
-  import NavigationLayout from '@/components/NavigationLayout.vue';
   import LoadingSpinner from '@/components/LoadingSpinner.vue';
   import { useAuthStore } from '@/stores/auth';
   import {
@@ -352,6 +351,7 @@
   import { searchApi } from '@/api/search';
   import { mediaApi } from '@/api/media';
   import type { MediaResource } from '@/types/media';
+  import { log } from '@/utils/logger';
 
   const router = useRouter();
   const authStore = useAuthStore();
@@ -441,7 +441,7 @@
         items: favoritesResponse.data || [],
       };
     } catch (error) {
-      console.error('加载个人中心数据失败:', error);
+      log.error('Profile', '加载个人中心数据失败:', error);
       interestError.value = getErrorMessage(error, '加载兴趣中心失败');
     } finally {
       statsLoading.value = false;

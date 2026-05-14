@@ -43,7 +43,8 @@ export class InitializationService implements OnModuleInit {
       return;
     }
 
-    const hashedPassword = await bcrypt.hash('admin123', 10);
+    const defaultPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'admin123';
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
     const admin = this.userRepository.create({
       username: 'admin',
       email: 'admin@nest-tv.local',
@@ -54,7 +55,7 @@ export class InitializationService implements OnModuleInit {
     });
 
     await this.userRepository.save(admin);
-    this.logger.log('默认管理员账号已创建: admin / admin123');
+    this.logger.log('默认管理员账号已创建（密码请查看 DEFAULT_ADMIN_PASSWORD 环境变量）');
   }
 
   /**
@@ -80,7 +81,7 @@ export class InitializationService implements OnModuleInit {
 
     this.logger.log('开始初始化示例数据');
 
-    // 免费公共测试视频源
+    // 免费公共测试视频源（使用稳定可访问的 URL）
     const demoMedia = [
       {
         title: 'Big Buck Bunny',
@@ -91,20 +92,21 @@ export class InitializationService implements OnModuleInit {
         director: 'Sacha Goedegebure',
         genres: ['动画', '喜剧', '短片'],
         source: '公共测试资源',
-        poster: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Big_buck_bunny_poster_big.jpg/220px-Big_buck_bunny_poster_big.jpg',
+        poster:
+          'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Big_buck_bunny_poster_big.jpg/220px-Big_buck_bunny_poster_big.jpg',
         duration: 9,
         playSources: [
-          {
-            url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-            type: PlaySourceType.ONLINE,
-            resolution: '1080p',
-            sourceName: 'Google Storage',
-          },
           {
             url: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_1MB.mp4',
             type: PlaySourceType.ONLINE,
             resolution: '1080p',
             sourceName: 'Test Videos',
+          },
+          {
+            url: 'https://www.w3schools.com/html/mov_bbb.mp4',
+            type: PlaySourceType.ONLINE,
+            resolution: '720p',
+            sourceName: 'W3Schools',
           },
         ],
       },
@@ -117,14 +119,15 @@ export class InitializationService implements OnModuleInit {
         director: 'Colin Levy',
         genres: ['动画', '奇幻', '冒险'],
         source: '公共测试资源',
-        poster: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Sintel_poster.jpg/220px-Sintel_poster.jpg',
+        poster:
+          'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Sintel_poster.jpg/220px-Sintel_poster.jpg',
         duration: 15,
         playSources: [
           {
-            url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+            url: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_1MB.mp4',
             type: PlaySourceType.ONLINE,
             resolution: '1080p',
-            sourceName: 'Google Storage',
+            sourceName: 'Test Videos',
           },
         ],
       },
@@ -137,14 +140,15 @@ export class InitializationService implements OnModuleInit {
         director: 'Ian Hubert',
         genres: ['科幻', '动作', '短片'],
         source: '公共测试资源',
-        poster: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Tears_of_Steel_poster.jpg/220px-Tears_of_Steel_poster.jpg',
+        poster:
+          'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Tears_of_Steel_poster.jpg/220px-Tears_of_Steel_poster.jpg',
         duration: 12,
         playSources: [
           {
-            url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+            url: 'https://filesamples.com/samples/video/mp4/sample_640x360.mp4',
             type: PlaySourceType.ONLINE,
-            resolution: '1080p',
-            sourceName: 'Google Storage',
+            resolution: '720p',
+            sourceName: 'File Samples',
           },
         ],
       },
@@ -157,20 +161,21 @@ export class InitializationService implements OnModuleInit {
         director: 'Bassam Kurdali',
         genres: ['动画', '科幻', '实验'],
         source: '公共测试资源',
-        poster: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Elephants_Dream_s1_proog.jpg/220px-Elephants_Dream_s1_proog.jpg',
+        poster:
+          'https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Elephants_Dream_s1_proog.jpg/220px-Elephants_Dream_s1_proog.jpg',
         duration: 11,
         playSources: [
           {
-            url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+            url: 'https://filesamples.com/samples/video/mp4/sample_640x360.mp4',
             type: PlaySourceType.ONLINE,
             resolution: '720p',
-            sourceName: 'Google Storage',
+            sourceName: 'File Samples',
           },
         ],
       },
       {
         title: 'For Bigger Blazes',
-        description: 'Google 公共测试视频，用于测试流媒体播放功能。',
+        description: '公共测试视频，用于测试流媒体播放功能。',
         type: MediaType.MOVIE,
         quality: MediaQuality.HD,
         rating: 6.0,
@@ -178,16 +183,16 @@ export class InitializationService implements OnModuleInit {
         duration: 1,
         playSources: [
           {
-            url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+            url: 'https://www.w3schools.com/html/movie.mp4',
             type: PlaySourceType.ONLINE,
             resolution: '720p',
-            sourceName: 'Google Storage',
+            sourceName: 'W3Schools',
           },
         ],
       },
       {
         title: 'Subaru Outback On Street',
-        description: 'Google 公共测试视频，展示汽车行驶场景。',
+        description: '公共测试视频，展示汽车行驶场景。',
         type: MediaType.MOVIE,
         quality: MediaQuality.HD,
         rating: 5.5,
@@ -195,10 +200,10 @@ export class InitializationService implements OnModuleInit {
         duration: 1,
         playSources: [
           {
-            url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
+            url: 'https://www.w3schools.com/html/mov_bbb.mp4',
             type: PlaySourceType.ONLINE,
             resolution: '720p',
-            sourceName: 'Google Storage',
+            sourceName: 'W3Schools',
           },
         ],
       },

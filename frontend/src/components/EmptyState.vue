@@ -4,6 +4,8 @@
       <svg
         v-if="icon === 'search'"
         class="w-16 h-16"
+        width="64"
+        height="64"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -19,6 +21,8 @@
       <svg
         v-else-if="icon === 'film'"
         class="w-16 h-16"
+        width="64"
+        height="64"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -34,6 +38,8 @@
       <svg
         v-else-if="icon === 'heart'"
         class="w-16 h-16"
+        width="64"
+        height="64"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -49,6 +55,8 @@
       <svg
         v-else-if="icon === 'light'"
         class="w-16 h-16"
+        width="64"
+        height="64"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -61,7 +69,7 @@
         />
       </svg>
 
-      <svg v-else class="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg v-else class="w-16 h-16" width="64" height="64" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path
           stroke-linecap="round"
           stroke-linejoin="round"

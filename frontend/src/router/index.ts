@@ -1,23 +1,32 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 
-// 路由懒加载配置
-const HomeView = () => import('../views/HomeView.vue');
+// 布局组件
+const MainLayout = () => import('../layouts/MainLayout.vue');
+
+// 路由懒加载配置 - 认证页面
 const LoginView = () => import('../views/LoginView.vue');
 const RegisterView = () => import('../views/RegisterView.vue');
+
+// 路由懒加载配置 - 主要页面（无需登录）
+const HomeView = () => import('../views/HomeView.vue');
 const MediaDetailView = () => import('../views/MediaDetailView.vue');
 const WatchView = () => import('../views/WatchView.vue');
+const IPTVView = () => import('../views/IPTVView.vue');
+const RecommendationsView = () => import('../views/RecommendationsView.vue');
+
+// 路由懒加载配置 - 用户功能（需要登录）
 const ProfileView = () => import('../views/ProfileView.vue');
 const SettingsView = () => import('../views/SettingsView.vue');
 const SearchHistoryView = () => import('../views/SearchHistoryView.vue');
 const FavoritesView = () => import('../views/FavoritesView.vue');
-const CrawlerView = () => import('../views/CrawlerView.vue');
-const PlaySourcesView = () => import('../views/PlaySourcesView.vue');
 const WatchHistoryView = () => import('../views/WatchHistoryView.vue');
-const RecommendationsView = () => import('../views/RecommendationsView.vue');
 const DownloadsView = () => import('../views/DownloadsView.vue');
 const TorrentView = () => import('../views/TorrentView.vue');
-const IPTVView = () => import('../views/IPTVView.vue');
+
+// 路由懒加载配置 - 管理功能（需要管理员权限）
+const CrawlerView = () => import('../views/CrawlerView.vue');
+const PlaySourcesView = () => import('../views/PlaySourcesView.vue');
 const AdminLayout = () => import('../layouts/AdminLayout.vue');
 const AdminDashboardView = () => import('../views/AdminDashboardView.vue');
 const AdminUsersView = () => import('../views/AdminUsersView.vue');
@@ -28,21 +37,152 @@ const AdminDownloadTasksView = () => import('../views/AdminDownloadTasksView.vue
 const AdminWatchHistoryView = () => import('../views/AdminWatchHistoryView.vue');
 const AdminLogsView = () => import('../views/AdminLogsView.vue');
 const AdminDanmakuView = () => import('../views/AdminDanmakuView.vue');
-// const SettingsView = () => import('../views/SettingsView.vue'); // 暂时注释，文件不存在
+const AdminSourceScriptsView = () => import('../views/AdminSourceScriptsView.vue');
+
+// 路由懒加载配置 - 其他
 const NotFoundView = () => import('../views/NotFoundView.vue');
 
+// 公开路由名称列表 - 这些路由无需登录即可访问
+const PUBLIC_ROUTE_NAMES = [
+  'home',
+  'media-detail',
+  'watch',
+  'iptv',
+  'recommendations',
+];
+
 const routes: RouteRecordRaw[] = [
+  // ==================== 主布局路由 - 观影功能 ====================
   {
     path: '/',
-    name: 'home',
-    component: HomeView,
-    meta: {
-      title: '首页 - Nest TV',
-      requiresAuth: true,
-      preload: true, // 首页预加载
-      keepAlive: true, // 保持组件状态
-    },
+    component: MainLayout,
+    children: [
+      {
+        path: '',
+        name: 'home',
+        component: HomeView,
+        meta: {
+          title: '首页 - Nest TV',
+          requiresAuth: false,
+          preload: true,
+          keepAlive: true,
+        },
+      },
+      {
+        path: 'media/:id',
+        name: 'media-detail',
+        component: MediaDetailView,
+        meta: {
+          title: '影视详情 - Nest TV',
+          requiresAuth: false,
+          preload: true,
+        },
+      },
+      {
+        path: 'watch/:id',
+        name: 'watch',
+        component: WatchView,
+        meta: {
+          title: '观看影视 - Nest TV',
+          requiresAuth: false,
+          preload: true,
+          keepAlive: true,
+        },
+      },
+      {
+        path: 'iptv',
+        name: 'iptv',
+        component: IPTVView,
+        meta: {
+          title: 'IPTV - Nest TV',
+          requiresAuth: false,
+          preload: false,
+        },
+      },
+      {
+        path: 'recommendations',
+        name: 'recommendations',
+        component: RecommendationsView,
+        meta: {
+          title: '推荐内容 - Nest TV',
+          requiresAuth: false,
+          preload: true,
+        },
+      },
+      {
+        path: 'profile',
+        name: 'profile',
+        component: ProfileView,
+        meta: {
+          title: '个人中心 - Nest TV',
+          requiresAuth: true,
+          preload: false,
+        },
+      },
+      {
+        path: 'settings',
+        name: 'settings',
+        component: SettingsView,
+        meta: {
+          title: '偏好设置 - Nest TV',
+          requiresAuth: true,
+          preload: false,
+        },
+      },
+      {
+        path: 'favorites',
+        name: 'favorites',
+        component: FavoritesView,
+        meta: {
+          title: '我的收藏 - Nest TV',
+          requiresAuth: true,
+          preload: false,
+        },
+      },
+      {
+        path: 'search-history',
+        name: 'search-history',
+        component: SearchHistoryView,
+        meta: {
+          title: '搜索历史 - Nest TV',
+          requiresAuth: true,
+          preload: false,
+        },
+      },
+      {
+        path: 'watch-history',
+        name: 'watch-history',
+        component: WatchHistoryView,
+        meta: {
+          title: '观看历史 - Nest TV',
+          requiresAuth: true,
+          preload: false,
+        },
+      },
+      {
+        path: 'downloads',
+        name: 'downloads',
+        component: DownloadsView,
+        meta: {
+          title: '下载任务 - Nest TV',
+          requiresAuth: true,
+          preload: false,
+        },
+      },
+      {
+        path: 'torrent',
+        name: 'torrent',
+        component: TorrentView,
+        meta: {
+          title: '磁力资源 - Nest TV',
+          requiresAuth: true,
+          preload: false,
+        },
+      },
+    ],
   },
+
+  // ==================== 认证路由 - 无布局 ====================
   {
     path: '/login',
     name: 'login',
@@ -50,7 +190,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: '登录 - Nest TV',
       requiresAuth: false,
-      hideAuth: true, // 登录页面隐藏已登录状态
+      hideAuth: true,
     },
   },
   {
@@ -63,117 +203,8 @@ const routes: RouteRecordRaw[] = [
       hideAuth: true,
     },
   },
-  {
-    path: '/media/:id',
-    name: 'media-detail',
-    component: MediaDetailView,
-    meta: {
-      title: '影视详情 - Nest TV',
-      requiresAuth: true,
-      preload: true, // 预加载重要页面
-    },
-  },
-  {
-    path: '/watch/:id',
-    name: 'watch',
-    component: WatchView,
-    meta: {
-      title: '观看影视 - Nest TV',
-      requiresAuth: true,
-      preload: true, // 观看页面预加载
-      keepAlive: true, // 保持播放状态
-    },
-  },
-  {
-    path: '/profile',
-    name: 'profile',
-    component: ProfileView,
-    meta: {
-      title: '个人中心 - Nest TV',
-      requiresAuth: true,
-      preload: false, // 个人中心不预加载
-    },
-  },
-  {
-    path: '/settings',
-    name: 'settings',
-    component: SettingsView,
-    meta: {
-      title: '偏好设置 - Nest TV',
-      requiresAuth: true,
-      preload: false,
-    },
-  },
-  {
-    path: '/favorites',
-    name: 'favorites',
-    component: FavoritesView,
-    meta: {
-      title: '我的收藏 - Nest TV',
-      requiresAuth: true,
-      preload: false,
-    },
-  },
-  {
-    path: '/search-history',
-    name: 'search-history',
-    component: SearchHistoryView,
-    meta: {
-      title: '搜索历史 - Nest TV',
-      requiresAuth: true,
-      preload: false,
-    },
-  },
-  {
-    path: '/watch-history',
-    name: 'watch-history',
-    component: WatchHistoryView,
-    meta: {
-      title: '观看历史 - Nest TV',
-      requiresAuth: true,
-      preload: false, // 历史记录按需加载
-    },
-  },
-  {
-    path: '/recommendations',
-    name: 'recommendations',
-    component: RecommendationsView,
-    meta: {
-      title: '推荐内容 - Nest TV',
-      requiresAuth: true,
-      preload: true, // 推荐内容预加载
-    },
-  },
-  {
-    path: '/downloads',
-    name: 'downloads',
-    component: DownloadsView,
-    meta: {
-      title: '下载任务 - Nest TV',
-      requiresAuth: true,
-      preload: false,
-    },
-  },
-  {
-    path: '/torrent',
-    name: 'torrent',
-    component: TorrentView,
-    meta: {
-      title: '磁力资源 - Nest TV',
-      requiresAuth: true,
-      preload: false,
-    },
-  },
-  {
-    path: '/iptv',
-    name: 'iptv',
-    component: IPTVView,
-    meta: {
-      title: 'IPTV - Nest TV',
-      requiresAuth: true,
-      preload: false,
-    },
-  },
+
+  // ==================== 重定向路由 ====================
   {
     path: '/search',
     redirect: to => ({ path: '/', query: to.query }),
@@ -200,16 +231,8 @@ const routes: RouteRecordRaw[] = [
       },
     }),
   },
-  // {
-  //   path: '/settings',
-  //   name: 'settings',
-  //   component: SettingsView, // 暂时注释
-  //   meta: {
-  //     title: '系统设置 - Nest TV',
-  //     requiresAuth: true,
-  //     preload: false, // 设置页面按需加载
-  //   },
-  // },
+
+  // ==================== 管理路由 - 需要管理员权限 ====================
   {
     path: '/admin',
     name: 'admin',
@@ -218,7 +241,7 @@ const routes: RouteRecordRaw[] = [
       title: '管理后台 - Nest TV',
       requiresAuth: true,
       requiresAdmin: true,
-      preload: false, // 管理功能不预加载
+      preload: false,
     },
     children: [
       {
@@ -311,28 +334,40 @@ const routes: RouteRecordRaw[] = [
           requiresAdmin: true,
         },
       },
+      {
+        path: 'source-scripts',
+        name: 'admin-source-scripts',
+        component: AdminSourceScriptsView,
+        meta: {
+          title: '源脚本管理 - Nest TV',
+          requiresAuth: true,
+          requiresAdmin: true,
+        },
+      },
+      {
+        path: 'crawler',
+        name: 'admin-crawler',
+        component: CrawlerView,
+        meta: {
+          title: '数据采集 - Nest TV',
+          requiresAuth: true,
+          requiresAdmin: true,
+        },
+      },
+      {
+        path: 'play-sources-overview',
+        name: 'admin-play-sources-overview',
+        component: PlaySourcesView,
+        meta: {
+          title: '播放源一览 - Nest TV',
+          requiresAuth: true,
+          requiresAdmin: true,
+        },
+      },
     ],
   },
-  {
-    path: '/crawler',
-    name: 'crawler',
-    component: CrawlerView,
-    meta: {
-      title: '数据采集 - Nest TV',
-      requiresAuth: true,
-      preload: false, // 管理功能不预加载
-    },
-  },
-  {
-    path: '/play-sources',
-    name: 'play-sources',
-    component: PlaySourcesView,
-    meta: {
-      title: '播放源管理 - Nest TV',
-      requiresAuth: true,
-      preload: false, // 管理功能不预加载
-    },
-  },
+
+  // ==================== 404路由 ====================
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
@@ -358,15 +393,23 @@ const router = createRouter({
   },
 });
 
+// 路由守卫
 router.beforeEach(to => {
   const authStore = useAuthStore();
   const requiresAuth = to.matched.some(record => record.meta?.requiresAuth);
   const requiresAdmin = to.matched.some(record => record.meta?.requiresAdmin);
 
+  // 设置页面标题
   if (typeof to.meta?.title === 'string') {
     document.title = to.meta.title;
   }
 
+  // 公开路由无需登录
+  if (PUBLIC_ROUTE_NAMES.includes(to.name as string)) {
+    return true;
+  }
+
+  // 需要认证的路由
   if (requiresAuth && !authStore.token) {
     return {
       path: '/login',
@@ -374,6 +417,7 @@ router.beforeEach(to => {
     };
   }
 
+  // 需要管理员权限的路由
   if (requiresAdmin) {
     const role = authStore.user?.role;
     if (role !== 'admin' && role !== 'superAdmin') {
