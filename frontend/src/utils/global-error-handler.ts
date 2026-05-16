@@ -90,9 +90,8 @@ export class GlobalErrorHandler {
       message,
     });
 
-    // 特殊错误处理
-    if (statusCode === 401) {
-      // 未授权错误，可能需要重新登录
+    // 特殊错误处理（登录页面不触发自动跳转）
+    if (statusCode === 401 && !window.location.pathname.includes('/login')) {
       this.handleUnauthorizedError();
     }
 

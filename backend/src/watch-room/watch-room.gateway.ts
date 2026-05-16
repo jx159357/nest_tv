@@ -25,6 +25,15 @@ interface SyncPayload {
   isPlaying: boolean;
 }
 
+interface SerializedRoomState {
+  mediaId: string;
+  hostId: string;
+  currentTime: number;
+  isPlaying: boolean;
+  lastUpdate: number;
+  users: Record<string, { userId: string; username: string; joinedAt: number }>;
+}
+
 @WebSocketGateway({
   cors: { origin: '*' },
   namespace: '/watch-room',
@@ -67,7 +76,7 @@ export class WatchRoomGateway implements OnGatewayConnection, OnGatewayDisconnec
   handleJoinRoom(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { roomId: string; mediaId: string },
-  ): { success: boolean; room?: RoomState } {
+  ): { success: boolean; room?: SerializedRoomState } {
     const { roomId, mediaId } = data;
     const { userId, username } = client.data;
 
@@ -98,6 +107,11 @@ export class WatchRoomGateway implements OnGatewayConnection, OnGatewayDisconnec
 
     this.logger.log(`${username} joined room ${roomId}`);
 
+    const usersObj: Record<string, { userId: string; username: string; joinedAt: number }> = {};
+    room.users.forEach((value, key) => {
+      usersObj[key] = value;
+    });
+
     return {
       success: true,
       room: {
@@ -106,7 +120,7 @@ export class WatchRoomGateway implements OnGatewayConnection, OnGatewayDisconnec
         currentTime: room.currentTime,
         isPlaying: room.isPlaying,
         lastUpdate: room.lastUpdate,
-        users: room.users,
+        users: usersObj,
       },
     };
   }

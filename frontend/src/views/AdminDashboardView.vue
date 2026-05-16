@@ -377,7 +377,7 @@
                         汇总最近任务中反复失败或报错的来源，便于优先排查。
                       </div>
 
-                      <div v-if="taskIssueSources.length > 0" class="mt-4 space-y-3">
+                      <div v-if="taskIssueSources.length > 0" class="mt-4 max-h-[400px] space-y-3 overflow-y-auto">
                         <div
                           v-for="issue in taskIssueSources"
                           :key="issue.sourceName"
@@ -447,7 +447,10 @@
                 <span class="text-xs text-slate-500">Top {{ topCollectionSources.length }}</span>
               </div>
 
-              <div v-if="topCollectionSources.length > 0" class="mt-4 max-h-[400px] space-y-3 overflow-y-auto">
+              <div
+                v-if="topCollectionSources.length > 0"
+                class="mt-4 max-h-[400px] space-y-3 overflow-y-auto"
+              >
                 <div
                   v-for="source in topCollectionSources"
                   :key="source.name"
@@ -623,7 +626,7 @@
                 <span class="text-xs text-slate-500">{{ attentionSummary.total }} 项</span>
               </div>
 
-              <div v-if="attentionCollectionSources.length > 0" class="mt-4 space-y-3">
+              <div v-if="attentionCollectionSources.length > 0" class="mt-4 max-h-[500px] space-y-3 overflow-y-auto">
                 <div
                   v-for="item in attentionCollectionSources"
                   :key="item.source.name"
@@ -765,7 +768,9 @@
         </div>
         <div>
           <div v-if="loading" class="text-center py-8">
-            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500 mx-auto"></div>
+            <div
+              class="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500 mx-auto"
+            ></div>
             <p class="mt-2 text-xs text-slate-400">加载中...</p>
           </div>
           <div v-else-if="stats.recentActivity.length > 0" class="divide-y divide-white/[0.06]">
@@ -806,7 +811,9 @@
         </div>
         <div class="p-4">
           <div v-if="healthLoading" class="text-center py-8">
-            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500 mx-auto"></div>
+            <div
+              class="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500 mx-auto"
+            ></div>
             <p class="mt-2 text-xs text-slate-400">检测中...</p>
           </div>
           <div v-else-if="health" class="space-y-3">
@@ -911,10 +918,30 @@
   }
 
   const statCards = computed(() => [
-    { label: '用户总数', value: stats.value.userCount, icon: '👥', iconBg: 'bg-blue-500/15 text-blue-400' },
-    { label: '媒体资源', value: stats.value.mediaCount, icon: '🎬', iconBg: 'bg-emerald-500/15 text-emerald-400' },
-    { label: '播放源', value: stats.value.playSourceCount, icon: '🔗', iconBg: 'bg-purple-500/15 text-purple-400' },
-    { label: '观看历史', value: stats.value.watchHistoryCount, icon: '🕘', iconBg: 'bg-amber-500/15 text-amber-400' },
+    {
+      label: '用户总数',
+      value: stats.value.userCount,
+      icon: '👥',
+      iconBg: 'bg-blue-500/15 text-blue-400',
+    },
+    {
+      label: '媒体资源',
+      value: stats.value.mediaCount,
+      icon: '🎬',
+      iconBg: 'bg-emerald-500/15 text-emerald-400',
+    },
+    {
+      label: '播放源',
+      value: stats.value.playSourceCount,
+      icon: '🔗',
+      iconBg: 'bg-purple-500/15 text-purple-400',
+    },
+    {
+      label: '观看历史',
+      value: stats.value.watchHistoryCount,
+      icon: '🕘',
+      iconBg: 'bg-amber-500/15 text-amber-400',
+    },
   ]);
 
   // 状态管理
@@ -1131,7 +1158,7 @@
       export: '导出',
       import: '导入',
     };
-    return actionMap[action] || action;
+    return action ? actionMap[action as keyof typeof actionMap] || action : '';
   };
 
   // 获取资源文本
@@ -1146,7 +1173,7 @@
       admin_permission: '管理员权限',
       admin_log: '管理日志',
     };
-    return resourceMap[resource] || resource;
+    return resource ? resourceMap[resource as keyof typeof resourceMap] || resource : '';
   };
 
   // 格式化日期
@@ -1188,7 +1215,7 @@
   };
 
   // 格式化日期时间
-  const formatDateTime = (timestamp?: string) => {
+  const formatDateTime = (timestamp?: string | null) => {
     if (!timestamp) return '暂无';
 
     const parsed = new Date(timestamp);

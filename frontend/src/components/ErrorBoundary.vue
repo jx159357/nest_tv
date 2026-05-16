@@ -4,7 +4,12 @@
       <!-- 错误图标 -->
       <div class="error-boundary__icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          />
         </svg>
       </div>
 
@@ -15,10 +20,7 @@
 
         <!-- 错误详情 -->
         <div v-if="showDetails && errorDetails" class="error-boundary__details">
-          <button
-            class="error-boundary__details-toggle"
-            @click="isDetailsOpen = !isDetailsOpen"
-          >
+          <button class="error-boundary__details-toggle" @click="isDetailsOpen = !isDetailsOpen">
             {{ isDetailsOpen ? '隐藏详情' : '查看详情' }}
             <svg
               class="error-boundary__details-arrow"
@@ -27,7 +29,12 @@
               fill="none"
               stroke="currentColor"
             >
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </button>
           <div v-if="isDetailsOpen" class="error-boundary__details-content">
@@ -42,8 +49,18 @@
             class="error-boundary__button error-boundary__button--primary"
             @click="handleRetry"
           >
-            <svg class="error-boundary__button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            <svg
+              class="error-boundary__button-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
             </svg>
             重试
           </button>
@@ -52,8 +69,18 @@
             class="error-boundary__button error-boundary__button--secondary"
             @click="goHome"
           >
-            <svg class="error-boundary__button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            <svg
+              class="error-boundary__button-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+              />
             </svg>
             返回首页
           </button>
@@ -358,18 +385,18 @@
   }
 
   /* 暗色模式 */
-  [data-theme="dark"] .error-boundary,
+  [data-theme='dark'] .error-boundary,
   .dark .error-boundary {
     background: var(--bg-card);
     border-color: var(--border-primary);
   }
 
-  [data-theme="dark"] .error-boundary__title,
+  [data-theme='dark'] .error-boundary__title,
   .dark .error-boundary__title {
     color: var(--text-primary);
   }
 
-  [data-theme="dark"] .error-boundary__message,
+  [data-theme='dark'] .error-boundary__message,
   .dark .error-boundary__message {
     color: var(--text-secondary);
   }

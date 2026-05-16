@@ -84,6 +84,7 @@ export class ProxyMonitoringService {
   private alerts: ProxyAlert[] = [];
   private lastRequestCount = 0;
   private readonly maxHistorySize = 1440; // 24小时的分钟数
+  private lastEmptyPoolLogTime = 0;
 
   constructor(
     private readonly proxyPoolService: ProxyPoolService,
@@ -270,7 +271,11 @@ export class ProxyMonitoringService {
    */
   private logKeyMetrics(metrics: ProxyMonitoringMetrics): void {
     if (metrics.workingProxies === 0) {
-      this.logger.error('代理池状态: 无可用代理');
+      const now = Date.now();
+      if (now - this.lastEmptyPoolLogTime > 5 * 60 * 1000) {
+        this.logger.error('代理池状态: 无可用代理');
+        this.lastEmptyPoolLogTime = now;
+      }
       return;
     }
 

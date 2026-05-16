@@ -13,40 +13,31 @@ export class MediaResourceDto {
   @ApiProperty({
     description: '影视类型',
     example: 'movie',
-    enum: ['movie', 'tv', 'variety', 'documentary'],
+    enum: ['movie', 'tv_series', 'variety', 'anime', 'documentary'],
   })
   type: string;
 
   @ApiProperty({
     description: '视频质量',
-    example: '1080p',
-    enum: ['1080p', '720p', '480p', '360p'],
+    example: 'hd',
+    enum: ['hd', 'full_hd', 'blue_ray', 'sd'],
   })
   quality?: string;
 
-  @ApiProperty({ description: '影视标签', example: ['动作', '科幻'], isArray: true })
-  tags?: string[];
+  @ApiProperty({ description: '影视类型/标签', example: ['动作', '科幻'], isArray: true })
+  genres?: string[];
 
   @ApiProperty({
-    description: '影视封面URL',
+    description: '影视海报URL',
     example: 'https://streaming-platform.com/covers/movie1.jpg',
   })
-  coverUrl?: string;
-
-  @ApiProperty({
-    description: '播放URL',
-    example: 'https://streaming-platform.com/videos/movie1.mp4',
-  })
-  playUrl?: string;
+  poster?: string;
 
   @ApiProperty({ description: '影视时长（秒）', example: 8820 })
   duration?: number;
 
-  @ApiProperty({ description: '豆瓣评分', example: 8.7 })
+  @ApiProperty({ description: '评分', example: 8.7 })
   rating?: number;
-
-  @ApiProperty({ description: '豆瓣评分人数', example: 123456 })
-  ratingCount?: number;
 
   @ApiProperty({ description: '上映日期', example: '2024-01-01' })
   releaseDate?: Date;

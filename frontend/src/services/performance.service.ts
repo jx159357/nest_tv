@@ -396,7 +396,11 @@ export class PerformanceService {
       // 内存警告
       if (this.metrics && this.metrics.memory.percentage > 90) {
         if (DEV) {
-          log.warn('Performance', 'Memory usage high:', this.metrics.memory.percentage.toFixed(2) + '%');
+          log.warn(
+            'Performance',
+            'Memory usage high:',
+            this.metrics.memory.percentage.toFixed(2) + '%',
+          );
         }
         this.optimizeMemory();
       }
@@ -423,7 +427,7 @@ export class PerformanceService {
 
   // 检查性能阈值
   private checkThresholds(metrics: PerformanceMetrics) {
-    const warnings = [];
+    const warnings: string[] = [];
 
     if (metrics.fcp > PERFORMANCE_THRESHOLDS.FCP) {
       warnings.push(`FCP too high: ${metrics.fcp.toFixed(2)}ms`);

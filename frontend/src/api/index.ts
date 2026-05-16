@@ -48,15 +48,15 @@ class ApiClient {
     }
 
     // 不使用缓存
-    return RetryHelper.retry(async () => {
-      try {
+    try {
+      return await RetryHelper.retry(async () => {
         const response = await this.instance.get(url, config);
         return response.data;
-      } catch (error) {
-        GlobalErrorHandler.handle(error, `获取数据失败: ${url}`);
-        throw error;
-      }
-    });
+      });
+    } catch (error) {
+      GlobalErrorHandler.handle(error, `获取数据失败: ${url}`);
+      throw error;
+    }
   }
 
   // POST请求
@@ -65,16 +65,16 @@ class ApiClient {
     data?: Record<string, any>,
     config?: Record<string, any>,
   ): Promise<T> {
-    return RetryHelper.retry(async () => {
-      try {
+    try {
+      return await RetryHelper.retry(async () => {
         const response = await this.instance.post(url, data, config);
         apiCacheManager.clearCacheByPattern(/^GET:/);
         return response.data;
-      } catch (error) {
-        GlobalErrorHandler.handle(error, `POST请求失败: ${url}`);
-        throw error;
-      }
-    });
+      });
+    } catch (error) {
+      GlobalErrorHandler.handle(error, `POST请求失败: ${url}`);
+      throw error;
+    }
   }
 
   // PUT请求
@@ -83,16 +83,16 @@ class ApiClient {
     data?: Record<string, any>,
     config?: Record<string, any>,
   ): Promise<T> {
-    return RetryHelper.retry(async () => {
-      try {
+    try {
+      return await RetryHelper.retry(async () => {
         const response = await this.instance.put(url, data, config);
         apiCacheManager.clearCacheByPattern(/^GET:/);
         return response.data;
-      } catch (error) {
-        GlobalErrorHandler.handle(error, `PUT请求失败: ${url}`);
-        throw error;
-      }
-    });
+      });
+    } catch (error) {
+      GlobalErrorHandler.handle(error, `PUT请求失败: ${url}`);
+      throw error;
+    }
   }
 
   // PATCH请求
@@ -101,30 +101,30 @@ class ApiClient {
     data?: Record<string, any>,
     config?: Record<string, any>,
   ): Promise<T> {
-    return RetryHelper.retry(async () => {
-      try {
+    try {
+      return await RetryHelper.retry(async () => {
         const response = await this.instance.patch(url, data, config);
         apiCacheManager.clearCacheByPattern(/^GET:/);
         return response.data;
-      } catch (error) {
-        GlobalErrorHandler.handle(error, `PATCH请求失败: ${url}`);
-        throw error;
-      }
-    });
+      });
+    } catch (error) {
+      GlobalErrorHandler.handle(error, `PATCH请求失败: ${url}`);
+      throw error;
+    }
   }
 
   // DELETE请求
   static async delete<T>(url: string, config?: Record<string, any>): Promise<T> {
-    return RetryHelper.retry(async () => {
-      try {
+    try {
+      return await RetryHelper.retry(async () => {
         const response = await this.instance.delete(url, config);
         apiCacheManager.clearCacheByPattern(/^GET:/);
         return response.data;
-      } catch (error) {
-        GlobalErrorHandler.handle(error, `DELETE请求失败: ${url}`);
-        throw error;
-      }
-    });
+      });
+    } catch (error) {
+      GlobalErrorHandler.handle(error, `DELETE请求失败: ${url}`);
+      throw error;
+    }
   }
 
   // 文件上传

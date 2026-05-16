@@ -136,7 +136,7 @@ class APICacheManager {
       }
 
       return response;
-    } catch (error) {
+    } catch (error: any) {
       // 对于某些错误，可以返回缓存的旧数据
       if (error.response?.status === 503 || error.response?.status === 504) {
         const cachedData = this.getCache(cacheKey);
@@ -337,7 +337,9 @@ export class HybridCacheManager {
         }
         localStorage.removeItem(this.getStorageKey(key));
       }
-    } catch {}
+    } catch {
+      // ignore parse errors
+    }
 
     return null;
   }
@@ -384,7 +386,9 @@ export class HybridCacheManager {
         try {
           const parsed = JSON.parse(localStorage.getItem(k) || '{}');
           items.push({ key: k, timestamp: parsed.timestamp || 0 });
-        } catch {}
+        } catch {
+          // ignore parse errors
+        }
       }
     }
     if (items.length > this.maxStorageItems) {
@@ -402,14 +406,16 @@ export class HybridCacheManager {
       return this.pendingRequests.get(key) as Promise<T>;
     }
 
-    const promise = fetcher().then(data => {
-      this.set(key, data, ttl);
-      this.pendingRequests.delete(key);
-      return data;
-    }).catch(err => {
-      this.pendingRequests.delete(key);
-      throw err;
-    });
+    const promise = fetcher()
+      .then(data => {
+        this.set(key, data, ttl);
+        this.pendingRequests.delete(key);
+        return data;
+      })
+      .catch(err => {
+        this.pendingRequests.delete(key);
+        throw err;
+      });
 
     this.pendingRequests.set(key, promise);
     return promise;

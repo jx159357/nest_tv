@@ -6,86 +6,117 @@ export const CRAWLER_TARGETS: CrawlerTarget[] = [
     name: '电影天堂',
     baseUrl: 'https://www.dytt8899.com',
     selectors: {
-      title: '.co_content22 ul li a, .title_all h1, .bd3r .co_area2 .title_all h1',
-      description: '.co_content22, .co_content8, .co_content222, .zoomX',
-      poster: '#Zoom img, .co_content8 img, .bd3r .co_area2 img',
-      rating: '.rating, .score, .co_content8 .rank',
-      director: '.co_content8 p, .actor p',
-      actors: '.co_content8 p, .actor p',
-      genres: '.co_content8 p a, .actor p a, .co_content222 p a',
-      releaseDate: '.co_content8 p span, .actor p span, .co_content222 p',
+      title: '.title_all h1',
+      description: '#Zoom, .co_content8',
+      poster: '#Zoom img, .co_content8 img',
+      rating: '.rank, .co_content8 strong',
+      director: '.co_content8 p',
+      actors: '.co_content8 p',
+      genres: '.co_content8 p a',
+      releaseDate: '.position .updatetime, .co_content8 p span',
       downloadUrls:
-        '.co_content22 a[href*="thunder"], .co_content222 a[href*="magnet"], .down_list a',
+        '#downlist a[href*="magnet"], .player_list a, a[href*="thunder"], a[href*="ftp"], a[href*="ed2k"]',
     },
+    listingUrls: [
+      'https://www.dytt8899.com/html/gndy/dyzz/index.html',
+      'https://www.dytt8899.com/html/gndy/rihan/index.html',
+      'https://www.dytt8899.com/html/gndy/oumei/index.html',
+    ],
     enabled: true,
     priority: 1,
     maxPages: 50,
     respectRobotsTxt: true,
     requestDelay: 2000,
   },
-  // 电影天堂备用域名
-  {
-    name: '电影天堂备用',
-    baseUrl: 'https://www.dy2018.com',
-    selectors: {
-      title: '.title_all h1, .co_content22 ul li a',
-      description: '.co_content8, .co_content222, .zoomX',
-      poster: '#Zoom img, .co_content8 img',
-      rating: '.rating, .score',
-      director: '.co_content8 p',
-      actors: '.co_content8 p',
-      genres: '.co_content8 p a, .co_content222 p a',
-      releaseDate: '.co_content8 p span',
-      downloadUrls:
-        'a[href*="thunder"], a[href*="magnet"], a[href*="ftp"], a[href*="ed2k"], .down_list a',
-    },
-    enabled: true,
-    priority: 2,
-    maxPages: 30,
-    respectRobotsTxt: true,
-    requestDelay: 2000,
-  },
-  // 阳光电影
+  // 阳光电影 - 禁用（站点不可达）
   {
     name: '阳光电影',
     baseUrl: 'https://www.ygdy8.com',
     selectors: {
-      title: '.co_content22 ul li a, .title_all h1',
-      description: '.co_content8, .co_content222, .zoomX',
-      poster: '#Zoom img, .co_content8 img',
-      rating: '.rating, .score',
+      title: '.title_all h1',
+      description: '#Zoom, .co_content8',
+      poster: '#Zoom img',
+      rating: '.rank, .score',
       director: '.co_content8 p',
       actors: '.co_content8 p',
       genres: '.co_content8 p a',
       releaseDate: '.co_content8 p span',
-      downloadUrls: 'a[href*="thunder"], a[href*="magnet"], a[href*="ftp"], .down_list a',
+      downloadUrls: 'a[href*="magnet"], a[href*="thunder"], a[href*="ftp"]',
     },
-    enabled: true,
+    enabled: false,
     priority: 3,
     maxPages: 30,
     respectRobotsTxt: true,
     requestDelay: 2000,
   },
-  // 6v电影
+  // 6v电影 - 禁用（域名已变更）
   {
     name: '6v电影',
-    baseUrl: 'https://www.hao6v.com',
+    baseUrl: 'https://www.6v520.cc',
     selectors: {
-      title: '.title_all h1, .co_content22 ul li a',
-      description: '.co_content8, .co_content222, .zoom',
-      poster: '#Zoom img, .co_content8 img',
-      rating: '.rating, .score',
+      title: '.title_all h1',
+      description: '#Zoom, .co_content8',
+      poster: '#Zoom img',
+      rating: '.rank, .score',
       director: '.co_content8 p',
       actors: '.co_content8 p',
       genres: '.co_content8 p a',
       releaseDate: '.co_content8 p span',
-      downloadUrls: 'a[href*="thunder"], a[href*="magnet"], a[href*="ftp"], .down_list a',
+      downloadUrls: 'a[href*="magnet"], a[href*="thunder"], a[href*="ftp"]',
     },
-    enabled: true,
+    enabled: false,
     priority: 4,
     maxPages: 20,
     respectRobotsTxt: true,
     requestDelay: 2500,
+  },
+  // 天堂影院 - maccms CMS 在线播放站
+  {
+    name: '天堂影院',
+    baseUrl: 'https://dytt001.com',
+    selectors: {
+      title: 'h1',
+      description: '.m-text1 .txt',
+      poster: '.m-text1 .txt img',
+      rating: '.info span',
+      director: '.info span',
+      actors: '.info span',
+      genres: '.info span a',
+      releaseDate: '.info span',
+      downloadUrls: '',
+    },
+    listingUrls: [
+      // 电影分类
+      'https://dytt001.com/html/page-5.html',  // 动作
+      'https://dytt001.com/html/page-6.html',  // 喜剧
+      'https://dytt001.com/html/page-7.html',  // 爱情
+      'https://dytt001.com/html/page-8.html',  // 科幻
+      'https://dytt001.com/html/page-9.html',  // 恐怖
+      'https://dytt001.com/html/page-10.html', // 剧情
+      'https://dytt001.com/html/page-11.html', // 战争
+      // 电视剧分类
+      'https://dytt001.com/html/page-12.html', // 国产剧
+      'https://dytt001.com/html/page-13.html', // 港剧
+      'https://dytt001.com/html/page-14.html', // 台剧
+      'https://dytt001.com/html/page-15.html', // 日剧
+      'https://dytt001.com/html/page-16.html', // 韩剧
+      'https://dytt001.com/html/page-17.html', // 欧美剧
+      'https://dytt001.com/html/page-18.html', // 外剧
+      'https://dytt001.com/html/page-19.html', // 泰剧
+      // 其他分类
+      'https://dytt001.com/html/page-3.html',  // 综艺
+      'https://dytt001.com/html/page-4.html',  // 动漫
+      'https://dytt001.com/html/page-22.html', // 纪录片
+      'https://dytt001.com/html/page-27.html', // 短剧
+      // 今日更新和排行榜
+      'https://dytt001.com/label/new.html',
+      'https://dytt001.com/label/top.html',
+    ],
+    enabled: true,
+    priority: 2,
+    maxPages: 100,
+    respectRobotsTxt: true,
+    requestDelay: 1500,
   },
 ];
 
@@ -141,23 +172,5 @@ export const CRAWLER_RULES = {
   urlFilters: {
     allowedExtensions: ['.html', '.htm', ''],
     disallowedPaths: ['/search', '/login', '/admin'],
-    requiredParams: [],
-  },
-
-  contentFilters: {
-    minContentLength: 50,
-    maxContentLength: 1000000,
-    requiredKeywords: [],
-    excludedKeywords: ['error', '404', 'not found'],
-  },
-
-  validation: {
-    requiredFields: ['title'],
-    optionalFields: ['description', 'poster', 'rating', 'downloadUrls'],
-    dataTypes: {
-      title: 'string',
-      rating: 'number',
-      releaseDate: 'date',
-    },
   },
 };

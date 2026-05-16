@@ -28,16 +28,11 @@ export default defineConfig({
         secure: false,
         ws: true,
         rewrite: path => path.replace(/^\/api/, ''),
-        configure: proxy => {
-          proxy.on('error', err => {
-            console.error('❌ Vite Proxy Error:', err);
-          });
-          proxy.on('proxyReq', (proxyReq, req) => {
-            console.log(`🔄 Proxying ${req.method} ${req.url} to backend`);
-            // 确保请求头包含正确的字符集
-            proxyReq.setHeader('Accept-Charset', 'utf-8');
-          });
-        },
+      },
+      '/socket.io': {
+        target: 'http://localhost:3334',
+        changeOrigin: true,
+        ws: true,
       },
     },
   },

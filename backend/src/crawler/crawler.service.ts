@@ -4,7 +4,9 @@ import * as cheerio from 'cheerio';
 import * as iconv from 'iconv-lite';
 import { CRAWLER_TARGETS, CRAWLER_CONFIG, CRAWLER_RULES } from './crawler.config';
 import { MediaResourceService } from '../media/media-resource.service';
-import { MediaQuality } from '../entities/media-resource.entity';
+import { PlaySourceService } from '../play-sources/play-source.service';
+import { MediaType, MediaQuality } from '../entities/media-resource.entity';
+import { PlaySourceType } from '../entities/play-source.entity';
 import { AppLoggerService } from '../common/services/app-logger.service';
 import { ProxyPoolService } from '../common/services/proxy-pool.service';
 import {
@@ -48,6 +50,7 @@ export interface CrawlerTarget {
     releaseDate: string;
     downloadUrls: string;
   };
+  listingUrls?: string[]; // 列表页URL（定时任务从这些页面提取详情页链接）
   enabled?: boolean; // 是否启用此爬虫
   priority?: number; // 优先级，数字越小优先级越高
   maxPages?: number; // 最大爬取页数
@@ -90,6 +93,7 @@ export class CrawlerService {
 
   constructor(
     private readonly mediaResourceService: MediaResourceService,
+    private readonly playSourceService: PlaySourceService,
     private readonly appLogger: AppLoggerService,
     private readonly proxyPoolService: ProxyPoolService,
   ) {
@@ -216,7 +220,13 @@ export class CrawlerService {
    * 设置缓存数据
    */
   private setCache(key: string, data: CrawledData): void {
-    if (CRAWLER_CONFIG.cache.enabled && this.cache.size < CRAWLER_CONFIG.cache.maxSize) {
+    if (!CRAWLER_CONFIG.cache.enabled) return;
+
+    if (this.cache.size >= CRAWLER_CONFIG.cache.maxSize) {
+      this.cleanCache();
+    }
+
+    if (this.cache.size < CRAWLER_CONFIG.cache.maxSize) {
       this.cache.set(key, { data, timestamp: Date.now() });
     }
   }
@@ -328,7 +338,7 @@ export class CrawlerService {
    * 生成请求ID
    */
   private generateRequestId(): string {
-    return `crawler_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `crawler_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 
   /**
@@ -358,15 +368,19 @@ export class CrawlerService {
         .filter(
           url =>
             url &&
-            (url.startsWith('http') || url.startsWith('magnet:') || url.startsWith('thunder://')),
+            (url.startsWith('http') ||
+              url.startsWith('magnet:') ||
+              url.startsWith('thunder://') ||
+              url.startsWith('ed2k://') ||
+              url.startsWith('ftp://') ||
+              url.startsWith('jianpian://')),
         )
         .map(url => url.trim())
         .filter((url, index, self) => self.indexOf(url) === index); // 去重
     }
 
-    // 设置默认评分
-    if (!cleanedData.rating || cleanedData.rating < 0) {
-      cleanedData.rating = 7.5; // 默认评分
+    if (cleanedData.rating && cleanedData.rating < 0) {
+      cleanedData.rating = 0;
     }
 
     return cleanedData;
@@ -439,6 +453,8 @@ export class CrawlerService {
       // 特殊处理电影天堂的数据提取
       if (targetName === '电影天堂') {
         crawledData = this.extractDyttData($, url, target);
+      } else if (targetName === '天堂影院' || url.includes('dytt001.com')) {
+        crawledData = await this.extractDytt001Data($, url, target);
       } else {
         crawledData = this.extractGenericData($, url, target);
       }
@@ -508,7 +524,6 @@ export class CrawlerService {
    * 提取电影天堂网站的数据
    */
   private extractDyttData($: cheerio.CheerioAPI, url: string, target: CrawlerTarget): CrawledData {
-    // 尝试多种方式获取标题
     let title = '';
     let titleText = '';
     let quality = MediaQuality.HD;
@@ -520,25 +535,17 @@ export class CrawlerService {
       if (titleMatch) {
         title = titleMatch[1];
       } else {
-        // 如果没有《》格式，清理标题
         title = titleText.replace(/[_-]?\s*(电影天堂|dytt8899).*$/gi, '').trim();
       }
     }
 
-    // 方法2: 从内容区域获取
+    // 方法2: 从 .title_all h1 获取
     if (!title) {
-      const contentTitle = $('.co_content22 ul li a, .title_all h1, .bd3r .co_area2 .title_all h1')
-        .first()
-        .text()
-        .trim();
-      if (contentTitle) {
-        const titleMatch = contentTitle.match(/《(.*?)》/);
-        if (titleMatch) {
-          title = titleMatch[1];
-          titleText = contentTitle;
-        } else {
-          title = contentTitle;
-        }
+      const h1Text = $('.title_all h1').first().text().trim();
+      if (h1Text) {
+        const titleMatch = h1Text.match(/《(.*?)》/);
+        title = titleMatch ? titleMatch[1] : h1Text;
+        titleText = h1Text;
       }
     }
 
@@ -554,16 +561,9 @@ export class CrawlerService {
     else if (titleText.includes('720P') || titleText.includes('HD')) quality = MediaQuality.HD;
 
     // 提取发布日期
-    const dateText = $('.co_content22 ul li span, .co_content222 p').first().text().trim();
+    const dateText = $('.position .updatetime, .co_content8 p span').first().text().trim();
     let releaseDate: Date | undefined;
-
-    // 尝试多种日期格式
-    const datePatterns = [
-      /(\d{4}-\d{1,2}-\d{1,2})/,
-      /(\d{4}\/\d{1,2}\/\d{1,2})/,
-      /(\d{4}年\d{1,2}月\d{1,2}日)/,
-    ];
-
+    const datePatterns = [/(\d{4}-\d{1,2}-\d{1,2})/, /(\d{4}\/\d{1,2}\/\d{1,2})/];
     for (const pattern of datePatterns) {
       const dateMatch = dateText.match(pattern);
       if (dateMatch) {
@@ -575,44 +575,42 @@ export class CrawlerService {
     // 提取下载链接
     const downloadUrls: string[] = [];
 
-    // 方法1: 从a标签提取链接
-    $(
-      '.co_content22 a, .co_content222 a, a[href*="thunder"], a[href*="magnet"], a[href*="ftp"]',
-    ).each((_, element) => {
+    // 方法1: 从 #downlist 提取磁力链接（display:none 也能解析）
+    $('#downlist a').each((_, element) => {
+      const href = $(element).attr('href');
+      if (href && (href.startsWith('magnet:') || href.startsWith('thunder://') || href.startsWith('ed2k://'))) {
+        downloadUrls.push(href);
+      }
+    });
+
+    // 方法2: 从 .player_list 提取 jianpian:// 和 ftp 链接
+    $('.player_list a').each((_, element) => {
+      const href = $(element).attr('href');
+      if (href && !href.includes('javascript') && !href.includes('#')) {
+        downloadUrls.push(href);
+      }
+    });
+
+    // 方法3: 从 #Zoom 和 .co_content8 提取各种链接
+    $('#Zoom a, .co_content8 a, a[href*="thunder"], a[href*="magnet"], a[href*="ftp"]').each((_, element) => {
       const href = $(element).attr('href');
       if (href && !href.includes('javascript') && !href.includes('#')) {
         downloadUrls.push(this.resolveUrl(href, target.baseUrl)!);
       }
     });
 
-    // 方法2: 从文本中提取各种链接格式
-    const contentText = $('.co_content22, .co_content222, .zoomX').text();
+    // 方法4: 从页面全文文本中提取链接
+    const contentText = $('#Zoom, .co_content8').text();
+    const ftpMatches = contentText.match(/ftp:\/\/[^\s\n<]+/gi);
+    if (ftpMatches) downloadUrls.push(...ftpMatches);
+    const magnetMatches = contentText.match(/magnet:\?[^\s\n<]+/gi);
+    if (magnetMatches) downloadUrls.push(...magnetMatches);
+    const thunderMatches = contentText.match(/thunder:\/\/[^\s\n<]+/gi);
+    if (thunderMatches) downloadUrls.push(...thunderMatches);
+    const ed2kMatches = contentText.match(/ed2k:\/\/[^\s\n<]+/gi);
+    if (ed2kMatches) downloadUrls.push(...ed2kMatches);
 
-    // 提取FTP链接
-    const ftpMatches = contentText.match(/ftp:\/\/[^\s\n]+/gi);
-    if (ftpMatches) {
-      downloadUrls.push(...ftpMatches);
-    }
-
-    // 提取磁力链接
-    const magnetMatches = contentText.match(/magnet:\?[^\s\n]+/gi);
-    if (magnetMatches) {
-      downloadUrls.push(...magnetMatches);
-    }
-
-    // 提取thunder链接
-    const thunderMatches = contentText.match(/thunder:\/\/[^\s\n]+/gi);
-    if (thunderMatches) {
-      downloadUrls.push(...thunderMatches);
-    }
-
-    // 提取ed2k链接
-    const ed2kMatches = contentText.match(/ed2k:\/\/[^\s\n]+/gi);
-    if (ed2kMatches) {
-      downloadUrls.push(...ed2kMatches);
-    }
-
-    // 去重
+    // 去重并过滤无效链接
     const uniqueUrls = [...new Set(downloadUrls)].filter(url => url && url.length > 5);
 
     return {
@@ -624,7 +622,7 @@ export class CrawlerService {
       genres: this.extractDyttGenres($),
       releaseDate,
       poster: this.extractPosterFromPage($, target.baseUrl),
-      rating: 0, // 电影天堂通常不提供评分
+      rating: 6.0,
       source: target.name,
       downloadUrls: uniqueUrls,
       episodeCount: this.inferEpisodeCount(titleText),
@@ -639,25 +637,197 @@ export class CrawlerService {
   }
 
   /**
+   * 提取天堂影院 (dytt001.com) 的数据
+   * 该站使用 maccms CMS，详情页有 ◎ 标记的元数据，播放页有 m3u8 源
+   */
+  private async extractDytt001Data(
+    $: cheerio.CheerioAPI,
+    url: string,
+    target: CrawlerTarget,
+  ): Promise<CrawledData> {
+    // 标题
+    const title = $('h1').first().text().trim() || this.extractTitleFromPage($);
+
+    // 从 ◎ 标记的段落中提取元数据
+    const paragraphs = $('.m-text1 .txt p, .co_content8 p');
+    let director = '';
+    let actors = '';
+    let genres: string[] = [];
+    let releaseDate: Date | undefined;
+    let rating = 6.0;
+    const descriptionParts: string[] = [];
+
+    paragraphs.each((_, el) => {
+      const text = $(el).text().trim();
+      if (text.includes('◎导　　演')) {
+        director = text.replace(/◎导　　演[　\s]*/g, '').trim();
+      } else if (text.includes('◎演　　员')) {
+        actors = text.replace(/◎演　　员[　\s]*/g, '').trim();
+      } else if (text.includes('◎类　　别')) {
+        const genreText = text.replace(/◎类　　别[　\s]*/g, '').trim();
+        genres = genreText
+          .split(/[,，、/]/)
+          .map(g => g.trim())
+          .filter(Boolean);
+      } else if (text.includes('◎年　　代')) {
+        const yearMatch = text.match(/(\d{4})/);
+        if (yearMatch) {
+          releaseDate = new Date(`${yearMatch[1]}-01-01`);
+        }
+      } else if (text.includes('◎豆瓣评分')) {
+        const ratingMatch = text.match(/([\d.]+)/);
+        if (ratingMatch) {
+          rating = parseFloat(ratingMatch[1]);
+        }
+      } else if (text.includes('◎简　　介') || text.includes('◎剧情介绍')) {
+        // 下一段是简介
+      } else if (text.length > 20 && !text.startsWith('◎')) {
+        descriptionParts.push(text);
+      }
+    });
+
+    // 海报
+    const poster = $('.m-text1 .txt img').first().attr('src') || '';
+
+    // 提取播放页链接，按来源分组获取 m3u8 源
+    const allPlayUrls: string[] = [];
+    $('a[href*="/html/play/"]').each((_, el) => {
+      const href = $(el).attr('href');
+      if (href && href.includes('/html/play/')) {
+        const fullUrl = href.startsWith('http') ? href : `${target.baseUrl}${href}`;
+        if (!allPlayUrls.includes(fullUrl)) {
+          allPlayUrls.push(fullUrl);
+        }
+      }
+    });
+
+    // 按来源分组: /html/play/{id}-{source}-{episode}.html
+    const sourceMap = new Map<string, string[]>();
+    for (const playUrl of allPlayUrls) {
+      const match = playUrl.match(/\/play\/\d+-(\d+)-\d+\.html/);
+      if (match) {
+        const sourceId = match[1];
+        if (!sourceMap.has(sourceId)) {
+          sourceMap.set(sourceId, []);
+        }
+        sourceMap.get(sourceId)!.push(playUrl);
+      }
+    }
+
+    // 访问每个来源的第一个播放页获取 m3u8 源
+    const downloadUrls: string[] = [];
+    const sourceNames: string[] = [];
+    const sourcesToFetch = Array.from(sourceMap.entries()).slice(0, 5); // 最多5个来源
+
+    for (const [sourceId, urls] of sourcesToFetch) {
+      try {
+        const playPageUrl = urls[0];
+        const playResponse = await this.fetchWithRetry(playPageUrl, {}, 2, 1000);
+        const playHtml = this.decodeResponse(playResponse);
+
+        // 从 player_aaaa 变量中提取 m3u8 URL
+        const playerMatch = playHtml.match(/"url"\s*:\s*"(https?:[^"]+\.m3u8[^"]*)"/);
+        if (playerMatch) {
+          const m3u8Url = this.decodeJsonString(playerMatch[1]);
+          if (!downloadUrls.includes(m3u8Url)) {
+            downloadUrls.push(m3u8Url);
+            sourceNames.push(`源${sourceId}`);
+          }
+        } else {
+          // 也尝试匹配其他格式的视频源
+          const anyUrlMatch = playHtml.match(/"url"\s*:\s*"(https?:[^"]+)"/);
+          if (anyUrlMatch) {
+            const videoUrl = this.decodeJsonString(anyUrlMatch[1]);
+            if (!downloadUrls.includes(videoUrl)) {
+              downloadUrls.push(videoUrl);
+              sourceNames.push(`源${sourceId}`);
+            }
+          }
+        }
+      } catch (error) {
+        this.logger.warn(`获取播放页失败 [源${sourceId}]: ${urls[0]}`, this.toError(error).message);
+      }
+    }
+
+    // 从分类页推断类型
+    const type = this.inferMediaTypeFromUrl(url) || this.inferMediaType(url, title);
+
+    return {
+      title: title || '未知标题',
+      description: descriptionParts.join('\n').substring(0, 1000) || this.extractDescriptionFromPage($),
+      type,
+      director: director || undefined,
+      actors: actors || undefined,
+      genres: genres.length > 0 ? genres : undefined,
+      releaseDate,
+      poster: poster || undefined,
+      rating,
+      source: target.name,
+      downloadUrls,
+      episodeCount: allPlayUrls.length > 1 ? allPlayUrls.length : undefined,
+      metadata: {
+        crawledAt: new Date(),
+        crawledUrl: url,
+        website: target.name,
+        playUrls: allPlayUrls,
+        sourceNames,
+      },
+    };
+  }
+
+  /**
+   * 从 URL 推断媒体类型（基于分类页面 ID）
+   */
+  private inferMediaTypeFromUrl(url: string): CrawledData['type'] | null {
+    const pageMatch = url.match(/page-(\d+)\.html/);
+    if (pageMatch) {
+      const pageId = parseInt(pageMatch[1]);
+      const typeMap: Record<number, CrawledData['type']> = {
+        5: 'movie',
+        6: 'movie',
+        7: 'movie',
+        8: 'movie',
+        9: 'movie',
+        10: 'movie',
+        11: 'movie',
+        12: 'tv_series',
+        13: 'tv_series',
+        14: 'tv_series',
+        15: 'tv_series',
+        16: 'tv_series',
+        17: 'tv_series',
+        18: 'tv_series',
+        19: 'tv_series',
+        3: 'variety',
+        4: 'anime',
+        22: 'documentary',
+        27: 'tv_series',
+      };
+      return typeMap[pageId] || null;
+    }
+    return null;
+  }
+
+  /**
    * 提取电影天堂的描述信息
    */
   private extractDyttDescription($: cheerio.CheerioAPI): string {
-    // 尝试从不同位置提取描述
     let description = '';
 
-    // 从标题中提取
-    const titleText = $('.co_content22 ul li a').first().text().trim();
-    if (titleText.includes('◎')) {
-      const descMatch = titleText.match(/◎(.*?)(?=◎|$)/);
-      if (descMatch) {
-        description = descMatch[1].trim();
+    // 从 #Zoom 提取描述（包含图片和详细信息的区域）
+    const zoomText = $('#Zoom').text().trim();
+    if (zoomText) {
+      // 提取 ◎ 开头的描述行
+      const lines = zoomText.split('\n').filter(line => line.trim().length > 5);
+      const descLines = lines.filter(line => line.includes('◎') || line.includes('简') || line.includes('剧情'));
+      if (descLines.length > 0) {
+        description = descLines[0].replace(/◎\s*/, '').trim();
       }
     }
 
     // 从页面内容中提取
     if (!description) {
-      const content = $('.co_content22').text();
-      // 提取主要描述信息
+      const content = $('.co_content8').text();
       const lines = content.split('\n').filter(line => line.trim().length > 10);
       if (lines.length > 0) {
         description = lines[0].trim();
@@ -671,20 +841,11 @@ export class CrawlerService {
    * 提取电影天堂的导演信息
    */
   private extractDyttDirector($: cheerio.CheerioAPI): string {
-    const content = $('.co_content22').text();
-
-    // 匹配导演信息
-    const directorMatch = content.match(/导演[:：]\s*([^\n]+)/);
-    if (directorMatch) {
-      return directorMatch[1].trim();
-    }
-
-    // 英文导演信息
+    const content = $('#Zoom, .co_content8').text();
+    const directorMatch = content.match(/导\s*演[:：]\s*([^\n◎]+)/);
+    if (directorMatch) return directorMatch[1].trim();
     const directorMatch2 = content.match(/Director[:：]\s*([^\n]+)/i);
-    if (directorMatch2) {
-      return directorMatch2[1].trim();
-    }
-
+    if (directorMatch2) return directorMatch2[1].trim();
     return '';
   }
 
@@ -692,20 +853,11 @@ export class CrawlerService {
    * 提取电影天堂的演员信息
    */
   private extractDyttActors($: cheerio.CheerioAPI): string {
-    const content = $('.co_content22').text();
-
-    // 匹配主演信息
-    const actorsMatch = content.match(/主演[:：]\s*([^\n]+)/);
-    if (actorsMatch) {
-      return actorsMatch[1].trim();
-    }
-
-    // 英文演员信息
+    const content = $('#Zoom, .co_content8').text();
+    const actorsMatch = content.match(/主\s*演[:：]\s*([^\n◎]+)/);
+    if (actorsMatch) return actorsMatch[1].trim();
     const actorsMatch2 = content.match(/Cast[:：]\s*([^\n]+)/i);
-    if (actorsMatch2) {
-      return actorsMatch2[1].trim();
-    }
-
+    if (actorsMatch2) return actorsMatch2[1].trim();
     return '';
   }
 
@@ -713,14 +865,12 @@ export class CrawlerService {
    * 提取电影天堂的类型信息
    */
   private extractDyttGenres($: cheerio.CheerioAPI): string[] {
-    const content = $('.co_content22').text();
+    const content = $('#Zoom, .co_content8').text();
     const genres: string[] = [];
 
-    // 匹配类型信息
-    const genreMatch = content.match(/类型[:：]\s*([^\n]+)/);
+    const genreMatch = content.match(/类\s*型[:：]\s*([^\n◎]+)/);
     if (genreMatch) {
       const genreText = genreMatch[1].trim();
-      // 分割类型
       const genreList = genreText.split(/[/,，、]/);
       genreList.forEach(genre => {
         const trimmedGenre = genre.trim();
@@ -730,18 +880,13 @@ export class CrawlerService {
       });
     }
 
-    // 英文类型信息
-    const genreMatch2 = content.match(/Genre[:：]\s*([^\n]+)/i);
-    if (genreMatch2 && genres.length === 0) {
-      const genreText = genreMatch2[1].trim();
-      const genreList = genreText.split(/[/,，、]/);
-      genreList.forEach(genre => {
-        const trimmedGenre = genre.trim();
-        if (trimmedGenre && !genres.includes(trimmedGenre)) {
-          genres.push(trimmedGenre);
-        }
-      });
-    }
+    // 从分组链接中提取类型
+    $('.position a').each((_, el) => {
+      const text = $(el).text().trim();
+      if (text && text.length < 10 && !genres.includes(text)) {
+        genres.push(text);
+      }
+    });
 
     return genres.length > 0 ? genres : ['电影'];
   }
@@ -924,30 +1069,39 @@ export class CrawlerService {
   async batchCrawl(targetName: string, urls: string[]): Promise<CrawledData[]> {
     const results: CrawledData[] = [];
     const batchSize = CRAWLER_CONFIG.parsing.maxConcurrentRequests;
+    let failedCount = 0;
 
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize);
-      const promises = batch.map(async url => {
-        const result = await this.crawlWebsite(targetName, url);
-        await this.delay(CRAWLER_CONFIG.request.delay);
-        return result;
+      const promises = batch.map(async (url, index) => {
+        if (index > 0) {
+          await this.delay(CRAWLER_CONFIG.request.delay * index);
+        }
+        return this.crawlWebsite(targetName, url);
       });
 
       const batchResults = await Promise.allSettled(promises);
 
-      batchResults.forEach(result => {
-        if (
-          result.status === 'fulfilled' &&
-          result.value &&
-          result.value.success &&
-          result.value.data
-        ) {
+      batchResults.forEach((result, index) => {
+        if (result.status === 'fulfilled' && result.value?.success && result.value.data) {
           results.push(result.value.data);
+        } else {
+          failedCount++;
+          const reason = result.status === 'rejected' ? result.reason : result.value;
+          this.logger.warn(
+            `批量爬取失败 [${batch[index]}]: ${reason instanceof Error ? reason.message : String(reason)}`,
+          );
         }
       });
+
+      if (i + batchSize < urls.length) {
+        await this.delay(CRAWLER_CONFIG.request.delay);
+      }
     }
 
-    this.logger.log(`批量爬取完成，成功获取 ${results.length} 条数据`);
+    this.logger.log(
+      `批量爬取完成: 成功 ${results.length}/${urls.length}, 失败 ${failedCount}`,
+    );
     return results;
   }
 
@@ -1059,7 +1213,7 @@ export class CrawlerService {
    * 解析评分
    */
   private parseRating(ratingString: string): number {
-    if (!ratingString) return 0;
+    if (!ratingString) return 6.0;
 
     const match = ratingString.match(/(\d+(?:\.\d+)?)/);
     if (match) {
@@ -1067,7 +1221,7 @@ export class CrawlerService {
       return Math.min(10, Math.max(0, rating));
     }
 
-    return 0;
+    return 6.0;
   }
 
   /**
@@ -1269,6 +1423,262 @@ export class CrawlerService {
    */
   updateProxyPoolConfig(newConfig: Partial<ProxyPoolConfig>): void {
     this.proxyPoolService.updateConfig(newConfig);
+  }
+
+  /**
+   * 从列表页提取详情页链接
+   */
+  async extractDetailPageUrls(
+    targetName: string,
+    listingUrl: string,
+    maxPages: number = 20,
+  ): Promise<string[]> {
+    try {
+      const response = await this.fetchWithRetry(listingUrl);
+      const html = this.decodeResponse(response);
+      const $ = cheerio.load(html);
+
+      const target = CRAWLER_TARGETS.find(t => t.name === targetName);
+      const baseUrl = target?.baseUrl || new URL(listingUrl).origin;
+      const urls: string[] = [];
+
+      if (targetName === '电影天堂') {
+        // DYTT: 从分类列表中提取详情页链接
+        $(
+          '.co_area2 .co_content8 ul li a, ' +
+          '.list_area li a, ' +
+          '.co_area2 a[href*="html"], ' +
+          '#header .nav a',
+        ).each((_, el) => {
+          const href = $(el).attr('href');
+          if (href && !href.startsWith('javascript') && href !== '#' && href !== '/') {
+            const fullUrl = this.resolveUrl(href, baseUrl);
+            if (fullUrl && fullUrl.includes('.html') && fullUrl !== listingUrl) {
+              urls.push(fullUrl);
+            }
+          }
+        });
+      }
+
+      if (targetName === '天堂影院' || listingUrl.includes('dytt001.com')) {
+        // dytt001.com: 提取 /html/file-XXXXX.html 格式的详情页链接
+        $('a[href*="/html/file-"]').each((_, el) => {
+          const href = $(el).attr('href');
+          if (href && href.includes('/html/file-')) {
+            const fullUrl = href.startsWith('http') ? href : `${baseUrl}${href}`;
+            if (!urls.includes(fullUrl)) {
+              urls.push(fullUrl);
+            }
+          }
+        });
+      }
+
+      // 通用提取: 所有指向详情页的链接
+      if (urls.length === 0) {
+        $('a[href]').each((_, el) => {
+          const href = $(el).attr('href');
+          if (
+            href &&
+            !href.startsWith('javascript') &&
+            !href.startsWith('#') &&
+            href.includes('.html')
+          ) {
+            const fullUrl = this.resolveUrl(href, baseUrl);
+            if (fullUrl && fullUrl !== listingUrl && !urls.includes(fullUrl)) {
+              const path = new URL(fullUrl).pathname;
+              if (
+                !path.includes('/search') &&
+                !path.includes('/login') &&
+                !path.includes('/index') &&
+                !path.includes('/list') &&
+                path.split('/').filter(Boolean).length >= 2
+              ) {
+                urls.push(fullUrl);
+              }
+            }
+          }
+        });
+      }
+
+      return [...new Set(urls)].slice(0, maxPages);
+    } catch (error: unknown) {
+      this.logger.error(`提取详情页链接失败 ${targetName}:`, this.toError(error).message);
+      return [];
+    }
+  }
+
+  /**
+   * 将爬取的数据保存到数据库（创建或更新媒体资源及播放源）
+   */
+  async saveCrawledData(
+    data: CrawledData,
+    source: string,
+  ): Promise<{ mediaResourceId: number; created: boolean; playSourceCount: number; skippedPlaySources: number }> {
+    if (!data || !data.title) {
+      throw new Error('无效的爬取数据：缺少标题');
+    }
+
+    const existingMedia = await this.mediaResourceService.findByTitle(data.title);
+    if (existingMedia) {
+      const syncResult = await this.syncPlaySources(existingMedia.id, data, source);
+      this.logger.log(`资源已存在，已同步播放源: ${data.title}`);
+      return {
+        mediaResourceId: existingMedia.id,
+        created: false,
+        playSourceCount: syncResult.created,
+        skippedPlaySources: syncResult.skipped,
+      };
+    }
+
+    const mediaData = {
+      title: data.title,
+      description: data.description || '',
+      type: (data.type as MediaType) || MediaType.MOVIE,
+      director: data.director || '',
+      actors: data.actors || '',
+      genres: Array.isArray(data.genres) ? data.genres : [],
+      releaseDate: data.releaseDate || undefined,
+      quality: MediaQuality.HD,
+      poster: data.poster || '',
+      backdrop: data.backdrop || '',
+      rating: data.rating || 0,
+      viewCount: 0,
+      isActive: true,
+      source,
+      metadata: data.metadata || {},
+      duration: data.episodeCount || undefined,
+      episodeCount: data.episodeCount || undefined,
+      downloadUrls: Array.isArray(data.downloadUrls) ? data.downloadUrls : [],
+    };
+
+    const mediaResource = await this.mediaResourceService.create(mediaData);
+    const syncResult = await this.syncPlaySources(mediaResource.id, data, source);
+    this.logger.log(`成功保存资源: ${data.title}`);
+
+    return {
+      mediaResourceId: mediaResource.id,
+      created: true,
+      playSourceCount: syncResult.created,
+      skippedPlaySources: syncResult.skipped,
+    };
+  }
+
+  private async syncPlaySources(
+    mediaResourceId: number,
+    data: CrawledData,
+    source: string,
+  ): Promise<{ created: number; skipped: number }> {
+    const urls = Array.isArray(data.downloadUrls)
+      ? data.downloadUrls.filter((url): url is string => typeof url === 'string' && url.length > 0)
+      : [];
+
+    if (urls.length === 0) {
+      return { created: 0, skipped: 0 };
+    }
+
+    const existingSources = await this.playSourceService.getByMediaResource(mediaResourceId);
+    const existingUrls = new Set(existingSources.map(s => s.url));
+    let created = 0;
+    let skipped = 0;
+
+    // 从 metadata 获取来源名称列表
+    const sourceNames = Array.isArray(data.metadata?.sourceNames)
+      ? data.metadata.sourceNames
+      : [];
+
+    for (const [index, url] of urls.entries()) {
+      if (existingUrls.has(url)) {
+        skipped++;
+        continue;
+      }
+
+      // 使用真实来源名称，如果没有则使用默认格式
+      const sourceName = sourceNames[index] || `${source}源 ${index + 1}`;
+
+      await this.playSourceService.create({
+        mediaResourceId,
+        type: this.inferPlaySourceType(url),
+        url,
+        priority: index + 1,
+        sourceName,
+      });
+
+      created++;
+    }
+
+    return { created, skipped };
+  }
+
+  private inferPlaySourceType(url: string): PlaySourceType {
+    const normalizedUrl = url.toLowerCase();
+
+    if (normalizedUrl.startsWith('magnet:')) {
+      return PlaySourceType.MAGNET;
+    }
+
+    if (
+      normalizedUrl.startsWith('ftp:') ||
+      normalizedUrl.startsWith('thunder:') ||
+      normalizedUrl.startsWith('ed2k:')
+    ) {
+      return PlaySourceType.DOWNLOAD;
+    }
+
+    if (normalizedUrl.includes('.m3u8') || normalizedUrl.startsWith('rtmp')) {
+      return PlaySourceType.STREAM;
+    }
+
+    return PlaySourceType.ONLINE;
+  }
+
+  /**
+   * 从列表页爬取多个详情页数据
+   */
+  async crawlListingPage(
+    targetName: string,
+    listingUrl: string,
+    maxPages: number = 20,
+  ): Promise<{ crawled: CrawledData[]; errors: string[] }> {
+    const errors: string[] = [];
+    const crawled: CrawledData[] = [];
+
+    const detailUrls = await this.extractDetailPageUrls(targetName, listingUrl, maxPages);
+
+    if (detailUrls.length === 0) {
+      this.logger.warn(`未从列表页提取到详情页链接: ${listingUrl}`);
+      return { crawled, errors: ['未找到详情页链接'] };
+    }
+
+    this.logger.log(`从 ${listingUrl} 提取到 ${detailUrls.length} 个详情页链接`);
+
+    for (const detailUrl of detailUrls) {
+      try {
+        const result = await this.crawlWebsite(targetName, detailUrl);
+        if (result.success && result.data) {
+          crawled.push(result.data);
+        } else if (result.error) {
+          errors.push(`${detailUrl}: ${result.error}`);
+        }
+        await this.delay(CRAWLER_CONFIG.request.delay);
+      } catch (error: unknown) {
+        errors.push(`${detailUrl}: ${this.toError(error).message}`);
+      }
+    }
+
+    this.logger.log(`列表页爬取完成: 成功 ${crawled.length}，失败 ${errors.length}`);
+    return { crawled, errors };
+  }
+
+  private decodeJsonString(str: string): string {
+    try {
+      return str
+        .replace(/\\\//g, '/')
+        .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+        .replace(/\\\\/g, '\\')
+        .replace(/\\"/g, '"');
+    } catch {
+      return str;
+    }
   }
 
   private toError(error: unknown): Error {

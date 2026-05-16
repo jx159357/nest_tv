@@ -200,6 +200,13 @@ export class AdminController {
     return this.adminService.getUsers(page, limit, search);
   }
 
+  @Post('users/:id/toggle-status')
+  @ApiOperation({ summary: 'Toggle user active status (ban/unban)' })
+  @ApiResponse({ status: 200, description: 'User status toggled successfully' })
+  async toggleUserStatus(@Param('id') id: string) {
+    return this.adminService.toggleUserStatus(parseInt(id, 10));
+  }
+
   @Get('media')
   @ApiOperation({ summary: 'Get media list' })
   @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number' })

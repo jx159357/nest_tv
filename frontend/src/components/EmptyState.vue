@@ -69,7 +69,15 @@
         />
       </svg>
 
-      <svg v-else class="w-16 h-16" width="64" height="64" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg
+        v-else
+        class="w-16 h-16"
+        width="64"
+        height="64"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
         <path
           stroke-linecap="round"
           stroke-linejoin="round"

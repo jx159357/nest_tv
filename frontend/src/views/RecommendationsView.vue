@@ -1,349 +1,339 @@
 <template>
   <div class="page-container">
-      <header class="mb-8">
-        <h1 class="mb-4 text-3xl font-bold text-gray-900">推荐中心</h1>
-        <p class="text-gray-600">
-          结合你的观看历史、收藏兴趣、搜索线索和站内内容热度，持续生成更贴近偏好的推荐结果。
-        </p>
-      </header>
+    <header class="mb-8">
+      <h1 class="mb-4 text-3xl font-bold text-gray-900">推荐中心</h1>
+      <p class="text-gray-600">
+        结合你的观看历史、收藏兴趣、搜索线索和站内内容热度，持续生成更贴近偏好的推荐结果。
+      </p>
+    </header>
 
-      <section
-        v-if="authStore.isAuthenticated"
-        class="mb-10 rounded-2xl bg-white p-6 shadow-sm"
-        :class="{ 'ring-2 ring-blue-200 ring-offset-2': focusedSection === 'profile' }"
+    <section
+      v-if="authStore.isAuthenticated"
+      class="mb-10 rounded-2xl bg-white p-6 shadow-sm"
+      :class="{ 'ring-2 ring-blue-200 ring-offset-2': focusedSection === 'profile' }"
+    >
+      <div
+        v-if="focusedSection === 'profile'"
+        class="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700"
       >
-        <div
-          v-if="focusedSection === 'profile'"
-          class="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700"
+        已从“推荐设置”入口进入，可先查看你的偏好画像，再刷新个性化推荐。
+      </div>
+
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h2 class="text-2xl font-semibold text-gray-900">偏好画像</h2>
+          <p class="mt-2 text-sm text-gray-600">
+            {{ strategyDescription }}
+          </p>
+        </div>
+        <button
+          class="rounded-lg bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
+          :disabled="personalizedLoading || profileLoading"
+          @click="refreshRecommendations"
         >
-          已从“推荐设置”入口进入，可先查看你的偏好画像，再刷新个性化推荐。
-        </div>
+          {{ personalizedLoading || profileLoading ? '刷新中...' : '刷新推荐' }}
+        </button>
+      </div>
 
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <h2 class="text-2xl font-semibold text-gray-900">偏好画像</h2>
-            <p class="mt-2 text-sm text-gray-600">
-              {{ strategyDescription }}
-            </p>
-          </div>
-          <button
-            class="rounded-lg bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
-            :disabled="personalizedLoading || profileLoading"
-            @click="refreshRecommendations"
-          >
-            {{ personalizedLoading || profileLoading ? '刷新中...' : '刷新推荐' }}
-          </button>
-        </div>
-
-        <div v-if="profileLoading" class="py-8 text-center">
-          <div
-            class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
-          ></div>
-          <p class="mt-2 text-gray-600">正在分析你的推荐画像...</p>
-        </div>
-
+      <div v-if="profileLoading" class="py-8 text-center">
         <div
-          v-else-if="profileError"
-          class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
-        >
-          {{ profileError }}
-        </div>
+          class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
+        ></div>
+        <p class="mt-2 text-gray-600">正在分析你的推荐画像...</p>
+      </div>
 
-        <div v-else-if="profile" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div class="text-xs text-slate-500">观看记录</div>
-            <div class="mt-2 text-2xl font-semibold text-slate-900">{{ profile.totalWatched }}</div>
-            <div class="mt-1 text-xs text-slate-500">
-              近期活跃 {{ profile.recentWatchCount }} 条
-            </div>
+      <div
+        v-else-if="profileError"
+        class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+      >
+        {{ profileError }}
+      </div>
+
+      <div v-else-if="profile" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div class="text-xs text-slate-500">观看记录</div>
+          <div class="mt-2 text-2xl font-semibold text-slate-900">{{ profile.totalWatched }}</div>
+          <div class="mt-1 text-xs text-slate-500">近期活跃 {{ profile.recentWatchCount }} 条</div>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div class="text-xs text-slate-500">完成度</div>
+          <div class="mt-2 text-2xl font-semibold text-slate-900">
+            {{ profile.averageCompletionRate }}%
           </div>
-          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div class="text-xs text-slate-500">完成度</div>
-            <div class="mt-2 text-2xl font-semibold text-slate-900">
-              {{ profile.averageCompletionRate }}%
-            </div>
-            <div class="mt-1 text-xs text-slate-500">已看完 {{ profile.completedCount }} 条</div>
-          </div>
-          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
-            <div class="text-xs text-slate-500">偏好类型 / 标签 / 导演 / 搜索兴趣</div>
-            <div class="mt-3 space-y-3 text-sm text-slate-700">
-              <div>
-                <span class="font-medium">偏好类型：</span>
-                <span v-if="profile.favoriteTypes.length === 0" class="text-slate-500"
-                  >暂无明显偏好</span
-                >
-                <span v-else class="flex flex-wrap gap-2 pt-2">
-                  <span
-                    v-for="item in profile.favoriteTypes"
-                    :key="`type-${item.key}`"
-                    class="rounded-full bg-blue-100 px-3 py-1 text-xs text-blue-700"
-                  >
-                    {{ formatPreferenceLabel(item.key) }} · {{ item.score }}
-                  </span>
-                </span>
-              </div>
-
-              <div>
-                <span class="font-medium">偏好标签：</span>
-                <span v-if="profile.favoriteGenres.length === 0" class="text-slate-500"
-                  >暂无明显偏好</span
-                >
-                <span v-else class="flex flex-wrap gap-2 pt-2">
-                  <span
-                    v-for="item in profile.favoriteGenres"
-                    :key="`genre-${item.key}`"
-                    class="rounded-full bg-emerald-100 px-3 py-1 text-xs text-emerald-700"
-                  >
-                    {{ item.key }} · {{ item.score }}
-                  </span>
-                </span>
-              </div>
-
-              <div>
-                <span class="font-medium">导演偏好：</span>
-                <span v-if="profile.favoriteDirectors.length === 0" class="text-slate-500"
-                  >暂无明显偏好</span
-                >
-                <span v-else class="flex flex-wrap gap-2 pt-2">
-                  <span
-                    v-for="item in profile.favoriteDirectors"
-                    :key="`director-${item.key}`"
-                    class="rounded-full bg-amber-100 px-3 py-1 text-xs text-amber-700"
-                  >
-                    {{ item.key }} · {{ item.score }}
-                  </span>
-                </span>
-              </div>
-
-              <div>
-                <span class="font-medium">最近搜索：</span>
-                <span v-if="profile.recentSearchKeywords.length === 0" class="text-slate-500"
-                  >暂无明显搜索兴趣</span
-                >
-                <span v-else class="flex flex-wrap gap-2 pt-2">
-                  <span
-                    v-for="item in profile.recentSearchKeywords"
-                    :key="`search-${item.key}`"
-                    class="rounded-full bg-violet-100 px-3 py-1 text-xs text-violet-700"
-                  >
-                    {{ item.key }} · {{ item.score }}
-                  </span>
-                </span>
-              </div>
-            </div>
-          </div>
+          <div class="mt-1 text-xs text-slate-500">已看完 {{ profile.completedCount }} 条</div>
         </div>
-      </section>
-
-      <section v-if="authStore.isAuthenticated" class="mb-12 rounded-2xl bg-white p-6 shadow-sm">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <h2 class="text-2xl font-semibold text-gray-900">搜索兴趣</h2>
-            <p class="mt-2 text-sm text-gray-600">
-              结合你最近搜索过的内容，提供一个更直接的继续探索入口。
-            </p>
-          </div>
-          <button
-            class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-            :disabled="searchHistoryLoading || searchHistory.length === 0"
-            @click="clearSearchHistory"
-          >
-            {{ searchHistoryLoading ? '处理中...' : '清空搜索历史' }}
-          </button>
-        </div>
-
-        <div v-if="searchHistoryLoading" class="py-8 text-center">
-          <div
-            class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
-          ></div>
-          <p class="mt-2 text-gray-600">正在加载搜索兴趣...</p>
-        </div>
-
-        <div
-          v-else-if="searchHistoryError"
-          class="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
-        >
-          {{ searchHistoryError }}
-        </div>
-
-        <div
-          v-else-if="searchHistory.length === 0"
-          class="mt-6 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500"
-        >
-          暂无服务端搜索历史。你在顶部搜索或首页搜索后，这里会逐步形成你的搜索兴趣画像。
-        </div>
-
-        <div v-else class="mt-6 space-y-6">
-          <div>
-            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">最近搜索</div>
-            <div class="mt-3 flex flex-wrap gap-2">
-              <button
-                v-for="keyword in searchHistory"
-                :key="`history-${keyword}`"
-                type="button"
-                class="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-                @click="searchByKeyword(keyword)"
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
+          <div class="text-xs text-slate-500">偏好类型 / 标签 / 导演 / 搜索兴趣</div>
+          <div class="mt-3 space-y-3 text-sm text-slate-700">
+            <div>
+              <span class="font-medium">偏好类型：</span>
+              <span v-if="profile.favoriteTypes.length === 0" class="text-slate-500"
+                >暂无明显偏好</span
               >
-                {{ keyword }}
-              </button>
+              <span v-else class="flex flex-wrap gap-2 pt-2">
+                <span
+                  v-for="item in profile.favoriteTypes"
+                  :key="`type-${item.key}`"
+                  class="rounded-full bg-blue-100 px-3 py-1 text-xs text-blue-700"
+                >
+                  {{ formatPreferenceLabel(item.key) }} · {{ item.score }}
+                </span>
+              </span>
             </div>
-          </div>
 
-          <div v-if="relatedKeywords.length > 0">
-            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              继续探索 {{ searchHistory[0] }}
-            </div>
-            <div class="mt-3 flex flex-wrap gap-2">
-              <button
-                v-for="keyword in relatedKeywords"
-                :key="`related-${keyword}`"
-                type="button"
-                class="rounded-full bg-blue-50 px-4 py-2 text-sm text-blue-700 transition-colors hover:bg-blue-100"
-                @click="searchByKeyword(keyword)"
+            <div>
+              <span class="font-medium">偏好标签：</span>
+              <span v-if="profile.favoriteGenres.length === 0" class="text-slate-500"
+                >暂无明显偏好</span
               >
-                {{ keyword }}
-              </button>
+              <span v-else class="flex flex-wrap gap-2 pt-2">
+                <span
+                  v-for="item in profile.favoriteGenres"
+                  :key="`genre-${item.key}`"
+                  class="rounded-full bg-emerald-100 px-3 py-1 text-xs text-emerald-700"
+                >
+                  {{ item.key }} · {{ item.score }}
+                </span>
+              </span>
+            </div>
+
+            <div>
+              <span class="font-medium">导演偏好：</span>
+              <span v-if="profile.favoriteDirectors.length === 0" class="text-slate-500"
+                >暂无明显偏好</span
+              >
+              <span v-else class="flex flex-wrap gap-2 pt-2">
+                <span
+                  v-for="item in profile.favoriteDirectors"
+                  :key="`director-${item.key}`"
+                  class="rounded-full bg-amber-100 px-3 py-1 text-xs text-amber-700"
+                >
+                  {{ item.key }} · {{ item.score }}
+                </span>
+              </span>
+            </div>
+
+            <div>
+              <span class="font-medium">最近搜索：</span>
+              <span v-if="profile.recentSearchKeywords.length === 0" class="text-slate-500"
+                >暂无明显搜索兴趣</span
+              >
+              <span v-else class="flex flex-wrap gap-2 pt-2">
+                <span
+                  v-for="item in profile.recentSearchKeywords"
+                  :key="`search-${item.key}`"
+                  class="rounded-full bg-violet-100 px-3 py-1 text-xs text-violet-700"
+                >
+                  {{ item.key }} · {{ item.score }}
+                </span>
+              </span>
             </div>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section v-if="authStore.isAuthenticated" class="mb-12">
-        <div class="mb-6 flex items-center justify-between">
-          <div>
-            <h2 class="text-2xl font-semibold text-gray-900">为你推荐</h2>
-            <p class="mt-1 text-sm text-gray-600">
-              展示推荐理由，帮助你快速理解这条内容为什么值得现在打开。
-            </p>
+    <section v-if="authStore.isAuthenticated" class="mb-12 rounded-2xl bg-white p-6 shadow-sm">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h2 class="text-2xl font-semibold text-gray-900">搜索兴趣</h2>
+          <p class="mt-2 text-sm text-gray-600">
+            结合你最近搜索过的内容，提供一个更直接的继续探索入口。
+          </p>
+        </div>
+        <button
+          class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          :disabled="searchHistoryLoading || searchHistory.length === 0"
+          @click="clearSearchHistory"
+        >
+          {{ searchHistoryLoading ? '处理中...' : '清空搜索历史' }}
+        </button>
+      </div>
+
+      <div v-if="searchHistoryLoading" class="py-8 text-center">
+        <div
+          class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
+        ></div>
+        <p class="mt-2 text-gray-600">正在加载搜索兴趣...</p>
+      </div>
+
+      <div
+        v-else-if="searchHistoryError"
+        class="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+      >
+        {{ searchHistoryError }}
+      </div>
+
+      <div
+        v-else-if="searchHistory.length === 0"
+        class="mt-6 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500"
+      >
+        暂无服务端搜索历史。你在顶部搜索或首页搜索后，这里会逐步形成你的搜索兴趣画像。
+      </div>
+
+      <div v-else class="mt-6 space-y-6">
+        <div>
+          <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">最近搜索</div>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <button
+              v-for="keyword in searchHistory"
+              :key="`history-${keyword}`"
+              type="button"
+              class="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+              @click="searchByKeyword(keyword)"
+            >
+              {{ keyword }}
+            </button>
           </div>
         </div>
 
-        <div v-if="personalizedLoading" class="py-8 text-center">
-          <div
-            class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
-          ></div>
-          <p class="mt-2 text-gray-600">正在加载个性化推荐...</p>
+        <div v-if="relatedKeywords.length > 0">
+          <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            继续探索 {{ searchHistory[0] }}
+          </div>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <button
+              v-for="keyword in relatedKeywords"
+              :key="`related-${keyword}`"
+              type="button"
+              class="rounded-full bg-blue-50 px-4 py-2 text-sm text-blue-700 transition-colors hover:bg-blue-100"
+              @click="searchByKeyword(keyword)"
+            >
+              {{ keyword }}
+            </button>
+          </div>
         </div>
+      </div>
+    </section>
 
-        <div v-else-if="personalizedError" class="py-8 text-center">
-          <p class="text-red-600">{{ personalizedError }}</p>
-          <button
-            class="mt-2 text-blue-500 hover:underline"
-            @click="loadPersonalizedRecommendations"
-          >
-            重试
-          </button>
+    <section v-if="authStore.isAuthenticated" class="mb-12">
+      <div class="mb-6 flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-semibold text-gray-900">为你推荐</h2>
+          <p class="mt-1 text-sm text-gray-600">
+            展示推荐理由，帮助你快速理解这条内容为什么值得现在打开。
+          </p>
         </div>
+      </div>
 
-        <div v-else-if="personalizedItems.length === 0" class="py-8 text-center text-gray-500">
-          <p>暂无个性化推荐</p>
-        </div>
+      <div v-if="personalizedLoading" class="py-8 text-center">
+        <div
+          class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
+        ></div>
+        <p class="mt-2 text-gray-600">正在加载个性化推荐...</p>
+      </div>
 
-        <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <MediaCard
-            v-for="item in personalizedItems"
-            :key="item.media.id"
-            :media="item.media"
-            @click="openMediaDetail"
-          >
-            <template #badge>
-              <div class="space-y-2">
-                <div class="text-xs font-medium text-slate-500">
-                  推荐分 {{ item.score.toFixed(1) }}
-                </div>
-                <div class="flex flex-wrap gap-2">
-                  <span
-                    v-for="reason in item.reasons"
-                    :key="`${item.media.id}-${reason}`"
-                    class="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] text-blue-700"
-                  >
-                    {{ reason }}
-                  </span>
-                </div>
+      <div v-else-if="personalizedError" class="py-8 text-center">
+        <p class="text-red-600">{{ personalizedError }}</p>
+        <button class="mt-2 text-blue-500 hover:underline" @click="loadPersonalizedRecommendations">
+          重试
+        </button>
+      </div>
+
+      <div v-else-if="personalizedItems.length === 0" class="py-8 text-center text-gray-500">
+        <p>暂无个性化推荐</p>
+      </div>
+
+      <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <MediaCard
+          v-for="item in personalizedItems"
+          :key="item.media.id"
+          :media="item.media"
+          @click="openMediaDetail"
+        >
+          <template #badge>
+            <div class="space-y-2">
+              <div class="text-xs font-medium text-slate-500">
+                推荐分 {{ item.score.toFixed(1) }}
               </div>
-            </template>
-          </MediaCard>
-        </div>
-      </section>
+              <div class="flex flex-wrap gap-2">
+                <span
+                  v-for="reason in item.reasons"
+                  :key="`${item.media.id}-${reason}`"
+                  class="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] text-blue-700"
+                >
+                  {{ reason }}
+                </span>
+              </div>
+            </div>
+          </template>
+        </MediaCard>
+      </div>
+    </section>
 
-      <section class="mb-12">
-        <h2 class="mb-6 text-2xl font-semibold text-gray-900">热门推荐</h2>
+    <section class="mb-12">
+      <h2 class="mb-6 text-2xl font-semibold text-gray-900">热门推荐</h2>
 
-        <div v-if="popularLoading" class="py-8 text-center">
-          <div
-            class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
-          ></div>
-          <p class="mt-2 text-gray-600">正在加载...</p>
-        </div>
+      <div v-if="popularLoading" class="py-8 text-center">
+        <div
+          class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
+        ></div>
+        <p class="mt-2 text-gray-600">正在加载...</p>
+      </div>
 
-        <div v-else-if="popularError" class="py-8 text-center">
-          <p class="text-red-600">{{ popularError }}</p>
-        </div>
+      <div v-else-if="popularError" class="py-8 text-center">
+        <p class="text-red-600">{{ popularError }}</p>
+      </div>
 
-        <div v-else-if="popular.length === 0" class="py-8 text-center text-gray-500">
-          <p>暂无热门推荐</p>
-        </div>
+      <div v-else-if="popular.length === 0" class="py-8 text-center text-gray-500">
+        <p>暂无热门推荐</p>
+      </div>
 
-        <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <MediaCard
-            v-for="item in popular"
-            :key="item.id"
-            :media="item"
-            @click="openMediaDetail"
-          />
-        </div>
-      </section>
+      <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <MediaCard v-for="item in popular" :key="item.id" :media="item" @click="openMediaDetail" />
+      </div>
+    </section>
 
-      <section class="mb-12">
-        <h2 class="mb-6 text-2xl font-semibold text-gray-900">高分精选</h2>
+    <section class="mb-12">
+      <h2 class="mb-6 text-2xl font-semibold text-gray-900">高分精选</h2>
 
-        <div v-if="editorialLoading" class="py-8 text-center">
-          <div
-            class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
-          ></div>
-          <p class="mt-2 text-gray-600">正在加载...</p>
-        </div>
+      <div v-if="editorialLoading" class="py-8 text-center">
+        <div
+          class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
+        ></div>
+        <p class="mt-2 text-gray-600">正在加载...</p>
+      </div>
 
-        <div v-else-if="editorialError" class="py-8 text-center">
-          <p class="text-red-600">{{ editorialError }}</p>
-        </div>
+      <div v-else-if="editorialError" class="py-8 text-center">
+        <p class="text-red-600">{{ editorialError }}</p>
+      </div>
 
-        <div v-else-if="editorial.length === 0" class="py-8 text-center text-gray-500">
-          <p>暂无高分内容</p>
-        </div>
+      <div v-else-if="editorial.length === 0" class="py-8 text-center text-gray-500">
+        <p>暂无高分内容</p>
+      </div>
 
-        <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <MediaCard
-            v-for="item in editorial"
-            :key="item.id"
-            :media="item"
-            @click="openMediaDetail"
-          />
-        </div>
-      </section>
+      <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <MediaCard
+          v-for="item in editorial"
+          :key="item.id"
+          :media="item"
+          @click="openMediaDetail"
+        />
+      </div>
+    </section>
 
-      <section>
-        <h2 class="mb-6 text-2xl font-semibold text-gray-900">最新上架</h2>
+    <section>
+      <h2 class="mb-6 text-2xl font-semibold text-gray-900">最新上架</h2>
 
-        <div v-if="latestLoading" class="py-8 text-center">
-          <div
-            class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
-          ></div>
-          <p class="mt-2 text-gray-600">正在加载...</p>
-        </div>
+      <div v-if="latestLoading" class="py-8 text-center">
+        <div
+          class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
+        ></div>
+        <p class="mt-2 text-gray-600">正在加载...</p>
+      </div>
 
-        <div v-else-if="latestError" class="py-8 text-center">
-          <p class="text-red-600">{{ latestError }}</p>
-        </div>
+      <div v-else-if="latestError" class="py-8 text-center">
+        <p class="text-red-600">{{ latestError }}</p>
+      </div>
 
-        <div v-else-if="latest.length === 0" class="py-8 text-center text-gray-500">
-          <p>暂无最新内容</p>
-        </div>
+      <div v-else-if="latest.length === 0" class="py-8 text-center text-gray-500">
+        <p>暂无最新内容</p>
+      </div>
 
-        <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <MediaCard v-for="item in latest" :key="item.id" :media="item" @click="openMediaDetail" />
-        </div>
-      </section>
+      <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <MediaCard v-for="item in latest" :key="item.id" :media="item" @click="openMediaDetail" />
+      </div>
+    </section>
   </div>
 </template>
 
@@ -607,3 +597,140 @@
     { immediate: true },
   );
 </script>
+
+<style scoped>
+  .page-container {
+    min-height: 100vh;
+    background: var(--bg-page);
+    color: var(--text-primary);
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .page-container :deep(h1),
+  .page-container :deep(h2),
+  .page-container :deep(h3) {
+    color: var(--text-primary) !important;
+  }
+
+  .page-container :deep(p) {
+    color: var(--text-secondary) !important;
+  }
+
+  .page-container :deep(section) {
+    background: var(--bg-card) !important;
+    border-color: var(--border-primary) !important;
+  }
+
+  .page-container :deep(.rounded-2xl) {
+    background: var(--bg-card) !important;
+    border-color: var(--border-primary) !important;
+  }
+
+  .page-container :deep(.text-slate-500),
+  .page-container :deep(.text-gray-500),
+  .page-container :deep(.text-gray-600) {
+    color: var(--text-muted) !important;
+  }
+
+  .page-container :deep(.text-slate-700),
+  .page-container :deep(.text-slate-900),
+  .page-container :deep(.text-gray-900) {
+    color: var(--text-primary) !important;
+  }
+
+  .page-container :deep(.bg-white) {
+    background: var(--bg-card) !important;
+  }
+
+  .page-container :deep(.bg-slate-50),
+  .page-container :deep(.bg-gray-50) {
+    background: var(--bg-secondary) !important;
+  }
+
+  .page-container :deep(.border-slate-200),
+  .page-container :deep(.border-gray-200) {
+    border-color: var(--border-primary) !important;
+  }
+
+  .page-container :deep(.text-red-600) {
+    color: var(--color-error-light) !important;
+  }
+
+  .page-container :deep(.bg-red-50) {
+    background: rgba(239, 68, 68, 0.1) !important;
+  }
+
+  .page-container :deep(.border-red-200) {
+    border-color: rgba(239, 68, 68, 0.3) !important;
+  }
+
+  .page-container :deep(.text-blue-700) {
+    color: var(--color-brand-primary-light) !important;
+  }
+
+  .page-container :deep(.bg-blue-50) {
+    background: rgba(99, 102, 241, 0.1) !important;
+  }
+
+  .page-container :deep(.bg-blue-100) {
+    background: rgba(99, 102, 241, 0.15) !important;
+  }
+
+  .page-container :deep(.border-blue-200) {
+    border-color: rgba(99, 102, 241, 0.3) !important;
+  }
+
+  .page-container :deep(.text-emerald-700) {
+    color: var(--color-success-light) !important;
+  }
+
+  .page-container :deep(.bg-emerald-100) {
+    background: rgba(16, 185, 129, 0.15) !important;
+  }
+
+  .page-container :deep(.text-amber-700) {
+    color: var(--color-warning-light) !important;
+  }
+
+  .page-container :deep(.bg-amber-100) {
+    background: rgba(245, 158, 11, 0.15) !important;
+  }
+
+  .page-container :deep(.text-violet-700) {
+    color: #a78bfa !important;
+  }
+
+  .page-container :deep(.bg-violet-100) {
+    background: rgba(139, 92, 246, 0.15) !important;
+  }
+
+  .page-container :deep(.border-slate-300) {
+    border-color: var(--border-secondary) !important;
+  }
+
+  .page-container :deep(.text-slate-700) {
+    color: var(--text-primary) !important;
+  }
+
+  .page-container :deep(.hover\:bg-slate-50:hover) {
+    background: var(--bg-secondary) !important;
+  }
+
+  .page-container :deep(.hover\:bg-blue-100:hover) {
+    background: rgba(99, 102, 241, 0.2) !important;
+  }
+
+  .page-container :deep(.hover\:border-blue-200:hover) {
+    border-color: rgba(99, 102, 241, 0.4) !important;
+  }
+
+  .page-container :deep(.hover\:text-blue-700:hover) {
+    color: var(--color-brand-primary-light) !important;
+  }
+
+  .page-container :deep(.shadow-sm) {
+    box-shadow: var(--shadow-sm) !important;
+  }
+</style>

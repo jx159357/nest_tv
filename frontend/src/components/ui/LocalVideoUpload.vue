@@ -339,7 +339,7 @@
     await loadVideoInfo(file);
 
     // 触发事件
-    emit('file-selected', file, videoMetadata.value);
+    emit('file-selected', file, videoMetadata.value ?? undefined);
 
     // 自动上传
     if (props.autoUpload && props.uploadEndpoint) {
@@ -562,13 +562,13 @@
   }
 
   .upload-area--uploading {
-    border-color: #94a3b8;
+    border-color: var(--text-tertiary);
     background: #f8fafc;
     cursor: not-allowed;
   }
 
   .upload-area--error {
-    border-color: #ef4444;
+    border-color: var(--color-error);
     background: #fef2f2;
   }
 
@@ -585,7 +585,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #64748b;
+    color: var(--text-muted);
   }
 
   .upload-icon {
@@ -596,7 +596,7 @@
   .upload-spinner {
     width: 32px;
     height: 32px;
-    border: 3px solid #e2e8f0;
+    border: 3px solid var(--text-primary);
     border-top: 3px solid #667eea;
     border-radius: 50%;
     animation: spin 1s linear infinite;
@@ -612,7 +612,7 @@
   .upload-area__description {
     margin: 0;
     font-size: 0.875rem;
-    color: #64748b;
+    color: var(--text-muted);
     line-height: 1.5;
   }
 
@@ -625,7 +625,7 @@
 
   .format-tag {
     padding: 0.25rem 0.5rem;
-    background: #e2e8f0;
+    background: var(--text-primary);
     color: #475569;
     border-radius: 0.375rem;
     font-size: 0.75rem;
@@ -634,7 +634,7 @@
 
   .upload-area__size-limit {
     font-size: 0.75rem;
-    color: #94a3b8;
+    color: var(--text-tertiary);
     margin-top: 0.5rem;
   }
 
@@ -644,7 +644,7 @@
     gap: 0.5rem;
     padding: 0.75rem 1.5rem;
     background: #667eea;
-    color: white;
+    color: var(--text-inverse);
     border: none;
     border-radius: 0.5rem;
     font-weight: 500;
@@ -659,7 +659,7 @@
   }
 
   .upload-button:disabled {
-    background: #94a3b8;
+    background: var(--text-tertiary);
     cursor: not-allowed;
     transform: none;
   }
@@ -692,7 +692,7 @@
 
   /* 视频预览 */
   .video-preview {
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--text-primary);
     border-radius: 12px;
     overflow: hidden;
     background: #1f2937;
@@ -715,7 +715,7 @@
     margin: 0 0 0.5rem 0;
     font-size: 1rem;
     font-weight: 600;
-    color: white;
+    color: var(--text-inverse);
     word-break: break-all;
   }
 
@@ -730,7 +730,7 @@
   .video-info__size,
   .video-info__type,
   .video-info__duration {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--border-secondary);
     padding: 0.125rem 0.375rem;
     border-radius: 0.25rem;
   }
@@ -750,8 +750,8 @@
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
+    background: var(--border-secondary);
+    color: var(--text-inverse);
   }
 
   .action-button:hover {
@@ -776,7 +776,7 @@
   }
 
   .action-button--remove {
-    background: #ef4444;
+    background: var(--color-error);
   }
 
   .action-button--remove:hover {
@@ -792,7 +792,7 @@
     position: relative;
     width: 100%;
     aspect-ratio: 16/9;
-    background: #000;
+    background: var(--bg-player);
     overflow: hidden;
   }
 
@@ -811,7 +811,7 @@
     flex-direction: column;
     align-items: center;
     gap: 1rem;
-    color: white;
+    color: var(--text-inverse);
   }
 
   .video-loading__spinner {
@@ -839,7 +839,7 @@
     padding: 1rem;
     background: rgba(239, 68, 68, 0.9);
     border-radius: 0.5rem;
-    color: white;
+    color: var(--text-inverse);
     backdrop-filter: blur(10px);
   }
 
@@ -877,7 +877,7 @@
   }
 
   .metadata-value {
-    color: white;
+    color: var(--text-inverse);
     font-weight: 600;
   }
 

@@ -87,15 +87,23 @@ export const iptvApi = {
   validateChannel: (id: number) =>
     ApiClient.get<{ isValid: boolean }>(`/iptv/${id}/validate`, undefined, false),
 
-  importFromM3U: (m3uUrl: string) =>
-    ApiClient.post<IPTVChannel[]>(`/iptv/import/m3u?m3uUrl=${encodeURIComponent(m3uUrl)}`, {}),
+  importFromM3U: (m3uUrl: string, group?: string) => {
+    const params = new URLSearchParams({ m3uUrl });
+    if (group) params.set('group', group);
+    return ApiClient.post<IPTVChannel[]>(`/iptv/import/m3u?${params.toString()}`, {});
+  },
+
+  importFromJson: (channels: { name: string; url: string; group?: string; logo?: string }[], group?: string) => {
+    const params = group ? `?group=${encodeURIComponent(group)}` : '';
+    return ApiClient.post<IPTVChannel[]>(`/iptv/import/json${params}`, { channels });
+  },
 
   deleteChannel: (id: number) => ApiClient.delete(`/iptv/${id}`),
 
   getEpg: (id: number, epgUrl?: string) =>
-    ApiClient.get<{ channelId: number; epgId: string | null; programs: { start: number; end: number; title: string }[] }>(
-      `/iptv/${id}/epg`,
-      epgUrl ? { params: { epgUrl } } : undefined,
-      false,
-    ),
+    ApiClient.get<{
+      channelId: number;
+      epgId: string | null;
+      programs: { start: number; end: number; title: string }[];
+    }>(`/iptv/${id}/epg`, epgUrl ? { params: { epgUrl } } : undefined, false),
 };

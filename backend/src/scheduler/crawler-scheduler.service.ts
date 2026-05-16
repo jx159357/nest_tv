@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { CrawlerService } from '../crawler/crawler.service';
 import { CRAWLER_TARGETS } from '../crawler/crawler.config';
-import { MediaResourceService } from '../media/media-resource.service';
 import { AppLoggerService } from '../common/services/app-logger.service';
 
 /**
@@ -17,7 +16,7 @@ interface CrawlTaskResult {
   warnings: string[];
 }
 
-interface ManualCrawlResponse {
+export interface ManualCrawlResponse {
   success: boolean;
   message?: string;
   target?: string;
@@ -31,7 +30,7 @@ interface ConnectionTestResponse {
   targets?: string[];
 }
 
-interface CrawlerStatusResponse {
+export interface CrawlerStatusResponse {
   enabled: number;
   total: number;
   targets: Array<{ name: string; enabled: boolean }>;
@@ -52,7 +51,6 @@ export class CrawlerSchedulerService {
 
   constructor(
     private readonly crawlerService: CrawlerService,
-    private readonly mediaResourceService: MediaResourceService,
     private readonly appLogger: AppLoggerService,
   ) {}
 
@@ -77,24 +75,30 @@ export class CrawlerSchedulerService {
 
       // 为每个目标执行爬取任务
       for (const target of targets) {
-        try {
-          this.logger.log(`正在爬取目标: ${target.name}`);
-          const result = await this.executeWithRetry(
-            () => this.crawlTargetWithTimeout(target.name, target.baseUrl),
-            target.name,
-          );
-          results.push(result);
-          this.logger.log(`目标 ${target.name} 爬取完成`);
-        } catch (error: unknown) {
-          this.logger.error(`目标 ${target.name} 爬取失败:`, error);
-          results.push({
-            success: false,
-            successCount: 0,
-            failureCount: 1,
-            savedCount: 0,
-            errors: [error instanceof Error ? error.message : '未知错误'],
-            warnings: [],
-          });
+        const listingUrls = target.listingUrls?.length
+          ? target.listingUrls
+          : [target.baseUrl];
+
+        for (const listingUrl of listingUrls) {
+          try {
+            this.logger.log(`正在爬取目标: ${target.name} - ${listingUrl}`);
+            const result = await this.executeWithRetry(
+              () => this.crawlTargetWithTimeout(target.name, listingUrl),
+              target.name,
+            );
+            results.push(result);
+            this.logger.log(`目标 ${target.name} (${listingUrl}) 爬取完成`);
+          } catch (error: unknown) {
+            this.logger.error(`目标 ${target.name} (${listingUrl}) 爬取失败:`, error);
+            results.push({
+              success: false,
+              successCount: 0,
+              failureCount: 1,
+              savedCount: 0,
+              errors: [error instanceof Error ? error.message : '未知错误'],
+              warnings: [],
+            });
+          }
         }
       }
 
@@ -144,17 +148,36 @@ export class CrawlerSchedulerService {
   }
 
   /**
-   * 爬取指定目标（带超时）
+   * 爬取指定目标的列表页并提取详情页数据，然后保存到数据库
    */
-  private async crawlTargetWithTimeout(targetName: string, url: string): Promise<CrawlTaskResult> {
+  private async crawlTargetWithTimeout(targetName: string, listingUrl: string): Promise<CrawlTaskResult> {
     try {
-      const result = await this.crawlerService.crawlWebsite(targetName, url);
+      const result = await this.crawlerService.crawlListingPage(
+        targetName,
+        listingUrl,
+        20,
+      );
+
+      let savedCount = 0;
+      const saveErrors: string[] = [];
+
+      for (const data of result.crawled) {
+        try {
+          await this.crawlerService.saveCrawledData(data, targetName);
+          savedCount++;
+        } catch (error: unknown) {
+          const msg = error instanceof Error ? error.message : '保存失败';
+          saveErrors.push(`保存失败 (${data.title}): ${msg}`);
+          this.logger.warn(`保存数据失败 (${data.title}): ${msg}`);
+        }
+      }
+
       return {
-        success: true,
-        successCount: result.success ? 1 : 0,
-        failureCount: result.success ? 0 : 1,
-        savedCount: result.data ? 1 : 0,
-        errors: result.error ? [result.error] : [],
+        success: result.crawled.length > 0,
+        successCount: result.crawled.length,
+        failureCount: result.errors.length,
+        savedCount,
+        errors: [...result.errors, ...saveErrors],
         warnings: [],
       };
     } catch (error: unknown) {

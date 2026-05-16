@@ -48,6 +48,12 @@
     </script>
   </head>
   <body>
+    <script>
+      (function() {
+        var t = localStorage.getItem('nest-tv-theme');
+        if (t !== 'light') document.documentElement.classList.add('dark');
+      })();
+    </script>
     <div id="app"></div>
 
     <!-- 关键渲染路径优化 -->

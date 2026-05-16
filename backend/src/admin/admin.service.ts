@@ -235,6 +235,21 @@ export class AdminService {
     };
   }
 
+  async toggleUserStatus(userId: number) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+    user.isActive = !user.isActive;
+    await this.userRepository.save(user);
+    return {
+      id: user.id,
+      username: user.username,
+      isActive: user.isActive,
+      message: user.isActive ? '用户已解封' : '用户已封禁',
+    };
+  }
+
   async getMedia(page: number = 1, limit: number = 20, type?: string, search?: string) {
     const queryBuilder = this.mediaResourceRepository.createQueryBuilder('media');
 

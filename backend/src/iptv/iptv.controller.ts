@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   Res,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import type { Response } from 'express';
@@ -103,9 +104,24 @@ export class IPTVController {
   @Post('import/m3u')
   @ApiOperation({ summary: '导入M3U播放列表' })
   @ApiQuery({ name: 'm3uUrl', description: 'M3U播放列表URL' })
+  @ApiQuery({ name: 'group', description: '默认分组名（可选）', required: false })
   @ApiResponse({ status: 201, description: '导入成功' })
-  async importFromM3U(@Query('m3uUrl') m3uUrl: string): Promise<IPTVChannel[]> {
-    return await this.iptvService.importFromM3U(m3uUrl);
+  async importFromM3U(
+    @Query('m3uUrl') m3uUrl: string,
+    @Query('group') group?: string,
+  ): Promise<IPTVChannel[]> {
+    return await this.iptvService.importFromM3U(m3uUrl, group);
+  }
+
+  @Post('import/json')
+  @ApiOperation({ summary: '导入JSON格式频道列表' })
+  @ApiQuery({ name: 'group', description: '默认分组名（可选）', required: false })
+  @ApiResponse({ status: 201, description: '导入成功' })
+  async importFromJson(
+    @Body() body: { channels: { name: string; url: string; group?: string; logo?: string }[] },
+    @Query('group') defaultGroup?: string,
+  ): Promise<IPTVChannel[]> {
+    return await this.iptvService.importFromJson(body.channels, defaultGroup);
   }
 
   @Get('stream/proxy')
@@ -122,7 +138,7 @@ export class IPTVController {
   @ApiOperation({ summary: '根据ID查找IPTV频道' })
   @ApiParam({ name: 'id', description: 'IPTV频道ID' })
   @ApiResponse({ status: 200, description: '查询成功', type: IPTVChannel })
-  async findById(@Param('id') id: number): Promise<IPTVChannel> {
+  async findById(@Param('id', ParseIntPipe) id: number): Promise<IPTVChannel> {
     return await this.iptvService.findById(id);
   }
 
@@ -131,7 +147,7 @@ export class IPTVController {
   @ApiParam({ name: 'id', description: 'IPTV频道ID' })
   @ApiResponse({ status: 200, description: '更新成功', type: IPTVChannel })
   async update(
-    @Param('id') id: number,
+    @Param('id', ParseIntPipe) id: number,
     @Body() updateIPTVChannelDto: UpdateIPTVChannelDto,
   ): Promise<IPTVChannel> {
     return await this.iptvService.update(id, updateIPTVChannelDto);
@@ -141,7 +157,7 @@ export class IPTVController {
   @ApiOperation({ summary: '删除IPTV频道' })
   @ApiParam({ name: 'id', description: 'IPTV频道ID' })
   @ApiResponse({ status: 200, description: '删除成功' })
-  async remove(@Param('id') id: number): Promise<void> {
+  async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     await this.iptvService.remove(id);
   }
 
@@ -149,7 +165,7 @@ export class IPTVController {
   @ApiOperation({ summary: '软删除IPTV频道' })
   @ApiParam({ name: 'id', description: 'IPTV频道ID' })
   @ApiResponse({ status: 200, description: '软删除成功', type: IPTVChannel })
-  async softDelete(@Param('id') id: number): Promise<IPTVChannel> {
+  async softDelete(@Param('id', ParseIntPipe) id: number): Promise<IPTVChannel> {
     return await this.iptvService.softDelete(id);
   }
 
@@ -158,7 +174,7 @@ export class IPTVController {
   @ApiOperation({ summary: '增加观看次数' })
   @ApiParam({ name: 'id', description: 'IPTV频道ID' })
   @ApiResponse({ status: 200, description: '观看次数增加成功' })
-  async incrementViewCount(@Param('id') id: number): Promise<void> {
+  async incrementViewCount(@Param('id', ParseIntPipe) id: number): Promise<void> {
     await this.iptvService.incrementViewCount(id);
   }
 
@@ -167,7 +183,7 @@ export class IPTVController {
   @ApiOperation({ summary: '验证频道链接有效性' })
   @ApiParam({ name: 'id', description: 'IPTV频道ID' })
   @ApiResponse({ status: 200, description: '验证成功' })
-  async validateChannel(@Param('id') id: number): Promise<{ isValid: boolean }> {
+  async validateChannel(@Param('id', ParseIntPipe) id: number): Promise<{ isValid: boolean }> {
     const isValid = await this.iptvService.validateChannel(id);
     return { isValid };
   }
@@ -178,7 +194,7 @@ export class IPTVController {
   @ApiParam({ name: 'id', description: 'IPTV频道ID' })
   @ApiQuery({ name: 'epgUrl', description: 'EPG XML 数据源 URL', required: false })
   @ApiResponse({ status: 200, description: '节目单查询成功' })
-  async getEpg(@Param('id') id: number, @Query('epgUrl') epgUrl?: string) {
+  async getEpg(@Param('id', ParseIntPipe) id: number, @Query('epgUrl') epgUrl?: string) {
     return this.iptvService.getChannelEpg(id, epgUrl);
   }
 }

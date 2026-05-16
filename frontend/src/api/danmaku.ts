@@ -139,4 +139,10 @@ export const danmakuApi = {
 
   sendDanmaku: (payload: DanmakuCreatePayload) =>
     ApiClient.post<DanmakuRecord>('/danmaku', payload),
+
+  reportDanmaku: (id: number, reason: string, description?: string) =>
+    ApiClient.post<{ success: boolean; message: string; reportCount: number }>(
+      `/danmaku/${id}/report`,
+      { reason, description },
+    ),
 };

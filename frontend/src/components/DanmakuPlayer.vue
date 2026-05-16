@@ -1,24 +1,38 @@
 <template>
   <div ref="danmakuContainer" class="danmaku-player">
     <!-- 弹幕显示区域 -->
-    <div class="danmaku-container" :class="{ 'danmaku-hidden': !settings.enabled }">
+    <div class="danmaku-container" :class="{ 'danmaku-hidden': !settings.enabled, 'report-mode': reportMode }">
       <div
         v-for="danmaku in visibleDanmaku"
         :key="danmaku.id"
         :class="[
           'danmaku-item',
           `danmaku-${danmaku.type}`,
-          { 'danmaku-highlighted': danmaku.isHighlighted },
+          { 'danmaku-highlighted': danmaku.isHighlighted, 'danmaku-clickable': reportMode },
         ]"
         :style="getDanmakuStyle(danmaku)"
+        @click="reportMode && handleReportClick(danmaku)"
       >
         <span class="danmaku-text">{{ danmaku.text }}</span>
       </div>
     </div>
 
     <!-- 弹幕输入区域 -->
-    <div v-if="showControls" class="danmaku-controls">
-      <div class="danmaku-input-container">
+    <div v-if="showControls" class="danmaku-controls" :class="{ 'controls-visible': controlsVisible }">
+      <button class="danmaku-toggle-btn" title="弹幕开关" @click="toggleDanmaku">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="toggle-icon">
+          <path v-if="settings.enabled" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+          <circle v-if="settings.enabled" cx="12" cy="12" r="3" />
+          <path v-if="!settings.enabled" d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
+          <line v-if="!settings.enabled" x1="1" y1="1" x2="23" y2="23" />
+        </svg>
+      </button>
+      <button class="danmaku-toggle-btn" title="收起弹幕栏" @click="toggleControls">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="toggle-icon">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+      <div class="danmaku-input-row">
         <input
           v-model="inputText"
           type="text"
@@ -28,45 +42,54 @@
           maxlength="100"
           @keyup.enter="sendDanmaku"
         />
-        <div class="danmaku-color-picker">
-          <input v-model="selectedColor" type="color" class="color-input" title="选择颜色" />
+        <div class="danmaku-extra">
+          <input v-model="selectedColor" type="color" class="color-input" title="弹幕颜色" />
+          <select v-model="selectedType" class="danmaku-type-select" title="弹幕位置">
+            <option value="scroll">滚动</option>
+            <option value="top">顶部</option>
+            <option value="bottom">底部</option>
+          </select>
+          <button
+            :disabled="!canSendDanmaku || !inputText.trim()"
+            class="danmaku-send-btn"
+            @click="sendDanmaku"
+          >
+            发送
+          </button>
+          <button class="danmaku-settings-btn" title="弹幕设置" @click="toggleSettings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="settings-svg">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+            </svg>
+          </button>
+          <button
+            class="danmaku-settings-btn"
+            :class="{ 'report-active': reportMode }"
+            :title="reportMode ? '退出举报模式' : '举报弹幕'"
+            @click="toggleReportMode"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="settings-svg">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+              <line x1="4" y1="22" x2="4" y2="15" />
+            </svg>
+          </button>
         </div>
-        <select v-model="selectedType" class="danmaku-type-select" title="弹幕类型">
-          <option value="scroll">滚动</option>
-          <option value="top">顶部</option>
-          <option value="bottom">底部</option>
-        </select>
-        <button
-          :disabled="!canSendDanmaku || !inputText.trim()"
-          class="danmaku-send-btn"
-          @click="sendDanmaku"
-        >
-          发送
-        </button>
-      </div>
-
-      <div v-if="suggestionChips.length > 0" class="mt-2 flex flex-wrap gap-2">
-        <button
-          v-for="item in suggestionChips"
-          :key="`${item.text}-${item.type}`"
-          class="rounded-full border border-white/20 bg-black/40 px-3 py-1 text-xs text-white transition hover:bg-black/60"
-          @click="applySuggestion(item.text)"
-        >
-          {{ item.text }}
-        </button>
-        <button
-          class="rounded-full border border-white/20 bg-black/20 px-3 py-1 text-xs text-white transition hover:bg-black/40"
-          @click="refreshSuggestions"
-        >
-          刷新建议
-        </button>
-      </div>
-
-      <!-- 弹幕设置按钮 -->
-      <div class="danmaku-settings-btn" @click="toggleSettings">
-        <i class="settings-icon">⚙️</i>
       </div>
     </div>
+
+    <!-- 弹幕开关浮动按钮（控件隐藏时） -->
+    <button
+      v-if="showControls && !controlsVisible"
+      class="danmaku-float-toggle"
+      :class="{ active: settings.enabled }"
+      title="展开弹幕栏"
+      @click="toggleControls"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="float-icon">
+        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+      </svg>
+      <span class="float-label">弹幕</span>
+    </button>
 
     <!-- 弹幕设置面板 -->
     <div v-if="showSettings" class="danmaku-settings-panel">
@@ -176,11 +199,7 @@
             <button class="filter-add-btn" @click="addFilterKeyword">添加</button>
           </div>
           <div v-if="customFilterKeywords.length > 0" class="filter-keyword-list">
-            <span
-              v-for="(kw, idx) in customFilterKeywords"
-              :key="idx"
-              class="filter-keyword-tag"
-            >
+            <span v-for="(kw, idx) in customFilterKeywords" :key="idx" class="filter-keyword-tag">
               {{ kw }}
               <button class="tag-remove" @click="removeFilterKeyword(idx)">&times;</button>
             </span>
@@ -204,19 +223,45 @@
       </div>
     </div>
 
-    <!-- 连接状态提示 -->
-    <div v-if="!isConnected && settings.enabled" class="connection-status">
-      <div class="status-message">
-        {{ connectionStatusMessage }}
+    <!-- 连接状态提示（自动消失的 toast 样式） -->
+    <Transition name="toast-fade">
+      <div v-if="showConnectionToast && !isConnected && settings.enabled" class="connection-toast">
+        <span>{{ connectionStatusMessage }}</span>
+        <button class="toast-close" @click="showConnectionToast = false">&times;</button>
       </div>
-      <button class="reconnect-btn" @click="reconnect">重试实时连接</button>
-    </div>
+    </Transition>
 
-    <div v-if="sendFeedback" class="connection-status connection-status--success">
-      <div class="status-message">
-        {{ sendFeedback }}
+    <Transition name="toast-fade">
+      <div v-if="sendFeedback" class="connection-toast connection-toast--success">
+        <span>{{ sendFeedback }}</span>
       </div>
-    </div>
+    </Transition>
+
+    <!-- 举报弹窗 -->
+    <Transition name="toast-fade">
+      <div v-if="reportTarget" class="report-dialog-backdrop" @click.self="reportTarget = null">
+        <div class="report-dialog">
+          <div class="report-dialog-header">
+            <span>举报弹幕</span>
+            <button class="toast-close" @click="reportTarget = null">&times;</button>
+          </div>
+          <p class="report-dialog-text">"{{ reportTarget.text }}"</p>
+          <div class="report-reasons">
+            <label v-for="reason in reportReasons" :key="reason" class="report-reason-item">
+              <input v-model="reportReason" type="radio" :value="reason" />
+              <span>{{ reason }}</span>
+            </label>
+          </div>
+          <button
+            class="danmaku-send-btn report-submit"
+            :disabled="!reportReason || reportSubmitting"
+            @click="submitReport"
+          >
+            {{ reportSubmitting ? '提交中...' : '提交举报' }}
+          </button>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -227,7 +272,6 @@
     computed,
     onMounted,
     onUnmounted,
-    nextTick,
     watch,
     type CSSProperties,
   } from 'vue';
@@ -265,18 +309,29 @@
   const selectedColor = ref('#FFFFFF');
   const selectedType = ref<'scroll' | 'top' | 'bottom'>('scroll');
   const showSettings = ref(false);
+  const controlsVisible = ref(false);
+  const showConnectionToast = ref(false);
   const roomInfo = ref<RoomInfo | null>(null);
+
+  // 举报功能
+  const reportMode = ref(false);
+  const reportTarget = ref<DanmakuMessage | null>(null);
+  const reportReason = ref('');
+  const reportSubmitting = ref(false);
+  const reportReasons = ['违规内容', '垃圾广告', '恶意刷屏', '色情低俗', '其他'];
   const connectionError = ref<string | null>(null);
   const sendFeedback = ref<string | null>(null);
   const backendFilterRules = ref<Awaited<ReturnType<typeof danmakuApi.getFilterRules>> | null>(
     null,
   );
-  const suggestionChips = ref<Awaited<ReturnType<typeof danmakuApi.getSuggestions>>['suggestions']>(
-    [],
-  );
 
   // 弹幕列表管理
   const danmakuList = ref<DanmakuMessage[]>([]);
+  const scrollPositions = new Map<string, number>();
+  const topLaneCounter = ref(0);
+  const bottomLaneCounter = ref(0);
+  const MAX_TOP_LANES = 8;
+  const MAX_BOTTOM_LANES = 5;
 
   const getFilteredDanmaku = () => {
     if (!settings.enabled) return [];
@@ -363,22 +418,29 @@
           settings.speed = data.settings.speed ?? settings.speed;
         }
       }
-    } catch {}
+    } catch {
+      // ignore parse errors
+    }
   };
 
   const saveSessionFilters = () => {
     try {
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify({
-        keywords: customFilterKeywords.value,
-        settings: {
-          filter: { ...settings.filter },
-          display: { ...settings.display },
-          opacity: settings.opacity,
-          fontSize: settings.fontSize,
-          speed: settings.speed,
-        },
-      }));
-    } catch {}
+      sessionStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify({
+          keywords: customFilterKeywords.value,
+          settings: {
+            filter: { ...settings.filter },
+            display: { ...settings.display },
+            opacity: settings.opacity,
+            fontSize: settings.fontSize,
+            speed: settings.speed,
+          },
+        }),
+      );
+    } catch {
+      // ignore storage errors
+    }
   };
 
   const addFilterKeyword = () => {
@@ -405,9 +467,13 @@
     });
   };
 
-  watch(() => [settings.filter, settings.display, settings.opacity, settings.fontSize, settings.speed], () => {
-    saveSessionFilters();
-  }, { deep: true });
+  watch(
+    () => [settings.filter, settings.display, settings.opacity, settings.fontSize, settings.speed],
+    () => {
+      saveSessionFilters();
+    },
+    { deep: true },
+  );
 
   // 用户认证
   const authStore = useAuthStore();
@@ -459,6 +525,7 @@
     onDisconnected,
     onError,
     onHeartbeat,
+    onReconnectFailed,
   } = useDanmakuWebSocket(props.videoId);
 
   // 事件监听设置
@@ -469,10 +536,6 @@
     if (userId.value && props.videoId) {
       wsConnect();
     }
-
-    // 监听窗口大小变化
-    window.addEventListener('resize', handleResize);
-    startAnimationLoop();
   });
 
   onUnmounted(() => {
@@ -503,16 +566,24 @@
     // 连接状态变化
     onConnected(() => {
       connectionError.value = null;
+      showConnectionToast.value = false;
       wsGetRoomInfo();
       void loadHttpRoomInfo();
     });
 
     onDisconnected(() => {
-      connectionError.value = '连接已断开';
+      connectionError.value = '连接已断开，正在重连...';
     });
 
     onError((error: unknown) => {
       connectionError.value = error instanceof Error ? error.message : '连接错误';
+    });
+
+    onReconnectFailed(() => {
+      connectionError.value = canUseHttpFallback.value
+        ? '实时连接失败，已切换到 HTTP 回退模式'
+        : '弹幕服务器连接失败，请刷新页面重试';
+      showConnectionToast.value = true;
     });
 
     // 心跳响应
@@ -523,9 +594,19 @@
 
   // 弹幕管理
   const addDanmaku = (danmaku: DanmakuMessage) => {
+    const id = danmaku.id || `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+    if (danmaku.type === 'scroll') {
+      scrollPositions.set(id, Math.random() * 70 + 5);
+    } else if (danmaku.type === 'top') {
+      scrollPositions.set(id, (topLaneCounter.value % MAX_TOP_LANES) * 12 + 2);
+      topLaneCounter.value++;
+    } else if (danmaku.type === 'bottom') {
+      scrollPositions.set(id, (bottomLaneCounter.value % MAX_BOTTOM_LANES) * 12 + 2);
+      bottomLaneCounter.value++;
+    }
     danmakuList.value.push({
       ...danmaku,
-      id: danmaku.id || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id,
       timestamp: danmaku.timestamp || Date.now(),
     });
 
@@ -628,41 +709,13 @@
     }
   };
 
-  const loadSuggestions = async () => {
-    if (!props.videoId) {
-      suggestionChips.value = [];
-      return;
-    }
-
-    try {
-      const response = await danmakuApi.getSuggestions({
-        videoId: props.videoId,
-        mediaResourceId: resolvedMediaResourceId.value || undefined,
-        type: 'relevant',
-        limit: 5,
-      });
-      suggestionChips.value = response.suggestions;
-    } catch {
-      suggestionChips.value = [];
-    }
-  };
-
-  const refreshSuggestions = async () => {
-    await loadSuggestions();
-  };
-
   const refreshRoomSummary = async () => {
     await loadHttpRoomInfo();
     await loadFilterRules();
-    await loadSuggestions();
-  };
-
-  const applySuggestion = (text: string) => {
-    inputText.value = text;
   };
 
   // 弹幕样式计算
-  const getDanmakuStyle = (danmaku: DanmakuMessage) => {
+  const getDanmakuStyle = (danmaku: DanmakuMessage): CSSProperties => {
     const baseStyle: CSSProperties = {
       color: danmaku.color || settings.color,
       fontSize: `${settings.fontSize}px`,
@@ -676,58 +729,25 @@
       baseStyle.textShadow = '0 0 10px rgba(255, 255, 255, 0.8)';
     }
 
-    return baseStyle;
-  };
+    const lanePos = scrollPositions.get(danmaku.id);
 
-  // 动画循环
-  let animationFrame: number | null = null;
-  const startAnimationLoop = () => {
-    const animate = () => {
-      updateDanmakuPositions();
-      animationFrame = requestAnimationFrame(animate);
-    };
-    animate();
-  };
-
-  const stopAnimationLoop = () => {
-    if (animationFrame) {
-      cancelAnimationFrame(animationFrame);
-      animationFrame = null;
+    if (danmaku.type === 'scroll') {
+      baseStyle.top = `${lanePos ?? 10}%`;
+      const duration = Math.max(6, (11 - settings.speed) * 1.5);
+      baseStyle.animation = `danmaku-scroll-lr ${duration}s linear forwards`;
+    } else if (danmaku.type === 'top') {
+      baseStyle.top = `${lanePos ?? 2}%`;
+      baseStyle.left = '50%';
+      baseStyle.transform = 'translateX(-50%)';
+      baseStyle.textAlign = 'center';
+    } else if (danmaku.type === 'bottom') {
+      baseStyle.bottom = `${lanePos ?? 2}%`;
+      baseStyle.left = '50%';
+      baseStyle.transform = 'translateX(-50%)';
+      baseStyle.textAlign = 'center';
     }
-  };
 
-  // 更新弹幕位置
-  const updateDanmakuPositions = () => {
-    if (!danmakuContainer.value || !settings.enabled) return;
-
-    const container = danmakuContainer.value;
-    const containerWidth = container.offsetWidth;
-    const containerHeight = container.offsetHeight;
-
-    const scrollDanmaku = visibleDanmaku.value.filter(d => d.type === 'scroll');
-    const currentTime = Date.now();
-
-    scrollDanmaku.forEach((danmaku: DanmakuMessage) => {
-      if (!danmaku.position) {
-        danmaku.position = {
-          x: containerWidth,
-          y: Math.random() * (containerHeight - 50) + 25,
-          startTime: currentTime,
-        };
-      }
-
-      const elapsed = currentTime - danmaku.position.startTime;
-      const speed = (11 - settings.speed) * 50; // 速度转换为像素/秒
-      const distance = (elapsed / 1000) * speed;
-
-      danmaku.position.x = containerWidth + distance;
-
-      // 如果弹幕完全移出屏幕，重置位置
-      if (danmaku.position.x > containerWidth + 200) {
-        danmaku.position.startTime = currentTime;
-        danmaku.position.x = -200;
-      }
-    });
+    return baseStyle;
   };
 
   // UI 交互
@@ -735,25 +755,54 @@
     showSettings.value = !showSettings.value;
   };
 
-  const reconnect = () => {
-    if (userId.value && props.videoId) {
-      connectionError.value = null;
-      wsConnect();
+  const toggleDanmaku = () => {
+    settings.enabled = !settings.enabled;
+  };
+
+  const toggleControls = () => {
+    controlsVisible.value = !controlsVisible.value;
+  };
+
+  const toggleReportMode = () => {
+    reportMode.value = !reportMode.value;
+    if (!reportMode.value) {
+      reportTarget.value = null;
     }
   };
 
-  const handleResize = () => {
-    // 重新计算弹幕位置
-    nextTick(() => {
-      updateDanmakuPositions();
-    });
+  const handleReportClick = (danmaku: DanmakuMessage) => {
+    if (!danmaku.id) return;
+    reportTarget.value = danmaku;
+    reportReason.value = '';
+  };
+
+  const submitReport = async () => {
+    if (!reportTarget.value || !reportReason.value || reportSubmitting.value) return;
+    const danmakuId = Number(reportTarget.value.id);
+    if (!Number.isFinite(danmakuId)) return;
+
+    reportSubmitting.value = true;
+    try {
+      await danmakuApi.reportDanmaku(danmakuId, reportReason.value);
+      sendFeedback.value = '举报已提交';
+      window.setTimeout(() => {
+        sendFeedback.value = null;
+      }, 2000);
+      reportTarget.value = null;
+      reportMode.value = false;
+    } catch {
+      sendFeedback.value = '举报提交失败';
+      window.setTimeout(() => {
+        sendFeedback.value = null;
+      }, 2000);
+    } finally {
+      reportSubmitting.value = false;
+    }
   };
 
   // 清理资源
   const cleanup = () => {
     wsDisconnect();
-    stopAnimationLoop();
-    window.removeEventListener('resize', handleResize);
   };
 
   // 监听设置变化
@@ -785,7 +834,6 @@
     () => {
       void loadHttpRoomInfo();
       void loadFilterRules();
-      void loadSuggestions();
     },
     { immediate: true },
   );
@@ -798,6 +846,7 @@
     height: 100%;
     overflow: hidden;
     background: transparent;
+    z-index: 9999;
   }
 
   .danmaku-container {
@@ -819,25 +868,7 @@
     user-select: none;
     pointer-events: none;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-    will-change: transform;
-  }
-
-  .danmaku-scroll {
-    animation: scroll-right-to-left 8s linear;
-  }
-
-  .danmaku-top {
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    text-align: center;
-  }
-
-  .danmaku-bottom {
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    text-align: center;
+    will-change: left, transform;
   }
 
   .danmaku-highlighted {
@@ -845,11 +876,13 @@
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
   }
 
-  @keyframes scroll-right-to-left {
+  @keyframes danmaku-scroll-lr {
     from {
-      transform: translateX(100vw);
+      left: 100%;
+      transform: translateX(0);
     }
     to {
+      left: -2%;
       transform: translateX(-100%);
     }
   }
@@ -861,35 +894,65 @@
     transform: translateX(-50%);
     display: flex;
     align-items: center;
-    gap: 10px;
-    background: rgba(0, 0, 0, 0.9);
-    padding: 10px 15px;
-    border-radius: 25px;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.75);
+    padding: 6px 10px;
+    border-radius: 8px;
     z-index: 9999;
     pointer-events: all;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    white-space: nowrap;
   }
 
-  .danmaku-input-container {
+  .danmaku-controls.controls-visible {
+    opacity: 1;
+  }
+
+  .danmaku-toggle-btn {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: color 0.2s;
+  }
+
+  .danmaku-toggle-btn:hover {
+    color: var(--text-inverse);
+  }
+
+  .toggle-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .danmaku-input-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .danmaku-input {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 20px;
+    background: var(--border-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--text-inverse);
+    padding: 6px 10px;
+    border-radius: 4px;
     outline: none;
-    width: 200px;
-    font-size: 14px;
+    width: 180px;
+    font-size: 13px;
   }
 
   .danmaku-input:focus {
-    border-color: rgba(255, 255, 255, 0.6);
+    border-color: rgba(255, 255, 255, 0.5);
     background: rgba(255, 255, 255, 0.15);
   }
 
@@ -898,67 +961,118 @@
     cursor: not-allowed;
   }
 
+  .danmaku-extra {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
   .color-input {
-    width: 30px;
-    height: 30px;
+    width: 24px;
+    height: 24px;
     border: none;
-    border-radius: 50%;
+    border-radius: 4px;
     cursor: pointer;
     background: none;
+    padding: 0;
   }
 
   .danmaku-type-select {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: white;
-    padding: 6px 8px;
-    border-radius: 15px;
+    background: #1a1a2e;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
+    padding: 5px 6px;
+    border-radius: 4px;
     outline: none;
     font-size: 12px;
+    cursor: pointer;
+  }
+
+  .danmaku-type-select option {
+    background: #1a1a2e;
+    color: var(--text-primary);
   }
 
   .danmaku-send-btn {
-    background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+    background: var(--color-brand-primary);
     border: none;
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
+    color: var(--text-inverse);
+    padding: 5px 14px;
+    border-radius: 4px;
     cursor: pointer;
-    font-weight: bold;
-    transition: all 0.3s ease;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.2s;
+    white-space: nowrap;
   }
 
   .danmaku-send-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    background: #5558e6;
   }
 
   .danmaku-send-btn:disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
   }
 
   .danmaku-settings-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: white;
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    width: 28px;
+    height: 28px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s ease;
+    transition: color 0.2s;
+    flex-shrink: 0;
   }
 
   .danmaku-settings-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: scale(1.1);
+    color: var(--text-inverse);
   }
 
-  .settings-icon {
-    font-size: 16px;
+  .settings-svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .danmaku-float-toggle {
+    position: absolute;
+    bottom: 60px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--border-secondary);
+    color: rgba(255, 255, 255, 0.7);
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: all 0.2s;
+    backdrop-filter: blur(8px);
+    pointer-events: all;
+  }
+
+  .danmaku-float-toggle:hover {
+    background: rgba(0, 0, 0, 0.8);
+    color: var(--text-inverse);
+  }
+
+  .danmaku-float-toggle.active {
+    border-color: rgba(99, 102, 241, 0.4);
+  }
+
+  .float-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .float-label {
+    font-size: 12px;
   }
 
   .danmaku-settings-panel {
@@ -968,90 +1082,93 @@
     transform: translate(-50%, -50%);
     background: rgba(20, 20, 20, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 15px;
-    padding: 20px;
-    min-width: 350px;
-    max-width: 500px;
-    max-height: 80vh;
+    border-radius: 12px;
+    padding: 16px;
+    min-width: 300px;
+    max-width: 400px;
+    max-height: 50vh;
     overflow-y: auto;
     z-index: 10000;
-    backdrop-filter: blur(10px);
-    color: white;
+    backdrop-filter: blur(12px);
+    color: var(--text-inverse);
+    pointer-events: all;
   }
 
   .settings-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     padding-bottom: 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   }
 
   .settings-header h3 {
     margin: 0;
-    color: #fff;
+    color: var(--text-inverse);
+    font-size: 15px;
   }
 
   .close-btn {
     background: none;
     border: none;
-    color: white;
-    font-size: 24px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 20px;
     cursor: pointer;
     padding: 0;
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    transition: background 0.3s ease;
+    border-radius: 4px;
+    transition: all 0.2s;
   }
 
   .close-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--border-secondary);
+    color: var(--text-inverse);
   }
 
   .settings-content {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
   }
 
   .setting-group {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
   }
 
   .setting-label {
     display: flex;
     align-items: center;
-    gap: 10px;
-    color: #fff;
-    font-size: 14px;
+    gap: 8px;
+    color: var(--text-primary);
+    font-size: 13px;
   }
 
   .setting-label input[type='checkbox'] {
-    width: 16px;
-    height: 16px;
-    accent-color: #667eea;
+    width: 15px;
+    height: 15px;
+    accent-color: var(--color-brand-primary);
   }
 
   .range-input {
     flex: 1;
-    margin-left: 10px;
-    accent-color: #667eea;
+    margin-left: 8px;
+    accent-color: var(--color-brand-primary);
   }
 
   .setting-group-title {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
-    color: #94a3b8;
+    color: var(--text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
 
   .custom-filter-input {
@@ -1061,25 +1178,25 @@
 
   .filter-input {
     flex: 1;
-    padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    color: #e2e8f0;
+    padding: 7px 10px;
+    background: var(--border-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 6px;
+    color: var(--text-primary);
     font-size: 13px;
     outline: none;
   }
 
   .filter-input:focus {
-    border-color: #6366f1;
+    border-color: var(--border-focus);
   }
 
   .filter-add-btn {
-    padding: 8px 16px;
-    background: #6366f1;
+    padding: 7px 14px;
+    background: var(--color-brand-primary);
     border: none;
-    border-radius: 8px;
-    color: white;
+    border-radius: 6px;
+    color: var(--text-inverse);
     font-size: 13px;
     cursor: pointer;
     transition: background 0.2s;
@@ -1099,10 +1216,10 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 4px 10px;
+    padding: 3px 8px;
     background: rgba(239, 68, 68, 0.15);
     border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: 20px;
+    border-radius: 12px;
     font-size: 12px;
     color: #fca5a5;
   }
@@ -1118,109 +1235,189 @@
   }
 
   .tag-remove:hover {
-    color: #ef4444;
+    color: var(--color-error);
   }
 
   .filter-count {
     font-size: 12px;
-    color: #64748b;
+    color: var(--text-muted);
   }
 
   .room-info {
     background: rgba(102, 126, 234, 0.1);
     border: 1px solid rgba(102, 126, 234, 0.3);
-    border-radius: 10px;
-    padding: 15px;
+    border-radius: 8px;
+    padding: 12px;
   }
 
   .room-info p {
-    margin: 5px 0;
-    color: #fff;
-    font-size: 14px;
+    margin: 4px 0;
+    color: var(--text-primary);
+    font-size: 13px;
   }
 
-  .connection-status {
+  .connection-toast {
     position: absolute;
-    top: 20px;
+    top: 12px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(255, 0, 0, 0.9);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 25px;
+    background: rgba(0, 0, 0, 0.8);
+    color: var(--color-warning-light);
+    padding: 6px 14px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     z-index: 200;
-  }
-
-  .status-message {
-    font-size: 14px;
-  }
-
-  .reconnect-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: white;
-    padding: 5px 12px;
-    border-radius: 15px;
-    cursor: pointer;
     font-size: 12px;
-    transition: all 0.3s ease;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(251, 191, 36, 0.2);
+    max-width: 90%;
+    pointer-events: all;
   }
 
-  .reconnect-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
+  .connection-toast--success {
+    color: #34d399;
+    border-color: rgba(52, 211, 153, 0.2);
   }
 
-  /* 响应式设计 */
-  @media (max-width: 768px) {
+  .toast-close {
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 2px;
+    opacity: 0.6;
+  }
+
+  .toast-close:hover {
+    opacity: 1;
+  }
+
+  .toast-fade-enter-active,
+  .toast-fade-leave-active {
+    transition: opacity 0.3s ease;
+  }
+
+  .toast-fade-enter-from,
+  .toast-fade-leave-to {
+    opacity: 0;
+  }
+
+  .danmaku-container.report-mode {
+    pointer-events: all;
+  }
+
+  .danmaku-clickable {
+    cursor: pointer;
+    pointer-events: all;
+  }
+
+  .danmaku-clickable:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+  }
+
+  .report-active {
+    color: #ef4444;
+  }
+
+  .report-dialog-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    pointer-events: all;
+  }
+
+  .report-dialog {
+    background: rgba(20, 20, 20, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 16px;
+    min-width: 260px;
+    max-width: 320px;
+    color: var(--text-inverse);
+    backdrop-filter: blur(12px);
+  }
+
+  .report-dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .report-dialog-text {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-bottom: 12px;
+    word-break: break-all;
+  }
+
+  .report-reasons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .report-reason-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-primary);
+    cursor: pointer;
+  }
+
+  .report-reason-item input[type='radio'] {
+    accent-color: var(--color-brand-primary);
+  }
+
+  .report-submit {
+    width: 100%;
+    text-align: center;
+  }
+
+  @media (max-width: 640px) {
     .danmaku-controls {
-      flex-direction: column;
-      gap: 8px;
-      padding: 8px 12px;
-      bottom: 50px;
-    }
-
-    .danmaku-input-container {
-      flex-wrap: wrap;
-      justify-content: center;
+      bottom: 40px;
+      padding: 5px 8px;
     }
 
     .danmaku-input {
-      width: 150px;
-      padding: 6px 10px;
+      width: 120px;
       font-size: 12px;
+      padding: 5px 8px;
     }
 
     .danmaku-settings-panel {
-      min-width: 300px;
+      min-width: 280px;
       max-width: 90vw;
     }
   }
 
-  @media (min-width: 1400px) {
-    .danmaku-controls {
-      bottom: 80px;
-    }
-  }
-
-  /* 滚动条样式 */
   .danmaku-settings-panel::-webkit-scrollbar {
-    width: 6px;
+    width: 5px;
   }
 
   .danmaku-settings-panel::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.05);
   }
 
   .danmaku-settings-panel::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.2);
     border-radius: 3px;
   }
 
   .danmaku-settings-panel::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.3);
   }
 </style>

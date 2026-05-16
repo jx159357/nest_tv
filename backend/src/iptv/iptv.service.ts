@@ -263,13 +263,12 @@ export class IPTVService {
   }
 
   /**
-   * 导入M3U播放列表
+   * 导入M3U播放列表（支持 IPTV #EXTINF 格式和 HLS 格式）
    */
-  async importFromM3U(m3uUrl: string): Promise<IPTVChannel[]> {
+  async importFromM3U(m3uUrl: string, defaultGroup?: string): Promise<IPTVChannel[]> {
     try {
       this.logger.log(`开始导入M3U播放列表: ${m3uUrl}`);
 
-      // 下载M3U文件
       const response = await axios.get<string>(m3uUrl, {
         timeout: 30000,
         headers: {
@@ -278,96 +277,32 @@ export class IPTVService {
       });
 
       const m3uContent = response.data;
-      const ParserCtor = (m3u8Parser as unknown as { Parser: new () => M3U8ParserInstance }).Parser;
-      const parser = new ParserCtor();
-      parser.push(m3uContent);
-      parser.end();
+      let parsed: CreateIPTVChannelDto[] = [];
 
-      const manifest = parser.manifest;
+      if (m3uContent.includes('#EXTINF')) {
+        parsed = this.parseIptvM3U(m3uContent, defaultGroup);
+      }
+
+      if (parsed.length === 0) {
+        parsed = this.parseHlsM3U(m3uContent, m3uUrl, defaultGroup);
+      }
+
+      if (parsed.length === 0) {
+        parsed = this.parsePlainTextUrls(m3uContent, m3uUrl, defaultGroup);
+      }
+
       const channels: IPTVChannel[] = [];
-
-      if (manifest.playlists && manifest.playlists.length > 0) {
-        for (const playlist of manifest.playlists) {
-          if (playlist.uri && playlist.attributes) {
-            const channelData: CreateIPTVChannelDto = {
-              name:
-                playlist.attributes['tvg-name'] ||
-                playlist.attributes.channelName ||
-                `频道${Date.now()}`,
-              url: playlist.uri,
-              group: playlist.attributes['group-title'] || '默认分组',
-              logo: playlist.attributes['tvg-logo'],
-              language: playlist.attributes['tvg-language'],
-              country: playlist.attributes['tvg-country'],
-              epgId: playlist.attributes['tvg-id'],
-              streamFormat: 'hls',
-              isActive: true,
-              isLive: true,
-              viewCount: 0,
-            };
-
-            try {
-              const existing = await this.iptvChannelRepository.findOne({
-                where: { url: channelData.url },
-              });
-              if (existing) {
-                this.logger.log(`频道已存在，跳过: ${channelData.name}`);
-                continue;
-              }
-              const channel = await this.create(channelData);
-              channels.push(channel);
-            } catch (error: unknown) {
-              this.logger.warn(`导入频道失败: ${channelData.name}`, this.toError(error).message);
-            }
-          }
-        }
-      } else if (manifest.segments && manifest.segments.length > 0) {
-        const urlObj = new URL(m3uUrl);
-        const channelName = urlObj.hostname + urlObj.pathname.split('/').slice(0, -1).join('/');
-        const channelData: CreateIPTVChannelDto = {
-          name: channelName || `频道${Date.now()}`,
-          url: m3uUrl,
-          group: 'M3U导入',
-          streamFormat: 'hls',
-          isActive: true,
-          isLive: true,
-          viewCount: 0,
-        };
-
+      for (const channelData of parsed) {
         try {
           const existing = await this.iptvChannelRepository.findOne({
             where: { url: channelData.url },
           });
           if (existing) {
             this.logger.log(`频道已存在，跳过: ${channelData.name}`);
-          } else {
-            const channel = await this.create(channelData);
-            channels.push(channel);
+            continue;
           }
-        } catch (error: unknown) {
-          this.logger.warn(`导入频道失败: ${channelData.name}`, this.toError(error).message);
-        }
-      } else {
-        const channelData: CreateIPTVChannelDto = {
-          name: `频道${Date.now()}`,
-          url: m3uUrl,
-          group: 'M3U导入',
-          streamFormat: 'hls',
-          isActive: true,
-          isLive: true,
-          viewCount: 0,
-        };
-
-        try {
-          const existing = await this.iptvChannelRepository.findOne({
-            where: { url: channelData.url },
-          });
-          if (existing) {
-            this.logger.log(`频道已存在，跳过: ${channelData.name}`);
-          } else {
-            const channel = await this.create(channelData);
-            channels.push(channel);
-          }
+          const channel = await this.create(channelData);
+          channels.push(channel);
         } catch (error: unknown) {
           this.logger.warn(`导入频道失败: ${channelData.name}`, this.toError(error).message);
         }
@@ -379,6 +314,172 @@ export class IPTVService {
       this.logger.error(`导入M3U播放列表失败: ${m3uUrl}`, this.toError(error).stack);
       throw new HttpException('导入M3U播放列表失败', HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  /**
+   * 解析 IPTV 格式 M3U（#EXTINF 行含 tvg-logo, group-title 等属性）
+   */
+  private parseIptvM3U(content: string, defaultGroup?: string): CreateIPTVChannelDto[] {
+    const channels: CreateIPTVChannelDto[] = [];
+    const lines = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+    for (let i = 0; i < lines.length; i++) {
+      if (!lines[i].startsWith('#EXTINF')) continue;
+
+      const extinfLine = lines[i];
+      const urlLine = i + 1 < lines.length ? lines[i + 1] : '';
+      if (!urlLine || urlLine.startsWith('#')) continue;
+
+      const tvgNameMatch = extinfLine.match(/tvg-name="([^"]*)"/);
+      const tvgLogoMatch = extinfLine.match(/tvg-logo="([^"]*)"/);
+      const groupMatch = extinfLine.match(/group-title="([^"]*)"/);
+      const tvgIdMatch = extinfLine.match(/tvg-id="([^"]*)"/);
+      const tvgLanguageMatch = extinfLine.match(/tvg-language="([^"]*)"/);
+      const tvgCountryMatch = extinfLine.match(/tvg-country="([^"]*)"/);
+
+      const commaIdx = extinfLine.lastIndexOf(',');
+      const displayName = commaIdx >= 0 ? extinfLine.slice(commaIdx + 1).trim() : '';
+
+      const name = tvgNameMatch?.[1] || displayName || `频道${channels.length + 1}`;
+      const logo = tvgLogoMatch?.[1] || undefined;
+      const group = groupMatch?.[1] || defaultGroup || 'M3U导入';
+      const epgId = tvgIdMatch?.[1] || undefined;
+      const language = tvgLanguageMatch?.[1] || undefined;
+      const country = tvgCountryMatch?.[1] || undefined;
+
+      const isHls = urlLine.includes('.m3u8') || urlLine.includes('m3u8');
+
+      channels.push({
+        name,
+        url: urlLine,
+        group,
+        logo,
+        language,
+        country,
+        epgId,
+        streamFormat: isHls ? 'hls' : 'unknown',
+        isActive: true,
+        isLive: true,
+        viewCount: 0,
+      });
+    }
+
+    return channels;
+  }
+
+  /**
+   * 解析 HLS 格式 M3U（m3u8-parser 库处理）
+   */
+  private parseHlsM3U(content: string, sourceUrl: string, defaultGroup?: string): CreateIPTVChannelDto[] {
+    const channels: CreateIPTVChannelDto[] = [];
+
+    try {
+      const ParserCtor = (m3u8Parser as unknown as { Parser: new () => M3U8ParserInstance }).Parser;
+      const parser = new ParserCtor();
+      parser.push(content);
+      parser.end();
+
+      const manifest = parser.manifest;
+
+      if (manifest.playlists && manifest.playlists.length > 0) {
+        for (const playlist of manifest.playlists) {
+          if (playlist.uri) {
+            const attrs = playlist.attributes || {};
+            channels.push({
+              name: attrs['tvg-name'] || attrs.channelName || `频道${channels.length + 1}`,
+              url: playlist.uri,
+              group: attrs['group-title'] || defaultGroup || 'HLS导入',
+              logo: attrs['tvg-logo'],
+              language: attrs['tvg-language'],
+              country: attrs['tvg-country'],
+              epgId: attrs['tvg-id'],
+              streamFormat: 'hls',
+              isActive: true,
+              isLive: true,
+              viewCount: 0,
+            });
+          }
+        }
+      } else if (manifest.segments && manifest.segments.length > 0) {
+        channels.push({
+          name: `频道${Date.now()}`,
+          url: sourceUrl,
+          group: defaultGroup || 'HLS导入',
+          streamFormat: 'hls',
+          isActive: true,
+          isLive: true,
+          viewCount: 0,
+        });
+      }
+    } catch {
+      // HLS 解析失败，返回空
+    }
+
+    return channels;
+  }
+
+  /**
+   * 从 JSON 数组导入频道
+   */
+  async importFromJson(
+    items: { name: string; url: string; group?: string; logo?: string }[],
+    defaultGroup?: string,
+  ): Promise<IPTVChannel[]> {
+    const channels: IPTVChannel[] = [];
+    for (const item of items) {
+      if (!item.url) continue;
+      try {
+        const existing = await this.iptvChannelRepository.findOne({
+          where: { url: item.url },
+        });
+        if (existing) {
+          this.logger.log(`频道已存在，跳过: ${item.name}`);
+          continue;
+        }
+        const isHls = item.url.includes('.m3u8') || item.url.includes('m3u8');
+        const channel = await this.create({
+          name: item.name || `频道${channels.length + 1}`,
+          url: item.url,
+          group: item.group || defaultGroup || 'JSON导入',
+          logo: item.logo,
+          streamFormat: isHls ? 'hls' : 'unknown',
+          isActive: true,
+          isLive: true,
+          viewCount: 0,
+        });
+        channels.push(channel);
+      } catch (error: unknown) {
+        this.logger.warn(`导入频道失败: ${item.name}`, this.toError(error).message);
+      }
+    }
+    this.logger.log(`JSON导入成功 ${channels.length} 个频道`);
+    return channels;
+  }
+
+  /**
+   * 解析纯文本 URL 列表
+   */
+  private parsePlainTextUrls(content: string, sourceUrl: string, defaultGroup?: string): CreateIPTVChannelDto[] {
+    const channels: CreateIPTVChannelDto[] = [];
+    const lines = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+    for (const line of lines) {
+      if (line.startsWith('#') || line.startsWith('[')) continue;
+      if (line.startsWith('http://') || line.startsWith('https://')) {
+        const isHls = line.includes('.m3u8') || line.includes('m3u8');
+        channels.push({
+          name: `频道${channels.length + 1}`,
+          url: line,
+          group: defaultGroup || 'M3U导入',
+          streamFormat: isHls ? 'hls' : 'unknown',
+          isActive: true,
+          isLive: true,
+          viewCount: 0,
+        });
+      }
+    }
+
+    return channels;
   }
 
   /**
@@ -471,27 +572,118 @@ export class IPTVService {
    */
   async proxyStream(url: string, res: Response): Promise<void> {
     try {
-      const response = await axios.get(url, {
-        responseType: 'stream',
-        timeout: 30000,
+      const decodedUrl = this.decodeUnicodeUrl(url);
+      const isM3u8Url = decodedUrl.toLowerCase().includes('.m3u8') || decodedUrl.toLowerCase().includes('m3u8');
+
+      let referer: string;
+      try {
+        referer = new URL(decodedUrl).origin + '/';
+      } catch {
+        referer = 'https://www.google.com/';
+      }
+
+      const response = await axios.get(decodedUrl, {
+        responseType: isM3u8Url ? 'arraybuffer' : 'stream',
+        timeout: isM3u8Url ? 30000 : 120000,
+        maxRedirects: 5,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Referer': referer,
+          'Accept': '*/*',
         },
+        validateStatus: status => status >= 200 && status < 400,
       });
 
+      const remoteContentType = (response.headers['content-type'] || '').toLowerCase();
+
       res.set({
-        'Content-Type': response.headers['content-type'] || 'application/octet-stream',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Range',
         'Cache-Control': 'no-cache',
       });
 
-      response.data.pipe(res);
+      if (isM3u8Url) {
+        const bodyStr = Buffer.from(response.data).toString('utf-8');
+        const isM3u8 =
+          remoteContentType.includes('mpegurl') ||
+          remoteContentType.includes('m3u8') ||
+          bodyStr.trimStart().startsWith('#EXTM3U');
+
+        res.set({ 'Content-Type': isM3u8 ? 'application/vnd.apple.mpegurl' : (remoteContentType || 'application/octet-stream') });
+
+        if (isM3u8) {
+          const rewritten = this.rewriteM3u8Urls(bodyStr, decodedUrl);
+          res.send(rewritten);
+        } else {
+          res.send(bodyStr);
+        }
+      } else {
+        res.set({
+          'Content-Type': remoteContentType || 'application/octet-stream',
+          ...(response.headers['content-length'] ? { 'Content-Length': response.headers['content-length'] } : {}),
+        });
+        response.data.pipe(res);
+      }
     } catch (error) {
-      this.logger.error(`代理流媒体失败: ${url}`, this.toError(error).message);
-      throw new HttpException('代理流媒体失败', HttpStatus.BAD_GATEWAY);
+      const err = this.toError(error);
+      const axiosErr = error as any;
+      const statusCode = axiosErr?.response?.status;
+      this.logger.error(`代理流媒体失败: ${url} (状态码: ${statusCode || 'N/A'})`, err.message);
+
+      if (statusCode === 404) {
+        throw new HttpException('视频资源不存在或已过期', HttpStatus.NOT_FOUND);
+      }
+      if (statusCode === 403) {
+        throw new HttpException('视频资源访问被拒绝', HttpStatus.FORBIDDEN);
+      }
+      throw new HttpException('代理流媒体失败: ' + err.message, HttpStatus.BAD_GATEWAY);
     }
+  }
+
+  private decodeUnicodeUrl(url: string): string {
+    try {
+      return url.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+    } catch {
+      return url;
+    }
+  }
+
+
+  private rewriteM3u8Urls(content: string, baseUrl: string): string {
+    let base: URL;
+    try {
+      base = new URL(baseUrl);
+    } catch {
+      return content;
+    }
+    const basePath = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1);
+
+    return content.split('\n').map(line => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) {
+        const uriMatch = trimmed.match(/(URI=)(["']?)([^"'\s,]+)/);
+        if (uriMatch) {
+          const resolved = this.resolveUrl(uriMatch[3], basePath, base);
+          return line.replace(uriMatch[3], resolved);
+        }
+        return line;
+      }
+      const resolved = this.resolveUrl(trimmed, basePath, base);
+      return resolved;
+    }).join('\n');
+  }
+
+  private resolveUrl(url: string, basePath: string, base: URL): string {
+    let absolute: string;
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      absolute = url;
+    } else if (url.startsWith('/')) {
+      absolute = `${base.protocol}//${base.host}${url}`;
+    } else {
+      absolute = basePath + url;
+    }
+    return `/api/iptv/stream/proxy?url=${encodeURIComponent(absolute)}`;
   }
 
   async getChannelEpg(
@@ -502,7 +694,7 @@ export class IPTVService {
     const epgId = channel.epgId || null;
 
     if (!epgUrl) {
-      return { channelId, epgId, programs: this.generateDemoEpg(channel.name) };
+      return { channelId, epgId, programs: [] };
     }
 
     try {
@@ -515,7 +707,7 @@ export class IPTVService {
       const programs = this.parseEpgXml(xml, epgId || channel.name);
       return { channelId, epgId, programs };
     } catch {
-      return { channelId, epgId, programs: this.generateDemoEpg(channel.name) };
+      return { channelId, epgId, programs: [] };
     }
   }
 
@@ -553,26 +745,7 @@ export class IPTVService {
     return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6])).getTime();
   }
 
-  private generateDemoEpg(channelName: string): EpgProgram[] {
-    const now = Date.now();
-    const hour = 3600_000;
-    const base = Math.floor(now / hour) * hour;
-    const titles = [
-      `${channelName} 新闻联播`,
-      `${channelName} 焦点访谈`,
-      `${channelName} 今日说法`,
-      `${channelName} 电视剧场`,
-      `${channelName} 综艺节目`,
-      `${channelName} 纪录片`,
-      `${channelName} 晚间新闻`,
-      `${channelName} 深夜剧场`,
-    ];
-    return titles.map((title, i) => ({
-      start: base + i * hour,
-      end: base + (i + 1) * hour,
-      title,
-    }));
-  }
+
 }
 
 export interface EpgProgram {

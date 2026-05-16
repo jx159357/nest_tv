@@ -35,7 +35,11 @@ export function useLongPress(options: LongPressOptions = {}) {
     timer = setTimeout(() => {
       triggered = true;
       isLongPress.value = true;
-      try { navigator.vibrate?.(30); } catch {}
+      try {
+        navigator.vibrate?.(30);
+      } catch {
+        // vibrate not supported
+      }
       onLongPress?.();
     }, delay);
   };

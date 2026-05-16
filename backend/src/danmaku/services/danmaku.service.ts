@@ -416,10 +416,10 @@ export class DanmakuService {
         'COUNT(CASE WHEN isHighlighted = true THEN 1 END) as highlightedDanmaku',
         'COUNT(CASE WHEN isHighlighted = false THEN 1 END) as normalDanmaku',
       ])
-      .where('isActive = true', { isActive: true });
+      .where('danmaku.isActive = :isActive', { isActive: true });
 
     if (videoId) {
-      queryBuilder.andWhere('videoId = :videoId', { videoId });
+      queryBuilder.andWhere('danmaku.videoId = :videoId', { videoId });
     }
 
     const stats = await queryBuilder.getRawOne<DanmakuStatsRaw>();

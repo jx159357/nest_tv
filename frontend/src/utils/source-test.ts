@@ -7,10 +7,14 @@ export interface SourceTestResult {
 }
 
 const RESOLUTION_PRIORITY: Record<string, number> = {
-  '4k': 4, '2160p': 4,
-  '1080p': 3, 'fhd': 3,
-  '720p': 2, 'hd': 2,
-  '480p': 1, 'sd': 1,
+  '4k': 4,
+  '2160p': 4,
+  '1080p': 3,
+  fhd: 3,
+  '720p': 2,
+  hd: 2,
+  '480p': 1,
+  sd: 1,
   '360p': 0,
 };
 
@@ -82,10 +86,7 @@ export async function detectResolution(url: string, timeout = 6000): Promise<str
   }
 }
 
-export async function testSingleSource(
-  sourceId: number,
-  url: string,
-): Promise<SourceTestResult> {
+export async function testSingleSource(sourceId: number, url: string): Promise<SourceTestResult> {
   try {
     const speed = await testSourceSpeed(url);
     const resolution = await detectResolution(url);

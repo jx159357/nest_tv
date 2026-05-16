@@ -2,28 +2,28 @@
   <div class="space-y-6">
     <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">下载任务管理</h1>
-        <p class="mt-2 text-gray-600">查看用户下载任务、关联媒体、启动状态和异常信息。</p>
+        <h1 class="text-2xl font-bold text-slate-100">下载任务管理</h1>
+        <p class="mt-2 text-slate-400">查看用户下载任务、关联媒体、启动状态和异常信息。</p>
       </div>
       <div class="flex flex-wrap gap-3">
         <input
           v-model="search"
           type="text"
-          class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
           placeholder="文件名 / clientId / 来源 / 链接 / 用户"
           @keyup.enter="applyFilters(1)"
         />
         <input
           v-model="selectedClientId"
           type="text"
-          class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
           placeholder="任务 clientId，如 task-21"
           @keyup.enter="applyFilters(1)"
         />
         <input
           :value="selectedHash"
           type="text"
-          class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
           placeholder="任务 Hash，如 hash-demo"
           @input="selectedHash = normalizeHashInput(($event.target as HTMLInputElement).value)"
           @keyup.enter="applyFilters(1)"
@@ -31,14 +31,14 @@
         <input
           :value="selectedTaskId ? String(selectedTaskId) : ''"
           type="text"
-          class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
           placeholder="任务 ID，如 21"
           @input="selectedTaskId = parseTaskId(($event.target as HTMLInputElement).value)"
           @keyup.enter="applyFilters(1)"
         />
         <select
           v-model="selectedStatus"
-          class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
           @change="applyFilters(1)"
         >
           <option value="">全部状态</option>
@@ -51,7 +51,7 @@
         </select>
         <select
           v-model="selectedType"
-          class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
           @change="applyFilters(1)"
         >
           <option value="">全部类型</option>
@@ -61,7 +61,7 @@
         </select>
         <select
           v-model="selectedUserId"
-          class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
           @change="applyFilters(1)"
         >
           <option value="">全部用户</option>
@@ -71,7 +71,7 @@
         </select>
         <select
           v-model="sortMode"
-          class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
           @change="applyFilters(1)"
         >
           <option value="updated">最近更新</option>
@@ -79,13 +79,13 @@
           <option value="exceptions">异常优先</option>
         </select>
         <button
-          class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
           @click="applyFilters(1)"
         >
           刷新
         </button>
         <button
-          class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          class="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-white/[0.06]"
           @click="resetFilters"
         >
           清空筛选
@@ -98,8 +98,8 @@
         class="rounded-full border px-3 py-1 text-xs font-medium transition"
         :class="
           selectedStatus === ''
-            ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
-            : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+            ? 'border-indigo-400/30 bg-indigo-500/15 text-indigo-300'
+            : 'border-slate-700 bg-white/[0.05] text-slate-300 hover:bg-white/[0.08]'
         "
         @click="setStatusFilter('')"
       >
@@ -111,8 +111,8 @@
         class="rounded-full border px-3 py-1 text-xs font-medium transition"
         :class="
           selectedStatus === item.value
-            ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
-            : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+            ? 'border-indigo-400/30 bg-indigo-500/15 text-indigo-300'
+            : 'border-slate-700 bg-white/[0.05] text-slate-300 hover:bg-white/[0.08]'
         "
         @click="setStatusFilter(item.value)"
       >
@@ -125,8 +125,8 @@
         class="rounded-full border px-3 py-1 text-xs font-medium transition"
         :class="
           selectedType === ''
-            ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-            : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+            ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-300'
+            : 'border-slate-700 bg-white/[0.05] text-slate-300 hover:bg-white/[0.08]'
         "
         @click="setTypeFilter('')"
       >
@@ -138,8 +138,8 @@
         class="rounded-full border px-3 py-1 text-xs font-medium transition"
         :class="
           selectedType === item.value
-            ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-            : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+            ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-300'
+            : 'border-slate-700 bg-white/[0.05] text-slate-300 hover:bg-white/[0.08]'
         "
         @click="setTypeFilter(item.value)"
       >
@@ -151,10 +151,10 @@
       <span
         v-for="chip in activeFilterChips"
         :key="chip.key"
-        class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700"
+        class="inline-flex items-center gap-2 rounded-full border border-slate-600/30 bg-slate-500/15 px-3 py-1 text-xs text-slate-300"
       >
         {{ chip.label }}
-        <button class="text-slate-400 hover:text-slate-700" @click="chip.clear">×</button>
+        <button class="text-slate-500 hover:text-slate-200" @click="chip.clear">×</button>
       </span>
     </div>
 
@@ -163,39 +163,39 @@
       class="rounded-xl border px-4 py-3 text-sm"
       :class="
         actionState.status === 'success'
-          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-          : 'border-rose-200 bg-rose-50 text-rose-700'
+          ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+          : 'border-rose-500/30 bg-rose-500/10 text-rose-400'
       "
     >
       {{ actionState.message }}
     </div>
 
     <div class="grid grid-cols-1 gap-4 md:grid-cols-3 xl:grid-cols-6">
-      <div class="rounded-lg bg-white p-4 shadow">
-        <div class="text-sm text-gray-500">当前结果</div>
-        <div class="mt-2 text-2xl font-semibold text-gray-900">{{ total }}</div>
+      <div class="rounded-lg bg-white/[0.03] border border-white/[0.06] shadow-xl p-4">
+        <div class="text-sm text-slate-400">当前结果</div>
+        <div class="mt-2 text-2xl font-semibold text-slate-100">{{ total }}</div>
       </div>
-      <div class="rounded-lg bg-white p-4 shadow">
-        <div class="text-sm text-gray-500">进行中 / 待处理</div>
-        <div class="mt-2 text-2xl font-semibold text-blue-600">{{ activeCount }}</div>
+      <div class="rounded-lg bg-white/[0.03] border border-white/[0.06] shadow-xl p-4">
+        <div class="text-sm text-slate-400">进行中 / 待处理</div>
+        <div class="mt-2 text-2xl font-semibold text-indigo-400">{{ activeCount }}</div>
       </div>
-      <div class="rounded-lg bg-white p-4 shadow">
-        <div class="text-sm text-gray-500">已完成</div>
-        <div class="mt-2 text-2xl font-semibold text-emerald-600">{{ completedCount }}</div>
+      <div class="rounded-lg bg-white/[0.03] border border-white/[0.06] shadow-xl p-4">
+        <div class="text-sm text-slate-400">已完成</div>
+        <div class="mt-2 text-2xl font-semibold text-emerald-400">{{ completedCount }}</div>
       </div>
-      <div class="rounded-lg bg-white p-4 shadow">
-        <div class="text-sm text-gray-500">异常 / 取消</div>
-        <div class="mt-2 text-2xl font-semibold text-rose-600">{{ failedCount }}</div>
+      <div class="rounded-lg bg-white/[0.03] border border-white/[0.06] shadow-xl p-4">
+        <div class="text-sm text-slate-400">异常 / 取消</div>
+        <div class="mt-2 text-2xl font-semibold text-rose-400">{{ failedCount }}</div>
       </div>
-      <div class="rounded-lg bg-white p-4 shadow">
-        <div class="text-sm text-gray-500">覆盖用户 / 媒体</div>
-        <div class="mt-2 text-2xl font-semibold text-slate-900">
+      <div class="rounded-lg bg-white/[0.03] border border-white/[0.06] shadow-xl p-4">
+        <div class="text-sm text-slate-400">覆盖用户 / 媒体</div>
+        <div class="mt-2 text-2xl font-semibold text-slate-100">
           {{ uniqueUserCount }} / {{ uniqueMediaCount }}
         </div>
       </div>
-      <div class="rounded-lg bg-white p-4 shadow">
-        <div class="text-sm text-gray-500">24h 内启动 / Magnet</div>
-        <div class="mt-2 text-2xl font-semibold text-slate-900">
+      <div class="rounded-lg bg-white/[0.03] border border-white/[0.06] shadow-xl p-4">
+        <div class="text-sm text-slate-400">24h 内启动 / Magnet</div>
+        <div class="mt-2 text-2xl font-semibold text-slate-100">
           {{ startedRecentlyCount }} / {{ magnetCount }}
         </div>
       </div>
@@ -203,34 +203,34 @@
 
     <div
       v-if="showExceptionBanner"
-      class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+      class="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-400"
     >
       <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          当前结果中有 {{ failedCount }} 条异常 / 取消任务，建议切换到“异常优先”或直接筛选异常任务。
+          当前结果中有 {{ failedCount }} 条异常 / 取消任务，建议切换到"异常优先"或直接筛选异常任务。
         </div>
         <div class="flex flex-wrap gap-2">
           <button
-            class="rounded-lg border border-red-300 bg-white px-3 py-1.5 font-medium text-red-700 hover:bg-red-100"
+            class="rounded-lg border border-rose-500/30 bg-white/[0.05] px-3 py-1.5 font-medium text-rose-400 hover:bg-rose-500/10"
             @click="setStatusFilter('error')"
           >
             只看异常
           </button>
           <button
-            class="rounded-lg border border-red-300 bg-white px-3 py-1.5 font-medium text-red-700 hover:bg-red-100"
+            class="rounded-lg border border-rose-500/30 bg-white/[0.05] px-3 py-1.5 font-medium text-rose-400 hover:bg-rose-500/10"
             @click="setSortMode('exceptions')"
           >
             异常优先
           </button>
           <button
-            class="rounded-lg border border-red-300 bg-white px-3 py-1.5 font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+            class="rounded-lg border border-rose-500/30 bg-white/[0.05] px-3 py-1.5 font-medium text-rose-400 hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-60"
             :disabled="bulkActionLoading"
             @click="retryVisibleFailedTasks"
           >
             {{ bulkActionLoading ? '处理中...' : '重置当前页异常' }}
           </button>
           <button
-            class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+            class="rounded-lg border border-slate-700 px-3 py-1.5 font-medium text-slate-300 hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-60"
             :disabled="bulkActionLoading || cancellableTaskCount === 0"
             @click="cancelVisiblePendingTasks"
           >
@@ -240,70 +240,70 @@
       </div>
     </div>
 
-    <div class="rounded-lg bg-white shadow">
-      <div v-if="loading" class="p-8 text-center text-gray-500">加载中...</div>
-      <div v-else-if="error" class="p-8 text-center text-red-600">{{ error }}</div>
+    <div class="rounded-lg bg-white/[0.03] border border-white/[0.06] shadow-xl">
+      <div v-if="loading" class="p-8 text-center text-slate-400">加载中...</div>
+      <div v-else-if="error" class="p-8 text-center text-rose-400">{{ error }}</div>
       <template v-else>
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+          <table class="min-w-full divide-y divide-white/[0.06]">
+            <thead class="bg-white/[0.02]">
               <tr>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
                 >
                   用户 / 媒体
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
                 >
                   文件
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
                 >
                   状态
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
                 >
                   进度
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
                 >
                   类型
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
                 >
                   最近更新
                 </th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200 bg-white">
+            <tbody class="divide-y divide-white/[0.06] bg-white/[0.03]">
               <template v-for="task in displayedTasks" :key="task.id">
                 <tr :class="rowClass(task)">
-                  <td class="px-4 py-3 text-sm text-gray-900">
+                  <td class="px-4 py-3 text-sm text-slate-100">
                     <div class="font-medium">
                       {{ task.user?.username || `用户#${task.userId}` }}
                     </div>
-                    <div class="text-xs text-gray-500">{{ task.user?.email || '—' }}</div>
+                    <div class="text-xs text-slate-400">{{ task.user?.email || '—' }}</div>
                     <div class="mt-2 flex flex-wrap gap-2">
                       <button
-                        class="rounded-full border border-slate-200 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50"
+                        class="rounded-full border border-slate-600/30 px-2.5 py-1 text-xs text-slate-400 hover:bg-white/[0.06]"
                         @click="setUserFilter(task.userId)"
                       >
                         同用户任务
                       </button>
                       <button
                         v-if="task.mediaResourceId"
-                        class="rounded-full border border-slate-200 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50"
+                        class="rounded-full border border-slate-600/30 px-2.5 py-1 text-xs text-slate-400 hover:bg-white/[0.06]"
                         @click="setMediaFilter(task.mediaResourceId)"
                       >
                         同媒体任务
                       </button>
                       <button
-                        class="rounded-full border border-slate-200 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50"
+                        class="rounded-full border border-slate-600/30 px-2.5 py-1 text-xs text-slate-400 hover:bg-white/[0.06]"
                         @click="setTypeFilter(task.type)"
                       >
                         同类型任务
@@ -312,21 +312,21 @@
                     <RouterLink
                       v-if="task.mediaResourceId"
                       :to="{ name: 'media-detail', params: { id: task.mediaResourceId } }"
-                      class="mt-2 inline-flex text-xs text-indigo-600 hover:text-indigo-700"
+                      class="mt-2 inline-flex text-xs text-indigo-400 hover:text-indigo-300"
                     >
                       {{ task.mediaResource?.title || `媒体#${task.mediaResourceId}` }}
                     </RouterLink>
-                    <div v-else class="mt-2 text-xs text-gray-400">未关联媒体</div>
+                    <div v-else class="mt-2 text-xs text-slate-500">未关联媒体</div>
                   </td>
-                  <td class="px-4 py-3 text-sm text-gray-900">
+                  <td class="px-4 py-3 text-sm text-slate-100">
                     <div class="font-medium">{{ task.fileName }}</div>
-                    <div class="mt-1 text-xs text-gray-500">
+                    <div class="mt-1 text-xs text-slate-400">
                       {{ task.sourceLabel || '未标记来源' }}
                     </div>
-                    <div class="mt-1 max-w-md break-all text-xs text-gray-400">{{ task.url }}</div>
-                    <div v-if="task.error" class="mt-2 text-xs text-red-600">{{ task.error }}</div>
+                    <div class="mt-1 max-w-md break-all text-xs text-slate-500">{{ task.url }}</div>
+                    <div v-if="task.error" class="mt-2 text-xs text-rose-400">{{ task.error }}</div>
                     <button
-                      class="task-detail-toggle mt-3 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                      class="task-detail-toggle mt-3 rounded-lg border border-slate-600/30 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/[0.06]"
                       @click="toggleTaskDetails(task.id)"
                     >
                       {{ selectedTaskId === task.id ? '收起详情' : '查看详情' }}
@@ -339,29 +339,29 @@
                     >
                       {{ task.status }}
                     </span>
-                    <div class="mt-2 text-xs text-gray-500">
+                    <div class="mt-2 text-xs text-slate-400">
                       启动 {{ task.launchCount || 0 }} 次
                     </div>
                   </td>
-                  <td class="px-4 py-3 text-sm text-gray-600">
-                    <div class="h-2 w-28 overflow-hidden rounded-full bg-gray-200">
+                  <td class="px-4 py-3 text-sm text-slate-400">
+                    <div class="h-2 w-28 overflow-hidden rounded-full bg-slate-700">
                       <div
                         class="h-full bg-indigo-600"
                         :style="{ width: `${displayProgress(task)}%` }"
                       ></div>
                     </div>
-                    <div class="mt-1 text-xs text-gray-500">
+                    <div class="mt-1 text-xs text-slate-400">
                       {{ displayProgress(task) }}% · {{ formatBytes(task.downloaded) }} /
                       {{ formatBytes(task.total) }}
                     </div>
                   </td>
-                  <td class="px-4 py-3 text-sm text-gray-600">
+                  <td class="px-4 py-3 text-sm text-slate-400">
                     <div>{{ task.type }}</div>
-                    <div class="mt-1 text-xs text-gray-400">{{ task.handler || 'browser' }}</div>
+                    <div class="mt-1 text-xs text-slate-500">{{ task.handler || 'browser' }}</div>
                   </td>
-                  <td class="px-4 py-3 text-sm text-gray-600">
+                  <td class="px-4 py-3 text-sm text-slate-400">
                     <div>{{ formatDate(task.updatedAt) }}</div>
-                    <div class="mt-1 text-xs text-gray-400">
+                    <div class="mt-1 text-xs text-slate-500">
                       {{
                         task.lastLaunchedAt
                           ? `启动：${formatDate(task.lastLaunchedAt)}`
@@ -370,23 +370,23 @@
                     </div>
                   </td>
                 </tr>
-                <tr v-if="selectedTaskId === task.id" class="bg-slate-50">
+                <tr v-if="selectedTaskId === task.id" class="bg-white/[0.02]">
                   <td colspan="6" class="px-4 py-4">
                     <div class="task-detail-panel grid gap-4 lg:grid-cols-2">
                       <div
-                        class="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-4 lg:col-span-2"
+                        class="rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-4 py-4 lg:col-span-2"
                         data-testid="task-recommendation"
                       >
-                        <div class="text-xs font-medium uppercase tracking-wide text-indigo-500">
+                        <div class="text-xs font-medium uppercase tracking-wide text-indigo-400">
                           Recommended Action
                         </div>
                         <div
-                          class="mt-2 text-sm font-semibold text-slate-900"
+                          class="mt-2 text-sm font-semibold text-slate-100"
                           data-testid="task-recommendation-title"
                         >
                           {{ taskRecommendation(task).title }}
                         </div>
-                        <div class="mt-2 text-sm text-slate-600">
+                        <div class="mt-2 text-sm text-slate-400">
                           {{ taskRecommendation(task).description }}
                         </div>
                         <div class="mt-3 flex flex-wrap gap-2">
@@ -394,13 +394,13 @@
                             v-for="action in taskRecommendation(task).actions"
                             :key="`${task.id}-${action.label}`"
                             :to="action.to"
-                            class="rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                            class="rounded-full border border-indigo-500/30 bg-white/[0.05] px-3 py-1.5 text-xs font-medium text-indigo-300 hover:bg-indigo-500/20"
                           >
                             {{ action.label }}
                           </router-link>
                           <button
                             v-if="task.status === 'error' || task.status === 'cancelled'"
-                            class="rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            class="rounded-full border border-emerald-500/30 bg-white/[0.05] px-3 py-1.5 text-xs font-medium text-emerald-400 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60"
                             :disabled="actionLoadingTaskId === task.id"
                             @click="handleTaskAction(task, 'retry')"
                           >
@@ -408,7 +408,7 @@
                           </button>
                           <button
                             v-if="task.status !== 'completed' && task.status !== 'cancelled'"
-                            class="rounded-full border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            class="rounded-full border border-rose-500/30 bg-white/[0.05] px-3 py-1.5 text-xs font-medium text-rose-400 hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-60"
                             :disabled="actionLoadingTaskId === task.id"
                             @click="handleTaskAction(task, 'cancel')"
                           >
@@ -416,7 +416,7 @@
                           </button>
                         </div>
                       </div>
-                      <div class="space-y-3 text-sm text-slate-700">
+                      <div class="space-y-3 text-sm text-slate-300">
                         <div>
                           <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
                             Task ID
@@ -458,19 +458,19 @@
                             :href="task.url"
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="mt-1 inline-flex break-all text-indigo-600 hover:text-indigo-700"
+                            class="mt-1 inline-flex break-all text-indigo-400 hover:text-indigo-300"
                           >
                             {{ task.url }}
                           </a>
                         </div>
                       </div>
-                      <div class="space-y-3 text-sm text-slate-700">
+                      <div class="space-y-3 text-sm text-slate-300">
                         <div>
                           <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
                             错误详情
                           </div>
                           <div
-                            class="mt-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                            class="mt-1 rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm"
                           >
                             {{ task.error || '暂无错误信息' }}
                           </div>
@@ -483,7 +483,7 @@
                             <div
                               v-for="item in metadataEntries(task)"
                               :key="item.key"
-                              class="rounded-lg border border-slate-200 bg-white px-3 py-2"
+                              class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2"
                             >
                               <div
                                 class="text-xs font-medium uppercase tracking-wide text-slate-400"
@@ -495,7 +495,7 @@
                           </div>
                           <div
                             v-else
-                            class="mt-1 rounded-lg border border-dashed border-slate-200 bg-white px-3 py-2 text-slate-500"
+                            class="mt-1 rounded-lg border border-dashed border-slate-700 bg-white/[0.05] px-3 py-2 text-slate-500"
                           >
                             暂无 metadata
                           </div>
@@ -510,13 +510,13 @@
         </div>
 
         <div
-          class="flex items-center justify-between border-t border-gray-200 px-4 py-3 text-sm text-gray-600"
+          class="flex items-center justify-between border-t border-white/[0.06] px-4 py-3 text-sm text-slate-400"
         >
           <span>共 {{ total }} 条</span>
           <div class="flex items-center gap-3">
             <button
               :disabled="page <= 1"
-              class="rounded border px-3 py-1 disabled:opacity-50"
+              class="rounded border border-slate-700 px-3 py-1 text-slate-300 disabled:opacity-50"
               @click="applyFilters(page - 1)"
             >
               上一页
@@ -524,7 +524,7 @@
             <span>{{ page }} / {{ totalPages }}</span>
             <button
               :disabled="page >= totalPages"
-              class="rounded border px-3 py-1 disabled:opacity-50"
+              class="rounded border border-slate-700 px-3 py-1 text-slate-300 disabled:opacity-50"
               @click="applyFilters(page + 1)"
             >
               下一页

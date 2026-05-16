@@ -97,8 +97,7 @@ export class AdvancedSearchService {
 
     // 构建查询
     const queryBuilder = this.mediaResourceRepository
-      .createQueryBuilder('mediaResource')
-      .leftJoinAndSelect('mediaResource.poster', 'poster');
+      .createQueryBuilder('mediaResource');
 
     // 基础条件：只搜索活跃的资源
     if (!includeInactive) {
@@ -130,8 +129,8 @@ export class AdvancedSearchService {
 
     // 类型标签筛选
     if (genres.length > 0) {
-      genres.forEach(genre => {
-        queryBuilder.andWhere('JSON_CONTAINS(mediaResource.genres, :genre)', { genre });
+      genres.forEach((genre, index) => {
+        queryBuilder.andWhere(`mediaResource.genres LIKE :genre${index}`, { [`genre${index}`]: `%${genre}%` });
       });
     }
 
@@ -217,7 +216,7 @@ export class AdvancedSearchService {
       .andWhere('mediaResource.isActive = :isActive', { isActive: true })
       .groupBy('mediaResource.title')
       .orderBy('count', 'DESC')
-      .take(limit / 2)
+      .take(Math.max(1, Math.floor(limit / 2)))
       .getRawMany<SearchSuggestionRow>();
 
     titleSuggestions.forEach(item => {
@@ -286,11 +285,12 @@ export class AdvancedSearchService {
     });
 
     // 4. 搜索类型建议
+    const genreKeyword = `%${keyword.trim()}%`;
     const genreSuggestions = await this.mediaResourceRepository
       .createQueryBuilder('mediaResource')
       .select('mediaResource.genres')
       .addSelect('COUNT(*)', 'count')
-      .where('JSON_CONTAINS(mediaResource.genres, :keyword)', { keyword: keyword.trim() })
+      .where('mediaResource.genres LIKE :genreKeyword', { genreKeyword })
       .andWhere('mediaResource.isActive = :isActive', { isActive: true })
       .groupBy('mediaResource.genres')
       .orderBy('count', 'DESC')
@@ -299,7 +299,7 @@ export class AdvancedSearchService {
 
     genreSuggestions.forEach(item => {
       this.parseGenresValue(item.genres).forEach(genre => {
-        if (genre.includes(keyword.trim())) {
+        if (genre.toLowerCase().includes(keyword.trim().toLowerCase())) {
           suggestions.push({
             text: genre,
             type: 'genre',

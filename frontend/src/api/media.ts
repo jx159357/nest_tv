@@ -119,5 +119,12 @@ export const mediaApi = {
     return ApiClient.get<any>('/media/statistics');
   },
 
+  getCategoryStats: () => {
+    return ApiClient.get<{
+      types: Array<{ name: string; label: string; count: number }>;
+      genres: Array<{ name: string; count: number }>;
+    }>('/media/categories');
+  },
+
   clearCache: () => undefined,
 };

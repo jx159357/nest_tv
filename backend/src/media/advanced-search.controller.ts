@@ -74,6 +74,7 @@ export class AdvancedSearchController {
    * 获取搜索建议
    */
   @Get('suggestions')
+  @Public()
   @ApiOperation({ summary: '获取搜索建议' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiQuery({ name: 'keyword', description: '搜索关键词' })
@@ -91,6 +92,7 @@ export class AdvancedSearchController {
    * 获取热门搜索关键词
    */
   @Get('popular-keywords')
+  @Public()
   @ApiOperation({ summary: '获取热门搜索关键词' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiQuery({ name: 'limit', description: '返回数量限制，默认20', required: false })
@@ -160,6 +162,7 @@ export class AdvancedSearchController {
    * 获取相关关键词
    */
   @Get('related-keywords/:keyword')
+  @Public()
   @ApiOperation({ summary: '获取相关关键词' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiParam({ name: 'keyword', description: '基础关键词' })
@@ -180,6 +183,7 @@ export class AdvancedSearchController {
    * 搜索趋势统计
    */
   @Get('trends')
+  @Public()
   @ApiOperation({ summary: '获取搜索趋势统计' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiQuery({ name: 'days', description: '统计天数，默认7', required: false })
@@ -231,6 +235,7 @@ export class AdvancedSearchController {
    * 搜索过滤器预设
    */
   @Get('filters/presets')
+  @Public()
   @ApiOperation({ summary: '获取搜索过滤器预设' })
   @ApiResponse({ status: 200, description: '获取成功' })
   getFilterPresets(): Array<{

@@ -14,6 +14,7 @@ const MediaDetailView = () => import('../views/MediaDetailView.vue');
 const WatchView = () => import('../views/WatchView.vue');
 const IPTVView = () => import('../views/IPTVView.vue');
 const RecommendationsView = () => import('../views/RecommendationsView.vue');
+const CategoriesView = () => import('../views/CategoriesView.vue');
 
 // 路由懒加载配置 - 用户功能（需要登录）
 const ProfileView = () => import('../views/ProfileView.vue');
@@ -43,13 +44,7 @@ const AdminSourceScriptsView = () => import('../views/AdminSourceScriptsView.vue
 const NotFoundView = () => import('../views/NotFoundView.vue');
 
 // 公开路由名称列表 - 这些路由无需登录即可访问
-const PUBLIC_ROUTE_NAMES = [
-  'home',
-  'media-detail',
-  'watch',
-  'iptv',
-  'recommendations',
-];
+const PUBLIC_ROUTE_NAMES = ['home', 'media-detail', 'watch', 'iptv', 'recommendations', 'categories'];
 
 const routes: RouteRecordRaw[] = [
   // ==================== 主布局路由 - 观影功能 ====================
@@ -105,6 +100,16 @@ const routes: RouteRecordRaw[] = [
         component: RecommendationsView,
         meta: {
           title: '推荐内容 - Nest TV',
+          requiresAuth: false,
+          preload: true,
+        },
+      },
+      {
+        path: 'categories',
+        name: 'categories',
+        component: CategoriesView,
+        meta: {
+          title: '分类浏览 - Nest TV',
           requiresAuth: false,
           preload: true,
         },

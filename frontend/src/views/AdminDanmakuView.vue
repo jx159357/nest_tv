@@ -278,8 +278,8 @@
 
   const noticeClass = computed(() =>
     notice.value?.type === 'success'
-      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-      : 'border-rose-200 bg-rose-50 text-rose-700',
+      ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-300'
+      : 'border-rose-400/30 bg-rose-500/15 text-rose-300',
   );
   const sensitiveWordCount = computed(() => toLines(sensitiveWordsText.value).length);
   const spamPatternCount = computed(() => toLines(spamPatternsText.value).length);

@@ -10,6 +10,7 @@ import {
   UseGuards,
   UsePipes,
   ValidationPipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -204,6 +205,14 @@ export class MediaResourceController {
     return this.mediaResourceService.getStatistics();
   }
 
+  @Get('categories')
+  @Public()
+  @ApiOperation({ summary: '获取分类统计（类型和流派）' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getCategoryStats() {
+    return this.mediaResourceService.getCategoryStats();
+  }
+
   @Get('favorites')
   @ApiOperation({ summary: '获取当前用户收藏列表' })
   @ApiResponse({ status: 200, description: '获取成功' })
@@ -225,7 +234,7 @@ export class MediaResourceController {
   @ApiParam({ name: 'id', description: '影视资源ID' })
   @ApiResponse({ status: 200, description: '收藏成功' })
   async addToFavorites(
-    @Param('id') mediaResourceId: number,
+    @Param('id', ParseIntPipe) mediaResourceId: number,
     @GetCurrentUserId() userId: number,
   ): Promise<void> {
     await this.mediaResourceService.addToFavorites(userId, mediaResourceId);
@@ -236,7 +245,7 @@ export class MediaResourceController {
   @ApiParam({ name: 'id', description: '影视资源ID' })
   @ApiResponse({ status: 200, description: '取消收藏成功' })
   async removeFromFavorites(
-    @Param('id') mediaResourceId: number,
+    @Param('id', ParseIntPipe) mediaResourceId: number,
     @GetCurrentUserId() userId: number,
   ): Promise<void> {
     await this.mediaResourceService.removeFromFavorites(userId, mediaResourceId);
@@ -247,7 +256,7 @@ export class MediaResourceController {
   @ApiParam({ name: 'id', description: '影视资源ID' })
   @ApiResponse({ status: 200, description: '获取成功' })
   async getFavoriteStatus(
-    @Param('id') mediaResourceId: number,
+    @Param('id', ParseIntPipe) mediaResourceId: number,
     @GetCurrentUserId() userId: number,
   ) {
     const isFavorited = await this.mediaResourceService.isFavoritedByUser(userId, mediaResourceId);
@@ -318,7 +327,7 @@ export class MediaResourceController {
     },
   })
   @ApiResponse({ status: 401, description: '未授权', type: ErrorResponse })
-  async findById(@Param('id') id: number) {
+  async findById(@Param('id', ParseIntPipe) id: number) {
     return this.mediaResourceService.findById(id);
   }
 
@@ -467,7 +476,10 @@ export class MediaResourceController {
     type: ErrorResponse,
   })
   @UsePipes(new ValidationPipe({ transform: true }))
-  async update(@Param('id') id: number, @Body() updateMediaResourceDto: UpdateMediaResourceDto) {
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateMediaResourceDto: UpdateMediaResourceDto,
+  ) {
     return this.mediaResourceService.update(id, updateMediaResourceDto);
   }
 
@@ -506,7 +518,7 @@ export class MediaResourceController {
   })
   @ApiResponse({ status: 401, description: '未授权', type: ErrorResponse })
   @ApiResponse({ status: 403, description: '权限不足', type: ErrorResponse })
-  async remove(@Param('id') id: number) {
+  async remove(@Param('id', ParseIntPipe) id: number) {
     await this.mediaResourceService.remove(id);
     return {
       statusCode: 200,
@@ -525,7 +537,7 @@ export class MediaResourceController {
   @ApiResponse({ status: 404, description: '影视资源不存在' })
   @ApiParam({ name: 'id', description: '影视资源ID' })
   @ApiQuery({ name: 'limit', description: '限制数量', required: false })
-  async getSimilar(@Param('id') id: number, @Query('limit') limit: number = 6) {
+  async getSimilar(@Param('id', ParseIntPipe) id: number, @Query('limit') limit: number = 6) {
     return this.mediaResourceService.getSimilar(id, limit);
   }
 
@@ -538,7 +550,7 @@ export class MediaResourceController {
   @ApiResponse({ status: 200, description: '增加成功' })
   @ApiResponse({ status: 404, description: '影视资源不存在' })
   @ApiParam({ name: 'id', description: '影视资源ID' })
-  async incrementViews(@Param('id') id: number) {
+  async incrementViews(@Param('id', ParseIntPipe) id: number) {
     await this.mediaResourceService.incrementViews(id);
     return { message: '增加观看次数成功' };
   }
@@ -551,7 +563,7 @@ export class MediaResourceController {
   @ApiResponse({ status: 200, description: '增加成功' })
   @ApiResponse({ status: 404, description: '影视资源不存在' })
   @ApiParam({ name: 'id', description: '影视资源ID' })
-  incrementLikes(@Param('id') id: number) {
+  incrementLikes(@Param('id', ParseIntPipe) id: number) {
     this.mediaResourceService.incrementLikes(id);
     return { message: '增加点赞数成功' };
   }
@@ -564,7 +576,7 @@ export class MediaResourceController {
   @ApiResponse({ status: 200, description: '减少成功' })
   @ApiResponse({ status: 404, description: '影视资源不存在' })
   @ApiParam({ name: 'id', description: '影视资源ID' })
-  decrementLikes(@Param('id') id: number) {
+  decrementLikes(@Param('id', ParseIntPipe) id: number) {
     this.mediaResourceService.decrementLikes(id);
     return { message: '减少点赞数成功' };
   }

@@ -15,7 +15,13 @@
       <!-- 前缀图标 -->
       <div v-if="$slots.prefix || prefixIcon" class="form-field__prefix">
         <slot name="prefix">
-          <svg v-if="prefixIcon" class="form-field__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <svg
+            v-if="prefixIcon"
+            class="form-field__icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+          >
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="prefixIcon" />
           </svg>
         </slot>
@@ -42,7 +48,13 @@
       <!-- 后缀图标 -->
       <div v-if="$slots.suffix || suffixIcon" class="form-field__suffix">
         <slot name="suffix">
-          <svg v-if="suffixIcon" class="form-field__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <svg
+            v-if="suffixIcon"
+            class="form-field__icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+          >
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="suffixIcon" />
           </svg>
         </slot>
@@ -57,7 +69,12 @@
         @click="handleClear"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"
+          />
         </svg>
       </button>
     </div>
@@ -66,7 +83,12 @@
     <div v-if="errorMessage || helpText" class="form-field__message">
       <p v-if="errorMessage" class="form-field__error">
         <svg class="form-field__error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
         {{ errorMessage }}
       </p>
@@ -356,20 +378,20 @@
   }
 
   /* 暗色模式 */
-  [data-theme="dark"] .form-field__input,
+  [data-theme='dark'] .form-field__input,
   .dark .form-field__input {
     background: var(--bg-primary);
     border-color: var(--border-primary);
     color: var(--text-primary);
   }
 
-  [data-theme="dark"] .form-field__input:focus,
+  [data-theme='dark'] .form-field__input:focus,
   .dark .form-field__input:focus {
     border-color: var(--border-focus);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
   }
 
-  [data-theme="dark"] .form-field__label,
+  [data-theme='dark'] .form-field__label,
   .dark .form-field__label {
     color: var(--text-primary);
   }

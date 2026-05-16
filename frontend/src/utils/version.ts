@@ -9,11 +9,19 @@ export function getAppVersion(): string {
 }
 
 export function getStoredVersion(): string | null {
-  try { return localStorage.getItem(VERSION_KEY); } catch { return null; }
+  try {
+    return localStorage.getItem(VERSION_KEY);
+  } catch {
+    return null;
+  }
 }
 
 export function setStoredVersion(v: string): void {
-  try { localStorage.setItem(VERSION_KEY, v); } catch {}
+  try {
+    localStorage.setItem(VERSION_KEY, v);
+  } catch {
+    // ignore storage errors
+  }
 }
 
 export function isNewVersion(serverVersion: string): boolean {
@@ -27,11 +35,17 @@ export function shouldCheckVersion(): boolean {
     const last = localStorage.getItem(LAST_CHECK_KEY);
     if (!last) return true;
     return Date.now() - Number(last) > CHECK_INTERVAL;
-  } catch { return true; }
+  } catch {
+    return true;
+  }
 }
 
 export function markVersionChecked(): void {
-  try { localStorage.setItem(LAST_CHECK_KEY, String(Date.now())); } catch {}
+  try {
+    localStorage.setItem(LAST_CHECK_KEY, String(Date.now()));
+  } catch {
+    // ignore storage errors
+  }
 }
 
 export async function checkForUpdates(): Promise<{ hasUpdate: boolean; version: string } | null> {
@@ -50,7 +64,9 @@ export async function checkForUpdates(): Promise<{ hasUpdate: boolean; version: 
       setStoredVersion(serverVersion);
     }
     return { hasUpdate: false, version: serverVersion };
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 export function initVersion(): void {

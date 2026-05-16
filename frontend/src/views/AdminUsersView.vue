@@ -2,19 +2,19 @@
   <div class="space-y-6">
     <div class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">用户管理</h1>
-        <p class="mt-2 text-gray-600">查看系统用户、角色和账户状态</p>
+        <h1 class="text-2xl font-bold text-slate-100">用户管理</h1>
+        <p class="mt-2 text-slate-400">查看系统用户、角色和账户状态</p>
       </div>
       <div class="flex gap-3">
         <input
           v-model="search"
           type="text"
-          class="w-64 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          class="w-64 rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
           placeholder="搜索用户名 / 邮箱 / 昵称"
           @keyup.enter="applyFilters(1)"
         />
         <button
-          class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
           @click="applyFilters(1)"
         >
           搜索
@@ -22,85 +22,103 @@
       </div>
     </div>
 
-    <div class="rounded-lg bg-white shadow">
-      <div v-if="loading" class="p-8 text-center text-gray-500">加载中...</div>
-      <div v-else-if="error" class="p-8 text-center text-red-600">{{ error }}</div>
+    <div class="rounded-lg border border-white/[0.06] bg-white/[0.03] shadow-xl">
+      <div v-if="loading" class="p-8 text-center text-slate-400">加载中...</div>
+      <div v-else-if="error" class="p-8 text-center text-rose-400">{{ error }}</div>
       <template v-else>
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+          <table class="min-w-full divide-y divide-white/[0.06]">
+            <thead class="bg-white/[0.02]">
               <tr>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
                 >
                   用户
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
                 >
                   邮箱
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
                 >
                   角色
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
                 >
                   状态
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
                 >
                   最后登录
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
                 >
                   注册时间
                 </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
+                >
+                  操作
+                </th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200 bg-white">
+            <tbody class="divide-y divide-white/[0.06]">
               <tr v-for="item in users" :key="item.id">
-                <td class="px-4 py-3 text-sm text-gray-900">
+                <td class="px-4 py-3 text-sm text-slate-100">
                   <div class="font-medium">{{ item.nickname || item.username }}</div>
-                  <div class="text-xs text-gray-500">@{{ item.username }}</div>
+                  <div class="text-xs text-slate-500">@{{ item.username }}</div>
                   <router-link
                     :to="{ name: 'admin-download-tasks', query: { userId: String(item.id) } }"
-                    class="mt-2 inline-flex text-xs text-indigo-600 hover:text-indigo-700"
+                    class="mt-2 inline-flex text-xs text-indigo-400 hover:text-indigo-300"
                   >
                     查看下载任务
                   </router-link>
                 </td>
-                <td class="px-4 py-3 text-sm text-gray-600">{{ item.email }}</td>
-                <td class="px-4 py-3 text-sm text-gray-600">{{ item.role }}</td>
+                <td class="px-4 py-3 text-sm text-slate-400">{{ item.email }}</td>
+                <td class="px-4 py-3 text-sm text-slate-400">{{ item.role }}</td>
                 <td class="px-4 py-3 text-sm">
                   <span
                     :class="[
                       'rounded-full px-2 py-1 text-xs font-medium',
-                      item.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700',
+                      item.isActive ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400',
                     ]"
                   >
                     {{ item.isActive ? '启用' : '停用' }}
                   </span>
                 </td>
-                <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(item.lastLoginAt) }}</td>
-                <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(item.createdAt) }}</td>
+                <td class="px-4 py-3 text-sm text-slate-400">{{ formatDate(item.lastLoginAt) }}</td>
+                <td class="px-4 py-3 text-sm text-slate-400">{{ formatDate(item.createdAt) }}</td>
+                <td class="px-4 py-3 text-sm">
+                  <button
+                    :class="[
+                      'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
+                      item.isActive
+                        ? 'bg-rose-600/20 text-rose-400 hover:bg-rose-600/30'
+                        : 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30',
+                    ]"
+                    @click="toggleUserStatus(item)"
+                  >
+                    {{ item.isActive ? '封禁' : '解封' }}
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
 
         <div
-          class="flex items-center justify-between border-t border-gray-200 px-4 py-3 text-sm text-gray-600"
+          class="flex items-center justify-between border-t border-white/[0.06] px-4 py-3 text-sm text-slate-400"
         >
           <span>共 {{ total }} 条</span>
           <div class="flex items-center gap-3">
             <button
               :disabled="page <= 1"
-              class="rounded border px-3 py-1 disabled:opacity-50"
+              class="rounded border border-slate-700 px-3 py-1 text-slate-300 disabled:opacity-50"
               @click="applyFilters(page - 1)"
             >
               上一页
@@ -108,7 +126,7 @@
             <span>{{ page }} / {{ totalPages }}</span>
             <button
               :disabled="page >= totalPages"
-              class="rounded border px-3 py-1 disabled:opacity-50"
+              class="rounded border border-slate-700 px-3 py-1 text-slate-300 disabled:opacity-50"
               @click="applyFilters(page + 1)"
             >
               下一页
@@ -200,6 +218,15 @@
     }
 
     return new Date(value).toLocaleString('zh-CN');
+  };
+
+  const toggleUserStatus = async (user: any) => {
+    try {
+      await adminApi.toggleUserStatus(user.id);
+      user.isActive = !user.isActive;
+    } catch (e: any) {
+      error.value = e.message || '操作失败';
+    }
   };
 
   watch(

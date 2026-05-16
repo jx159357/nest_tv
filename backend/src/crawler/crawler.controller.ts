@@ -4,7 +4,6 @@ import {
   Get,
   Body,
   UseGuards,
-  Request,
   Query,
   HttpCode,
   HttpStatus,
@@ -22,7 +21,10 @@ import {
 } from '@nestjs/swagger';
 import { CrawlerService } from './crawler.service';
 import type { CrawledData, CrawlWebsiteResult } from './crawler.service';
+import { CrawlerSchedulerService } from '../scheduler/crawler-scheduler.service';
+import type { ManualCrawlResponse, CrawlerStatusResponse } from '../scheduler/crawler-scheduler.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Public } from '../auth/public.decorator';
 import { MediaResourceService } from '../media/media-resource.service';
 import { MediaType, MediaQuality } from '../entities/media-resource.entity';
 import { PlaySourceType } from '../entities/play-source.entity';
@@ -73,6 +75,8 @@ const getErrorMessage = (error: unknown): string =>
  */
 @ApiTags('资源爬虫')
 @Controller('crawler')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class CrawlerController {
   private readonly logger = new Logger(CrawlerController.name);
 
@@ -80,6 +84,7 @@ export class CrawlerController {
     private readonly crawlerService: CrawlerService,
     private readonly mediaResourceService: MediaResourceService,
     private readonly playSourceService: PlaySourceService,
+    private readonly crawlerSchedulerService: CrawlerSchedulerService,
   ) {}
 
   /**
@@ -135,9 +140,7 @@ export class CrawlerController {
     status: 401,
     description: '未授权访问',
   })
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
-  async crawlSingle(@Request() req, @Body() crawlRequest: CrawlRequestDto) {
+  async crawlSingle(@Body() crawlRequest: CrawlRequestDto) {
     const result = await this.crawlerService.crawlWebsite(
       crawlRequest.targetName,
       crawlRequest.url,
@@ -213,7 +216,7 @@ export class CrawlerController {
       },
     },
   })
-  async batchCrawl(@Request() req, @Body() batchCrawlRequest: BatchCrawlRequestDto) {
+  async batchCrawl(@Body() batchCrawlRequest: BatchCrawlRequestDto) {
     const results = await this.crawlerService.batchCrawl(
       batchCrawlRequest.targetName,
       batchCrawlRequest.urls,
@@ -255,6 +258,7 @@ export class CrawlerController {
    * @returns 可用的爬虫目标
    */
   @Get('targets')
+  @Public()
   @ApiOperation({
     summary: '获取爬虫目标列表',
     description: '获取所有可用的爬虫目标网站及其配置信息',
@@ -300,8 +304,6 @@ export class CrawlerController {
   @Post('crawl-and-save')
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ValidationPipe({ transform: true }))
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @ApiOperation({
     summary: '爬取并保存资源',
     description: '根据指定的目标网站和URL爬取影视资源信息并保存到数据库，需要JWT认证',
@@ -339,7 +341,7 @@ export class CrawlerController {
     status: 401,
     description: '未授权访问',
   })
-  async crawlAndSave(@Request() req, @Body() body: CrawlAndSaveDto) {
+  async crawlAndSave(@Body() body: CrawlAndSaveDto) {
     const targetName = body.targetName ?? CRAWLER_TARGETS[0]?.name ?? '电影天堂';
     const result = await this.crawlerService.crawlWebsite(targetName, body.url);
 
@@ -714,7 +716,7 @@ export class CrawlerController {
       // 如果是电影天堂，测试一个示例URL
       let testData: CrawledData | null = null;
       if (target === '电影天堂') {
-        const testUrl = 'http://www.dytt8899.com'; // 使用主页进行测试
+        const testUrl = 'https://www.dytt8899.com'; // 使用主页进行测试
         try {
           const testResult: CrawlWebsiteResult = await this.crawlerService.crawlWebsite(
             target,
@@ -757,5 +759,29 @@ export class CrawlerController {
         },
       };
     }
+  }
+
+  @Post('trigger')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '触发爬虫任务', description: '手动触发爬虫从指定目标采集数据' })
+  @ApiQuery({ name: 'targetName', required: false, description: '目标网站名称' })
+  async triggerCrawl(@Query('targetName') targetName?: string): Promise<ManualCrawlResponse> {
+    try {
+      const result = await this.crawlerSchedulerService.triggerManualCrawl(targetName);
+      return result;
+    } catch (error: unknown) {
+      return {
+        success: false,
+        error: getErrorMessage(error),
+      };
+    }
+  }
+
+  @Get('status')
+  @Public()
+  @ApiOperation({ summary: '获取爬虫状态' })
+  getCrawlerStatus(): CrawlerStatusResponse {
+    return this.crawlerSchedulerService.getCrawlerStatus();
   }
 }

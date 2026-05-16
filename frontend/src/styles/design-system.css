@@ -140,36 +140,43 @@
 /* ===== 暗色主题 ===== */
 [data-theme="dark"],
 .dark {
-  --color-gray-50: #0f172a;
-  --color-gray-100: #1e293b;
-  --color-gray-200: #334155;
-  --color-gray-300: #475569;
-  --color-gray-400: #64748b;
-  --color-gray-500: #94a3b8;
-  --color-gray-600: #cbd5e1;
-  --color-gray-700: #e2e8f0;
-  --color-gray-800: #f1f5f9;
+  --color-gray-50: #0a0f1a;
+  --color-gray-100: #141a2a;
+  --color-gray-200: #1e293b;
+  --color-gray-300: #334155;
+  --color-gray-400: #475569;
+  --color-gray-500: #64748b;
+  --color-gray-600: #94a3b8;
+  --color-gray-700: #cbd5e1;
+  --color-gray-800: #e2e8f0;
   --color-gray-900: #f8fafc;
 
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --bg-tertiary: #334155;
-  --bg-page: #020617;
-  --bg-card: #1e293b;
+  --bg-page: #0a0f1a;
+  --bg-primary: #0f1520;
+  --bg-secondary: #141a2a;
+  --bg-tertiary: #1e293b;
+  --bg-card: #141a2a;
+  --bg-panel: #0f1520;
   --bg-overlay: rgba(0, 0, 0, 0.7);
+  --bg-player: #000000;
 
-  --text-primary: #f8fafc;
-  --text-secondary: #e2e8f0;
-  --text-tertiary: #cbd5e1;
+  --text-primary: #e2e8f0;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
   --text-muted: #64748b;
-  --text-inverse: #0f172a;
+  --text-inverse: #ffffff;
   --text-link: #818cf8;
   --text-link-hover: #a5b4fc;
 
-  --border-primary: #334155;
-  --border-secondary: #475569;
-  --border-focus: #818cf8;
-  --border-error: #f87171;
+  --border-primary: rgba(255, 255, 255, 0.06);
+  --border-secondary: rgba(255, 255, 255, 0.1);
+  --border-focus: #6366f1;
+  --border-error: #ef4444;
+
+  --color-brand-accent: #8b5cf6;
+  --color-brand-accent-light: #a78bfa;
+  --color-error-lighter: #fca5a5;
+  --color-warning-lighter: #fde68a;
 
   --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
   --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.3);

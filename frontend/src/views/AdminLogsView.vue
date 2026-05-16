@@ -2,35 +2,35 @@
   <div class="space-y-6">
     <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">系统日志</h1>
-        <p class="mt-2 text-gray-600">查看后台操作记录、错误信息和状态变化</p>
+        <h1 class="text-2xl font-bold text-slate-100">系统日志</h1>
+        <p class="mt-2 text-slate-400">查看后台操作记录、错误信息和状态变化</p>
       </div>
       <div class="flex flex-wrap gap-3">
         <input
           v-model="action"
           type="text"
-          class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
           placeholder="操作类型，如 create"
           @keyup.enter="applyFilters(1)"
         />
         <input
           v-model="resource"
           type="text"
-          class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
           placeholder="资源类型，如 media"
           @keyup.enter="applyFilters(1)"
         />
         <input
           v-model="clientId"
           type="text"
-          class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
           placeholder="任务 clientId，如 task-21"
           @keyup.enter="applyFilters(1)"
         />
         <input
           :value="hash"
           type="text"
-          class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
           placeholder="任务 Hash，如 hash-demo"
           @input="hash = normalizeHashInput(($event.target as HTMLInputElement).value)"
           @keyup.enter="applyFilters(1)"
@@ -38,21 +38,21 @@
         <input
           v-model="downloadTaskId"
           type="text"
-          class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
           placeholder="任务 ID，如 21"
           @keyup.enter="applyFilters(1)"
         />
         <input
           :value="selectedLogId ? String(selectedLogId) : ''"
           type="text"
-          class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
           placeholder="日志 ID，如 7"
           @input="selectedLogId = parseLogId(($event.target as HTMLInputElement).value)"
           @keyup.enter="applyFilters(1)"
         />
         <select
           v-model="status"
-          class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200"
           @change="applyFilters(1)"
         >
           <option value="">全部状态</option>
@@ -61,7 +61,7 @@
           <option value="error">error</option>
         </select>
         <button
-          class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
           @click="applyFilters(1)"
         >
           搜索
@@ -70,48 +70,48 @@
     </div>
 
     <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-      <div class="rounded-lg bg-white p-4 shadow">
-        <div class="text-sm text-gray-500">总日志数</div>
-        <div class="mt-2 text-2xl font-semibold text-gray-900">{{ total }}</div>
+      <div class="rounded-lg border border-white/[0.06] bg-white/[0.03] p-4 shadow-xl">
+        <div class="text-sm text-slate-400">总日志数</div>
+        <div class="mt-2 text-2xl font-semibold text-slate-100">{{ total }}</div>
       </div>
-      <div class="rounded-lg bg-white p-4 shadow">
-        <div class="text-sm text-gray-500">错误日志</div>
-        <div class="mt-2 text-2xl font-semibold text-red-600">{{ errorCount }}</div>
+      <div class="rounded-lg border border-white/[0.06] bg-white/[0.03] p-4 shadow-xl">
+        <div class="text-sm text-slate-400">错误日志</div>
+        <div class="mt-2 text-2xl font-semibold text-rose-400">{{ errorCount }}</div>
       </div>
-      <div class="rounded-lg bg-white p-4 shadow">
-        <div class="text-sm text-gray-500">警告日志</div>
-        <div class="mt-2 text-2xl font-semibold text-amber-600">{{ warningCount }}</div>
+      <div class="rounded-lg border border-white/[0.06] bg-white/[0.03] p-4 shadow-xl">
+        <div class="text-sm text-slate-400">警告日志</div>
+        <div class="mt-2 text-2xl font-semibold text-amber-400">{{ warningCount }}</div>
       </div>
     </div>
 
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
       <button
-        class="rounded-lg bg-white p-4 text-left shadow transition hover:bg-slate-50"
+        class="rounded-lg border border-white/[0.06] bg-white/[0.03] p-4 text-left shadow-xl transition hover:bg-white/[0.06]"
         @click="setResourceFilter(resource === 'download_task' ? '' : 'download_task')"
       >
-        <div class="text-sm text-gray-500">下载任务日志</div>
-        <div class="mt-2 text-2xl font-semibold text-slate-900">{{ downloadTaskLogCount }}</div>
+        <div class="text-sm text-slate-400">下载任务日志</div>
+        <div class="mt-2 text-2xl font-semibold text-slate-100">{{ downloadTaskLogCount }}</div>
       </button>
       <button
-        class="rounded-lg bg-white p-4 text-left shadow transition hover:bg-slate-50"
+        class="rounded-lg border border-white/[0.06] bg-white/[0.03] p-4 text-left shadow-xl transition hover:bg-white/[0.06]"
         @click="setActionFilter(action === 'retry' ? '' : 'retry')"
       >
-        <div class="text-sm text-gray-500">retry 动作</div>
-        <div class="mt-2 text-2xl font-semibold text-emerald-600">{{ retryActionCount }}</div>
+        <div class="text-sm text-slate-400">retry 动作</div>
+        <div class="mt-2 text-2xl font-semibold text-emerald-400">{{ retryActionCount }}</div>
       </button>
       <button
-        class="rounded-lg bg-white p-4 text-left shadow transition hover:bg-slate-50"
+        class="rounded-lg border border-white/[0.06] bg-white/[0.03] p-4 text-left shadow-xl transition hover:bg-white/[0.06]"
         @click="setActionFilter(action === 'cancel' ? '' : 'cancel')"
       >
-        <div class="text-sm text-gray-500">cancel 动作</div>
-        <div class="mt-2 text-2xl font-semibold text-rose-600">{{ cancelActionCount }}</div>
+        <div class="text-sm text-slate-400">cancel 动作</div>
+        <div class="mt-2 text-2xl font-semibold text-rose-400">{{ cancelActionCount }}</div>
       </button>
       <button
-        class="rounded-lg bg-white p-4 text-left shadow transition hover:bg-slate-50"
+        class="rounded-lg border border-white/[0.06] bg-white/[0.03] p-4 text-left shadow-xl transition hover:bg-white/[0.06]"
         @click="setResourceFilter(resource === 'download_task' ? '' : 'download_task')"
       >
-        <div class="text-sm text-gray-500">24h 下载动作</div>
-        <div class="mt-2 text-2xl font-semibold text-indigo-600">
+        <div class="text-sm text-slate-400">24h 下载动作</div>
+        <div class="mt-2 text-2xl font-semibold text-indigo-400">
           {{ recentDownloadTaskActionCount }}
         </div>
       </button>
@@ -122,8 +122,8 @@
         class="rounded-full border px-3 py-1 text-xs font-medium transition"
         :class="
           resource === 'download_task'
-            ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
-            : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+            ? 'border-indigo-400/30 bg-indigo-500/15 text-indigo-300'
+            : 'border-slate-700 bg-white/[0.05] text-slate-300 hover:bg-white/[0.08]'
         "
         @click="setResourceFilter(resource === 'download_task' ? '' : 'download_task')"
       >
@@ -133,8 +133,8 @@
         class="rounded-full border px-3 py-1 text-xs font-medium transition"
         :class="
           action === 'retry'
-            ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-            : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+            ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-300'
+            : 'border-slate-700 bg-white/[0.05] text-slate-300 hover:bg-white/[0.08]'
         "
         @click="setActionFilter(action === 'retry' ? '' : 'retry')"
       >
@@ -144,8 +144,8 @@
         class="rounded-full border px-3 py-1 text-xs font-medium transition"
         :class="
           action === 'cancel'
-            ? 'border-rose-300 bg-rose-50 text-rose-700'
-            : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+            ? 'border-rose-400/30 bg-rose-500/15 text-rose-300'
+            : 'border-slate-700 bg-white/[0.05] text-slate-300 hover:bg-white/[0.08]'
         "
         @click="setActionFilter(action === 'cancel' ? '' : 'cancel')"
       >
@@ -157,106 +157,106 @@
       <span
         v-for="chip in activeFilterChips"
         :key="chip.key"
-        class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700"
+        class="inline-flex items-center gap-2 rounded-full border border-slate-600/30 bg-slate-500/15 px-3 py-1 text-xs text-slate-300"
       >
         {{ chip.label }}
-        <button class="text-slate-400 hover:text-slate-700" @click="chip.clear">×</button>
+        <button class="text-slate-500 hover:text-slate-200" @click="chip.clear">×</button>
       </span>
     </div>
 
-    <div class="rounded-lg bg-white shadow">
-      <div v-if="loading" class="p-8 text-center text-gray-500">加载中...</div>
-      <div v-else-if="error" class="p-8 text-center text-red-600">{{ error }}</div>
+    <div class="rounded-lg border border-white/[0.06] bg-white/[0.03] shadow-xl">
+      <div v-if="loading" class="p-8 text-center text-slate-400">加载中...</div>
+      <div v-else-if="error" class="p-8 text-center text-rose-400">{{ error }}</div>
       <template v-else>
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+          <table class="min-w-full divide-y divide-white/[0.06]">
+            <thead class="bg-white/[0.02]">
               <tr>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
                 >
                   时间
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
                 >
                   操作
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
                 >
                   资源
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
                 >
                   状态
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
                 >
                   角色
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
                 >
                   用户
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
                 >
                   说明
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
                 >
                   详情
                 </th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200 bg-white">
+            <tbody class="divide-y divide-white/[0.06]">
               <template v-for="log in logs" :key="log.id">
                 <tr>
-                  <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(log.createdAt) }}</td>
-                  <td class="px-4 py-3 text-sm text-gray-900">{{ log.action }}</td>
-                  <td class="px-4 py-3 text-sm text-gray-600">{{ log.resource }}</td>
+                  <td class="px-4 py-3 text-sm text-slate-400">{{ formatDate(log.createdAt) }}</td>
+                  <td class="px-4 py-3 text-sm text-slate-100">{{ log.action }}</td>
+                  <td class="px-4 py-3 text-sm text-slate-400">{{ log.resource }}</td>
                   <td class="px-4 py-3 text-sm">
                     <span
                       :class="[
                         'rounded-full px-2 py-1 text-xs font-medium',
                         log.status === 'success'
-                          ? 'bg-green-100 text-green-700'
+                          ? 'bg-emerald-500/15 text-emerald-400'
                           : log.status === 'warning'
-                            ? 'bg-amber-100 text-amber-700'
-                            : 'bg-red-100 text-red-700',
+                            ? 'bg-amber-500/15 text-amber-400'
+                            : 'bg-rose-500/15 text-rose-400',
                       ]"
                     >
                       {{ log.status }}
                     </span>
                   </td>
-                  <td class="px-4 py-3 text-sm text-gray-600">
+                  <td class="px-4 py-3 text-sm text-slate-400">
                     {{ log.role?.name || `#${log.roleId}` }}
                   </td>
-                  <td class="px-4 py-3 text-sm text-gray-600">
+                  <td class="px-4 py-3 text-sm text-slate-400">
                     {{ log.user?.username || (log.userId ? `#${log.userId}` : '系统') }}
                   </td>
-                  <td class="px-4 py-3 text-sm text-gray-600">
+                  <td class="px-4 py-3 text-sm text-slate-400">
                     <div class="line-clamp-2">{{ log.errorMessage || log.description || '—' }}</div>
                   </td>
-                  <td class="px-4 py-3 text-sm text-gray-600">
+                  <td class="px-4 py-3 text-sm text-slate-400">
                     <button
-                      class="rounded border border-slate-200 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                      class="rounded border border-slate-600/30 px-3 py-1 text-xs font-medium text-slate-300 hover:bg-white/[0.06]"
                       @click="toggleLogDetails(log.id)"
                     >
                       {{ selectedLogId === log.id ? '收起' : '详情' }}
                     </button>
                   </td>
                 </tr>
-                <tr v-if="selectedLogId === log.id" class="bg-slate-50">
+                <tr v-if="selectedLogId === log.id" class="bg-white/[0.02]">
                   <td colspan="8" class="px-4 py-4">
                     <div class="grid gap-4 lg:grid-cols-2">
-                      <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                        <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                      <div class="rounded-xl border border-slate-700/50 bg-white/[0.03] px-4 py-3">
+                        <div class="text-xs font-medium uppercase tracking-wide text-slate-500">
                           元数据
                         </div>
                         <div
@@ -265,25 +265,25 @@
                         >
                           暂无元数据
                         </div>
-                        <div v-else class="mt-2 space-y-2 text-sm text-slate-700">
+                        <div v-else class="mt-2 space-y-2 text-sm text-slate-300">
                           <div v-for="item in metadataEntries(log)" :key="`${log.id}-${item.key}`">
-                            <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            <div class="text-xs font-medium uppercase tracking-wide text-slate-500">
                               {{ item.key }}
                             </div>
                             <div class="mt-1 break-all">{{ item.value }}</div>
                           </div>
                         </div>
                       </div>
-                      <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                        <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                      <div class="rounded-xl border border-slate-700/50 bg-white/[0.03] px-4 py-3">
+                        <div class="text-xs font-medium uppercase tracking-wide text-slate-500">
                           请求信息
                         </div>
                         <div v-if="!log.requestInfo" class="mt-2 text-sm text-slate-500">
                           暂无请求信息
                         </div>
-                        <div v-else class="mt-2 space-y-2 text-sm text-slate-700">
+                        <div v-else class="mt-2 space-y-2 text-sm text-slate-300">
                           <div>
-                            <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            <div class="text-xs font-medium uppercase tracking-wide text-slate-500">
                               Method / URL
                             </div>
                             <div class="mt-1 break-all">
@@ -291,13 +291,13 @@
                             </div>
                           </div>
                           <div>
-                            <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            <div class="text-xs font-medium uppercase tracking-wide text-slate-500">
                               IP
                             </div>
                             <div class="mt-1 break-all">{{ log.requestInfo.ip || '—' }}</div>
                           </div>
                           <div>
-                            <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            <div class="text-xs font-medium uppercase tracking-wide text-slate-500">
                               User Agent
                             </div>
                             <div class="mt-1 break-all">{{ log.requestInfo.userAgent || '—' }}</div>
@@ -306,17 +306,17 @@
                       </div>
                       <div
                         v-if="downloadTaskLogTarget(log)"
-                        class="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 lg:col-span-2"
+                        class="rounded-xl border border-indigo-400/20 bg-indigo-500/10 px-4 py-3 lg:col-span-2"
                       >
-                        <div class="text-xs font-medium uppercase tracking-wide text-indigo-500">
+                        <div class="text-xs font-medium uppercase tracking-wide text-indigo-400">
                           关联下载任务
                         </div>
-                        <div class="mt-2 text-sm text-slate-700">
+                        <div class="mt-2 text-sm text-slate-300">
                           该日志包含下载任务客户端 ID，可直接跳回下载任务管理页继续排查。
                         </div>
                         <RouterLink
                           :to="downloadTaskLogTarget(log)!"
-                          class="mt-3 inline-flex rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                          class="mt-3 inline-flex rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-300 hover:bg-indigo-500/20"
                         >
                           打开关联下载任务
                         </RouterLink>
@@ -330,13 +330,13 @@
         </div>
 
         <div
-          class="flex items-center justify-between border-t border-gray-200 px-4 py-3 text-sm text-gray-600"
+          class="flex items-center justify-between border-t border-white/[0.06] px-4 py-3 text-sm text-slate-400"
         >
           <span>共 {{ total }} 条</span>
           <div class="flex items-center gap-3">
             <button
               :disabled="page <= 1"
-              class="rounded border px-3 py-1 disabled:opacity-50"
+              class="rounded border border-slate-700 px-3 py-1 text-slate-300 disabled:opacity-50"
               @click="applyFilters(page - 1)"
             >
               上一页
@@ -344,7 +344,7 @@
             <span>{{ page }} / {{ totalPages }}</span>
             <button
               :disabled="page >= totalPages"
-              class="rounded border px-3 py-1 disabled:opacity-50"
+              class="rounded border border-slate-700 px-3 py-1 text-slate-300 disabled:opacity-50"
               @click="applyFilters(page + 1)"
             >
               下一页

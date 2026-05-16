@@ -106,6 +106,11 @@ export class UserService {
       throw new UnauthorizedException('用户密码未设置，请联系管理员');
     }
 
+    // 检查用户是否被禁用
+    if (!user.isActive) {
+      throw new UnauthorizedException('用户已被禁用，请联系管理员');
+    }
+
     // 验证密码
     const isPasswordValid = await bcrypt.compare(loginUserDto.password, user.password);
     if (!isPasswordValid) {

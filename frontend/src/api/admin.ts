@@ -174,6 +174,11 @@ export const adminApi = {
   getUsers: (params?: { page?: number; limit?: number; search?: string }) =>
     ApiClient.get<AdminPaginatedResponse<User>>('/admin/users', { params }, false),
 
+  toggleUserStatus: (userId: number) =>
+    ApiClient.post<{ id: number; username: string; isActive: boolean; message: string }>(
+      `/admin/users/${userId}/toggle-status`,
+    ),
+
   getMedia: (params?: { page?: number; limit?: number; type?: string; search?: string }) =>
     ApiClient.get<AdminPaginatedResponse<MediaResource>>('/admin/media', { params }, false),
 

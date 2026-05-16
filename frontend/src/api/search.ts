@@ -104,7 +104,7 @@ export const searchApi = {
       },
       signal: controller.signal,
     })
-      .then(async (response) => {
+      .then(async response => {
         if (!response.ok) {
           throw new Error(`SSE 请求失败: ${response.status}`);
         }
@@ -115,7 +115,7 @@ export const searchApi = {
         const decoder = new TextDecoder();
         let buffer = '';
 
-        while (true) {
+        for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
 
@@ -140,7 +140,7 @@ export const searchApi = {
 
         options.onDone?.();
       })
-      .catch((err) => {
+      .catch(err => {
         if ((err as Error).name !== 'AbortError') {
           options.onError?.(err as Error);
         }

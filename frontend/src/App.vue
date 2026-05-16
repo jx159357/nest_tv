@@ -1,28 +1,38 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { useAuthStore } from '@/stores/auth';
-import EnhancedModal from '@/components/EnhancedModal.vue';
-import UpdateNotification from '@/components/UpdateNotification.vue';
-import Toast from '@/components/Toast.vue';
-import NotificationToast from '@/components/NotificationToast.vue';
-import { log } from '@/utils/logger';
-import { modalState } from '@/composables/useModal';
+  import { onMounted, ref } from 'vue';
+  import { useAuthStore } from '@/stores/auth';
+  import EnhancedModal from '@/components/EnhancedModal.vue';
+  import UpdateNotification from '@/components/UpdateNotification.vue';
+  import Toast from '@/components/Toast.vue';
+  import NotificationToast from '@/components/NotificationToast.vue';
+  import { log } from '@/utils/logger';
+  import { modalState } from '@/composables/useModal';
 
-const authStore = useAuthStore();
-const toastRef = ref<InstanceType<typeof Toast> | null>(null);
+  const authStore = useAuthStore();
+  const toastRef = ref<InstanceType<typeof Toast> | null>(null);
 
-const initializeApp = async () => {
-  try {
-    await authStore.initAuth();
-  } catch (error) {
-    log.error('App', '应用初始化失败:', error);
-    toastRef.value?.error('应用初始化失败，请刷新页面重试');
-  }
-};
+  const initializeApp = async () => {
+    try {
+      await authStore.initAuth();
+    } catch (error) {
+      log.error('App', '应用初始化失败:', error);
+      toastRef.value?.error('应用初始化失败，请刷新页面重试');
+    }
+  };
 
-onMounted(() => {
-  initializeApp();
-});
+  const initTheme = () => {
+    const saved = localStorage.getItem('nest-tv-theme');
+    if (saved === 'light') {
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.add('dark');
+    }
+  };
+
+  onMounted(() => {
+    initTheme();
+    initializeApp();
+  });
 </script>
 
 <template>
@@ -49,9 +59,9 @@ onMounted(() => {
 </template>
 
 <style>
-#app-root {
-  min-height: 100vh;
-  background: var(--bg-page);
-  color: var(--text-primary);
-}
+  #app-root {
+    min-height: 100vh;
+    background: var(--bg-page);
+    color: var(--text-primary);
+  }
 </style>

@@ -11,6 +11,7 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
+  @Public()
   @ApiOperation({ summary: '获取系统健康状态' })
   @ApiResponse({ status: 200, description: '系统正常运行' })
   getHello(): string {

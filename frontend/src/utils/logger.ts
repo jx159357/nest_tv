@@ -95,9 +95,7 @@ class Logger {
   performance(module: string, message: string, duration: number): void {
     if (this.shouldLog('debug')) {
       const formattedDuration = duration.toFixed(2);
-      console.debug(
-        this.formatMessage('debug', module, `${message}: ${formattedDuration}ms`),
-      );
+      console.debug(this.formatMessage('debug', module, `${message}: ${formattedDuration}ms`));
     }
   }
 
@@ -176,44 +174,35 @@ export const logger = Logger.getInstance();
 
 // 导出便捷方法
 export const log = {
-  debug: (module: string, message: string, ...args: any[]) => 
+  debug: (module: string, message: string, ...args: any[]) =>
     logger.debug(module, message, ...args),
-  
-  info: (module: string, message: string, ...args: any[]) => 
-    logger.info(module, message, ...args),
-  
-  warn: (module: string, message: string, ...args: any[]) => 
-    logger.warn(module, message, ...args),
-  
-  error: (module: string, message: string, ...args: any[]) => 
+
+  info: (module: string, message: string, ...args: any[]) => logger.info(module, message, ...args),
+
+  warn: (module: string, message: string, ...args: any[]) => logger.warn(module, message, ...args),
+
+  error: (module: string, message: string, ...args: any[]) =>
     logger.error(module, message, ...args),
-  
-  performance: (module: string, message: string, duration: number) => 
+
+  performance: (module: string, message: string, duration: number) =>
     logger.performance(module, message, duration),
-  
-  assert: (condition: boolean, module: string, message: string, ...args: any[]) => 
+
+  assert: (condition: boolean, module: string, message: string, ...args: any[]) =>
     logger.assert(condition, module, message, ...args),
-  
-  group: (module: string, label: string) => 
-    logger.group(module, label),
-  
-  groupEnd: () => 
-    logger.groupEnd(),
-  
-  table: (module: string, data: any, columns?: string[]) => 
-    logger.table(module, data, columns),
-  
-  time: (module: string, label: string) => 
-    logger.time(module, label),
-  
-  timeEnd: (module: string, label: string) => 
-    logger.timeEnd(module, label),
-  
-  configure: (config: Partial<LoggerConfig>) => 
-    logger.configure(config),
-  
-  getConfig: () => 
-    logger.getConfig(),
+
+  group: (module: string, label: string) => logger.group(module, label),
+
+  groupEnd: () => logger.groupEnd(),
+
+  table: (module: string, data: any, columns?: string[]) => logger.table(module, data, columns),
+
+  time: (module: string, label: string) => logger.time(module, label),
+
+  timeEnd: (module: string, label: string) => logger.timeEnd(module, label),
+
+  configure: (config: Partial<LoggerConfig>) => logger.configure(config),
+
+  getConfig: () => logger.getConfig(),
 };
 
 // 导出类型

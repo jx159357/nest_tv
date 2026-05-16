@@ -167,6 +167,9 @@ export class DanmakuController {
       videoId,
       userId: user.id,
       danmakuId: danmaku.id,
+      text: danmaku.text,
+      color: danmaku.color,
+      type: danmaku.type,
     });
 
     return danmaku;

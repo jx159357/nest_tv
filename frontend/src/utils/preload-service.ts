@@ -132,9 +132,9 @@ export class PreloadService {
       const meta = route.meta as RouteMeta;
       const routeName = route.name ? String(route.name) : '';
       if (meta?.preload && routeName && !this.preloadedRoutes.has(routeName)) {
-        this.preloadRoute(routeName).catch(() => {
-          // 静默失败，不影响用户体验
-        });
+        if (this.shouldPreload(routeName)) {
+          this.preloadRoute(routeName).catch(() => {});
+        }
       }
     });
   }
@@ -213,19 +213,21 @@ export class PreloadService {
    * 判断是否应该预加载指定路由
    */
   private shouldPreload(routeName: string): boolean {
-    const route = this.router.resolve({ name: routeName });
-    if (!route.matched.length) {
-      return false;
-    }
-
-    const meta = route.matched[0].meta as RouteMeta;
-    if (!meta?.preload) {
-      return false;
-    }
-
-    // 核心路由列表
     const coreRoutes = ['home', 'media-detail', 'watch', 'recommendations'];
-    return coreRoutes.includes(routeName);
+    if (!coreRoutes.includes(routeName)) {
+      return false;
+    }
+
+    try {
+      const route = this.router.resolve({ name: routeName });
+      if (!route.matched.length) {
+        return false;
+      }
+      const meta = route.matched[0].meta as RouteMeta;
+      return !!meta?.preload;
+    } catch {
+      return false;
+    }
   }
 
   /**

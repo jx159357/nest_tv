@@ -11,7 +11,6 @@ import type {
   DanmakuServiceConfig,
 } from '@/types/danmaku';
 
-const DEV = import.meta.env.DEV;
 type DanmakuEventListener = (...args: any[]) => void;
 
 export type { DanmakuMessage, RoomInfo, HeartbeatResponse, DanmakuSettings, DanmakuServiceConfig };
@@ -19,9 +18,6 @@ export type { DanmakuMessage, RoomInfo, HeartbeatResponse, DanmakuSettings, Danm
 // WebSocket服务类
 export class DanmakuWebSocketService {
   private socket: Socket | null = null;
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  private reconnectInterval: number;
   private heartbeatInterval: number | null = null;
   private isConnected = ref(false);
   private roomId = ref('');
@@ -38,7 +34,6 @@ export class DanmakuWebSocketService {
     reconnectDelay: 1000,
     heartbeatInterval: 30000,
     maxQueueSize: 100,
-    autoReconnect: true,
   };
 
   constructor(private authStore: any) {}
@@ -50,12 +45,13 @@ export class DanmakuWebSocketService {
       this.userId.value = userId;
 
       const config: DanmakuServiceConfig = {
-        serverUrl: (import.meta.env.VITE_WS_URL || (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host) + '/danmaku',
+        serverUrl:
+          (import.meta.env.VITE_WS_URL ||
+            (location.protocol === 'https:' ? 'https://' : 'http://') + location.host) + '/danmaku',
         reconnectDelay: this.options.reconnectDelay,
         heartbeatInterval: this.options.heartbeatInterval,
         maxQueueSize: this.options.maxQueueSize,
-        autoReconnect: this.options.autoReconnect,
-        maxReconnectAttempts: this.maxReconnectAttempts,
+        maxReconnectAttempts: 5,
       };
 
       this.socket = io(config.serverUrl, {
@@ -86,7 +82,6 @@ export class DanmakuWebSocketService {
     this.socket.on('connect', () => {
       log.debug('DanmakuWS', 'connected');
       this.isConnected.value = true;
-      this.reconnectAttempts = 0;
 
       // 加入房间
       this.socket?.emit('join-room', {
@@ -105,26 +100,47 @@ export class DanmakuWebSocketService {
     });
 
     // 连接断开
-    this.socket.on('disconnect', reason => {
+    this.socket.on('disconnect', (reason: string) => {
       log.debug('DanmakuWS', 'disconnected:', reason);
       this.isConnected.value = false;
       this.stopHeartbeat();
       this.emit('disconnected', reason);
-
-      // 自动重连
-      if (this.options.autoReconnect && reason !== 'io client disconnect') {
-        this.handleReconnect();
-      }
     });
 
-    // 连接错误
-    this.socket.on('connect_error', error => {
+    // 连接错误（Socket.IO 内置重连会自动处理，不手动重连）
+    this.socket.on('connect_error', (error: Error) => {
       log.error('DanmakuWS', 'WebSocket连接错误:', error);
-      this.handleConnectionError(error);
+      this.isConnected.value = false;
+    });
+
+    // Socket.IO 内置重连失败（达到最大重试次数）
+    this.socket.on('reconnect_failed', () => {
+      log.warn('DanmakuWS', 'Socket.IO reconnect failed');
+      this.emit('reconnect-failed');
+    });
+
+    // Socket.IO 内置重连尝试
+    this.socket.io.on('reconnect_attempt', (attempt: number) => {
+      log.debug('DanmakuWS', `Socket.IO reconnect attempt ${attempt}`);
     });
 
     // 接收弹幕消息
     this.socket.on('danmaku-message', (message: DanmakuMessage) => {
+      this.emit('danmaku-message', message);
+    });
+
+    // 接收通过HTTP创建的弹幕广播
+    this.socket.on('danmaku-created', (data: { danmakuId: number; videoId: string; userId: number; text: string; color: string; type: string; timestamp: number }) => {
+      const message: DanmakuMessage = {
+        id: String(data.danmakuId),
+        userId: String(data.userId),
+        videoId: data.videoId,
+        text: data.text,
+        color: data.color,
+        type: data.type as DanmakuMessage['type'],
+        priority: 1,
+        timestamp: data.timestamp,
+      };
       this.emit('danmaku-message', message);
     });
 
@@ -144,7 +160,7 @@ export class DanmakuWebSocketService {
     });
 
     // 错误消息
-    this.socket.on('error', error => {
+    this.socket.on('error', (error: Error) => {
       log.error('DanmakuWS', 'WebSocket错误:', error);
       this.emit('error', error);
     });
@@ -200,33 +216,10 @@ export class DanmakuWebSocketService {
     }
   }
 
-  // 重连处理
-  private handleReconnect() {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      log.warn('DanmakuWS', 'reached max reconnect attempts');
-      this.emit('reconnect-failed');
-      return;
-    }
-
-    this.reconnectAttempts++;
-    log.debug('DanmakuWS', `reconnecting (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-
-    this.reconnectInterval = window.setTimeout(() => {
-      if (this.roomId.value && this.userId.value) {
-        this.connect(this.roomId.value, this.userId.value);
-      }
-    }, this.options.reconnectDelay * this.reconnectAttempts);
-  }
-
   // 连接错误处理
   private handleConnectionError(error: any) {
     this.isConnected.value = false;
     this.emit('error', error);
-
-    // 如果启用了自动重连，尝试重连
-    if (this.options.autoReconnect) {
-      this.handleReconnect();
-    }
   }
 
   // 消息队列管理
@@ -309,17 +302,11 @@ export class DanmakuWebSocketService {
 
     this.stopHeartbeat();
     this.isConnected.value = false;
-    this.reconnectAttempts = 0;
+    this.roomId.value = '';
+    this.userId.value = '';
     this.messageQueue = [];
 
-    // 清理事件监听器
     this.listeners.clear();
-
-    // 清理重连定时器
-    if (this.reconnectInterval) {
-      clearTimeout(this.reconnectInterval);
-      this.reconnectInterval = 0;
-    }
   }
 
   // 销毁服务
@@ -406,6 +393,10 @@ export function useDanmakuWebSocket(videoId: string) {
     service.on('heartbeat-response', callback);
   };
 
+  const onReconnectFailed = (callback: () => void) => {
+    service.on('reconnect-failed', callback);
+  };
+
   // 设置事件监听器
   onMounted(() => {
     connect();
@@ -431,5 +422,6 @@ export function useDanmakuWebSocket(videoId: string) {
     onDisconnected,
     onError,
     onHeartbeat,
+    onReconnectFailed,
   };
 }

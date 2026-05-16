@@ -541,7 +541,6 @@
 
 <script setup lang="ts">
   import { ref, computed, onMounted, onUnmounted, watch, reactive } from 'vue';
-  import { mobileOptimizations } from '@/utils/mobile-optimizations';
   import { log } from '@/utils/logger';
 
   interface VideoSource {
@@ -676,7 +675,9 @@
   const bufferWaitTime = ref(0);
 
   // 移动端相关
-  const isMobile = ref(mobileOptimizations.isMobileDevice());
+  const isMobile = ref(
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+  );
   const isTouchMoving = ref(false);
   const touchStartTime = ref(0);
   const touchStartX = ref(0);
@@ -1861,10 +1862,11 @@
   };
 
   // 公共方法
-  const play = () => {
+  const play = (): Promise<void> | undefined => {
     if (videoRef.value) {
       return videoRef.value.play();
     }
+    return undefined;
   };
 
   const pause = () => {

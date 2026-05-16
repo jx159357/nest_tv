@@ -1,462 +1,458 @@
 <template>
   <div class="page-container">
-      <header class="mb-8">
-        <h1 class="mb-3 text-3xl font-bold text-gray-900">磁力资源</h1>
-        <p class="text-gray-600">浏览站内已入库磁力源，支持搜索、热门榜、最新榜和磁力链接解析。</p>
-      </header>
+    <header class="mb-8">
+      <h1 class="mb-3 text-3xl font-bold text-gray-900">磁力资源</h1>
+      <p class="text-gray-600">浏览站内已入库磁力源，支持搜索、热门榜、最新榜和磁力链接解析。</p>
+    </header>
 
-      <section class="mb-8 rounded-2xl bg-white p-6 shadow-sm">
-        <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]">
+    <section class="mb-8 rounded-2xl bg-white p-6 shadow-sm">
+      <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]">
+        <div>
+          <div class="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 class="text-xl font-semibold text-gray-900">磁力搜索</h2>
+              <p class="mt-1 text-sm text-gray-600">
+                按标题、来源名或媒体描述搜索已入库的磁力资源。
+              </p>
+            </div>
+          </div>
+
+          <form
+            class="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_180px_auto]"
+            @submit.prevent="searchTorrents(1)"
+          >
+            <input
+              v-model="keyword"
+              type="text"
+              class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              placeholder="输入关键字，如片名 / 资源组 / infoHash"
+            />
+            <select v-model="category" class="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+              <option value="">全部分类</option>
+              <option value="movie">电影</option>
+              <option value="tv_series">电视剧</option>
+              <option value="variety">综艺</option>
+              <option value="anime">动漫</option>
+              <option value="documentary">纪录片</option>
+            </select>
+            <button
+              type="submit"
+              class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              :disabled="searchLoading"
+            >
+              {{ searchLoading ? '搜索中...' : '搜索' }}
+            </button>
+          </form>
+
+          <div
+            v-if="searchError"
+            class="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+          >
+            {{ searchError }}
+          </div>
+
+          <div class="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white">
+            <div
+              class="border-b border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700"
+            >
+              搜索结果
+            </div>
+            <div v-if="searchLoading" class="px-4 py-10 text-center text-sm text-slate-500">
+              加载中...
+            </div>
+            <div
+              v-else-if="searchResults.length === 0"
+              class="px-4 py-10 text-center text-sm text-slate-500"
+            >
+              {{ keyword.trim() ? '没有匹配的磁力资源。' : '先输入关键字开始搜索。' }}
+            </div>
+            <div v-else class="divide-y divide-slate-200">
+              <button
+                v-for="item in searchResults"
+                :key="`${item.infoHash}-${item.mediaResourceId}`"
+                class="flex w-full flex-col gap-2 px-4 py-4 text-left transition hover:bg-slate-50"
+                @click="selectTorrent(item.infoHash)"
+              >
+                <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div class="min-w-0">
+                    <div class="truncate font-medium text-slate-900">{{ item.name }}</div>
+                    <div class="mt-1 text-xs text-slate-500">
+                      {{ item.mediaTitle || `媒体 #${item.mediaResourceId}` }} ·
+                      {{ item.category || '未分类' }}
+                    </div>
+                  </div>
+                  <div class="flex shrink-0 flex-wrap gap-2 text-xs text-slate-500">
+                    <span class="rounded-full bg-slate-100 px-2.5 py-1">{{
+                      formatSize(item.size)
+                    }}</span>
+                    <span class="rounded-full bg-slate-100 px-2.5 py-1"
+                      >做种者 {{ item.seeders ?? '—' }}</span
+                    >
+                    <span class="rounded-full bg-slate-100 px-2.5 py-1"
+                      >下载者 {{ item.leechers ?? '—' }}</span
+                    >
+                  </div>
+                </div>
+                <div class="text-xs text-slate-400">
+                  {{ item.infoHash }} · 入库 {{ formatDateTime(item.added) }}
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <div
+            v-if="searchPagination.totalPages > 1"
+            class="mt-4 flex items-center justify-between text-sm text-slate-600"
+          >
+            <span
+              >第 {{ searchPagination.page }} / {{ searchPagination.totalPages }} 页，共
+              {{ searchPagination.total }} 条</span
+            >
+            <div class="flex gap-2">
+              <button
+                class="rounded border border-slate-300 px-3 py-1.5 disabled:opacity-50"
+                :disabled="searchPagination.page <= 1 || searchLoading"
+                @click="searchTorrents(searchPagination.page - 1)"
+              >
+                上一页
+              </button>
+              <button
+                class="rounded border border-slate-300 px-3 py-1.5 disabled:opacity-50"
+                :disabled="searchPagination.page >= searchPagination.totalPages || searchLoading"
+                @click="searchTorrents(searchPagination.page + 1)"
+              >
+                下一页
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+          <h2 class="text-xl font-semibold text-gray-900">磁力解析</h2>
+          <p class="mt-1 text-sm text-gray-600">
+            粘贴 magnet 链接，快速查看解析出的 infoHash、tracker 和 web seed。
+          </p>
+
+          <form class="mt-4 space-y-3" @submit.prevent="parseMagnetUri">
+            <textarea
+              v-model="magnetInput"
+              rows="6"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              placeholder="magnet:?xt=urn:btih:..."
+            />
+            <button
+              type="submit"
+              class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              :disabled="parseLoading"
+            >
+              {{ parseLoading ? '解析中...' : '解析磁力链接' }}
+            </button>
+          </form>
+
+          <div
+            v-if="parseError"
+            class="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+          >
+            {{ parseError }}
+          </div>
+
+          <div
+            v-if="parsedMagnet"
+            class="mt-4 space-y-3 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700"
+          >
+            <div>
+              <span class="font-medium text-slate-900">名称：</span
+              >{{ parsedMagnet.name || '未命名' }}
+            </div>
+            <div>
+              <span class="font-medium text-slate-900">InfoHash：</span>{{ parsedMagnet.infoHash }}
+            </div>
+            <div>
+              <span class="font-medium text-slate-900">Tracker：</span
+              >{{ parsedMagnet.announce.length }}
+            </div>
+            <div>
+              <span class="font-medium text-slate-900">Web Seed：</span
+              >{{ parsedMagnet.urlList.length }}
+            </div>
+            <div>
+              <span class="font-medium text-slate-900">关键字：</span
+              >{{ parsedMagnet.keywords.join(' / ') || '无' }}
+            </div>
+            <div class="flex flex-wrap gap-2 pt-1">
+              <button
+                class="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white hover:bg-indigo-700"
+                @click="queueParsedMagnetTask"
+              >
+                加入下载任务
+              </button>
+              <RouterLink
+                :to="
+                  buildDownloadsLink(
+                    parsedMagnet.name || parsedMagnet.infoHash,
+                    parsedMagnet.infoHash,
+                  )
+                "
+                class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
+              >
+                查看下载任务
+              </RouterLink>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,0.95fr)_minmax(360px,1.05fr)_minmax(360px,1fr)]"
+    >
+      <div class="rounded-2xl bg-white p-6 shadow-sm">
+        <div class="mb-4 flex items-center justify-between">
           <div>
-            <div class="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <h2 class="text-xl font-semibold text-gray-900">磁力搜索</h2>
-                <p class="mt-1 text-sm text-gray-600">
-                  按标题、来源名或媒体描述搜索已入库的磁力资源。
-                </p>
+            <h2 class="text-xl font-semibold text-gray-900">热门磁力</h2>
+            <p class="mt-1 text-sm text-gray-600">按播放热度排序</p>
+          </div>
+          <button class="text-sm text-blue-600 hover:underline" @click="loadPopularTorrents">
+            刷新
+          </button>
+        </div>
+        <div v-if="popularLoading" class="py-8 text-center text-sm text-slate-500">加载中...</div>
+        <div
+          v-else-if="popularError"
+          class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+        >
+          {{ popularError }}
+        </div>
+        <div
+          v-else-if="popularTorrents.length === 0"
+          class="py-8 text-center text-sm text-slate-500"
+        >
+          当前分类下还没有热门磁力。
+        </div>
+        <div v-else class="space-y-3">
+          <button
+            v-for="item in popularTorrents"
+            :key="`popular-${item.infoHash}`"
+            class="w-full rounded-xl border border-slate-200 px-4 py-3 text-left transition hover:bg-slate-50"
+            @click="selectTorrent(item.infoHash)"
+          >
+            <div class="font-medium text-slate-900">{{ item.name }}</div>
+            <div class="mt-1 text-xs text-slate-500">
+              做种者 {{ item.seeders ?? '—' }} · {{ formatSize(item.size) }}
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="rounded-2xl bg-white p-6 shadow-sm">
+        <div class="mb-4 flex items-center justify-between">
+          <div>
+            <h2 class="text-xl font-semibold text-gray-900">最新磁力</h2>
+            <p class="mt-1 text-sm text-gray-600">按入库时间排序</p>
+          </div>
+          <button class="text-sm text-blue-600 hover:underline" @click="loadLatestTorrents">
+            刷新
+          </button>
+        </div>
+        <div v-if="latestLoading" class="py-8 text-center text-sm text-slate-500">加载中...</div>
+        <div
+          v-else-if="latestError"
+          class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+        >
+          {{ latestError }}
+        </div>
+        <div
+          v-else-if="latestTorrents.length === 0"
+          class="py-8 text-center text-sm text-slate-500"
+        >
+          当前分类下还没有最新磁力。
+        </div>
+        <div v-else class="space-y-3">
+          <button
+            v-for="item in latestTorrents"
+            :key="`latest-${item.infoHash}`"
+            class="w-full rounded-xl border border-slate-200 px-4 py-3 text-left transition hover:bg-slate-50"
+            @click="selectTorrent(item.infoHash)"
+          >
+            <div class="font-medium text-slate-900">{{ item.name }}</div>
+            <div class="mt-1 text-xs text-slate-500">
+              {{ formatDateTime(item.added) }} · {{ item.category || '未分类' }}
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="rounded-2xl bg-white p-6 shadow-sm">
+        <div class="mb-4">
+          <h2 class="text-xl font-semibold text-gray-900">磁力详情</h2>
+          <p class="mt-1 text-sm text-gray-600">查看已入库磁力的详细信息、健康状态和关联媒体。</p>
+        </div>
+
+        <div v-if="selectedLoading" class="py-10 text-center text-sm text-slate-500">
+          加载详情中...
+        </div>
+        <div
+          v-else-if="selectedError"
+          class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+        >
+          {{ selectedError }}
+        </div>
+        <div v-else-if="selectedInfo" class="space-y-4 text-sm text-slate-700">
+          <div>
+            <div class="text-lg font-semibold text-slate-900">
+              {{ selectedInfo.name || selectedInfo.infoHash }}
+            </div>
+            <div class="mt-1 text-xs text-slate-500">{{ selectedInfo.infoHash }}</div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="rounded-xl bg-slate-50 p-3">
+              <div class="text-xs text-slate-500">关联源数</div>
+              <div class="mt-1 text-lg font-semibold text-slate-900">
+                {{ selectedInfo.relatedSourcesCount }}
               </div>
             </div>
-
-            <form
-              class="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_180px_auto]"
-              @submit.prevent="searchTorrents(1)"
-            >
-              <input
-                v-model="keyword"
-                type="text"
-                class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                placeholder="输入关键字，如片名 / 资源组 / infoHash"
-              />
-              <select
-                v-model="category"
-                class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              >
-                <option value="">全部分类</option>
-                <option value="movie">电影</option>
-                <option value="tv_series">电视剧</option>
-                <option value="variety">综艺</option>
-                <option value="anime">动漫</option>
-                <option value="documentary">纪录片</option>
-              </select>
-              <button
-                type="submit"
-                class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-                :disabled="searchLoading"
-              >
-                {{ searchLoading ? '搜索中...' : '搜索' }}
-              </button>
-            </form>
-
-            <div
-              v-if="searchError"
-              class="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
-            >
-              {{ searchError }}
-            </div>
-
-            <div class="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white">
-              <div
-                class="border-b border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700"
-              >
-                搜索结果
-              </div>
-              <div v-if="searchLoading" class="px-4 py-10 text-center text-sm text-slate-500">
-                加载中...
-              </div>
-              <div
-                v-else-if="searchResults.length === 0"
-                class="px-4 py-10 text-center text-sm text-slate-500"
-              >
-                {{ keyword.trim() ? '没有匹配的磁力资源。' : '先输入关键字开始搜索。' }}
-              </div>
-              <div v-else class="divide-y divide-slate-200">
-                <button
-                  v-for="item in searchResults"
-                  :key="`${item.infoHash}-${item.mediaResourceId}`"
-                  class="flex w-full flex-col gap-2 px-4 py-4 text-left transition hover:bg-slate-50"
-                  @click="selectTorrent(item.infoHash)"
-                >
-                  <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div class="min-w-0">
-                      <div class="truncate font-medium text-slate-900">{{ item.name }}</div>
-                      <div class="mt-1 text-xs text-slate-500">
-                        {{ item.mediaTitle || `媒体 #${item.mediaResourceId}` }} ·
-                        {{ item.category || '未分类' }}
-                      </div>
-                    </div>
-                    <div class="flex shrink-0 flex-wrap gap-2 text-xs text-slate-500">
-                      <span class="rounded-full bg-slate-100 px-2.5 py-1">{{
-                        formatSize(item.size)
-                      }}</span>
-                      <span class="rounded-full bg-slate-100 px-2.5 py-1"
-                        >做种者 {{ item.seeders ?? '—' }}</span
-                      >
-                      <span class="rounded-full bg-slate-100 px-2.5 py-1"
-                        >下载者 {{ item.leechers ?? '—' }}</span
-                      >
-                    </div>
-                  </div>
-                  <div class="text-xs text-slate-400">
-                    {{ item.infoHash }} · 入库 {{ formatDateTime(item.added) }}
-                  </div>
-                </button>
+            <div class="rounded-xl bg-slate-50 p-3">
+              <div class="text-xs text-slate-500">体积</div>
+              <div class="mt-1 text-lg font-semibold text-slate-900">
+                {{ formatSize(selectedInfo.size) }}
               </div>
             </div>
+          </div>
 
-            <div
-              v-if="searchPagination.totalPages > 1"
-              class="mt-4 flex items-center justify-between text-sm text-slate-600"
-            >
+          <div v-if="selectedHealth" class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div class="mb-2 text-sm font-medium text-slate-900">健康状态</div>
+            <div class="flex flex-wrap gap-2 text-xs">
               <span
-                >第 {{ searchPagination.page }} / {{ searchPagination.totalPages }} 页，共
-                {{ searchPagination.total }} 条</span
+                :class="[
+                  'rounded-full px-2.5 py-1 font-medium',
+                  selectedHealth.isHealthy
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-rose-100 text-rose-700',
+                ]"
               >
-              <div class="flex gap-2">
-                <button
-                  class="rounded border border-slate-300 px-3 py-1.5 disabled:opacity-50"
-                  :disabled="searchPagination.page <= 1 || searchLoading"
-                  @click="searchTorrents(searchPagination.page - 1)"
-                >
-                  上一页
-                </button>
-                <button
-                  class="rounded border border-slate-300 px-3 py-1.5 disabled:opacity-50"
-                  :disabled="searchPagination.page >= searchPagination.totalPages || searchLoading"
-                  @click="searchTorrents(searchPagination.page + 1)"
-                >
-                  下一页
-                </button>
-              </div>
+                {{ selectedHealth.isHealthy ? '可用' : '异常' }}
+              </span>
+              <span class="rounded-full bg-slate-200 px-2.5 py-1 text-slate-700"
+                >做种者 {{ selectedHealth.seeders ?? '—' }}</span
+              >
+              <span class="rounded-full bg-slate-200 px-2.5 py-1 text-slate-700"
+                >下载者 {{ selectedHealth.leechers ?? '—' }}</span
+              >
+            </div>
+            <div class="mt-2 text-xs text-slate-500">
+              最近校验 {{ formatDateTime(selectedHealth.lastChecked) }}
             </div>
           </div>
 
-          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <h2 class="text-xl font-semibold text-gray-900">磁力解析</h2>
-            <p class="mt-1 text-sm text-gray-600">
-              粘贴 magnet 链接，快速查看解析出的 infoHash、tracker 和 web seed。
-            </p>
-
-            <form class="mt-4 space-y-3" @submit.prevent="parseMagnetUri">
-              <textarea
-                v-model="magnetInput"
-                rows="6"
-                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                placeholder="magnet:?xt=urn:btih:..."
-              />
+          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div class="mb-2 text-sm font-medium text-slate-900">快速操作</div>
+            <div class="flex flex-wrap gap-2">
               <button
-                type="submit"
-                class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-                :disabled="parseLoading"
+                class="rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700"
+                @click="copyMagnetUri"
               >
-                {{ parseLoading ? '解析中...' : '解析磁力链接' }}
+                复制 Magnet
               </button>
-            </form>
-
-            <div
-              v-if="parseError"
-              class="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
-            >
-              {{ parseError }}
-            </div>
-
-            <div
-              v-if="parsedMagnet"
-              class="mt-4 space-y-3 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700"
-            >
-              <div>
-                <span class="font-medium text-slate-900">名称：</span
-                >{{ parsedMagnet.name || '未命名' }}
-              </div>
-              <div>
-                <span class="font-medium text-slate-900">InfoHash：</span
-                >{{ parsedMagnet.infoHash }}
-              </div>
-              <div>
-                <span class="font-medium text-slate-900">Tracker：</span
-                >{{ parsedMagnet.announce.length }}
-              </div>
-              <div>
-                <span class="font-medium text-slate-900">Web Seed：</span
-                >{{ parsedMagnet.urlList.length }}
-              </div>
-              <div>
-                <span class="font-medium text-slate-900">关键字：</span
-                >{{ parsedMagnet.keywords.join(' / ') || '无' }}
-              </div>
-              <div class="flex flex-wrap gap-2 pt-1">
-                <button
-                  class="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white hover:bg-indigo-700"
-                  @click="queueParsedMagnetTask"
-                >
-                  加入下载任务
-                </button>
-                <RouterLink
-                  :to="
-                    buildDownloadsLink(
-                      parsedMagnet.name || parsedMagnet.infoHash,
-                      parsedMagnet.infoHash,
-                    )
-                  "
-                  class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
-                >
-                  查看下载任务
-                </RouterLink>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section
-        class="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,0.95fr)_minmax(360px,1.05fr)_minmax(360px,1fr)]"
-      >
-        <div class="rounded-2xl bg-white p-6 shadow-sm">
-          <div class="mb-4 flex items-center justify-between">
-            <div>
-              <h2 class="text-xl font-semibold text-gray-900">热门磁力</h2>
-              <p class="mt-1 text-sm text-gray-600">按播放热度排序</p>
-            </div>
-            <button class="text-sm text-blue-600 hover:underline" @click="loadPopularTorrents">
-              刷新
-            </button>
-          </div>
-          <div v-if="popularLoading" class="py-8 text-center text-sm text-slate-500">加载中...</div>
-          <div
-            v-else-if="popularError"
-            class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
-          >
-            {{ popularError }}
-          </div>
-          <div
-            v-else-if="popularTorrents.length === 0"
-            class="py-8 text-center text-sm text-slate-500"
-          >
-            当前分类下还没有热门磁力。
-          </div>
-          <div v-else class="space-y-3">
-            <button
-              v-for="item in popularTorrents"
-              :key="`popular-${item.infoHash}`"
-              class="w-full rounded-xl border border-slate-200 px-4 py-3 text-left transition hover:bg-slate-50"
-              @click="selectTorrent(item.infoHash)"
-            >
-              <div class="font-medium text-slate-900">{{ item.name }}</div>
-              <div class="mt-1 text-xs text-slate-500">
-                做种者 {{ item.seeders ?? '—' }} · {{ formatSize(item.size) }}
-              </div>
-            </button>
-          </div>
-        </div>
-
-        <div class="rounded-2xl bg-white p-6 shadow-sm">
-          <div class="mb-4 flex items-center justify-between">
-            <div>
-              <h2 class="text-xl font-semibold text-gray-900">最新磁力</h2>
-              <p class="mt-1 text-sm text-gray-600">按入库时间排序</p>
-            </div>
-            <button class="text-sm text-blue-600 hover:underline" @click="loadLatestTorrents">
-              刷新
-            </button>
-          </div>
-          <div v-if="latestLoading" class="py-8 text-center text-sm text-slate-500">加载中...</div>
-          <div
-            v-else-if="latestError"
-            class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
-          >
-            {{ latestError }}
-          </div>
-          <div
-            v-else-if="latestTorrents.length === 0"
-            class="py-8 text-center text-sm text-slate-500"
-          >
-            当前分类下还没有最新磁力。
-          </div>
-          <div v-else class="space-y-3">
-            <button
-              v-for="item in latestTorrents"
-              :key="`latest-${item.infoHash}`"
-              class="w-full rounded-xl border border-slate-200 px-4 py-3 text-left transition hover:bg-slate-50"
-              @click="selectTorrent(item.infoHash)"
-            >
-              <div class="font-medium text-slate-900">{{ item.name }}</div>
-              <div class="mt-1 text-xs text-slate-500">
-                {{ formatDateTime(item.added) }} · {{ item.category || '未分类' }}
-              </div>
-            </button>
-          </div>
-        </div>
-
-        <div class="rounded-2xl bg-white p-6 shadow-sm">
-          <div class="mb-4">
-            <h2 class="text-xl font-semibold text-gray-900">磁力详情</h2>
-            <p class="mt-1 text-sm text-gray-600">查看已入库磁力的详细信息、健康状态和关联媒体。</p>
-          </div>
-
-          <div v-if="selectedLoading" class="py-10 text-center text-sm text-slate-500">
-            加载详情中...
-          </div>
-          <div
-            v-else-if="selectedError"
-            class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
-          >
-            {{ selectedError }}
-          </div>
-          <div v-else-if="selectedInfo" class="space-y-4 text-sm text-slate-700">
-            <div>
-              <div class="text-lg font-semibold text-slate-900">
-                {{ selectedInfo.name || selectedInfo.infoHash }}
-              </div>
-              <div class="mt-1 text-xs text-slate-500">{{ selectedInfo.infoHash }}</div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-              <div class="rounded-xl bg-slate-50 p-3">
-                <div class="text-xs text-slate-500">关联源数</div>
-                <div class="mt-1 text-lg font-semibold text-slate-900">
-                  {{ selectedInfo.relatedSourcesCount }}
-                </div>
-              </div>
-              <div class="rounded-xl bg-slate-50 p-3">
-                <div class="text-xs text-slate-500">体积</div>
-                <div class="mt-1 text-lg font-semibold text-slate-900">
-                  {{ formatSize(selectedInfo.size) }}
-                </div>
-              </div>
-            </div>
-
-            <div v-if="selectedHealth" class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <div class="mb-2 text-sm font-medium text-slate-900">健康状态</div>
-              <div class="flex flex-wrap gap-2 text-xs">
-                <span
-                  :class="[
-                    'rounded-full px-2.5 py-1 font-medium',
-                    selectedHealth.isHealthy
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-rose-100 text-rose-700',
-                  ]"
-                >
-                  {{ selectedHealth.isHealthy ? '可用' : '异常' }}
-                </span>
-                <span class="rounded-full bg-slate-200 px-2.5 py-1 text-slate-700"
-                  >做种者 {{ selectedHealth.seeders ?? '—' }}</span
-                >
-                <span class="rounded-full bg-slate-200 px-2.5 py-1 text-slate-700"
-                  >下载者 {{ selectedHealth.leechers ?? '—' }}</span
-                >
-              </div>
-              <div class="mt-2 text-xs text-slate-500">
-                最近校验 {{ formatDateTime(selectedHealth.lastChecked) }}
-              </div>
-            </div>
-
-            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <div class="mb-2 text-sm font-medium text-slate-900">快速操作</div>
-              <div class="flex flex-wrap gap-2">
-                <button
-                  class="rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700"
-                  @click="copyMagnetUri"
-                >
-                  复制 Magnet
-                </button>
-                <button
-                  class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
-                  @click="copyInfoHash"
-                >
-                  复制 Hash
-                </button>
-                <button
-                  class="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
-                  @click="queueSelectedTorrentTask"
-                >
-                  加入下载任务
-                </button>
-                <button
-                  class="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
-                  @click="openMagnetInClient"
-                >
-                  启动本地客户端
-                </button>
-                <RouterLink
-                  :to="
-                    buildDownloadsLink(
-                      selectedInfo.name || selectedInfo.infoHash,
-                      selectedInfo.infoHash,
-                    )
-                  "
-                  class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
-                >
-                  查看下载任务
-                </RouterLink>
-              </div>
-              <div class="mt-3 text-xs text-slate-500">
-                Tracker {{ selectedInfo.announce.length }} · Web Seed
-                {{ selectedInfo.urlList.length }} · 关键字 {{ selectedInfo.keywords.length }}
-              </div>
-              <div
-                v-if="actionMessage"
-                class="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700"
+              <button
+                class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                @click="copyInfoHash"
               >
-                {{ actionMessage }}
-              </div>
+                复制 Hash
+              </button>
+              <button
+                class="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                @click="queueSelectedTorrentTask"
+              >
+                加入下载任务
+              </button>
+              <button
+                class="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                @click="openMagnetInClient"
+              >
+                启动本地客户端
+              </button>
+              <RouterLink
+                :to="
+                  buildDownloadsLink(
+                    selectedInfo.name || selectedInfo.infoHash,
+                    selectedInfo.infoHash,
+                  )
+                "
+                class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
+              >
+                查看下载任务
+              </RouterLink>
             </div>
-
-            <div>
-              <div class="mb-2 text-sm font-medium text-slate-900">关联媒体</div>
-              <div v-if="selectedInfo.linkedMedia.length === 0" class="text-xs text-slate-500">
-                暂无关联媒体
-              </div>
-              <div v-else class="space-y-2">
-                <RouterLink
-                  v-for="media in selectedInfo.linkedMedia"
-                  :key="media.id"
-                  :to="{ name: 'media-detail', params: { id: media.id } }"
-                  class="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 transition hover:bg-slate-50"
-                >
-                  <div>
-                    <div class="font-medium text-slate-900">{{ media.title }}</div>
-                    <div class="text-xs text-slate-500">{{ media.type }}</div>
-                  </div>
-                  <span class="text-xs text-blue-600">打开</span>
-                </RouterLink>
-              </div>
+            <div class="mt-3 text-xs text-slate-500">
+              Tracker {{ selectedInfo.announce.length }} · Web Seed
+              {{ selectedInfo.urlList.length }} · 关键字 {{ selectedInfo.keywords.length }}
             </div>
-
-            <details class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <summary class="cursor-pointer text-sm font-medium text-slate-900">
-                文件列表（{{ selectedInfo.files.length }}）
-              </summary>
-              <div class="mt-3 space-y-2 text-xs text-slate-600">
-                <div
-                  v-for="file in selectedInfo.files"
-                  :key="file.name"
-                  class="rounded-lg bg-white px-3 py-2"
-                >
-                  {{ file.name }}<span v-if="file.size"> · {{ formatSize(file.size) }}</span>
-                </div>
-              </div>
-            </details>
-
-            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <div class="mb-2 text-sm font-medium text-slate-900">最近操作</div>
-              <div v-if="recentActions.length === 0" class="text-xs text-slate-500">
-                暂无最近操作记录
-              </div>
-              <div v-else class="space-y-2 text-xs text-slate-600">
-                <div
-                  v-for="item in recentActions"
-                  :key="`${item.infoHash}-${item.timestamp}`"
-                  class="rounded-lg bg-white px-3 py-2"
-                >
-                  {{ item.action }} · {{ item.infoHash }} · {{ formatDateTime(item.timestamp) }}
-                </div>
-              </div>
+            <div
+              v-if="actionMessage"
+              class="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700"
+            >
+              {{ actionMessage }}
             </div>
           </div>
-          <div v-else class="py-10 text-center text-sm text-slate-500">
-            从左侧搜索结果或榜单中选择一个磁力资源。
+
+          <div>
+            <div class="mb-2 text-sm font-medium text-slate-900">关联媒体</div>
+            <div v-if="selectedInfo.linkedMedia.length === 0" class="text-xs text-slate-500">
+              暂无关联媒体
+            </div>
+            <div v-else class="space-y-2">
+              <RouterLink
+                v-for="media in selectedInfo.linkedMedia"
+                :key="media.id"
+                :to="{ name: 'media-detail', params: { id: media.id } }"
+                class="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 transition hover:bg-slate-50"
+              >
+                <div>
+                  <div class="font-medium text-slate-900">{{ media.title }}</div>
+                  <div class="text-xs text-slate-500">{{ media.type }}</div>
+                </div>
+                <span class="text-xs text-blue-600">打开</span>
+              </RouterLink>
+            </div>
+          </div>
+
+          <details class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <summary class="cursor-pointer text-sm font-medium text-slate-900">
+              文件列表（{{ selectedInfo.files.length }}）
+            </summary>
+            <div class="mt-3 space-y-2 text-xs text-slate-600">
+              <div
+                v-for="file in selectedInfo.files"
+                :key="file.name"
+                class="rounded-lg bg-white px-3 py-2"
+              >
+                {{ file.name }}<span v-if="file.size"> · {{ formatSize(file.size) }}</span>
+              </div>
+            </div>
+          </details>
+
+          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div class="mb-2 text-sm font-medium text-slate-900">最近操作</div>
+            <div v-if="recentActions.length === 0" class="text-xs text-slate-500">
+              暂无最近操作记录
+            </div>
+            <div v-else class="space-y-2 text-xs text-slate-600">
+              <div
+                v-for="item in recentActions"
+                :key="`${item.infoHash}-${item.timestamp}`"
+                class="rounded-lg bg-white px-3 py-2"
+              >
+                {{ item.action }} · {{ item.infoHash }} · {{ formatDateTime(item.timestamp) }}
+              </div>
+            </div>
           </div>
         </div>
-      </section>
+        <div v-else class="py-10 text-center text-sm text-slate-500">
+          从左侧搜索结果或榜单中选择一个磁力资源。
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 

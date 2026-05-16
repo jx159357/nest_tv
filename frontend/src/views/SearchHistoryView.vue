@@ -105,7 +105,25 @@
   import LoadingSpinner from '@/components/LoadingSpinner.vue';
   import EmptyState from '@/components/EmptyState.vue';
   import { usePageNotice } from '@/composables/usePageNotice';
-  import { getErrorMessage } from '@/utils/error-message';
+  const getErrorMessage = (error: unknown, fallback: string) => {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'response' in error &&
+      error.response &&
+      typeof error.response === 'object' &&
+      'data' in error.response &&
+      error.response.data &&
+      typeof error.response.data === 'object' &&
+      'message' in error.response.data
+    ) {
+      const message = (error.response.data as any).message;
+      if (Array.isArray(message)) return message.join('；');
+      if (typeof message === 'string') return message;
+    }
+    if (error instanceof Error && error.message) return error.message;
+    return fallback;
+  };
   import { log } from '@/utils/logger';
 
   const router = useRouter();

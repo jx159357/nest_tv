@@ -61,7 +61,9 @@ export class DanmakuGateway implements OnGatewayConnection, OnGatewayDisconnect 
         const payload = this.jwtService.verify(token);
         client.data = { userId: payload.sub || userId, videoId };
       } catch {
-        client.data = { userId, videoId };
+        this.logger.warn(`JWT验证失败，拒绝连接: userId=${userId}`);
+        client.disconnect();
+        return;
       }
 
       this.logger.log(`弹幕客户端连接: userId=${userId}, videoId=${videoId}`);
@@ -170,8 +172,19 @@ export class DanmakuGateway implements OnGatewayConnection, OnGatewayDisconnect 
     });
   }
 
-  sendDanmaku(message: { videoId: string; userId: number; danmakuId: number }): void {
+  sendDanmaku(message: { videoId: string; userId: number; danmakuId: number; text?: string; color?: string; type?: string }): void {
     this.logger.log(`发送弹幕通知: ${JSON.stringify(message)}`);
+    if (this.server && message.videoId) {
+      this.server.to(message.videoId).emit('danmaku-created', {
+        danmakuId: message.danmakuId,
+        videoId: message.videoId,
+        userId: message.userId,
+        text: message.text || '',
+        color: message.color || '#FFFFFF',
+        type: message.type || 'scroll',
+        timestamp: Date.now(),
+      });
+    }
   }
 
   getRoomInfo(videoId: string): {
@@ -230,8 +243,21 @@ export class DanmakuGateway implements OnGatewayConnection, OnGatewayDisconnect 
 
     this.logger.log(`用户 ${userId} 离开弹幕房间 ${videoId}`);
 
-    if (room.users.size === 0 && room.messageCount === 0) {
-      this.rooms.delete(videoId);
+    if (room.users.size === 0) {
+      if (room.messageCount === 0) {
+        this.rooms.delete(videoId);
+      } else {
+        setTimeout(
+          () => {
+            const currentRoom = this.rooms.get(videoId);
+            if (currentRoom && currentRoom.users.size === 0) {
+              this.rooms.delete(videoId);
+              this.logger.log(`清理空闲弹幕房间: ${videoId}`);
+            }
+          },
+          5 * 60 * 1000,
+        );
+      }
     } else {
       this.server.to(videoId).emit('room-info', {
         videoId,

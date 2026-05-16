@@ -1,4 +1,5 @@
 import { createApp } from 'vue';
+import './styles/design-system.css';
 import './style.css';
 import 'virtual:uno.css';
 import { createPinia } from 'pinia';
@@ -32,7 +33,7 @@ const registerServiceWorker = async () => {
         }
       });
 
-      navigator.serviceWorker.addEventListener('message', (event) => {
+      navigator.serviceWorker.addEventListener('message', event => {
         if (event.data.type === 'CACHE_CLEARED') {
           log.info('SW', 'Cache cleared at:', new Date(event.data.timestamp));
         }
@@ -50,25 +51,6 @@ const registerServiceWorker = async () => {
       }
     } catch (error) {
       log.error('SW', 'Service Worker registration failed:', error);
-    }
-  }
-};
-
-// 清理应用缓存
-const clearAppCache = async () => {
-  if ('caches' in window) {
-    try {
-      const cacheNames = await caches.keys();
-      await Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName.startsWith('nest-tv-')) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-      log.info('Cache', 'App cache cleared');
-    } catch (error) {
-      log.error('Cache', 'Failed to clear cache:', error);
     }
   }
 };

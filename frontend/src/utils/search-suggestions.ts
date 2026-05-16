@@ -68,14 +68,3 @@ export const clearRecentSearches = () => {
   return [] as string[];
 };
 
-export const filterRecentSearches = (keywords: string[], keyword: string, limit = 4) => {
-  const normalizedKeyword = normalizeSearchKeyword(keyword).toLocaleLowerCase();
-  if (!normalizedKeyword) {
-    return dedupeKeywords(keywords, limit);
-  }
-
-  return dedupeKeywords(
-    keywords.filter(item => item.toLocaleLowerCase().includes(normalizedKeyword)),
-    limit,
-  );
-};

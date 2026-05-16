@@ -72,7 +72,7 @@ export class ApiErrorHandler {
       apiError.message = '请求过于频繁，请稍后再试';
     }
 
-    if (error.response?.status >= 500) {
+    if ((error.response?.status ?? 0) >= 500) {
       // 服务器错误
       apiError.message = '服务器内部错误，请稍后再试';
     }
@@ -199,6 +199,14 @@ export class CacheManager {
 
 // 重试机制工具
 export class RetryHelper {
+  static isRetryable(error: unknown): boolean {
+    const status = (error as any)?.response?.status;
+    if (!status) return true;
+    if (status >= 500) return true;
+    if (status === 408 || status === 429) return true;
+    return false;
+  }
+
   static async retry<T>(
     fn: () => Promise<T>,
     maxAttempts: number = 3,
@@ -213,17 +221,15 @@ export class RetryHelper {
       } catch (error) {
         lastError = error;
 
-        if (attempt === maxAttempts) {
+        if (attempt === maxAttempts || !this.isRetryable(error)) {
           throw lastError;
         }
 
-        // 指数退避
         const waitTime = delay * Math.pow(backoff, attempt - 1);
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
     }
 
-    // TypeScript 要求必须有返回值，但实际上永远不会到达这里
     throw lastError;
   }
 }

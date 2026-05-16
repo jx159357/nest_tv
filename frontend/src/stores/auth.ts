@@ -24,11 +24,11 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authApi.login(credentials);
       const { accessToken, refreshToken, user: userData } = response;
 
-      token.value = accessToken;
-      refreshTokenValue.value = refreshToken;
+      token.value = accessToken ?? '';
+      refreshTokenValue.value = refreshToken ?? '';
       user.value = userData;
-      localStorage.setItem('token', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('token', accessToken ?? '');
+      localStorage.setItem('refreshToken', refreshToken ?? '');
 
       // 启动token刷新定时器
       startTokenRefreshTimer();
@@ -102,10 +102,10 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await authApi.refreshToken(refreshTokenValue.value);
       if (response?.accessToken) {
-        token.value = response.accessToken;
-        refreshTokenValue.value = response.refreshToken;
-        localStorage.setItem('token', response.accessToken);
-        localStorage.setItem('refreshToken', response.refreshToken);
+        token.value = response.accessToken ?? '';
+        refreshTokenValue.value = response.refreshToken ?? '';
+        localStorage.setItem('token', response.accessToken ?? '');
+        localStorage.setItem('refreshToken', response.refreshToken ?? '');
         return true;
       }
       return false;

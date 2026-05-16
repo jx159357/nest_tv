@@ -55,10 +55,6 @@ export class MediaResourceService {
   /**
    * 获取影视资源列表（支持筛选和分页）
    */
-  @Cacheable({
-    ttl: 600, // 10分钟缓存
-    key: 'media:list:default', // 简化缓存键
-  })
   async findAll(queryDto: MediaResourceQueryDto): Promise<{
     data: MediaResource[];
     total: number;
@@ -114,19 +110,17 @@ export class MediaResourceService {
       queryBuilder.andWhere('mediaResource.rating <= :maxRating', { maxRating });
     }
 
-    // 标签筛选 - 修复 JSON 查询语法
+    // 标签筛选
     if (tags) {
-      // 如果 tags 是字符串，先转换为数组（可能是逗号分隔的）
       const tagsArray = Array.isArray(tags) ? tags : tags.split(',').map(tag => tag.trim());
       if (tagsArray.length > 0) {
-        // 使用更简单的查询方式，避免 JSON 操作符的问题
         const tagConditions = tagsArray
-          .map((tag, index) => `JSON_CONTAINS(mediaResource.genres, :tag${index})`)
+          .map((tag, index) => `mediaResource.genres LIKE :tag${index}`)
           .join(' OR ');
 
         const tagParams = {};
         tagsArray.forEach((tag, index) => {
-          tagParams[`tag${index}`] = JSON.stringify(tag);
+          tagParams[`tag${index}`] = `%${tag}%`;
         });
 
         queryBuilder.andWhere(`(${tagConditions})`, tagParams);
@@ -268,6 +262,7 @@ export class MediaResourceService {
         rating: Not(0),
       },
       order: {
+        viewCount: 'DESC',
         rating: 'DESC',
       },
       take: limit,
@@ -284,6 +279,67 @@ export class MediaResourceService {
       },
       take: limit,
     });
+  }
+
+  /**
+   * 获取分类统计（类型 + 流派）
+   */
+  async getCategoryStats(): Promise<{
+    types: Array<{ name: string; label: string; count: number }>;
+    genres: Array<{ name: string; count: number }>;
+  }> {
+    const typeRows = await this.mediaResourceRepository
+      .createQueryBuilder('m')
+      .select('m.type', 'type')
+      .addSelect('COUNT(*)', 'count')
+      .where('m.isActive = :active', { active: true })
+      .groupBy('m.type')
+      .getRawMany<{ type: string; count: string }>();
+
+    const typeLabelMap: Record<string, string> = {
+      movie: '电影',
+      tv_series: '电视剧',
+      tv: '电视剧',
+      variety: '综艺',
+      anime: '动漫',
+      documentary: '纪录片',
+      short: '短剧',
+    };
+
+    const types = typeRows
+      .map(row => ({
+        name: row.type,
+        label: typeLabelMap[row.type] || row.type,
+        count: Number(row.count),
+      }))
+      .filter(t => t.count > 0)
+      .sort((a, b) => b.count - a.count);
+
+    const genreRows = await this.mediaResourceRepository
+      .createQueryBuilder('m')
+      .select('m.genres', 'genres')
+      .where('m.isActive = :active', { active: true })
+      .andWhere('m.genres IS NOT NULL')
+      .andWhere("m.genres != ''")
+      .getRawMany<{ genres: string }>();
+
+    const genreCountMap = new Map<string, number>();
+    for (const row of genreRows) {
+      const raw = row.genres;
+      if (!raw) continue;
+      const parsed = typeof raw === 'string' ? raw.split(',').map(s => s.trim()) : [];
+      for (const g of parsed) {
+        if (g) {
+          genreCountMap.set(g, (genreCountMap.get(g) || 0) + 1);
+        }
+      }
+    }
+
+    const genres = Array.from(genreCountMap.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    return { types, genres };
   }
 
   /**

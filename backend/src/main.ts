@@ -49,7 +49,10 @@ async function bootstrap() {
 
   // 设置响应头以确保字符编码正确
   app.use((req: Request, res: Response, next: NextFunction) => {
-    void req;
+    if (req.path.startsWith('/iptv/stream/proxy') || req.path.startsWith('/iptv/')) {
+      next();
+      return;
+    }
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     next();

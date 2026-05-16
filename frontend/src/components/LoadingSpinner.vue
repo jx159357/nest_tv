@@ -197,7 +197,12 @@
 
   .loading-spinner__skeleton-line {
     height: 0.75rem;
-    background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+    background: linear-gradient(
+      90deg,
+      var(--bg-tertiary) 25%,
+      var(--bg-secondary) 50%,
+      var(--bg-tertiary) 75%
+    );
     background-size: 200% 100%;
     border-radius: var(--radius-sm);
     animation: loading-spinner-skeleton 1.5s ease-in-out infinite;
@@ -345,7 +350,9 @@
   }
 
   @keyframes loading-spinner-pulse {
-    0%, 80%, 100% {
+    0%,
+    80%,
+    100% {
       transform: scale(0);
       opacity: 0.5;
     }
@@ -377,17 +384,17 @@
   }
 
   /* 暗色模式 */
-  [data-theme="dark"] .loading-spinner__circle-inner,
+  [data-theme='dark'] .loading-spinner__circle-inner,
   .dark .loading-spinner__circle-inner {
     border-color: var(--bg-tertiary);
   }
 
-  [data-theme="dark"] .loading-spinner__text,
+  [data-theme='dark'] .loading-spinner__text,
   .dark .loading-spinner__text {
     color: var(--text-secondary);
   }
 
-  [data-theme="dark"] .loading-spinner__progress,
+  [data-theme='dark'] .loading-spinner__progress,
   .dark .loading-spinner__progress {
     color: var(--text-muted);
   }

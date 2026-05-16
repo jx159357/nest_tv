@@ -31,19 +31,35 @@ export class InitializationService implements OnModuleInit {
   }
 
   /**
-   * 确保管理员账号存在
+   * 确保管理员账号存在且可用
    */
   private async ensureAdminUser() {
+    const defaultPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'admin123';
     const adminUser = await this.userRepository.findOne({
       where: { username: 'admin' },
+      select: ['id', 'username', 'password', 'isActive', 'role'],
     });
 
     if (adminUser) {
-      this.logger.log('管理员账号已存在，跳过创建');
+      const issues: string[] = [];
+      if (!adminUser.password) issues.push('密码为空');
+      if (!adminUser.isActive) issues.push('账号已禁用');
+      if (adminUser.role !== 'superAdmin') issues.push(`角色异常: ${adminUser.role}`);
+
+      if (issues.length > 0) {
+        this.logger.warn(`管理员账号异常（${issues.join('，')}），正在修复...`);
+        const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+        adminUser.password = hashedPassword;
+        adminUser.isActive = true;
+        adminUser.role = 'superAdmin';
+        await this.userRepository.save(adminUser);
+        this.logger.log('管理员账号已修复');
+      } else {
+        this.logger.log('管理员账号正常');
+      }
       return;
     }
 
-    const defaultPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'admin123';
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
     const admin = this.userRepository.create({
       username: 'admin',
