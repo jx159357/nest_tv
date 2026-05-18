@@ -1,0 +1,473 @@
+- generic [ref=e4]:
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - link "Nest TV" [ref=e7] [cursor=pointer]:
+        - /url: /
+        - img [ref=e8]
+        - generic [ref=e10]: Nest TV
+      - navigation [ref=e11]:
+        - link "首页" [ref=e12] [cursor=pointer]:
+          - /url: /
+          - img [ref=e13]
+          - generic [ref=e16]: 首页
+        - link "推荐" [ref=e17] [cursor=pointer]:
+          - /url: /recommendations
+          - img [ref=e18]
+          - generic [ref=e20]: 推荐
+        - link "IPTV" [ref=e21] [cursor=pointer]:
+          - /url: /iptv
+          - img [ref=e22]
+          - generic [ref=e24]: IPTV
+        - link "分类" [ref=e25] [cursor=pointer]:
+          - /url: /categories
+          - img [ref=e26]
+          - generic [ref=e31]: 分类
+        - link "下载" [ref=e32] [cursor=pointer]:
+          - /url: /torrent
+          - img [ref=e33]
+          - generic [ref=e36]: 下载
+      - generic [ref=e37]:
+        - button "切换到浅色模式" [ref=e38] [cursor=pointer]:
+          - img [ref=e39]
+        - generic [ref=e45]:
+          - img [ref=e46]
+          - textbox "搜索影视、电视剧..." [ref=e49]
+        - generic [ref=e50]:
+          - link "登录" [ref=e51] [cursor=pointer]:
+            - /url: /login
+          - link "注册" [ref=e52] [cursor=pointer]:
+            - /url: /register
+  - main [ref=e53]:
+    - generic [ref=e54]:
+      - generic [ref=e56]:
+        - generic [ref=e57]:
+          - generic [ref=e58]:
+            - img "Big Buck Bunny" [ref=e60]
+            - generic [ref=e62]:
+              - generic [ref=e63]:
+                - generic [ref=e64]: 精选电影
+                - heading "Big Buck Bunny" [level=2] [ref=e65]
+                - paragraph [ref=e66]: Blender 基金会出品的开源动画短片，讲述一只大兔子和三只小动物的故事。
+                - generic [ref=e67]:
+                  - generic [ref=e68]:
+                    - img [ref=e69]
+                    - text: "8.0"
+                  - generic [ref=e71]: 电影
+                  - generic [ref=e72]: 动画
+                - generic [ref=e73]:
+                  - button "立即观看" [ref=e74] [cursor=pointer]:
+                    - img [ref=e75]
+                    - text: 立即观看
+                  - button "详情" [ref=e77] [cursor=pointer]:
+                    - img [ref=e78]
+                    - text: 详情
+              - img "Big Buck Bunny" [ref=e81]
+          - generic [ref=e82]:
+            - img "Tears of Steel" [ref=e84]
+            - generic [ref=e86]:
+              - generic [ref=e87]:
+                - generic [ref=e88]: 精选电影
+                - heading "Tears of Steel" [level=2] [ref=e89]
+                - paragraph [ref=e90]: Blender 基金会出品的科幻短片，展示了真人与 CGI 结合的视觉效果。
+                - generic [ref=e91]:
+                  - generic [ref=e92]:
+                    - img [ref=e93]
+                    - text: "7.0"
+                  - generic [ref=e95]: 电影
+                  - generic [ref=e96]: 科幻
+                - generic [ref=e97]:
+                  - button "立即观看" [ref=e98] [cursor=pointer]:
+                    - img [ref=e99]
+                    - text: 立即观看
+                  - button "详情" [ref=e101] [cursor=pointer]:
+                    - img [ref=e102]
+                    - text: 详情
+              - img "Tears of Steel" [ref=e105]
+          - generic [ref=e106]:
+            - img "百家讲坛" [ref=e108]
+            - generic [ref=e110]:
+              - generic [ref=e111]:
+                - generic [ref=e112]: 口碑佳作
+                - heading "百家讲坛" [level=2] [ref=e113]
+                - paragraph [ref=e114]: 《百家讲坛》是中央电视台科教频道（CCTV-10）2001年7月9日开播的讲座式栏目，栏目宗旨为建构时代常识，享受智慧人生。选择观众最感兴趣、最前沿、最吸引人的选题。追求学术创新，鼓励思想个性，强调雅俗共赏，重视传播互动。栏目选材广泛，曾涉及文化、生物、医学、经济、军事等各个方面，现多以文化题材为主，并较多涉及中国历史、中国文化。
+                - generic [ref=e115]:
+                  - generic [ref=e116]:
+                    - img [ref=e117]
+                    - text: "9.0"
+                  - generic [ref=e119]: 电影
+                  - generic [ref=e120]: "2001"
+                  - generic [ref=e121]: 脱口秀
+                - generic [ref=e122]:
+                  - button "立即观看" [ref=e123] [cursor=pointer]:
+                    - img [ref=e124]
+                    - text: 立即观看
+                  - button "详情" [ref=e126] [cursor=pointer]:
+                    - img [ref=e127]
+                    - text: 详情
+              - img "百家讲坛" [ref=e130]
+          - generic [ref=e131]:
+            - img "胜者即是正义2" [ref=e133]
+            - generic [ref=e135]:
+              - generic [ref=e136]:
+                - generic [ref=e137]: 口碑佳作
+                - heading "胜者即是正义2" [level=2] [ref=e138]
+                - paragraph [ref=e139]: “世纪恶女”安藤贵和（小雪 饰）毒杀情夫一案震惊全国，从而也揭开《Legal High 2》的序幕。依然不改本性的古美门研介（堺雅人 饰）冒天下之大不韪出任贵和的律师，为其进行无罪辩护，谁知却遭到
+                - generic [ref=e140]:
+                  - generic [ref=e141]:
+                    - img [ref=e142]
+                    - text: "9.0"
+                  - generic [ref=e144]: 电影
+                  - generic [ref=e145]: "2013"
+                  - generic [ref=e146]: 日本
+                - generic [ref=e147]:
+                  - button "立即观看" [ref=e148] [cursor=pointer]:
+                    - img [ref=e149]
+                    - text: 立即观看
+                  - button "详情" [ref=e151] [cursor=pointer]:
+                    - img [ref=e152]
+                    - text: 详情
+              - img "胜者即是正义2" [ref=e155]
+          - generic [ref=e156]:
+            - img "Sintel" [ref=e158]
+            - generic [ref=e160]:
+              - generic [ref=e161]:
+                - generic [ref=e162]: 精选电影
+                - heading "Sintel" [level=2] [ref=e163]
+                - paragraph [ref=e164]: Blender 基金会出品的开源奇幻动画短片，讲述少女 Sintel 寻找小龙的旅程。
+                - generic [ref=e165]:
+                  - generic [ref=e166]:
+                    - img [ref=e167]
+                    - text: "8.0"
+                  - generic [ref=e169]: 电影
+                  - generic [ref=e170]: 动画
+                - generic [ref=e171]:
+                  - button "立即观看" [ref=e172] [cursor=pointer]:
+                    - img [ref=e173]
+                    - text: 立即观看
+                  - button "详情" [ref=e175] [cursor=pointer]:
+                    - img [ref=e176]
+                    - text: 详情
+              - img "Sintel" [ref=e179]
+        - button [ref=e180] [cursor=pointer]:
+          - img [ref=e181]
+        - button [ref=e183] [cursor=pointer]:
+          - img [ref=e184]
+        - generic [ref=e186]:
+          - button [ref=e187] [cursor=pointer]
+          - button [ref=e188] [cursor=pointer]
+          - button [ref=e189] [cursor=pointer]
+          - button [ref=e190] [cursor=pointer]
+          - button [ref=e191] [cursor=pointer]
+      - generic [ref=e192]:
+        - generic [ref=e193]:
+          - heading "热门推荐" [level=2] [ref=e194]:
+            - img [ref=e195]
+            - text: 热门推荐
+          - link "查看更多" [ref=e197] [cursor=pointer]:
+            - /url: /recommendations
+            - text: 查看更多
+            - img [ref=e198]
+        - generic [ref=e200]:
+          - generic [ref=e657] [cursor=pointer]:
+            - generic [ref=e658]:
+              - img [ref=e660]
+              - img [ref=e664]
+              - generic [ref=e666]:
+                - img [ref=e667]
+                - generic [ref=e669]: "8.0"
+              - generic [ref=e670]: 电影
+            - generic [ref=e671]:
+              - heading "Big Buck Bunny" [level=3] [ref=e672]
+              - generic [ref=e674]: 21次播放
+          - generic [ref=e675] [cursor=pointer]:
+            - generic [ref=e676]:
+              - img [ref=e678]
+              - img [ref=e682]
+              - generic [ref=e684]:
+                - img [ref=e685]
+                - generic [ref=e687]: "7.0"
+              - generic [ref=e688]: 电影
+            - generic [ref=e689]:
+              - heading "Tears of Steel" [level=3] [ref=e690]
+              - generic [ref=e692]: 8次播放
+          - generic [ref=e693] [cursor=pointer]:
+            - generic [ref=e694]:
+              - img "百家讲坛" [ref=e695]
+              - img [ref=e698]
+              - generic [ref=e700]:
+                - img [ref=e701]
+                - generic [ref=e703]: "9.0"
+              - generic [ref=e704]: 电影
+            - generic [ref=e705]:
+              - heading "百家讲坛" [level=3] [ref=e706]
+              - generic [ref=e707]:
+                - generic [ref=e708]: 3次播放
+                - generic [ref=e709]: 2001年1月
+          - generic [ref=e710] [cursor=pointer]:
+            - generic [ref=e711]:
+              - img "胜者即是正义2" [ref=e712]
+              - img [ref=e715]
+              - generic [ref=e717]:
+                - img [ref=e718]
+                - generic [ref=e720]: "9.0"
+              - generic [ref=e721]: 电影
+            - generic [ref=e722]:
+              - heading "胜者即是正义2" [level=3] [ref=e723]
+              - generic [ref=e724]:
+                - generic [ref=e725]: 2次播放
+                - generic [ref=e726]: 2013年1月
+          - generic [ref=e727] [cursor=pointer]:
+            - generic [ref=e728]:
+              - img [ref=e730]
+              - img [ref=e734]
+              - generic [ref=e736]:
+                - img [ref=e737]
+                - generic [ref=e739]: "8.0"
+              - generic [ref=e740]: 电影
+            - generic [ref=e741]:
+              - heading "Sintel" [level=3] [ref=e742]
+              - generic [ref=e744]: 2次播放
+          - generic [ref=e745] [cursor=pointer]:
+            - generic [ref=e746]:
+              - img "变蝇人2" [ref=e747]
+              - img [ref=e750]
+              - generic [ref=e752]:
+                - img [ref=e753]
+                - generic [ref=e755]: "6.0"
+              - generic [ref=e756]: 电影
+            - generic [ref=e757]:
+              - heading "变蝇人2" [level=3] [ref=e758]
+              - generic [ref=e759]:
+                - generic [ref=e760]: 2次播放
+                - generic [ref=e761]: 1989年1月
+          - generic [ref=e762] [cursor=pointer]:
+            - generic [ref=e763]:
+              - img "猫和老鼠1965" [ref=e764]
+              - img [ref=e767]
+              - generic [ref=e769]:
+                - img [ref=e770]
+                - generic [ref=e772]: "9.0"
+              - generic [ref=e773]: 电影
+            - generic [ref=e774]:
+              - heading "猫和老鼠1965" [level=3] [ref=e775]
+              - generic [ref=e776]:
+                - generic [ref=e777]: 1次播放
+                - generic [ref=e778]: 1965年1月
+          - generic [ref=e779] [cursor=pointer]:
+            - generic [ref=e780]:
+              - img "中国通史" [ref=e781]
+              - img [ref=e784]
+              - generic [ref=e786]:
+                - img [ref=e787]
+                - generic [ref=e789]: "9.0"
+              - generic [ref=e790]: 电影
+            - generic [ref=e791]:
+              - heading "中国通史" [level=3] [ref=e792]
+              - generic [ref=e793]:
+                - generic [ref=e794]: 1次播放
+                - generic [ref=e795]: 2013年1月
+      - generic [ref=e350]:
+        - heading "最新上线" [level=2] [ref=e352]:
+          - img [ref=e353]
+          - text: 最新上线
+        - generic [ref=e356]:
+          - generic [ref=e796] [cursor=pointer]:
+            - generic [ref=e797]:
+              - img [ref=e801]
+              - generic [ref=e803]:
+                - img [ref=e804]
+                - generic [ref=e806]: "6.0"
+              - generic [ref=e807]: 电影
+            - generic [ref=e808]:
+              - heading "【狂野时代】" [level=3] [ref=e809]
+              - generic [ref=e811]: 2026年3月
+          - generic [ref=e812] [cursor=pointer]:
+            - generic [ref=e813]:
+              - img [ref=e817]
+              - generic [ref=e819]:
+                - img [ref=e820]
+                - generic [ref=e822]: "6.0"
+              - generic [ref=e823]: 电影
+            - generic [ref=e824]:
+              - heading "【不过是上班】" [level=3] [ref=e825]
+              - generic [ref=e827]: 2026年3月
+          - generic [ref=e828] [cursor=pointer]:
+            - generic [ref=e829]:
+              - img [ref=e833]
+              - generic [ref=e835]:
+                - img [ref=e836]
+                - generic [ref=e838]: "6.0"
+              - generic [ref=e839]: 电影
+            - generic [ref=e840]:
+              - heading "【龙与地下城：侠盗荣耀】" [level=3] [ref=e841]
+              - generic [ref=e843]: 2026年3月
+          - generic [ref=e844] [cursor=pointer]:
+            - generic [ref=e845]:
+              - img [ref=e849]
+              - generic [ref=e851]:
+                - img [ref=e852]
+                - generic [ref=e854]: "6.0"
+              - generic [ref=e855]: 电影
+            - generic [ref=e856]:
+              - heading "【我的朋友安德烈】" [level=3] [ref=e857]
+              - generic [ref=e858]:
+                - generic [ref=e859]: 1次播放
+                - generic [ref=e860]: 2026年3月
+          - generic [ref=e861] [cursor=pointer]:
+            - generic [ref=e862]:
+              - img [ref=e866]
+              - generic [ref=e868]:
+                - img [ref=e869]
+                - generic [ref=e871]: "6.0"
+              - generic [ref=e872]: 电影
+            - generic [ref=e873]:
+              - heading "【用武之地】" [level=3] [ref=e874]
+              - generic [ref=e876]: 2026年3月
+          - generic [ref=e877] [cursor=pointer]:
+            - generic [ref=e878]:
+              - img [ref=e882]
+              - generic [ref=e884]:
+                - img [ref=e885]
+                - generic [ref=e887]: "6.0"
+              - generic [ref=e888]: 电影
+            - generic [ref=e889]:
+              - heading "【巅峰猎杀】" [level=3] [ref=e890]
+              - generic [ref=e892]: 2026年4月
+          - generic [ref=e893] [cursor=pointer]:
+            - generic [ref=e894]:
+              - img [ref=e898]
+              - generic [ref=e900]:
+                - img [ref=e901]
+                - generic [ref=e903]: "6.0"
+              - generic [ref=e904]: 电影
+            - generic [ref=e905]:
+              - heading "【智能女佣】" [level=3] [ref=e906]
+              - generic [ref=e908]: 2026年4月
+          - generic [ref=e909] [cursor=pointer]:
+            - generic [ref=e910]:
+              - img [ref=e914]
+              - generic [ref=e916]:
+                - img [ref=e917]
+                - generic [ref=e919]: "6.0"
+              - generic [ref=e920]: 电影
+            - generic [ref=e921]:
+              - heading "【桑格豪森的渴望】" [level=3] [ref=e922]
+              - generic [ref=e924]: 2026年4月
+      - generic [ref=e486]:
+        - heading "高分佳作" [level=2] [ref=e488]:
+          - img [ref=e489]
+          - text: 高分佳作
+        - generic [ref=e491]:
+          - generic [ref=e925] [cursor=pointer]:
+            - generic [ref=e926]:
+              - img "百家讲坛" [ref=e927]
+              - img [ref=e930]
+              - generic [ref=e932]:
+                - img [ref=e933]
+                - generic [ref=e935]: "9.0"
+              - generic [ref=e936]: 电影
+            - generic [ref=e937]:
+              - heading "百家讲坛" [level=3] [ref=e938]
+              - generic [ref=e939]:
+                - generic [ref=e940]: 3次播放
+                - generic [ref=e941]: 2001年1月
+          - generic [ref=e942] [cursor=pointer]:
+            - generic [ref=e943]:
+              - img "胜者即是正义2" [ref=e944]
+              - img [ref=e947]
+              - generic [ref=e949]:
+                - img [ref=e950]
+                - generic [ref=e952]: "9.0"
+              - generic [ref=e953]: 电影
+            - generic [ref=e954]:
+              - heading "胜者即是正义2" [level=3] [ref=e955]
+              - generic [ref=e956]:
+                - generic [ref=e957]: 2次播放
+                - generic [ref=e958]: 2013年1月
+          - generic [ref=e959] [cursor=pointer]:
+            - generic [ref=e960]:
+              - img "猫和老鼠1965" [ref=e961]
+              - img [ref=e964]
+              - generic [ref=e966]:
+                - img [ref=e967]
+                - generic [ref=e969]: "9.0"
+              - generic [ref=e970]: 电影
+            - generic [ref=e971]:
+              - heading "猫和老鼠1965" [level=3] [ref=e972]
+              - generic [ref=e973]:
+                - generic [ref=e974]: 1次播放
+                - generic [ref=e975]: 1965年1月
+          - generic [ref=e976] [cursor=pointer]:
+            - generic [ref=e977]:
+              - img "中国通史" [ref=e978]
+              - img [ref=e981]
+              - generic [ref=e983]:
+                - img [ref=e984]
+                - generic [ref=e986]: "9.0"
+              - generic [ref=e987]: 电影
+            - generic [ref=e988]:
+              - heading "中国通史" [level=3] [ref=e989]
+              - generic [ref=e990]:
+                - generic [ref=e991]: 1次播放
+                - generic [ref=e992]: 2013年1月
+          - generic [ref=e993] [cursor=pointer]:
+            - generic [ref=e994]:
+              - img "火影忍者" [ref=e995]
+              - img [ref=e998]
+              - generic [ref=e1000]:
+                - img [ref=e1001]
+                - generic [ref=e1003]: "9.0"
+              - generic [ref=e1004]: 电影
+            - generic [ref=e1005]:
+              - heading "火影忍者" [level=3] [ref=e1006]
+              - generic [ref=e1007]:
+                - generic [ref=e1008]: 1次播放
+                - generic [ref=e1009]: 2002年1月
+          - generic [ref=e1010] [cursor=pointer]:
+            - generic [ref=e1011]:
+              - img "龙珠Z" [ref=e1012]
+              - img [ref=e1015]
+              - generic [ref=e1017]:
+                - img [ref=e1018]
+                - generic [ref=e1020]: "9.0"
+              - generic [ref=e1021]: 电影
+            - generic [ref=e1022]:
+              - heading "龙珠Z" [level=3] [ref=e1023]
+              - generic [ref=e1024]:
+                - generic [ref=e1025]: 1次播放
+                - generic [ref=e1026]: 1989年1月
+          - generic [ref=e1027] [cursor=pointer]:
+            - generic [ref=e1028]:
+              - img "金田一少年事件簿（1997）" [ref=e1030]
+              - img [ref=e1033]
+              - generic [ref=e1035]:
+                - img [ref=e1036]
+                - generic [ref=e1038]: "9.0"
+              - generic [ref=e1039]: 电影
+            - generic [ref=e1040]:
+              - heading "金田一少年事件簿（1997）" [level=3] [ref=e1041]
+              - generic [ref=e1043]: 1997年1月
+          - generic [ref=e1044] [cursor=pointer]:
+            - generic [ref=e1045]:
+              - img "金田一少年事件簿（1997）" [ref=e1046]
+              - img [ref=e1049]
+              - generic [ref=e1051]:
+                - img [ref=e1052]
+                - generic [ref=e1054]: "9.0"
+              - generic [ref=e1055]: 电影
+            - generic [ref=e1056]:
+              - heading "金田一少年事件簿（1997）" [level=3] [ref=e1057]
+              - generic [ref=e1059]: 1997年1月
+  - contentinfo [ref=e642]:
+    - generic [ref=e643]:
+      - generic [ref=e644]:
+        - text: Nest TV
+        - paragraph [ref=e645]: 高清影视在线观看平台
+      - generic [ref=e646]:
+        - link "首页" [ref=e647] [cursor=pointer]:
+          - /url: /
+        - link "推荐" [ref=e648] [cursor=pointer]:
+          - /url: /recommendations
+        - link "IPTV" [ref=e649] [cursor=pointer]:
+          - /url: /iptv
+      - generic [ref=e650]: © 2026 Nest TV. All rights reserved.

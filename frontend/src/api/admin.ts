@@ -128,6 +128,42 @@ export interface AdminWatchHistoryItem {
   };
 }
 
+export interface AdminCrawlerTarget {
+  id: number;
+  name: string;
+  baseUrl: string;
+  selectors: {
+    title: string;
+    description: string;
+    poster: string;
+    rating: string;
+    director: string;
+    actors: string;
+    genres: string;
+    releaseDate: string;
+    downloadUrls: string;
+  };
+  listingUrls?: string[];
+  enabled: boolean;
+  isActive: boolean;
+  priority: number;
+  maxPages: number;
+  respectRobotsTxt: boolean;
+  requestDelay: number;
+  description?: string;
+  statistics?: {
+    totalMedia?: number;
+    activeMedia?: number;
+    totalPlaySources?: number;
+    activePlaySources?: number;
+    lastCrawledAt?: string;
+    averageQualityScore?: number;
+  };
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AdminDownloadTaskItem {
   id: number;
   clientId: string;
@@ -253,4 +289,33 @@ export const adminApi = {
     downloadTaskId?: number;
     logId?: number;
   }) => ApiClient.get<AdminPaginatedResponse<AdminLogItem>>('/admin/logs', { params }, false),
+
+  // ==================== 数据源管理 ====================
+
+  getCrawlerTargets: () =>
+    ApiClient.get<AdminCrawlerTarget[]>('/admin/crawler-targets', {}, false),
+
+  getActiveCrawlerTarget: () =>
+    ApiClient.get<AdminCrawlerTarget | null>('/admin/crawler-targets/active', {}, false),
+
+  getCrawlerTargetById: (id: number) =>
+    ApiClient.get<AdminCrawlerTarget>(`/admin/crawler-targets/${id}`, {}, false),
+
+  createCrawlerTarget: (data: Partial<AdminCrawlerTarget>) =>
+    ApiClient.post<AdminCrawlerTarget>('/admin/crawler-targets', data),
+
+  updateCrawlerTarget: (id: number, data: Partial<AdminCrawlerTarget>) =>
+    ApiClient.patch<AdminCrawlerTarget>(`/admin/crawler-targets/${id}`, data),
+
+  deleteCrawlerTarget: (id: number) =>
+    ApiClient.delete<void>(`/admin/crawler-targets/${id}`),
+
+  activateCrawlerTarget: (id: number) =>
+    ApiClient.post<AdminCrawlerTarget>(`/admin/crawler-targets/${id}/activate`),
+
+  deactivateCrawlerTarget: (id: number) =>
+    ApiClient.post<AdminCrawlerTarget>(`/admin/crawler-targets/${id}/deactivate`),
+
+  toggleCrawlerTargetEnabled: (id: number) =>
+    ApiClient.post<AdminCrawlerTarget>(`/admin/crawler-targets/${id}/toggle-enabled`),
 };

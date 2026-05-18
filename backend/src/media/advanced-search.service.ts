@@ -108,10 +108,9 @@ export class AdvancedSearchService {
     if (keyword.trim()) {
       const keywordPattern = `%${keyword.trim()}%`;
       queryBuilder.andWhere(
-        `(mediaResource.title LIKE :keyword OR 
-          mediaResource.description LIKE :keyword OR 
-          mediaResource.originalTitle LIKE :keyword OR 
-          mediaResource.director LIKE :keyword OR 
+        `(mediaResource.title LIKE :keyword OR
+          mediaResource.description LIKE :keyword OR
+          mediaResource.director LIKE :keyword OR
           mediaResource.actors LIKE :keyword)`,
         { keyword: keywordPattern },
       );

@@ -12,6 +12,7 @@
         ]"
         :style="getDanmakuStyle(danmaku)"
         @click="reportMode && handleReportClick(danmaku)"
+        @animationend="handleAnimationEnd(danmaku)"
       >
         <span class="danmaku-text">{{ danmaku.text }}</span>
       </div>
@@ -733,6 +734,7 @@
 
     if (danmaku.type === 'scroll') {
       baseStyle.top = `${lanePos ?? 10}%`;
+      baseStyle.left = '100%';
       const duration = Math.max(6, (11 - settings.speed) * 1.5);
       baseStyle.animation = `danmaku-scroll-lr ${duration}s linear forwards`;
     } else if (danmaku.type === 'top') {
@@ -740,14 +742,25 @@
       baseStyle.left = '50%';
       baseStyle.transform = 'translateX(-50%)';
       baseStyle.textAlign = 'center';
+      baseStyle.animation = 'danmaku-fade-in-out 4s ease forwards';
     } else if (danmaku.type === 'bottom') {
       baseStyle.bottom = `${lanePos ?? 2}%`;
       baseStyle.left = '50%';
       baseStyle.transform = 'translateX(-50%)';
       baseStyle.textAlign = 'center';
+      baseStyle.animation = 'danmaku-fade-in-out 4s ease forwards';
     }
 
     return baseStyle;
+  };
+
+  const handleAnimationEnd = (danmaku: DanmakuMessage) => {
+    if (danmaku.type === 'top' || danmaku.type === 'bottom') {
+      const idx = danmakuList.value.findIndex(d => d.id === danmaku.id);
+      if (idx !== -1) {
+        danmakuList.value.splice(idx, 1);
+      }
+    }
   };
 
   // UI 交互
@@ -847,6 +860,7 @@
     overflow: hidden;
     background: transparent;
     z-index: 9999;
+    pointer-events: none;
   }
 
   .danmaku-container {
@@ -868,23 +882,12 @@
     user-select: none;
     pointer-events: none;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-    will-change: left, transform;
+    will-change: left, transform, opacity;
   }
 
   .danmaku-highlighted {
     font-weight: bold;
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
-  }
-
-  @keyframes danmaku-scroll-lr {
-    from {
-      left: 100%;
-      transform: translateX(0);
-    }
-    to {
-      left: -2%;
-      transform: translateX(-100%);
-    }
   }
 
   .danmaku-controls {
@@ -1309,12 +1312,12 @@
     pointer-events: all;
   }
 
-  .danmaku-clickable {
+  .danmaku-item.danmaku-clickable {
     cursor: pointer;
     pointer-events: all;
   }
 
-  .danmaku-clickable:hover {
+  .danmaku-item.danmaku-clickable:hover {
     opacity: 0.8;
     text-decoration: underline;
   }
@@ -1419,5 +1422,31 @@
 
   .danmaku-settings-panel::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
+  }
+</style>
+
+<style>
+  @keyframes danmaku-scroll-lr {
+    from {
+      left: 100%;
+    }
+    to {
+      left: -10%;
+    }
+  }
+
+  @keyframes danmaku-fade-in-out {
+    0% {
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+    }
+    80% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
   }
 </style>

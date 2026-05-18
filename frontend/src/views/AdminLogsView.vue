@@ -2,35 +2,35 @@
   <div class="space-y-6">
     <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-slate-100">系统日志</h1>
-        <p class="mt-2 text-slate-400">查看后台操作记录、错误信息和状态变化</p>
+        <h1 class="logs-title text-2xl font-bold">系统日志</h1>
+        <p class="logs-subtitle mt-2">查看后台操作记录、错误信息和状态变化</p>
       </div>
       <div class="flex flex-wrap gap-3">
         <input
           v-model="action"
           type="text"
-          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
+          class="logs-input rounded-lg border px-3 py-2 text-sm"
           placeholder="操作类型，如 create"
           @keyup.enter="applyFilters(1)"
         />
         <input
           v-model="resource"
           type="text"
-          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
+          class="logs-input rounded-lg border px-3 py-2 text-sm"
           placeholder="资源类型，如 media"
           @keyup.enter="applyFilters(1)"
         />
         <input
           v-model="clientId"
           type="text"
-          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
+          class="logs-input rounded-lg border px-3 py-2 text-sm"
           placeholder="任务 clientId，如 task-21"
           @keyup.enter="applyFilters(1)"
         />
         <input
           :value="hash"
           type="text"
-          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
+          class="logs-input rounded-lg border px-3 py-2 text-sm"
           placeholder="任务 Hash，如 hash-demo"
           @input="hash = normalizeHashInput(($event.target as HTMLInputElement).value)"
           @keyup.enter="applyFilters(1)"
@@ -38,21 +38,21 @@
         <input
           v-model="downloadTaskId"
           type="text"
-          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
+          class="logs-input rounded-lg border px-3 py-2 text-sm"
           placeholder="任务 ID，如 21"
           @keyup.enter="applyFilters(1)"
         />
         <input
           :value="selectedLogId ? String(selectedLogId) : ''"
           type="text"
-          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
+          class="logs-input rounded-lg border px-3 py-2 text-sm"
           placeholder="日志 ID，如 7"
           @input="selectedLogId = parseLogId(($event.target as HTMLInputElement).value)"
           @keyup.enter="applyFilters(1)"
         />
         <select
           v-model="status"
-          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200"
+          class="logs-input rounded-lg border px-3 py-2 text-sm"
           @change="applyFilters(1)"
         >
           <option value="">全部状态</option>
@@ -61,7 +61,7 @@
           <option value="error">error</option>
         </select>
         <button
-          class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+          class="logs-btn-primary rounded-lg px-4 py-2 text-sm font-medium"
           @click="applyFilters(1)"
         >
           搜索
@@ -70,48 +70,48 @@
     </div>
 
     <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-      <div class="rounded-lg border border-white/[0.06] bg-white/[0.03] p-4 shadow-xl">
-        <div class="text-sm text-slate-400">总日志数</div>
-        <div class="mt-2 text-2xl font-semibold text-slate-100">{{ total }}</div>
+      <div class="logs-card rounded-lg border p-4 shadow-xl">
+        <div class="logs-card-label text-sm">总日志数</div>
+        <div class="logs-card-value mt-2 text-2xl font-semibold">{{ total }}</div>
       </div>
-      <div class="rounded-lg border border-white/[0.06] bg-white/[0.03] p-4 shadow-xl">
-        <div class="text-sm text-slate-400">错误日志</div>
-        <div class="mt-2 text-2xl font-semibold text-rose-400">{{ errorCount }}</div>
+      <div class="logs-card rounded-lg border p-4 shadow-xl">
+        <div class="logs-card-label text-sm">错误日志</div>
+        <div class="logs-card-value--error mt-2 text-2xl font-semibold">{{ errorCount }}</div>
       </div>
-      <div class="rounded-lg border border-white/[0.06] bg-white/[0.03] p-4 shadow-xl">
-        <div class="text-sm text-slate-400">警告日志</div>
-        <div class="mt-2 text-2xl font-semibold text-amber-400">{{ warningCount }}</div>
+      <div class="logs-card rounded-lg border p-4 shadow-xl">
+        <div class="logs-card-label text-sm">警告日志</div>
+        <div class="logs-card-value--warning mt-2 text-2xl font-semibold">{{ warningCount }}</div>
       </div>
     </div>
 
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
       <button
-        class="rounded-lg border border-white/[0.06] bg-white/[0.03] p-4 text-left shadow-xl transition hover:bg-white/[0.06]"
+        class="logs-card logs-card--clickable rounded-lg border p-4 text-left shadow-xl transition"
         @click="setResourceFilter(resource === 'download_task' ? '' : 'download_task')"
       >
-        <div class="text-sm text-slate-400">下载任务日志</div>
-        <div class="mt-2 text-2xl font-semibold text-slate-100">{{ downloadTaskLogCount }}</div>
+        <div class="logs-card-label text-sm">下载任务日志</div>
+        <div class="logs-card-value mt-2 text-2xl font-semibold">{{ downloadTaskLogCount }}</div>
       </button>
       <button
-        class="rounded-lg border border-white/[0.06] bg-white/[0.03] p-4 text-left shadow-xl transition hover:bg-white/[0.06]"
+        class="logs-card logs-card--clickable rounded-lg border p-4 text-left shadow-xl transition"
         @click="setActionFilter(action === 'retry' ? '' : 'retry')"
       >
-        <div class="text-sm text-slate-400">retry 动作</div>
-        <div class="mt-2 text-2xl font-semibold text-emerald-400">{{ retryActionCount }}</div>
+        <div class="logs-card-label text-sm">retry 动作</div>
+        <div class="logs-card-value--success mt-2 text-2xl font-semibold">{{ retryActionCount }}</div>
       </button>
       <button
-        class="rounded-lg border border-white/[0.06] bg-white/[0.03] p-4 text-left shadow-xl transition hover:bg-white/[0.06]"
+        class="logs-card logs-card--clickable rounded-lg border p-4 text-left shadow-xl transition"
         @click="setActionFilter(action === 'cancel' ? '' : 'cancel')"
       >
-        <div class="text-sm text-slate-400">cancel 动作</div>
-        <div class="mt-2 text-2xl font-semibold text-rose-400">{{ cancelActionCount }}</div>
+        <div class="logs-card-label text-sm">cancel 动作</div>
+        <div class="logs-card-value--error mt-2 text-2xl font-semibold">{{ cancelActionCount }}</div>
       </button>
       <button
-        class="rounded-lg border border-white/[0.06] bg-white/[0.03] p-4 text-left shadow-xl transition hover:bg-white/[0.06]"
+        class="logs-card logs-card--clickable rounded-lg border p-4 text-left shadow-xl transition"
         @click="setResourceFilter(resource === 'download_task' ? '' : 'download_task')"
       >
-        <div class="text-sm text-slate-400">24h 下载动作</div>
-        <div class="mt-2 text-2xl font-semibold text-indigo-400">
+        <div class="logs-card-label text-sm">24h 下载动作</div>
+        <div class="logs-card-value--brand mt-2 text-2xl font-semibold">
           {{ recentDownloadTaskActionCount }}
         </div>
       </button>
@@ -119,33 +119,33 @@
 
     <div class="flex flex-wrap gap-2">
       <button
-        class="rounded-full border px-3 py-1 text-xs font-medium transition"
+        class="logs-chip rounded-full border px-3 py-1 text-xs font-medium transition"
         :class="
           resource === 'download_task'
-            ? 'border-indigo-400/30 bg-indigo-500/15 text-indigo-300'
-            : 'border-slate-700 bg-white/[0.05] text-slate-300 hover:bg-white/[0.08]'
+            ? 'logs-chip--active-brand'
+            : 'logs-chip--default'
         "
         @click="setResourceFilter(resource === 'download_task' ? '' : 'download_task')"
       >
         下载任务日志
       </button>
       <button
-        class="rounded-full border px-3 py-1 text-xs font-medium transition"
+        class="logs-chip rounded-full border px-3 py-1 text-xs font-medium transition"
         :class="
           action === 'retry'
-            ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-300'
-            : 'border-slate-700 bg-white/[0.05] text-slate-300 hover:bg-white/[0.08]'
+            ? 'logs-chip--active-success'
+            : 'logs-chip--default'
         "
         @click="setActionFilter(action === 'retry' ? '' : 'retry')"
       >
         retry 动作
       </button>
       <button
-        class="rounded-full border px-3 py-1 text-xs font-medium transition"
+        class="logs-chip rounded-full border px-3 py-1 text-xs font-medium transition"
         :class="
           action === 'cancel'
-            ? 'border-rose-400/30 bg-rose-500/15 text-rose-300'
-            : 'border-slate-700 bg-white/[0.05] text-slate-300 hover:bg-white/[0.08]'
+            ? 'logs-chip--active-error'
+            : 'logs-chip--default'
         "
         @click="setActionFilter(action === 'cancel' ? '' : 'cancel')"
       >
@@ -157,133 +157,117 @@
       <span
         v-for="chip in activeFilterChips"
         :key="chip.key"
-        class="inline-flex items-center gap-2 rounded-full border border-slate-600/30 bg-slate-500/15 px-3 py-1 text-xs text-slate-300"
+        class="logs-filter-tag inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs"
       >
         {{ chip.label }}
-        <button class="text-slate-500 hover:text-slate-200" @click="chip.clear">×</button>
+        <button class="logs-filter-tag__close" @click="chip.clear">&times;</button>
       </span>
     </div>
 
-    <div class="rounded-lg border border-white/[0.06] bg-white/[0.03] shadow-xl">
-      <div v-if="loading" class="p-8 text-center text-slate-400">加载中...</div>
-      <div v-else-if="error" class="p-8 text-center text-rose-400">{{ error }}</div>
+    <div class="logs-table-wrap rounded-lg border shadow-xl">
+      <div v-if="loading" class="logs-empty-text p-8 text-center">加载中...</div>
+      <div v-else-if="error" class="logs-error-text p-8 text-center">{{ error }}</div>
       <template v-else>
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-white/[0.06]">
-            <thead class="bg-white/[0.02]">
+          <table class="logs-table min-w-full">
+            <thead class="logs-table-thead">
               <tr>
-                <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
-                >
+                <th class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   时间
                 </th>
-                <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
-                >
+                <th class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   操作
                 </th>
-                <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
-                >
+                <th class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   资源
                 </th>
-                <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
-                >
+                <th class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   状态
                 </th>
-                <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
-                >
+                <th class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   角色
                 </th>
-                <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
-                >
+                <th class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   用户
                 </th>
-                <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
-                >
+                <th class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   说明
                 </th>
-                <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
-                >
+                <th class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   详情
                 </th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-white/[0.06]">
+            <tbody class="logs-table-body">
               <template v-for="log in logs" :key="log.id">
                 <tr>
-                  <td class="px-4 py-3 text-sm text-slate-400">{{ formatDate(log.createdAt) }}</td>
-                  <td class="px-4 py-3 text-sm text-slate-100">{{ log.action }}</td>
-                  <td class="px-4 py-3 text-sm text-slate-400">{{ log.resource }}</td>
+                  <td class="logs-td-muted px-4 py-3 text-sm">{{ formatDate(log.createdAt) }}</td>
+                  <td class="logs-td-primary px-4 py-3 text-sm">{{ log.action }}</td>
+                  <td class="logs-td-muted px-4 py-3 text-sm">{{ log.resource }}</td>
                   <td class="px-4 py-3 text-sm">
                     <span
                       :class="[
-                        'rounded-full px-2 py-1 text-xs font-medium',
+                        'logs-badge rounded-full px-2 py-1 text-xs font-medium',
                         log.status === 'success'
-                          ? 'bg-emerald-500/15 text-emerald-400'
+                          ? 'logs-badge--success'
                           : log.status === 'warning'
-                            ? 'bg-amber-500/15 text-amber-400'
-                            : 'bg-rose-500/15 text-rose-400',
+                            ? 'logs-badge--warning'
+                            : 'logs-badge--error',
                       ]"
                     >
                       {{ log.status }}
                     </span>
                   </td>
-                  <td class="px-4 py-3 text-sm text-slate-400">
+                  <td class="logs-td-muted px-4 py-3 text-sm">
                     {{ log.role?.name || `#${log.roleId}` }}
                   </td>
-                  <td class="px-4 py-3 text-sm text-slate-400">
+                  <td class="logs-td-muted px-4 py-3 text-sm">
                     {{ log.user?.username || (log.userId ? `#${log.userId}` : '系统') }}
                   </td>
-                  <td class="px-4 py-3 text-sm text-slate-400">
+                  <td class="logs-td-muted px-4 py-3 text-sm">
                     <div class="line-clamp-2">{{ log.errorMessage || log.description || '—' }}</div>
                   </td>
-                  <td class="px-4 py-3 text-sm text-slate-400">
+                  <td class="logs-td-muted px-4 py-3 text-sm">
                     <button
-                      class="rounded border border-slate-600/30 px-3 py-1 text-xs font-medium text-slate-300 hover:bg-white/[0.06]"
+                      class="logs-detail-btn rounded border px-3 py-1 text-xs font-medium"
                       @click="toggleLogDetails(log.id)"
                     >
                       {{ selectedLogId === log.id ? '收起' : '详情' }}
                     </button>
                   </td>
                 </tr>
-                <tr v-if="selectedLogId === log.id" class="bg-white/[0.02]">
+                <tr v-if="selectedLogId === log.id" class="logs-expanded-row">
                   <td colspan="8" class="px-4 py-4">
                     <div class="grid gap-4 lg:grid-cols-2">
-                      <div class="rounded-xl border border-slate-700/50 bg-white/[0.03] px-4 py-3">
-                        <div class="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      <div class="logs-detail-panel rounded-xl border px-4 py-3">
+                        <div class="logs-detail-label text-xs font-medium uppercase tracking-wide">
                           元数据
                         </div>
                         <div
                           v-if="metadataEntries(log).length === 0"
-                          class="mt-2 text-sm text-slate-500"
+                          class="logs-detail-empty mt-2 text-sm"
                         >
                           暂无元数据
                         </div>
-                        <div v-else class="mt-2 space-y-2 text-sm text-slate-300">
+                        <div v-else class="logs-detail-text mt-2 space-y-2 text-sm">
                           <div v-for="item in metadataEntries(log)" :key="`${log.id}-${item.key}`">
-                            <div class="text-xs font-medium uppercase tracking-wide text-slate-500">
+                            <div class="logs-detail-label text-xs font-medium uppercase tracking-wide">
                               {{ item.key }}
                             </div>
                             <div class="mt-1 break-all">{{ item.value }}</div>
                           </div>
                         </div>
                       </div>
-                      <div class="rounded-xl border border-slate-700/50 bg-white/[0.03] px-4 py-3">
-                        <div class="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      <div class="logs-detail-panel rounded-xl border px-4 py-3">
+                        <div class="logs-detail-label text-xs font-medium uppercase tracking-wide">
                           请求信息
                         </div>
-                        <div v-if="!log.requestInfo" class="mt-2 text-sm text-slate-500">
+                        <div v-if="!log.requestInfo" class="logs-detail-empty mt-2 text-sm">
                           暂无请求信息
                         </div>
-                        <div v-else class="mt-2 space-y-2 text-sm text-slate-300">
+                        <div v-else class="logs-detail-text mt-2 space-y-2 text-sm">
                           <div>
-                            <div class="text-xs font-medium uppercase tracking-wide text-slate-500">
+                            <div class="logs-detail-label text-xs font-medium uppercase tracking-wide">
                               Method / URL
                             </div>
                             <div class="mt-1 break-all">
@@ -291,13 +275,13 @@
                             </div>
                           </div>
                           <div>
-                            <div class="text-xs font-medium uppercase tracking-wide text-slate-500">
+                            <div class="logs-detail-label text-xs font-medium uppercase tracking-wide">
                               IP
                             </div>
                             <div class="mt-1 break-all">{{ log.requestInfo.ip || '—' }}</div>
                           </div>
                           <div>
-                            <div class="text-xs font-medium uppercase tracking-wide text-slate-500">
+                            <div class="logs-detail-label text-xs font-medium uppercase tracking-wide">
                               User Agent
                             </div>
                             <div class="mt-1 break-all">{{ log.requestInfo.userAgent || '—' }}</div>
@@ -306,17 +290,17 @@
                       </div>
                       <div
                         v-if="downloadTaskLogTarget(log)"
-                        class="rounded-xl border border-indigo-400/20 bg-indigo-500/10 px-4 py-3 lg:col-span-2"
+                        class="logs-download-panel rounded-xl border px-4 py-3 lg:col-span-2"
                       >
-                        <div class="text-xs font-medium uppercase tracking-wide text-indigo-400">
+                        <div class="logs-download-label text-xs font-medium uppercase tracking-wide">
                           关联下载任务
                         </div>
-                        <div class="mt-2 text-sm text-slate-300">
+                        <div class="logs-detail-text mt-2 text-sm">
                           该日志包含下载任务客户端 ID，可直接跳回下载任务管理页继续排查。
                         </div>
                         <RouterLink
                           :to="downloadTaskLogTarget(log)!"
-                          class="mt-3 inline-flex rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-300 hover:bg-indigo-500/20"
+                          class="logs-download-link mt-3 inline-flex rounded-full border px-3 py-1.5 text-xs font-medium"
                         >
                           打开关联下载任务
                         </RouterLink>
@@ -330,13 +314,13 @@
         </div>
 
         <div
-          class="flex items-center justify-between border-t border-white/[0.06] px-4 py-3 text-sm text-slate-400"
+          class="logs-pagination flex items-center justify-between border-t px-4 py-3 text-sm"
         >
           <span>共 {{ total }} 条</span>
           <div class="flex items-center gap-3">
             <button
               :disabled="page <= 1"
-              class="rounded border border-slate-700 px-3 py-1 text-slate-300 disabled:opacity-50"
+              class="logs-pagination-btn rounded border px-3 py-1 disabled:opacity-50"
               @click="applyFilters(page - 1)"
             >
               上一页
@@ -344,7 +328,7 @@
             <span>{{ page }} / {{ totalPages }}</span>
             <button
               :disabled="page >= totalPages"
-              class="rounded border border-slate-700 px-3 py-1 text-slate-300 disabled:opacity-50"
+              class="logs-pagination-btn rounded border px-3 py-1 disabled:opacity-50"
               @click="applyFilters(page + 1)"
             >
               下一页
@@ -679,6 +663,244 @@
 </script>
 
 <style scoped>
+  /* ===== Typography ===== */
+  .logs-title {
+    color: var(--text-primary);
+  }
+
+  .logs-subtitle {
+    color: var(--text-muted);
+  }
+
+  /* ===== Form inputs ===== */
+  .logs-input {
+    border-color: var(--border-primary);
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+  }
+
+  .logs-input::placeholder {
+    color: var(--text-muted);
+  }
+
+  /* ===== Primary button ===== */
+  .logs-btn-primary {
+    background-color: var(--color-brand-primary);
+    color: var(--text-inverse);
+  }
+
+  .logs-btn-primary:hover {
+    background-color: var(--color-brand-primary-dark);
+  }
+
+  /* ===== Cards ===== */
+  .logs-card {
+    border-color: var(--border-primary);
+    background-color: var(--bg-tertiary);
+  }
+
+  .logs-card--clickable:hover {
+    background-color: var(--bg-secondary);
+  }
+
+  .logs-card-label {
+    color: var(--text-tertiary);
+  }
+
+  .logs-card-value {
+    color: var(--text-primary);
+  }
+
+  .logs-card-value--error {
+    color: var(--color-error-light);
+  }
+
+  .logs-card-value--warning {
+    color: var(--color-warning-light);
+  }
+
+  .logs-card-value--success {
+    color: var(--color-success-light);
+  }
+
+  .logs-card-value--brand {
+    color: var(--color-brand-primary-light);
+  }
+
+  /* ===== Filter chips ===== */
+  .logs-chip--default {
+    border-color: var(--border-primary);
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+  }
+
+  .logs-chip--default:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .logs-chip--active-brand {
+    border-color: rgba(99, 102, 241, 0.3);
+    background-color: rgba(99, 102, 241, 0.15);
+    color: var(--color-brand-primary-light);
+  }
+
+  .logs-chip--active-success {
+    border-color: rgba(16, 185, 129, 0.3);
+    background-color: rgba(16, 185, 129, 0.15);
+    color: var(--color-success-light);
+  }
+
+  .logs-chip--active-error {
+    border-color: rgba(239, 68, 68, 0.3);
+    background-color: rgba(239, 68, 68, 0.15);
+    color: var(--color-error-light);
+  }
+
+  /* ===== Active filter tags ===== */
+  .logs-filter-tag {
+    border-color: rgba(100, 116, 139, 0.3);
+    background-color: rgba(100, 116, 139, 0.15);
+    color: var(--text-secondary);
+  }
+
+  .logs-filter-tag__close {
+    color: var(--text-muted);
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 0;
+    line-height: 1;
+  }
+
+  .logs-filter-tag__close:hover {
+    color: var(--text-secondary);
+  }
+
+  /* ===== Table ===== */
+  .logs-table-wrap {
+    border-color: var(--border-primary);
+    background-color: var(--bg-tertiary);
+  }
+
+  .logs-table {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .logs-table-thead {
+    background-color: rgba(255, 255, 255, 0.02);
+  }
+
+  .logs-table-body tr {
+    border-bottom: 1px solid var(--border-primary);
+  }
+
+  .logs-table-body tr:last-child {
+    border-bottom: none;
+  }
+
+  .logs-th {
+    color: var(--text-tertiary);
+  }
+
+  .logs-td-muted {
+    color: var(--text-tertiary);
+  }
+
+  .logs-td-primary {
+    color: var(--text-primary);
+  }
+
+  /* ===== Status badges ===== */
+  .logs-badge--success {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: var(--color-success-light);
+  }
+
+  .logs-badge--warning {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: var(--color-warning-light);
+  }
+
+  .logs-badge--error {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: var(--color-error-light);
+  }
+
+  /* ===== Detail button ===== */
+  .logs-detail-btn {
+    border-color: rgba(100, 116, 139, 0.3);
+    color: var(--text-secondary);
+  }
+
+  .logs-detail-btn:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+  }
+
+  /* ===== Expanded row ===== */
+  .logs-expanded-row {
+    background-color: rgba(255, 255, 255, 0.02);
+  }
+
+  /* ===== Detail panels ===== */
+  .logs-detail-panel {
+    border-color: rgba(51, 65, 85, 0.5);
+    background-color: var(--bg-tertiary);
+  }
+
+  .logs-detail-label {
+    color: var(--text-muted);
+  }
+
+  .logs-detail-text {
+    color: var(--text-secondary);
+  }
+
+  .logs-detail-empty {
+    color: var(--text-muted);
+  }
+
+  /* ===== Download task section ===== */
+  .logs-download-panel {
+    border-color: rgba(99, 102, 241, 0.2);
+    background-color: rgba(99, 102, 241, 0.1);
+  }
+
+  .logs-download-label {
+    color: var(--color-brand-primary-light);
+  }
+
+  .logs-download-link {
+    border-color: rgba(99, 102, 241, 0.3);
+    background-color: rgba(99, 102, 241, 0.1);
+    color: var(--color-brand-primary-light);
+  }
+
+  .logs-download-link:hover {
+    background-color: rgba(99, 102, 241, 0.2);
+  }
+
+  /* ===== Empty / error states ===== */
+  .logs-empty-text {
+    color: var(--text-tertiary);
+  }
+
+  .logs-error-text {
+    color: var(--color-error-light);
+  }
+
+  /* ===== Pagination ===== */
+  .logs-pagination {
+    border-color: var(--border-primary);
+    color: var(--text-tertiary);
+  }
+
+  .logs-pagination-btn {
+    border-color: var(--border-primary);
+    color: var(--text-secondary);
+  }
+
+  /* ===== Utility ===== */
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;

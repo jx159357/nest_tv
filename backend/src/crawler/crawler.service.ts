@@ -1,4 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import * as cheerio from 'cheerio';
 import * as iconv from 'iconv-lite';
@@ -7,6 +9,7 @@ import { MediaResourceService } from '../media/media-resource.service';
 import { PlaySourceService } from '../play-sources/play-source.service';
 import { MediaType, MediaQuality } from '../entities/media-resource.entity';
 import { PlaySourceType } from '../entities/play-source.entity';
+import { CrawlerTarget as CrawlerTargetEntity } from '../entities/crawler-target.entity';
 import { AppLoggerService } from '../common/services/app-logger.service';
 import { ProxyPoolService } from '../common/services/proxy-pool.service';
 import {
@@ -92,6 +95,8 @@ export class CrawlerService {
   ).proxy;
 
   constructor(
+    @InjectRepository(CrawlerTargetEntity)
+    private readonly crawlerTargetRepository: Repository<CrawlerTargetEntity>,
     private readonly mediaResourceService: MediaResourceService,
     private readonly playSourceService: PlaySourceService,
     private readonly appLogger: AppLoggerService,
@@ -165,9 +170,32 @@ export class CrawlerService {
   }
 
   /**
-   * 获取可用的爬虫目标
+   * 获取可用的爬虫目标（优先从数据库读取）
    */
-  getAvailableTargets(): CrawlerTarget[] {
+  async getAvailableTargets(): Promise<CrawlerTarget[]> {
+    try {
+      const dbTargets = await this.crawlerTargetRepository.find({
+        where: { enabled: true },
+        order: { priority: 'ASC' },
+      });
+
+      if (dbTargets.length > 0) {
+        return dbTargets.map(t => ({
+          name: t.name,
+          baseUrl: t.baseUrl,
+          selectors: t.selectors,
+          listingUrls: t.listingUrls,
+          enabled: t.enabled,
+          priority: t.priority,
+          maxPages: t.maxPages,
+          respectRobotsTxt: t.respectRobotsTxt,
+          requestDelay: t.requestDelay,
+        }));
+      }
+    } catch (error) {
+      this.logger.warn('从数据库读取数据源配置失败，使用默认配置:', error);
+    }
+
     return CRAWLER_TARGETS.filter(target => {
       try {
         new URL(target.baseUrl);
@@ -176,6 +204,35 @@ export class CrawlerService {
         return false;
       }
     });
+  }
+
+  /**
+   * 获取当前激活的数据源
+   */
+  async getActiveTarget(): Promise<CrawlerTarget | null> {
+    try {
+      const activeTarget = await this.crawlerTargetRepository.findOne({
+        where: { isActive: true },
+      });
+
+      if (activeTarget) {
+        return {
+          name: activeTarget.name,
+          baseUrl: activeTarget.baseUrl,
+          selectors: activeTarget.selectors,
+          listingUrls: activeTarget.listingUrls,
+          enabled: activeTarget.enabled,
+          priority: activeTarget.priority,
+          maxPages: activeTarget.maxPages,
+          respectRobotsTxt: activeTarget.respectRobotsTxt,
+          requestDelay: activeTarget.requestDelay,
+        };
+      }
+    } catch (error) {
+      this.logger.warn('从数据库读取激活数据源失败:', error);
+    }
+
+    return CRAWLER_TARGETS.find(t => t.enabled) || null;
   }
 
   /**
@@ -621,7 +678,8 @@ export class CrawlerService {
       actors: this.extractDyttActors($),
       genres: this.extractDyttGenres($),
       releaseDate,
-      poster: this.extractPosterFromPage($, target.baseUrl),
+      poster: this.resolveUrl($(target.selectors.poster).first().attr('src'), target.baseUrl)
+        || this.extractPosterFromPage($, target.baseUrl),
       rating: 6.0,
       source: target.name,
       downloadUrls: uniqueUrls,

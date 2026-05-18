@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -22,6 +23,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminPermission } from '../entities/admin-permission.entity';
 import { AdminRole } from '../entities/admin-role.entity';
+import { CrawlerTarget } from '../entities/crawler-target.entity';
 import { AdminRoleGuard } from './admin-role.guard';
 import { AdminService } from './admin.service';
 import {
@@ -370,6 +372,74 @@ export class AdminController {
     @Body() actionDto: AdminDownloadTaskActionDto,
   ) {
     return this.adminService.handleDownloadTaskAction(id, actionDto);
+  }
+
+  // ==================== 数据源管理 ====================
+
+  @Get('crawler-targets')
+  @ApiOperation({ summary: '获取所有数据源' })
+  @ApiResponse({ status: 200, description: '数据源列表获取成功' })
+  getCrawlerTargets() {
+    return this.adminService.getCrawlerTargets();
+  }
+
+  @Get('crawler-targets/active')
+  @ApiOperation({ summary: '获取当前激活的数据源' })
+  @ApiResponse({ status: 200, description: '激活数据源获取成功' })
+  getActiveCrawlerTarget() {
+    return this.adminService.getActiveCrawlerTarget();
+  }
+
+  @Get('crawler-targets/:id')
+  @ApiOperation({ summary: '获取数据源详情' })
+  @ApiResponse({ status: 200, description: '数据源详情获取成功' })
+  getCrawlerTargetById(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.getCrawlerTargetById(id);
+  }
+
+  @Post('crawler-targets')
+  @ApiOperation({ summary: '创建数据源' })
+  @ApiResponse({ status: 201, description: '数据源创建成功' })
+  createCrawlerTarget(@Body() data: Partial<CrawlerTarget>) {
+    return this.adminService.createCrawlerTarget(data);
+  }
+
+  @Patch('crawler-targets/:id')
+  @ApiOperation({ summary: '更新数据源' })
+  @ApiResponse({ status: 200, description: '数据源更新成功' })
+  updateCrawlerTarget(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() data: Partial<CrawlerTarget>,
+  ) {
+    return this.adminService.updateCrawlerTarget(id, data);
+  }
+
+  @Delete('crawler-targets/:id')
+  @ApiOperation({ summary: '删除数据源' })
+  @ApiResponse({ status: 200, description: '数据源删除成功' })
+  deleteCrawlerTarget(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.deleteCrawlerTarget(id);
+  }
+
+  @Post('crawler-targets/:id/activate')
+  @ApiOperation({ summary: '激活数据源' })
+  @ApiResponse({ status: 200, description: '数据源激活成功' })
+  activateCrawlerTarget(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.activateCrawlerTarget(id);
+  }
+
+  @Post('crawler-targets/:id/deactivate')
+  @ApiOperation({ summary: '取消激活数据源' })
+  @ApiResponse({ status: 200, description: '数据源已取消激活' })
+  deactivateCrawlerTarget(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.deactivateCrawlerTarget(id);
+  }
+
+  @Post('crawler-targets/:id/toggle-enabled')
+  @ApiOperation({ summary: '切换数据源启用状态' })
+  @ApiResponse({ status: 200, description: '数据源状态切换成功' })
+  toggleCrawlerTargetEnabled(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.toggleCrawlerTargetEnabled(id);
   }
 
   @Get('health')

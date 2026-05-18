@@ -1,80 +1,74 @@
 <template>
-  <div class="flex min-h-screen bg-slate-950 px-4 py-12 text-slate-50">
-    <div class="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1.1fr_440px] lg:items-center">
-      <section class="space-y-6">
-        <span
-          class="inline-flex rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1 text-xs font-medium tracking-wide text-indigo-200"
-        >
-          Nest TV 账号中心
-        </span>
+  <div class="login-page">
+    <div class="login-grid">
+      <section class="login-hero">
+        <span class="login-badge">Nest TV 账号中心</span>
         <div>
-          <h1 class="text-4xl font-bold leading-tight text-white">
+          <h1 class="login-hero-title">
             登录后继续你的收藏、搜索与推荐链路
           </h1>
-          <p class="mt-4 max-w-2xl text-base leading-7 text-slate-300">
+          <p class="login-hero-desc">
             使用账号登录后，可同步搜索历史、收藏反馈、推荐画像和个人偏好设置，让体验在多次访问间保持连续。
           </p>
         </div>
-        <div class="grid gap-4 sm:grid-cols-3">
-          <div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-            <div class="text-xs text-slate-400">同步收藏</div>
-            <div class="mt-2 text-sm text-slate-100">
+        <div class="login-features">
+          <div class="login-feature-card">
+            <div class="login-feature-label">同步收藏</div>
+            <div class="login-feature-text">
               收藏结果即时反馈，并可回到高亮定位的收藏页。
             </div>
           </div>
-          <div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-            <div class="text-xs text-slate-400">搜索画像</div>
-            <div class="mt-2 text-sm text-slate-100">
+          <div class="login-feature-card">
+            <div class="login-feature-label">搜索画像</div>
+            <div class="login-feature-text">
               登录后搜索会沉淀到服务端历史，并参与推荐生成。
             </div>
           </div>
-          <div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-            <div class="text-xs text-slate-400">偏好设置</div>
-            <div class="mt-2 text-sm text-slate-100">
+          <div class="login-feature-card">
+            <div class="login-feature-label">偏好设置</div>
+            <div class="login-feature-text">
               登录后可维护资料、推荐偏好和密码安全信息。
             </div>
           </div>
         </div>
       </section>
 
-      <section
-        class="rounded-3xl border border-white/10 bg-white p-8 text-slate-900 shadow-2xl shadow-slate-950/40"
-      >
+      <section class="login-card">
         <div>
-          <h2 class="text-3xl font-bold">登录到 Nest TV</h2>
-          <p class="mt-2 text-sm text-slate-500">请输入用户名或邮箱与密码。</p>
+          <h2 class="login-card-title">登录到 Nest TV</h2>
+          <p class="login-card-desc">请输入用户名或邮箱与密码。</p>
         </div>
 
         <InlineNotice
           v-if="notice"
-          class="mt-6"
+          class="login-notice"
           :type="notice.type"
           :message="notice.message"
           dismissible
           @dismiss="notice = null"
         />
 
-        <form class="mt-6 space-y-5" @submit.prevent="handleLogin">
-          <label class="block space-y-2">
-            <span class="text-sm font-medium text-slate-700">用户名或邮箱</span>
+        <form class="login-form" @submit.prevent="handleLogin">
+          <label class="login-field">
+            <span class="login-label">用户名或邮箱</span>
             <input
               v-model="form.identifier"
               type="text"
               required
               autocomplete="username"
-              class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+              class="login-input"
               placeholder="请输入用户名或邮箱"
             />
           </label>
 
-          <label class="block space-y-2">
-            <span class="text-sm font-medium text-slate-700">密码</span>
+          <label class="login-field">
+            <span class="login-label">密码</span>
             <input
               v-model="form.password"
               type="password"
               required
               autocomplete="current-password"
-              class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+              class="login-input"
               placeholder="请输入密码"
             />
           </label>
@@ -82,17 +76,15 @@
           <button
             type="submit"
             :disabled="authStore.isLoading"
-            class="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+            class="login-submit"
           >
             {{ authStore.isLoading ? '登录中...' : '登录' }}
           </button>
         </form>
 
-        <div class="mt-6 text-sm text-slate-500">
+        <div class="login-footer">
           还没有账号？
-          <router-link to="/register" class="font-medium text-indigo-600 hover:text-indigo-500"
-            >立即注册</router-link
-          >
+          <router-link to="/register" class="login-link">立即注册</router-link>
         </div>
       </section>
     </div>
@@ -136,3 +128,198 @@
     };
   };
 </script>
+
+<style scoped>
+  .login-page {
+    min-height: 100vh;
+    background: var(--bg-page);
+    color: var(--text-primary);
+    padding: 48px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .login-grid {
+    display: grid;
+    width: 100%;
+    max-width: 1100px;
+    gap: 40px;
+    align-items: center;
+  }
+
+  @media (min-width: 1024px) {
+    .login-grid {
+      grid-template-columns: 1.1fr 440px;
+    }
+  }
+
+  .login-hero {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .login-badge {
+    display: inline-flex;
+    align-self: flex-start;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    background: rgba(99, 102, 241, 0.08);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: var(--color-brand-primary-light);
+  }
+
+  .login-hero-title {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--text-primary);
+  }
+
+  .login-hero-desc {
+    margin-top: 16px;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    max-width: 560px;
+  }
+
+  .login-features {
+    display: grid;
+    gap: 16px;
+  }
+
+  @media (min-width: 640px) {
+    .login-features {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .login-feature-card {
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-card);
+  }
+
+  .login-feature-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .login-feature-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .login-card {
+    background: var(--bg-card);
+    border-radius: 24px;
+    border: 1px solid var(--border-primary);
+    padding: 32px;
+    box-shadow: var(--shadow-xl);
+  }
+
+  .login-card-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .login-card-desc {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .login-notice {
+    margin-top: 24px;
+  }
+
+  .login-form {
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .login-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .login-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .login-input {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border-secondary);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  .login-input:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  }
+
+  .login-input::placeholder {
+    color: var(--text-muted);
+  }
+
+  .login-submit {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-primary-dark));
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .login-submit:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+  }
+
+  .login-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .login-footer {
+    margin-top: 24px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .login-link {
+    font-weight: 500;
+    color: var(--color-brand-primary);
+    text-decoration: none;
+  }
+
+  .login-link:hover {
+    color: var(--color-brand-primary-light);
+  }
+</style>

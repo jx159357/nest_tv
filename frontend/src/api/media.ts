@@ -1,7 +1,6 @@
 import ApiClient from './index';
 import type { PaginatedResponse } from '@/types/api';
-import type { MediaResource, MediaQueryParams, PlaySource } from '@/types/media';
-import type { WatchHistoryItem } from './watchHistory';
+import type { MediaResource, MediaQueryParams } from '@/types/media';
 
 export const mediaApi = {
   getMediaList: (params?: MediaQueryParams) => {
@@ -10,18 +9,6 @@ export const mediaApi = {
 
   getMediaById: (id: string) => {
     return ApiClient.get<MediaResource>(`/media/${id}`, undefined, false);
-  },
-
-  createMedia: (data: any) => {
-    return ApiClient.post<MediaResource>('/media', data);
-  },
-
-  updateMedia: (id: string, data: any) => {
-    return ApiClient.put<MediaResource>(`/media/${id}`, data);
-  },
-
-  deleteMedia: (id: string) => {
-    return ApiClient.delete<void>(`/media/${id}`);
   },
 
   searchMedia: (query: string, params?: MediaQueryParams) => {
@@ -48,10 +35,6 @@ export const mediaApi = {
     });
   },
 
-  getRecommendedMedia: (params?: MediaQueryParams) => {
-    return ApiClient.get<MediaResource[]>('/recommendations/trending', { params });
-  },
-
   getMediaByType: (type: string, params?: MediaQueryParams) => {
     return ApiClient.get<PaginatedResponse<MediaResource>>('/media', {
       params: { ...params, type },
@@ -62,10 +45,6 @@ export const mediaApi = {
     return ApiClient.get<MediaResource[]>(`/media/${mediaId}/similar`, {
       params: { limit },
     });
-  },
-
-  getPlaySources: (mediaId: string) => {
-    return ApiClient.get<PlaySource[]>(`/play-sources/media/${mediaId}`);
   },
 
   incrementViewCount: (mediaId: string) => {
@@ -107,23 +86,15 @@ export const mediaApi = {
     return ApiClient.get<PaginatedResponse<MediaResource>>('/media/favorites', { params }, false);
   },
 
-  getWatchHistory: (params?: MediaQueryParams) => {
-    return ApiClient.get<PaginatedResponse<WatchHistoryItem>>(
-      '/watch-history/user/me',
-      { params },
-      false,
-    );
-  },
-
-  getStatistics: () => {
-    return ApiClient.get<any>('/media/statistics');
-  },
-
   getCategoryStats: () => {
     return ApiClient.get<{
       types: Array<{ name: string; label: string; count: number }>;
       genres: Array<{ name: string; count: number }>;
     }>('/media/categories');
+  },
+
+  getSources: () => {
+    return ApiClient.get<Array<{ name: string; count: number }>>('/media/sources', undefined, false);
   },
 
   clearCache: () => undefined,

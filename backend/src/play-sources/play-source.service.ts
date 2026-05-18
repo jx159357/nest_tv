@@ -279,9 +279,21 @@ export class PlaySourceService {
       },
     });
 
-    return this.sortPlaySources(sources).filter(
+    const sorted = this.sortPlaySources(sources).filter(
       source => source.status === PlaySourceStatus.ACTIVE && source.isActive,
     );
+
+    return this.deduplicateByUrl(sorted);
+  }
+
+  private deduplicateByUrl(sources: PlaySource[]): PlaySource[] {
+    const seen = new Set<string>();
+    return sources.filter(s => {
+      if (!s.url) return false;
+      if (seen.has(s.url)) return false;
+      seen.add(s.url);
+      return true;
+    });
   }
 
   private async validatePlaySource(playSource: PlaySource): Promise<PlaySourceValidationResult> {

@@ -390,7 +390,7 @@ export class CrawlerController {
       // 实现真实的统计逻辑
       const totalMedia = await this.mediaResourceService.getTotalCount();
       const activeMedia = await this.mediaResourceService.getActiveCount();
-      const targetsAvailable = this.crawlerService.getAvailableTargets().map(t => t.name);
+      const targetsAvailable = (await this.crawlerService.getAvailableTargets()).map(t => t.name);
 
       // 这里可以扩展为更详细的统计信息
       return {
@@ -407,7 +407,7 @@ export class CrawlerController {
         totalCrawled: 0,
         successCount: 0,
         failureCount: 0,
-        targetsAvailable: this.crawlerService.getAvailableTargets().map(t => t.name),
+        targetsAvailable: (await this.crawlerService.getAvailableTargets()).map(t => t.name),
       };
     }
   }
@@ -419,7 +419,7 @@ export class CrawlerController {
    */
   @Get('test-connection')
   async testConnection(@Query('targetName') targetName: string) {
-    const target = this.crawlerService.getAvailableTargets().find(t => t.name === targetName);
+    const target = (await this.crawlerService.getAvailableTargets()).find(t => t.name === targetName);
 
     if (!target) {
       return {

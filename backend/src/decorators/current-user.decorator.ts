@@ -1,4 +1,4 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import { createParamDecorator, ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { User } from '../entities/user.entity';
 
 /**
@@ -27,7 +27,7 @@ export const GetCurrentUserId = createParamDecorator((data: unknown, ctx: Execut
   void data;
 
   if (!user || typeof user.id !== 'number') {
-    throw new Error('无法获取用户ID');
+    throw new UnauthorizedException('无法获取用户ID');
   }
 
   return user.id;

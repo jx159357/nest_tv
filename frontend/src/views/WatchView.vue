@@ -193,15 +193,32 @@
           </section>
 
           <section v-if="media.episodeCount" class="info-card">
-            <h2>剧集选择</h2>
+            <h2>剧集选择 <span class="episode-total">共 {{ media.episodeCount }} 集</span></h2>
             <div class="episode-grid">
               <button
-                v-for="episode in media.episodeCount"
-                :key="episode"
-                :class="['episode-btn', { active: currentEpisode === episode }]"
-                @click="selectEpisode(episode)"
+                v-for="episode in episodePagination.end - episodePagination.start + 1"
+                :key="episodePagination.start + episode - 1"
+                :class="['episode-btn', { active: currentEpisode === episodePagination.start + episode - 1 }]"
+                @click="selectEpisode(episodePagination.start + episode - 1)"
               >
-                第 {{ episode }} 集
+                {{ episodePagination.start + episode - 1 }}
+              </button>
+            </div>
+            <div v-if="episodePagination.show" class="episode-pagination">
+              <button
+                :disabled="episodePage <= 1"
+                class="episode-page-btn"
+                @click="episodePage--"
+              >
+                上一页
+              </button>
+              <span class="episode-page-info">{{ episodePage }} / {{ episodePagination.totalPages }}</span>
+              <button
+                :disabled="episodePage >= episodePagination.totalPages"
+                class="episode-page-btn"
+                @click="episodePage++"
+              >
+                下一页
               </button>
             </div>
           </section>
@@ -284,6 +301,8 @@
   const currentPlaySource = ref<PlaySource | null>(null);
   const currentEpisode = ref(1);
   const playerWrapperRef = ref<HTMLElement | null>(null);
+  const episodePage = ref(1);
+  const EPISODES_PER_PAGE = 50;
   const loading = ref(true);
   const resumeTime = ref(0);
   const lastSavedTime = ref(0);
@@ -354,6 +373,17 @@
       currentPlaySource.value?.type === 'magnet' ||
       currentPlaySource.value?.url?.startsWith('magnet:'),
   );
+
+  const episodePagination = computed(() => {
+    const total = media.value?.episodeCount || 0;
+    if (total <= EPISODES_PER_PAGE) {
+      return { show: false, total, totalPages: 1, start: 1, end: total };
+    }
+    const totalPages = Math.ceil(total / EPISODES_PER_PAGE);
+    const start = (episodePage.value - 1) * EPISODES_PER_PAGE + 1;
+    const end = Math.min(episodePage.value * EPISODES_PER_PAGE, total);
+    return { show: true, total, totalPages, start, end };
+  });
 
   const videoSrc = computed(() => {
     const url = currentPlaySource.value?.url;
@@ -699,6 +729,12 @@
   .player-wrapper:fullscreen .danmaku-overlay {
     z-index: 9999;
     pointer-events: none;
+  }
+
+  .player-wrapper:fullscreen .danmaku-overlay:has(.controls-visible),
+  .player-wrapper:fullscreen .danmaku-overlay:has(.danmaku-settings-panel),
+  .player-wrapper:fullscreen .danmaku-overlay:has(.report-dialog-backdrop) {
+    pointer-events: all;
   }
 
   .custom-fullscreen-btn {
@@ -1081,8 +1117,50 @@
 
   .episode-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 8px;
+  }
+
+  .episode-total {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-muted);
+    margin-left: 8px;
+  }
+
+  .episode-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-primary);
+  }
+
+  .episode-page-btn {
+    padding: 6px 14px;
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 6px;
+    color: var(--color-brand-primary-light);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .episode-page-btn:hover:not(:disabled) {
+    background: rgba(99, 102, 241, 0.25);
+  }
+
+  .episode-page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .episode-page-info {
+    font-size: 13px;
+    color: var(--text-muted);
   }
 
   .episode-btn {
@@ -1153,7 +1231,7 @@
     }
 
     .episode-grid {
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(6, 1fr);
     }
   }
 
@@ -1163,7 +1241,7 @@
     }
 
     .episode-grid {
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
     }
   }
 </style>

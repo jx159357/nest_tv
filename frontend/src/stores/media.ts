@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { mediaApi } from '@/api/media';
 import type { MediaResource, MediaQueryParams } from '@/types/media';
 import { log } from '@/utils/logger';
@@ -21,10 +21,6 @@ export const useMediaStore = defineStore('media', () => {
     limit: 10,
     total: 0,
     totalPages: 0,
-  });
-
-  const hasMore = computed(() => {
-    return pagination.value.page < pagination.value.totalPages;
   });
 
   const fetchMediaList = async (params: MediaQueryParams = {}) => {
@@ -100,46 +96,6 @@ export const useMediaStore = defineStore('media', () => {
     }
   };
 
-  const searchMedia = async (query: string, params?: MediaQueryParams) => {
-    loading.value = true;
-    try {
-      const response = await mediaApi.searchMedia(query, params);
-      mediaList.value = response.data;
-      pagination.value = {
-        page: response.page,
-        limit: response.limit,
-        total: response.total,
-        totalPages: response.totalPages,
-      };
-      return response;
-    } catch (error) {
-      log.error('MediaStore', '搜索媒体失败:', error);
-      throw error;
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  const fetchMediaByType = async (type: string, params?: MediaQueryParams) => {
-    loading.value = true;
-    try {
-      const response = await mediaApi.getMediaByType(type, params);
-      mediaList.value = response.data;
-      pagination.value = {
-        page: response.page,
-        limit: response.limit,
-        total: response.total,
-        totalPages: response.totalPages,
-      };
-      return response;
-    } catch (error) {
-      log.error('MediaStore', '获取类型媒体失败:', error);
-      throw error;
-    } finally {
-      loading.value = false;
-    }
-  };
-
   const incrementViewCount = async (id: string) => {
     try {
       await mediaApi.incrementViewCount(id);
@@ -190,68 +146,20 @@ export const useMediaStore = defineStore('media', () => {
     }
   };
 
-  const clearCurrentMedia = () => {
-    currentMedia.value = null;
-  };
-
-  const resetMediaList = () => {
-    mediaList.value = [];
-    pagination.value = {
-      page: 1,
-      limit: 10,
-      total: 0,
-      totalPages: 0,
-    };
-  };
-
-  const loadMore = async (params?: MediaQueryParams) => {
-    if (!hasMore.value || loading.value) return;
-
-    loading.value = true;
-    try {
-      const nextPage = pagination.value.page + 1;
-      const response = await mediaApi.getMediaList({
-        ...params,
-        page: nextPage,
-        limit: pagination.value.limit,
-      });
-
-      mediaList.value = [...mediaList.value, ...response.data];
-      pagination.value = {
-        page: response.page,
-        limit: response.limit,
-        total: response.total,
-        totalPages: response.totalPages,
-      };
-      return response;
-    } catch (error) {
-      log.error('MediaStore', '加载更多媒体失败:', error);
-      throw error;
-    } finally {
-      loading.value = false;
-    }
-  };
-
   return {
     mediaList,
     currentMedia,
     loading,
     pagination,
-    hasMore,
     fetchMediaList,
     fetchMediaDetail,
     fetchPopularMedia,
     fetchLatestMedia,
     fetchTopRatedMedia,
     fetchRecommendations,
-    searchMedia,
-    fetchMediaByType,
     incrementViewCount,
     toggleFavorite,
     fetchFavoriteStatus,
     fetchFavorites,
-    clearCurrentMedia,
-    resetMediaList,
-    loadMore,
   };
 });

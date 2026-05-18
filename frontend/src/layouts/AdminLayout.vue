@@ -79,6 +79,7 @@
     { path: '/admin/media', title: '媒体管理', icon: '🎬' },
     { path: '/admin/play-sources', title: '播放源管理', icon: '🔗' },
     { path: '/admin/crawler', title: '数据采集', icon: '🕷' },
+    { path: '/admin/crawler-targets', title: '数据源管理', icon: '🌐' },
     { path: '/admin/play-sources-overview', title: '播放源一览', icon: '🎞' },
     { path: '/admin/download-tasks', title: '下载任务', icon: '📥' },
     { path: '/admin/watch-history', title: '观看历史', icon: '🕘' },

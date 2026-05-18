@@ -213,6 +213,14 @@ export class MediaResourceController {
     return this.mediaResourceService.getCategoryStats();
   }
 
+  @Get('sources')
+  @Public()
+  @ApiOperation({ summary: '获取数据源列表' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getSources() {
+    return this.mediaResourceService.getSourceList();
+  }
+
   @Get('favorites')
   @ApiOperation({ summary: '获取当前用户收藏列表' })
   @ApiResponse({ status: 200, description: '获取成功' })
@@ -553,31 +561,5 @@ export class MediaResourceController {
   async incrementViews(@Param('id', ParseIntPipe) id: number) {
     await this.mediaResourceService.incrementViews(id);
     return { message: '增加观看次数成功' };
-  }
-
-  /**
-   * 增加点赞数
-   */
-  @Put(':id/likes')
-  @ApiOperation({ summary: '增加点赞数' })
-  @ApiResponse({ status: 200, description: '增加成功' })
-  @ApiResponse({ status: 404, description: '影视资源不存在' })
-  @ApiParam({ name: 'id', description: '影视资源ID' })
-  incrementLikes(@Param('id', ParseIntPipe) id: number) {
-    this.mediaResourceService.incrementLikes(id);
-    return { message: '增加点赞数成功' };
-  }
-
-  /**
-   * 减少点赞数
-   */
-  @Put(':id/unlikes')
-  @ApiOperation({ summary: '减少点赞数' })
-  @ApiResponse({ status: 200, description: '减少成功' })
-  @ApiResponse({ status: 404, description: '影视资源不存在' })
-  @ApiParam({ name: 'id', description: '影视资源ID' })
-  decrementLikes(@Param('id', ParseIntPipe) id: number) {
-    this.mediaResourceService.decrementLikes(id);
-    return { message: '减少点赞数成功' };
   }
 }

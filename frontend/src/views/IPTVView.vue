@@ -175,7 +175,13 @@
         <span>正在播放：{{ selectedChannel.name }}</span>
         <button class="btn-close" @click="showPlayer = false">关闭</button>
       </div>
-      <IPTVPlayer :src="selectedChannel.url" :autoplay="true" />
+      <div class="player-wrapper">
+        <ArtPlayerWrapper
+          :src="selectedChannel.url"
+          :title="selectedChannel.name"
+          :autoplay="true"
+        />
+      </div>
     </div>
 
     <!-- 频道详情 -->
@@ -219,7 +225,7 @@
 <script setup lang="ts">
   import { computed, onMounted, ref } from 'vue';
   import { iptvApi, type IPTVChannel, type IPTVStats } from '@/api/iptv';
-  import IPTVPlayer from '@/components/IPTVPlayer.vue';
+  import ArtPlayerWrapper from '@/components/ArtPlayerWrapper.vue';
   import EpgTimeline from '@/components/EpgTimeline.vue';
   import { log } from '@/utils/logger';
 
@@ -850,6 +856,10 @@
     background: var(--bg-player);
     border-radius: 14px;
     overflow: hidden;
+  }
+  .player-wrapper {
+    position: relative;
+    aspect-ratio: 16 / 9;
   }
   .player-header {
     display: flex;

@@ -3,44 +3,44 @@
     <div class="space-y-6">
       <header class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900">下载任务</h1>
-          <p class="mt-2 text-sm text-gray-600">
+          <h1 class="text-3xl font-bold" style="color: var(--text-primary)">下载任务</h1>
+          <p class="mt-2 text-sm" style="color: var(--text-muted)">
             统一查看来自详情页、播放页和磁力页的下载任务。浏览器或本地客户端下载会接管真实下载进度。
           </p>
-          <p v-if="downloadsStore.lastRemoteSyncAt" class="mt-2 text-xs text-gray-500">
+          <p v-if="downloadsStore.lastRemoteSyncAt" class="mt-2 text-xs" style="color: var(--text-muted)">
             最近同步：{{ formatDateTime(downloadsStore.lastRemoteSyncAt) }}
           </p>
         </div>
         <div class="flex flex-wrap gap-3">
           <RouterLink
             to="/torrent"
-            class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            class="dl-btn-secondary"
           >
             去磁力资源
           </RouterLink>
           <button
-            class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:bg-gray-100"
+            class="dl-btn-secondary disabled:cursor-not-allowed disabled:opacity-50"
             :disabled="downloadsStore.isSyncingRemote"
             @click="refreshRemoteTasks"
           >
             {{ downloadsStore.isSyncingRemote ? '同步中...' : '同步云端记录' }}
           </button>
           <button
-            class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 hover:bg-amber-100 disabled:cursor-not-allowed disabled:border-amber-200 disabled:bg-amber-50/60 disabled:text-amber-400"
+            class="dl-btn-warning disabled:cursor-not-allowed disabled:opacity-50"
             :disabled="downloadsStore.failedCount === 0"
             @click="retryFailedTasks"
           >
             重试异常任务
           </button>
           <button
-            class="rounded-lg border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:border-rose-200 disabled:bg-rose-50/60 disabled:text-rose-400"
+            class="dl-btn-danger disabled:cursor-not-allowed disabled:opacity-50"
             :disabled="downloadsStore.failedCount === 0"
             @click="clearFailedTasks"
           >
             清理异常记录
           </button>
           <button
-            class="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
+            class="dl-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
             :disabled="downloadsStore.completedCount === 0"
             @click="clearCompletedTasks"
           >
@@ -50,32 +50,32 @@
       </header>
 
       <div class="grid gap-4 md:grid-cols-3">
-        <section class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
-          <div class="text-sm text-gray-500">全部任务</div>
-          <div class="mt-3 text-3xl font-semibold text-gray-900">{{ tasks.length }}</div>
-          <div class="mt-2 text-xs text-gray-500">按最近操作时间排序</div>
+        <section class="dl-card">
+          <div class="text-sm" style="color: var(--text-muted)">全部任务</div>
+          <div class="mt-3 text-3xl font-semibold" style="color: var(--text-primary)">{{ tasks.length }}</div>
+          <div class="mt-2 text-xs" style="color: var(--text-muted)">按最近操作时间排序</div>
         </section>
-        <section class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
-          <div class="text-sm text-gray-500">进行中 / 待处理</div>
-          <div class="mt-3 text-3xl font-semibold text-blue-600">
+        <section class="dl-card">
+          <div class="text-sm" style="color: var(--text-muted)">进行中 / 待处理</div>
+          <div class="mt-3 text-3xl font-semibold" style="color: var(--color-info)">
             {{ downloadsStore.activeCount }}
           </div>
-          <div class="mt-2 text-xs text-gray-500">支持登录后多端同步任务记录</div>
+          <div class="mt-2 text-xs" style="color: var(--text-muted)">支持登录后多端同步任务记录</div>
         </section>
-        <section class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
-          <div class="text-sm text-gray-500">已完成 / 已中断</div>
-          <div class="mt-3 text-3xl font-semibold text-emerald-600">
+        <section class="dl-card">
+          <div class="text-sm" style="color: var(--text-muted)">已完成 / 已中断</div>
+          <div class="mt-3 text-3xl font-semibold" style="color: var(--color-success)">
             {{ downloadsStore.completedCount }} / {{ downloadsStore.failedCount }}
           </div>
-          <div class="mt-2 text-xs text-gray-500">完成可清理，异常任务可重试</div>
+          <div class="mt-2 text-xs" style="color: var(--text-muted)">完成可清理，异常任务可重试</div>
         </section>
       </div>
 
-      <section class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
+      <section class="dl-card">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 class="text-base font-semibold text-gray-900">任务筛选</h2>
-            <p class="mt-1 text-sm text-gray-500">按状态或关键词快速收窄当前任务列表。</p>
+            <h2 class="text-base font-semibold" style="color: var(--text-primary)">任务筛选</h2>
+            <p class="mt-1 text-sm" style="color: var(--text-muted)">按状态或关键词快速收窄当前任务列表。</p>
           </div>
           <div class="flex flex-col gap-3 lg:w-[32rem] lg:flex-row">
             <label class="block flex-1">
@@ -83,7 +83,7 @@
               <input
                 v-model="searchKeyword"
                 type="text"
-                class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm text-gray-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                class="dl-input"
                 placeholder="搜索文件名、来源或链接"
               />
             </label>
@@ -92,7 +92,7 @@
               <input
                 :value="selectedHash"
                 type="text"
-                class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm text-gray-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                class="dl-input"
                 placeholder="磁力 Hash，如 hash-demo"
                 @input="
                   selectedHash = normalizeHashInput(($event.target as HTMLInputElement).value)
@@ -108,8 +108,8 @@
             class="rounded-full px-3 py-1.5 text-sm font-medium transition"
             :class="
               selectedFilter === option.value
-                ? 'bg-gray-900 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'dl-filter-active'
+                : 'dl-filter-default'
             "
             @click="selectedFilter = option.value"
           >
@@ -124,8 +124,8 @@
             class="rounded-full px-3 py-1.5 text-sm font-medium transition"
             :class="
               selectedType === option.value
-                ? 'bg-indigo-600 text-white'
-                : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                ? 'dl-type-active'
+                : 'dl-type-default'
             "
             @click="selectedType = option.value"
           >
@@ -135,13 +135,14 @@
         </div>
         <div
           v-if="selectedHash"
-          class="mt-3 flex flex-wrap items-center gap-2 text-xs text-indigo-700"
+          class="mt-3 flex flex-wrap items-center gap-2 text-xs"
+          style="color: var(--color-brand-primary-light)"
         >
-          <span class="rounded-full bg-indigo-50 px-3 py-1.5 font-medium">
+          <span class="rounded-full px-3 py-1.5 font-medium" style="background: rgba(99, 102, 241, 0.12)">
             已锁定磁力 Hash：{{ selectedHash }}
           </span>
           <button
-            class="rounded-full border border-indigo-200 bg-white px-3 py-1.5 font-medium text-indigo-700 hover:bg-indigo-50"
+            class="dl-btn-hash-unlock"
             @click="selectedHash = ''"
           >
             取消 Hash 锁定
@@ -151,34 +152,37 @@
 
       <div
         v-if="actionMessage"
-        class="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700"
+        class="rounded-2xl border px-4 py-3 text-sm"
+        style="border-color: var(--color-info-border, var(--border-primary)); background: var(--color-info-bg, rgba(59, 130, 246, 0.1)); color: var(--color-info)"
       >
         {{ actionMessage }}
       </div>
 
       <section
         v-if="tasks.length === 0"
-        class="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-16 text-center shadow-sm"
+        class="rounded-2xl border border-dashed px-6 py-16 text-center shadow-sm"
+        style="border-color: var(--border-primary); background: var(--bg-card)"
       >
         <div
-          class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-xl"
+          class="mx-auto flex h-12 w-12 items-center justify-center rounded-full text-xl"
+          style="background: var(--bg-tertiary)"
         >
           ⬇️
         </div>
-        <h2 class="mt-4 text-xl font-semibold text-gray-900">还没有下载任务</h2>
-        <p class="mt-2 text-sm text-gray-600">
+        <h2 class="mt-4 text-xl font-semibold" style="color: var(--text-primary)">还没有下载任务</h2>
+        <p class="mt-2 text-sm" style="color: var(--text-muted)">
           可以在影视详情、播放页或磁力资源页把链接加入任务列表，再回来统一处理。
         </p>
         <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
           <RouterLink
             to="/"
-            class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            class="dl-btn-primary"
           >
             浏览内容
           </RouterLink>
           <RouterLink
             to="/torrent"
-            class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            class="dl-btn-secondary"
           >
             浏览磁力资源
           </RouterLink>
@@ -187,17 +191,19 @@
 
       <section
         v-else-if="filteredTasks.length === 0"
-        class="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-16 text-center shadow-sm"
+        class="rounded-2xl border border-dashed px-6 py-16 text-center shadow-sm"
+        style="border-color: var(--border-primary); background: var(--bg-card)"
       >
         <div
-          class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-xl"
+          class="mx-auto flex h-12 w-12 items-center justify-center rounded-full text-xl"
+          style="background: var(--bg-tertiary)"
         >
           🔎
         </div>
-        <h2 class="mt-4 text-xl font-semibold text-gray-900">当前筛选下没有任务</h2>
-        <p class="mt-2 text-sm text-gray-600">可以切换状态筛选，或清空关键词后再看完整列表。</p>
+        <h2 class="mt-4 text-xl font-semibold" style="color: var(--text-primary)">当前筛选下没有任务</h2>
+        <p class="mt-2 text-sm" style="color: var(--text-muted)">可以切换状态筛选，或清空关键词后再看完整列表。</p>
         <button
-          class="mt-6 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          class="dl-btn-secondary mt-6"
           @click="resetFilters"
         >
           清空筛选
@@ -208,24 +214,24 @@
         <article
           v-for="task in filteredTasks"
           :key="task.id"
-          class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100"
+          class="dl-card"
         >
           <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-2">
-                <h2 class="truncate text-lg font-semibold text-gray-900">{{ task.fileName }}</h2>
+                <h2 class="truncate text-lg font-semibold" style="color: var(--text-primary)">{{ task.fileName }}</h2>
                 <span
                   :class="statusClass(task.status)"
                   class="rounded-full px-2.5 py-1 text-xs font-medium"
                 >
                   {{ statusText(task.status) }}
                 </span>
-                <span class="rounded-full bg-gray-100 px-2.5 py-1 text-xs text-gray-600">
+                <span class="rounded-full px-2.5 py-1 text-xs" style="background: var(--bg-tertiary); color: var(--text-secondary)">
                   {{ typeText(task.type) }}
                 </span>
               </div>
 
-              <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+              <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs" style="color: var(--text-muted)">
                 <span>来源：{{ task.sourceLabel || '未标记来源' }}</span>
                 <span v-if="task.mediaResourceId">关联媒体：#{{ task.mediaResourceId }}</span>
                 <span>创建：{{ formatDateTime(task.createdAt) }}</span>
@@ -236,31 +242,33 @@
                 <span>启动次数：{{ task.launchCount || 0 }}</span>
               </div>
 
-              <div class="mt-4 rounded-xl bg-gray-50 p-3">
-                <div class="flex items-center justify-between text-xs text-gray-500">
+              <div class="mt-4 rounded-xl p-3" style="background: var(--bg-secondary)">
+                <div class="flex items-center justify-between text-xs" style="color: var(--text-muted)">
                   <span>任务进度</span>
                   <span>{{ displayProgress(task) }}%</span>
                 </div>
-                <div class="mt-2 h-2 overflow-hidden rounded-full bg-gray-200">
+                <div class="mt-2 h-2 overflow-hidden rounded-full" style="background: var(--bg-tertiary)">
                   <div
-                    class="h-full rounded-full bg-indigo-600 transition-all"
+                    class="h-full rounded-full dl-progress-fill transition-all"
                     :style="{ width: `${displayProgress(task)}%` }"
                   ></div>
                 </div>
-                <div class="mt-2 text-xs text-gray-500">
+                <div class="mt-2 text-xs" style="color: var(--text-muted)">
                   {{ progressHint(task) }}
                 </div>
               </div>
 
               <div
-                class="mt-3 break-all rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-500"
+                class="mt-3 break-all rounded-xl border px-3 py-2 text-xs"
+                style="border-color: var(--border-primary); background: var(--bg-card); color: var(--text-muted)"
               >
                 {{ task.url }}
               </div>
 
               <div
                 v-if="task.error"
-                class="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600"
+                class="mt-3 rounded-xl border px-3 py-2 text-xs"
+                style="border-color: var(--color-danger-border); background: var(--color-danger-bg); color: var(--color-danger)"
               >
                 {{ task.error }}
               </div>
@@ -270,14 +278,14 @@
               <RouterLink
                 v-if="task.mediaResourceId"
                 :to="{ name: 'media-detail', params: { id: task.mediaResourceId } }"
-                class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-center text-sm font-medium text-gray-700 hover:bg-gray-50"
+                class="dl-btn-secondary"
               >
                 查看关联媒体
               </RouterLink>
               <RouterLink
                 v-if="buildTorrentDetailLink(task)"
                 :to="buildTorrentDetailLink(task)!"
-                class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-center text-sm font-medium text-gray-700 hover:bg-gray-50"
+                class="dl-btn-secondary"
               >
                 查看磁力详情
               </RouterLink>
@@ -288,47 +296,47 @@
                   task.status === 'error' ||
                   task.status === 'cancelled'
                 "
-                class="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                class="dl-btn-primary"
                 @click="startTask(task.id)"
               >
                 {{ task.status === 'pending' ? '开始下载' : '继续 / 重试' }}
               </button>
               <button
                 v-else
-                class="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                class="dl-btn-primary"
                 @click="startTask(task.id)"
               >
                 重新打开
               </button>
               <button
                 v-if="task.status === 'downloading'"
-                class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                class="dl-btn-secondary"
                 @click="pauseTask(task.id)"
               >
                 暂停标记
               </button>
               <button
                 v-if="task.status !== 'completed'"
-                class="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100"
+                class="dl-btn-success"
                 @click="markCompleted(task.id)"
               >
                 标记完成
               </button>
               <button
-                class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                class="dl-btn-secondary"
                 @click="copyTaskUrl(task.url)"
               >
                 复制链接
               </button>
               <button
                 v-if="task.status !== 'completed'"
-                class="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100"
+                class="dl-btn-danger"
                 @click="cancelTask(task.id)"
               >
                 取消任务
               </button>
               <button
-                class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                class="dl-btn-secondary"
                 @click="removeTask(task.id)"
               >
                 移除记录
@@ -458,12 +466,12 @@
 
   const statusClass = (status: DownloadTask['status']) => {
     const classMap: Record<DownloadTask['status'], string> = {
-      pending: 'bg-amber-100 text-amber-700',
-      downloading: 'bg-blue-100 text-blue-700',
-      paused: 'bg-slate-100 text-slate-700',
-      completed: 'bg-emerald-100 text-emerald-700',
-      error: 'bg-red-100 text-red-700',
-      cancelled: 'bg-rose-100 text-rose-700',
+      pending: 'dl-status-pending',
+      downloading: 'dl-status-downloading',
+      paused: 'dl-status-paused',
+      completed: 'dl-status-completed',
+      error: 'dl-status-error',
+      cancelled: 'dl-status-cancelled',
     };
     return classMap[status];
   };
@@ -733,3 +741,188 @@
     }
   });
 </script>
+
+<style scoped>
+  .dl-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: 1rem;
+    padding: 1.25rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  }
+
+  .dl-input {
+    width: 100%;
+    border-radius: 0.75rem;
+    border: 1px solid var(--border-primary);
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .dl-input:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  }
+
+  .dl-btn-primary {
+    border-radius: 0.5rem;
+    background: var(--color-brand-primary);
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .dl-btn-primary:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+
+  .dl-btn-secondary {
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-card);
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .dl-btn-secondary:hover:not(:disabled) {
+    background: var(--bg-secondary);
+  }
+
+  .dl-btn-success {
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-success-border, var(--border-primary));
+    background: var(--color-success-bg);
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-success);
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .dl-btn-success:hover:not(:disabled) {
+    opacity: 0.85;
+  }
+
+  .dl-btn-danger {
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-danger-border);
+    background: var(--color-danger-bg);
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-danger);
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .dl-btn-danger:hover:not(:disabled) {
+    opacity: 0.85;
+  }
+
+  .dl-btn-warning {
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-warning-border, var(--border-primary));
+    background: var(--color-warning-bg);
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-warning);
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .dl-btn-warning:hover:not(:disabled) {
+    opacity: 0.85;
+  }
+
+  .dl-btn-hash-unlock {
+    border-radius: 9999px;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-card);
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-brand-primary-light);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .dl-btn-hash-unlock:hover {
+    background: var(--bg-secondary);
+  }
+
+  .dl-filter-active {
+    background: var(--bg-inverse, #1f2937);
+    color: var(--text-inverse, #f9fafb);
+  }
+
+  .dl-filter-default {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+  }
+
+  .dl-filter-default:hover {
+    background: var(--bg-secondary);
+  }
+
+  .dl-type-active {
+    background: var(--color-brand-primary);
+    color: white;
+  }
+
+  .dl-type-default {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--color-brand-primary-light);
+  }
+
+  .dl-type-default:hover {
+    background: rgba(99, 102, 241, 0.18);
+  }
+
+  .dl-progress-fill {
+    background: var(--color-brand-primary);
+  }
+
+  .dl-status-pending {
+    background: var(--color-warning-bg);
+    color: var(--color-warning);
+  }
+
+  .dl-status-downloading {
+    background: var(--color-info-bg, rgba(59, 130, 246, 0.12));
+    color: var(--color-info);
+  }
+
+  .dl-status-paused {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+  }
+
+  .dl-status-completed {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+  }
+
+  .dl-status-error {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+  }
+
+  .dl-status-cancelled {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+  }
+</style>

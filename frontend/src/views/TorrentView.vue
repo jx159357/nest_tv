@@ -1,17 +1,17 @@
 <template>
   <div class="page-container">
     <header class="mb-8">
-      <h1 class="mb-3 text-3xl font-bold text-gray-900">磁力资源</h1>
-      <p class="text-gray-600">浏览站内已入库磁力源，支持搜索、热门榜、最新榜和磁力链接解析。</p>
+      <h1 class="mb-3 text-3xl font-bold" style="color: var(--text-primary)">磁力资源</h1>
+      <p style="color: var(--text-muted)">浏览站内已入库磁力源，支持搜索、热门榜、最新榜和磁力链接解析。</p>
     </header>
 
-    <section class="mb-8 rounded-2xl bg-white p-6 shadow-sm">
+    <section class="mb-8 rounded-2xl p-6 shadow-sm" style="background: var(--bg-card)">
       <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]">
         <div>
           <div class="mb-4 flex items-center justify-between gap-3">
             <div>
-              <h2 class="text-xl font-semibold text-gray-900">磁力搜索</h2>
-              <p class="mt-1 text-sm text-gray-600">
+              <h2 class="text-xl font-semibold" style="color: var(--text-primary)">磁力搜索</h2>
+              <p class="mt-1 text-sm" style="color: var(--text-muted)">
                 按标题、来源名或媒体描述搜索已入库的磁力资源。
               </p>
             </div>
@@ -24,10 +24,11 @@
             <input
               v-model="keyword"
               type="text"
-              class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              class="rounded-lg border px-3 py-2 text-sm"
+              style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)"
               placeholder="输入关键字，如片名 / 资源组 / infoHash"
             />
-            <select v-model="category" class="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <select v-model="category" class="rounded-lg border px-3 py-2 text-sm" style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)">
               <option value="">全部分类</option>
               <option value="movie">电影</option>
               <option value="tv_series">电视剧</option>
@@ -37,7 +38,8 @@
             </select>
             <button
               type="submit"
-              class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              class="rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+              style="background: var(--color-brand-primary)"
               :disabled="searchLoading"
             >
               {{ searchLoading ? '搜索中...' : '搜索' }}
@@ -46,23 +48,26 @@
 
           <div
             v-if="searchError"
-            class="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+            class="mt-4 rounded-xl border px-4 py-3 text-sm"
+            style="border-color: var(--color-danger-border); background: var(--color-danger-bg); color: var(--color-danger)"
           >
             {{ searchError }}
           </div>
 
-          <div class="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <div class="mt-5 overflow-hidden rounded-xl border" style="border-color: var(--border-primary); background: var(--bg-card)">
             <div
-              class="border-b border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700"
+              class="border-b px-4 py-3 text-sm font-medium"
+              style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-secondary)"
             >
               搜索结果
             </div>
-            <div v-if="searchLoading" class="px-4 py-10 text-center text-sm text-slate-500">
+            <div v-if="searchLoading" class="px-4 py-10 text-center text-sm" style="color: var(--text-muted)">
               加载中...
             </div>
             <div
               v-else-if="searchResults.length === 0"
-              class="px-4 py-10 text-center text-sm text-slate-500"
+              class="px-4 py-10 text-center text-sm"
+              style="color: var(--text-muted)"
             >
               {{ keyword.trim() ? '没有匹配的磁力资源。' : '先输入关键字开始搜索。' }}
             </div>
@@ -110,14 +115,16 @@
             >
             <div class="flex gap-2">
               <button
-                class="rounded border border-slate-300 px-3 py-1.5 disabled:opacity-50"
+                class="rounded border px-3 py-1.5 disabled:opacity-50"
+                style="border-color: var(--border-primary); color: var(--text-secondary)"
                 :disabled="searchPagination.page <= 1 || searchLoading"
                 @click="searchTorrents(searchPagination.page - 1)"
               >
                 上一页
               </button>
               <button
-                class="rounded border border-slate-300 px-3 py-1.5 disabled:opacity-50"
+                class="rounded border px-3 py-1.5 disabled:opacity-50"
+                style="border-color: var(--border-primary); color: var(--text-secondary)"
                 :disabled="searchPagination.page >= searchPagination.totalPages || searchLoading"
                 @click="searchTorrents(searchPagination.page + 1)"
               >
@@ -127,9 +134,9 @@
           </div>
         </div>
 
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-          <h2 class="text-xl font-semibold text-gray-900">磁力解析</h2>
-          <p class="mt-1 text-sm text-gray-600">
+        <div class="rounded-2xl border p-5" style="border-color: var(--border-primary); background: var(--bg-secondary)">
+          <h2 class="text-xl font-semibold" style="color: var(--text-primary)">磁力解析</h2>
+          <p class="mt-1 text-sm" style="color: var(--text-muted)">
             粘贴 magnet 链接，快速查看解析出的 infoHash、tracker 和 web seed。
           </p>
 
@@ -137,12 +144,14 @@
             <textarea
               v-model="magnetInput"
               rows="6"
-              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              class="w-full rounded-lg border px-3 py-2 text-sm"
+              style="border-color: var(--border-primary); background: var(--bg-card); color: var(--text-primary)"
               placeholder="magnet:?xt=urn:btih:..."
             />
             <button
               type="submit"
-              class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              class="rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+              style="background: var(--color-success)"
               :disabled="parseLoading"
             >
               {{ parseLoading ? '解析中...' : '解析磁力链接' }}
@@ -151,37 +160,40 @@
 
           <div
             v-if="parseError"
-            class="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+            class="mt-4 rounded-xl border px-4 py-3 text-sm"
+            style="border-color: var(--color-danger-border); background: var(--color-danger-bg); color: var(--color-danger)"
           >
             {{ parseError }}
           </div>
 
           <div
             v-if="parsedMagnet"
-            class="mt-4 space-y-3 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700"
+            class="mt-4 space-y-3 rounded-xl border p-4 text-sm"
+            style="border-color: var(--border-primary); background: var(--bg-card); color: var(--text-secondary)"
           >
             <div>
-              <span class="font-medium text-slate-900">名称：</span
+              <span class="font-medium" style="color: var(--text-primary)">名称：</span
               >{{ parsedMagnet.name || '未命名' }}
             </div>
             <div>
-              <span class="font-medium text-slate-900">InfoHash：</span>{{ parsedMagnet.infoHash }}
+              <span class="font-medium" style="color: var(--text-primary)">InfoHash：</span>{{ parsedMagnet.infoHash }}
             </div>
             <div>
-              <span class="font-medium text-slate-900">Tracker：</span
+              <span class="font-medium" style="color: var(--text-primary)">Tracker：</span
               >{{ parsedMagnet.announce.length }}
             </div>
             <div>
-              <span class="font-medium text-slate-900">Web Seed：</span
+              <span class="font-medium" style="color: var(--text-primary)">Web Seed：</span
               >{{ parsedMagnet.urlList.length }}
             </div>
             <div>
-              <span class="font-medium text-slate-900">关键字：</span
+              <span class="font-medium" style="color: var(--text-primary)">关键字：</span
               >{{ parsedMagnet.keywords.join(' / ') || '无' }}
             </div>
             <div class="flex flex-wrap gap-2 pt-1">
               <button
-                class="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white hover:bg-indigo-700"
+                class="rounded-lg px-3 py-2 text-xs font-medium text-white"
+                style="background: var(--color-brand-primary)"
                 @click="queueParsedMagnetTask"
               >
                 加入下载任务
@@ -193,7 +205,8 @@
                     parsedMagnet.infoHash,
                   )
                 "
-                class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                class="rounded-lg border px-3 py-2 text-xs font-medium"
+                style="border-color: var(--border-primary); background: var(--bg-card); color: var(--text-secondary)"
               >
                 查看下载任务
               </RouterLink>
@@ -206,26 +219,28 @@
     <section
       class="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,0.95fr)_minmax(360px,1.05fr)_minmax(360px,1fr)]"
     >
-      <div class="rounded-2xl bg-white p-6 shadow-sm">
+      <div class="rounded-2xl p-6 shadow-sm" style="background: var(--bg-card)">
         <div class="mb-4 flex items-center justify-between">
           <div>
-            <h2 class="text-xl font-semibold text-gray-900">热门磁力</h2>
-            <p class="mt-1 text-sm text-gray-600">按播放热度排序</p>
+            <h2 class="text-xl font-semibold" style="color: var(--text-primary)">热门磁力</h2>
+            <p class="mt-1 text-sm" style="color: var(--text-muted)">按播放热度排序</p>
           </div>
-          <button class="text-sm text-blue-600 hover:underline" @click="loadPopularTorrents">
+          <button class="text-sm hover:underline" style="color: var(--color-info)" @click="loadPopularTorrents">
             刷新
           </button>
         </div>
-        <div v-if="popularLoading" class="py-8 text-center text-sm text-slate-500">加载中...</div>
+        <div v-if="popularLoading" class="py-8 text-center text-sm" style="color: var(--text-muted)">加载中...</div>
         <div
           v-else-if="popularError"
-          class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+          class="rounded-xl border px-4 py-3 text-sm"
+          style="border-color: var(--color-danger-border); background: var(--color-danger-bg); color: var(--color-danger)"
         >
           {{ popularError }}
         </div>
         <div
           v-else-if="popularTorrents.length === 0"
-          class="py-8 text-center text-sm text-slate-500"
+          class="py-8 text-center text-sm"
+          style="color: var(--text-muted)"
         >
           当前分类下还没有热门磁力。
         </div>
@@ -233,37 +248,40 @@
           <button
             v-for="item in popularTorrents"
             :key="`popular-${item.infoHash}`"
-            class="w-full rounded-xl border border-slate-200 px-4 py-3 text-left transition hover:bg-slate-50"
+            class="w-full rounded-xl border px-4 py-3 text-left transition"
+            style="border-color: var(--border-primary)"
             @click="selectTorrent(item.infoHash)"
           >
-            <div class="font-medium text-slate-900">{{ item.name }}</div>
-            <div class="mt-1 text-xs text-slate-500">
+            <div class="font-medium" style="color: var(--text-primary)">{{ item.name }}</div>
+            <div class="mt-1 text-xs" style="color: var(--text-muted)">
               做种者 {{ item.seeders ?? '—' }} · {{ formatSize(item.size) }}
             </div>
           </button>
         </div>
       </div>
 
-      <div class="rounded-2xl bg-white p-6 shadow-sm">
+      <div class="rounded-2xl p-6 shadow-sm" style="background: var(--bg-card)">
         <div class="mb-4 flex items-center justify-between">
           <div>
-            <h2 class="text-xl font-semibold text-gray-900">最新磁力</h2>
-            <p class="mt-1 text-sm text-gray-600">按入库时间排序</p>
+            <h2 class="text-xl font-semibold" style="color: var(--text-primary)">最新磁力</h2>
+            <p class="mt-1 text-sm" style="color: var(--text-muted)">按入库时间排序</p>
           </div>
-          <button class="text-sm text-blue-600 hover:underline" @click="loadLatestTorrents">
+          <button class="text-sm hover:underline" style="color: var(--color-info)" @click="loadLatestTorrents">
             刷新
           </button>
         </div>
-        <div v-if="latestLoading" class="py-8 text-center text-sm text-slate-500">加载中...</div>
+        <div v-if="latestLoading" class="py-8 text-center text-sm" style="color: var(--text-muted)">加载中...</div>
         <div
           v-else-if="latestError"
-          class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+          class="rounded-xl border px-4 py-3 text-sm"
+          style="border-color: var(--color-danger-border); background: var(--color-danger-bg); color: var(--color-danger)"
         >
           {{ latestError }}
         </div>
         <div
           v-else-if="latestTorrents.length === 0"
-          class="py-8 text-center text-sm text-slate-500"
+          class="py-8 text-center text-sm"
+          style="color: var(--text-muted)"
         >
           当前分类下还没有最新磁力。
         </div>
@@ -271,103 +289,109 @@
           <button
             v-for="item in latestTorrents"
             :key="`latest-${item.infoHash}`"
-            class="w-full rounded-xl border border-slate-200 px-4 py-3 text-left transition hover:bg-slate-50"
+            class="w-full rounded-xl border px-4 py-3 text-left transition"
+            style="border-color: var(--border-primary)"
             @click="selectTorrent(item.infoHash)"
           >
-            <div class="font-medium text-slate-900">{{ item.name }}</div>
-            <div class="mt-1 text-xs text-slate-500">
+            <div class="font-medium" style="color: var(--text-primary)">{{ item.name }}</div>
+            <div class="mt-1 text-xs" style="color: var(--text-muted)">
               {{ formatDateTime(item.added) }} · {{ item.category || '未分类' }}
             </div>
           </button>
         </div>
       </div>
 
-      <div class="rounded-2xl bg-white p-6 shadow-sm">
+      <div class="rounded-2xl p-6 shadow-sm" style="background: var(--bg-card)">
         <div class="mb-4">
-          <h2 class="text-xl font-semibold text-gray-900">磁力详情</h2>
-          <p class="mt-1 text-sm text-gray-600">查看已入库磁力的详细信息、健康状态和关联媒体。</p>
+          <h2 class="text-xl font-semibold" style="color: var(--text-primary)">磁力详情</h2>
+          <p class="mt-1 text-sm" style="color: var(--text-muted)">查看已入库磁力的详细信息、健康状态和关联媒体。</p>
         </div>
 
-        <div v-if="selectedLoading" class="py-10 text-center text-sm text-slate-500">
+        <div v-if="selectedLoading" class="py-10 text-center text-sm" style="color: var(--text-muted)">
           加载详情中...
         </div>
         <div
           v-else-if="selectedError"
-          class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+          class="rounded-xl border px-4 py-3 text-sm"
+          style="border-color: var(--color-danger-border); background: var(--color-danger-bg); color: var(--color-danger)"
         >
           {{ selectedError }}
         </div>
-        <div v-else-if="selectedInfo" class="space-y-4 text-sm text-slate-700">
+        <div v-else-if="selectedInfo" class="space-y-4 text-sm" style="color: var(--text-secondary)">
           <div>
-            <div class="text-lg font-semibold text-slate-900">
+            <div class="text-lg font-semibold" style="color: var(--text-primary)">
               {{ selectedInfo.name || selectedInfo.infoHash }}
             </div>
-            <div class="mt-1 text-xs text-slate-500">{{ selectedInfo.infoHash }}</div>
+            <div class="mt-1 text-xs" style="color: var(--text-muted)">{{ selectedInfo.infoHash }}</div>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
-            <div class="rounded-xl bg-slate-50 p-3">
-              <div class="text-xs text-slate-500">关联源数</div>
-              <div class="mt-1 text-lg font-semibold text-slate-900">
+            <div class="rounded-xl p-3" style="background: var(--bg-secondary)">
+              <div class="text-xs" style="color: var(--text-muted)">关联源数</div>
+              <div class="mt-1 text-lg font-semibold" style="color: var(--text-primary)">
                 {{ selectedInfo.relatedSourcesCount }}
               </div>
             </div>
-            <div class="rounded-xl bg-slate-50 p-3">
-              <div class="text-xs text-slate-500">体积</div>
-              <div class="mt-1 text-lg font-semibold text-slate-900">
+            <div class="rounded-xl p-3" style="background: var(--bg-secondary)">
+              <div class="text-xs" style="color: var(--text-muted)">体积</div>
+              <div class="mt-1 text-lg font-semibold" style="color: var(--text-primary)">
                 {{ formatSize(selectedInfo.size) }}
               </div>
             </div>
           </div>
 
-          <div v-if="selectedHealth" class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <div class="mb-2 text-sm font-medium text-slate-900">健康状态</div>
+          <div v-if="selectedHealth" class="rounded-xl border p-4" style="border-color: var(--border-primary); background: var(--bg-secondary)">
+            <div class="mb-2 text-sm font-medium" style="color: var(--text-primary)">健康状态</div>
             <div class="flex flex-wrap gap-2 text-xs">
               <span
                 :class="[
                   'rounded-full px-2.5 py-1 font-medium',
                   selectedHealth.isHealthy
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-rose-100 text-rose-700',
+                    ? 'health-healthy'
+                    : 'health-unhealthy',
                 ]"
               >
                 {{ selectedHealth.isHealthy ? '可用' : '异常' }}
               </span>
-              <span class="rounded-full bg-slate-200 px-2.5 py-1 text-slate-700"
+              <span class="rounded-full px-2.5 py-1" style="background: var(--bg-tertiary); color: var(--text-secondary)"
                 >做种者 {{ selectedHealth.seeders ?? '—' }}</span
               >
-              <span class="rounded-full bg-slate-200 px-2.5 py-1 text-slate-700"
+              <span class="rounded-full px-2.5 py-1" style="background: var(--bg-tertiary); color: var(--text-secondary)"
                 >下载者 {{ selectedHealth.leechers ?? '—' }}</span
               >
             </div>
-            <div class="mt-2 text-xs text-slate-500">
+            <div class="mt-2 text-xs" style="color: var(--text-muted)">
               最近校验 {{ formatDateTime(selectedHealth.lastChecked) }}
             </div>
           </div>
 
-          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <div class="mb-2 text-sm font-medium text-slate-900">快速操作</div>
+          <div class="rounded-xl border p-4" style="border-color: var(--border-primary); background: var(--bg-secondary)">
+            <div class="mb-2 text-sm font-medium" style="color: var(--text-primary)">快速操作</div>
             <div class="flex flex-wrap gap-2">
               <button
-                class="rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700"
+                class="rounded-lg px-3 py-2 text-xs font-medium text-white"
+                style="background: var(--color-brand-primary)"
                 @click="copyMagnetUri"
               >
                 复制 Magnet
               </button>
               <button
-                class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                class="rounded-lg border px-3 py-2 text-xs font-medium"
+                style="border-color: var(--border-primary); background: var(--bg-card); color: var(--text-secondary)"
                 @click="copyInfoHash"
               >
                 复制 Hash
               </button>
               <button
-                class="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                class="rounded-lg border px-3 py-2 text-xs font-medium"
+                style="border-color: var(--border-focus); background: rgba(99, 102, 241, 0.1); color: var(--color-brand-primary-light)"
                 @click="queueSelectedTorrentTask"
               >
                 加入下载任务
               </button>
               <button
-                class="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                class="rounded-lg border px-3 py-2 text-xs font-medium"
+                style="border-color: var(--color-success-border); background: var(--color-success-bg); color: var(--color-success)"
                 @click="openMagnetInClient"
               >
                 启动本地客户端
@@ -379,26 +403,28 @@
                     selectedInfo.infoHash,
                   )
                 "
-                class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                class="rounded-lg border px-3 py-2 text-xs font-medium"
+                style="border-color: var(--border-primary); background: var(--bg-card); color: var(--text-secondary)"
               >
                 查看下载任务
               </RouterLink>
             </div>
-            <div class="mt-3 text-xs text-slate-500">
+            <div class="mt-3 text-xs" style="color: var(--text-muted)">
               Tracker {{ selectedInfo.announce.length }} · Web Seed
               {{ selectedInfo.urlList.length }} · 关键字 {{ selectedInfo.keywords.length }}
             </div>
             <div
               v-if="actionMessage"
-              class="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700"
+              class="mt-3 rounded-lg border px-3 py-2 text-xs"
+              style="border-color: var(--border-primary); background: var(--bg-card); color: var(--text-secondary)"
             >
               {{ actionMessage }}
             </div>
           </div>
 
           <div>
-            <div class="mb-2 text-sm font-medium text-slate-900">关联媒体</div>
-            <div v-if="selectedInfo.linkedMedia.length === 0" class="text-xs text-slate-500">
+            <div class="mb-2 text-sm font-medium" style="color: var(--text-primary)">关联媒体</div>
+            <div v-if="selectedInfo.linkedMedia.length === 0" class="text-xs" style="color: var(--text-muted)">
               暂无关联媒体
             </div>
             <div v-else class="space-y-2">
@@ -406,55 +432,75 @@
                 v-for="media in selectedInfo.linkedMedia"
                 :key="media.id"
                 :to="{ name: 'media-detail', params: { id: media.id } }"
-                class="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 transition hover:bg-slate-50"
+                class="flex items-center justify-between rounded-xl border px-3 py-2 transition"
+                style="border-color: var(--border-primary)"
               >
                 <div>
-                  <div class="font-medium text-slate-900">{{ media.title }}</div>
-                  <div class="text-xs text-slate-500">{{ media.type }}</div>
+                  <div class="font-medium" style="color: var(--text-primary)">{{ media.title }}</div>
+                  <div class="text-xs" style="color: var(--text-muted)">{{ media.type }}</div>
                 </div>
-                <span class="text-xs text-blue-600">打开</span>
+                <span class="text-xs" style="color: var(--color-info)">打开</span>
               </RouterLink>
             </div>
           </div>
 
-          <details class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <summary class="cursor-pointer text-sm font-medium text-slate-900">
+          <details class="rounded-xl border p-4" style="border-color: var(--border-primary); background: var(--bg-secondary)">
+            <summary class="cursor-pointer text-sm font-medium" style="color: var(--text-primary)">
               文件列表（{{ selectedInfo.files.length }}）
             </summary>
-            <div class="mt-3 space-y-2 text-xs text-slate-600">
+            <div class="mt-3 space-y-2 text-xs" style="color: var(--text-muted)">
               <div
                 v-for="file in selectedInfo.files"
                 :key="file.name"
-                class="rounded-lg bg-white px-3 py-2"
+                class="rounded-lg px-3 py-2"
+                style="background: var(--bg-card)"
               >
                 {{ file.name }}<span v-if="file.size"> · {{ formatSize(file.size) }}</span>
               </div>
             </div>
           </details>
 
-          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <div class="mb-2 text-sm font-medium text-slate-900">最近操作</div>
-            <div v-if="recentActions.length === 0" class="text-xs text-slate-500">
+          <div class="rounded-xl border p-4" style="border-color: var(--border-primary); background: var(--bg-secondary)">
+            <div class="mb-2 text-sm font-medium" style="color: var(--text-primary)">最近操作</div>
+            <div v-if="recentActions.length === 0" class="text-xs" style="color: var(--text-muted)">
               暂无最近操作记录
             </div>
-            <div v-else class="space-y-2 text-xs text-slate-600">
+            <div v-else class="space-y-2 text-xs" style="color: var(--text-muted)">
               <div
                 v-for="item in recentActions"
                 :key="`${item.infoHash}-${item.timestamp}`"
-                class="rounded-lg bg-white px-3 py-2"
+                class="rounded-lg px-3 py-2"
+                style="background: var(--bg-card)"
               >
                 {{ item.action }} · {{ item.infoHash }} · {{ formatDateTime(item.timestamp) }}
               </div>
             </div>
           </div>
         </div>
-        <div v-else class="py-10 text-center text-sm text-slate-500">
+        <div v-else class="py-10 text-center text-sm" style="color: var(--text-muted)">
           从左侧搜索结果或榜单中选择一个磁力资源。
         </div>
       </div>
     </section>
   </div>
 </template>
+
+<style scoped>
+  .health-healthy {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+  }
+
+  .health-unhealthy {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+  }
+
+  :deep(button:hover),
+  :deep(a:hover) {
+    background-color: var(--bg-secondary);
+  }
+</style>
 
 <script setup lang="ts">
   import { onMounted, ref, watch } from 'vue';

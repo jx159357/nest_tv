@@ -12,7 +12,7 @@
     <!-- 实际内容 -->
     <template v-else>
       <!-- 图片区域 -->
-      <div class="media-card__image">
+      <div ref="imageContainer" class="media-card__image">
         <!-- 图片加载占位 -->
         <div v-if="!imageLoaded && !imageError" class="media-card__image-placeholder"></div>
 
@@ -27,9 +27,9 @@
 
         <!-- 实际图片 -->
         <img
-          v-if="media.poster && !imageError"
+          v-if="media.poster && !imageError && shouldLoadImage"
           ref="imageElement"
-          :src="shouldLoadImage ? imageSrc : ''"
+          :src="imageSrc"
           :alt="media.title"
           class="media-card__image-img"
           :class="{
@@ -74,7 +74,7 @@
           <span v-if="showViewCount && media.viewCount" class="media-card__views">
             {{ formattedViewCount }}次播放
           </span>
-          <span v-if="media.releaseDate" class="media-card__date">
+          <span v-if="showReleaseDate && media.releaseDate" class="media-card__date">
             {{ formattedDate }}
           </span>
         </div>
@@ -158,6 +158,7 @@
     showRating?: boolean;
     showViewCount?: boolean;
     showMeta?: boolean;
+    showReleaseDate?: boolean;
     clickable?: boolean;
     size?: 'small' | 'medium' | 'large';
     hoverable?: boolean;
@@ -169,6 +170,7 @@
     showRating: true,
     showViewCount: true,
     showMeta: true,
+    showReleaseDate: true,
     clickable: true,
     size: 'medium',
     hoverable: true,
@@ -201,11 +203,21 @@
 
   const imageLoaded = ref(false);
   const imageError = ref(false);
+  const useProxy = ref(false);
   const observer = ref<IntersectionObserver | null>(null);
   const imageElement = ref<HTMLImageElement | null>(null);
+  const imageContainer = ref<HTMLDivElement | null>(null);
   const shouldLoadImage = ref(!props.lazyLoading);
+  let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
 
-  const imageSrc = computed(() => props.media.poster || '');
+  const imageSrc = computed(() => {
+    const url = props.media.poster;
+    if (!url) return '';
+    if (useProxy.value && (url.startsWith('http://') || url.startsWith('https://'))) {
+      return `/iptv/image/proxy?url=${encodeURIComponent(url)}`;
+    }
+    return url;
+  });
 
   const mediaTypeLabel = computed(() => MEDIA_TYPE_MAP[props.media.type] || props.media.type);
 
@@ -237,6 +249,10 @@
   };
 
   const handleImageError = (event: Event) => {
+    if (!useProxy.value && props.media.poster?.startsWith('http')) {
+      useProxy.value = true;
+      return;
+    }
     imageLoaded.value = false;
     imageError.value = true;
     emit('imageError', event);
@@ -250,7 +266,8 @@
 
     await nextTick();
 
-    if (!imageElement.value) {
+    const target = imageContainer.value || imageElement.value;
+    if (!target) {
       shouldLoadImage.value = true;
       return;
     }
@@ -260,18 +277,32 @@
         for (const entry of entries) {
           if (entry.isIntersecting) {
             shouldLoadImage.value = true;
+            clearFallbackTimer();
             observer.value?.unobserve(entry.target);
             break;
           }
         }
       },
       {
-        rootMargin: '50px',
-        threshold: 0.1,
+        rootMargin: '200px',
+        threshold: 0.01,
       },
     );
 
-    observer.value.observe(imageElement.value);
+    observer.value.observe(target);
+
+    fallbackTimer = setTimeout(() => {
+      if (!shouldLoadImage.value) {
+        shouldLoadImage.value = true;
+      }
+    }, 1500);
+  };
+
+  const clearFallbackTimer = () => {
+    if (fallbackTimer) {
+      clearTimeout(fallbackTimer);
+      fallbackTimer = null;
+    }
   };
 
   watch(
@@ -279,6 +310,7 @@
     () => {
       imageLoaded.value = false;
       imageError.value = false;
+      useProxy.value = false;
     },
   );
 
@@ -287,6 +319,7 @@
   });
 
   onUnmounted(() => {
+    clearFallbackTimer();
     observer.value?.disconnect();
     observer.value = null;
   });

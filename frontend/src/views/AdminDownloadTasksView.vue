@@ -2,28 +2,28 @@
   <div class="space-y-6">
     <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-slate-100">下载任务管理</h1>
-        <p class="mt-2 text-slate-400">查看用户下载任务、关联媒体、启动状态和异常信息。</p>
+        <h1 class="text-2xl font-bold dt-text-primary">下载任务管理</h1>
+        <p class="mt-2 dt-text-muted">查看用户下载任务、关联媒体、启动状态和异常信息。</p>
       </div>
       <div class="flex flex-wrap gap-3">
         <input
           v-model="search"
           type="text"
-          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
+          class="dt-input rounded-lg border px-3 py-2 text-sm"
           placeholder="文件名 / clientId / 来源 / 链接 / 用户"
           @keyup.enter="applyFilters(1)"
         />
         <input
           v-model="selectedClientId"
           type="text"
-          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
+          class="dt-input rounded-lg border px-3 py-2 text-sm"
           placeholder="任务 clientId，如 task-21"
           @keyup.enter="applyFilters(1)"
         />
         <input
           :value="selectedHash"
           type="text"
-          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
+          class="dt-input rounded-lg border px-3 py-2 text-sm"
           placeholder="任务 Hash，如 hash-demo"
           @input="selectedHash = normalizeHashInput(($event.target as HTMLInputElement).value)"
           @keyup.enter="applyFilters(1)"
@@ -31,14 +31,14 @@
         <input
           :value="selectedTaskId ? String(selectedTaskId) : ''"
           type="text"
-          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
+          class="dt-input rounded-lg border px-3 py-2 text-sm"
           placeholder="任务 ID，如 21"
           @input="selectedTaskId = parseTaskId(($event.target as HTMLInputElement).value)"
           @keyup.enter="applyFilters(1)"
         />
         <select
           v-model="selectedStatus"
-          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
+          class="dt-input rounded-lg border px-3 py-2 text-sm"
           @change="applyFilters(1)"
         >
           <option value="">全部状态</option>
@@ -51,7 +51,7 @@
         </select>
         <select
           v-model="selectedType"
-          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
+          class="dt-input rounded-lg border px-3 py-2 text-sm"
           @change="applyFilters(1)"
         >
           <option value="">全部类型</option>
@@ -61,7 +61,7 @@
         </select>
         <select
           v-model="selectedUserId"
-          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
+          class="dt-input rounded-lg border px-3 py-2 text-sm"
           @change="applyFilters(1)"
         >
           <option value="">全部用户</option>
@@ -71,7 +71,7 @@
         </select>
         <select
           v-model="sortMode"
-          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
+          class="dt-input rounded-lg border px-3 py-2 text-sm"
           @change="applyFilters(1)"
         >
           <option value="updated">最近更新</option>
@@ -79,13 +79,13 @@
           <option value="exceptions">异常优先</option>
         </select>
         <button
-          class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+          class="dt-btn-primary rounded-lg px-4 py-2 text-sm font-medium"
           @click="applyFilters(1)"
         >
           刷新
         </button>
         <button
-          class="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-white/[0.06]"
+          class="dt-btn-secondary rounded-lg border px-4 py-2 text-sm font-medium"
           @click="resetFilters"
         >
           清空筛选
@@ -96,11 +96,7 @@
     <div class="flex flex-wrap gap-2">
       <button
         class="rounded-full border px-3 py-1 text-xs font-medium transition"
-        :class="
-          selectedStatus === ''
-            ? 'border-indigo-400/30 bg-indigo-500/15 text-indigo-300'
-            : 'border-slate-700 bg-white/[0.05] text-slate-300 hover:bg-white/[0.08]'
-        "
+        :class="selectedStatus === '' ? 'dt-pill-active-brand' : 'dt-pill-inactive'"
         @click="setStatusFilter('')"
       >
         全部任务
@@ -109,11 +105,7 @@
         v-for="item in quickStatusFilters"
         :key="item.value"
         class="rounded-full border px-3 py-1 text-xs font-medium transition"
-        :class="
-          selectedStatus === item.value
-            ? 'border-indigo-400/30 bg-indigo-500/15 text-indigo-300'
-            : 'border-slate-700 bg-white/[0.05] text-slate-300 hover:bg-white/[0.08]'
-        "
+        :class="selectedStatus === item.value ? 'dt-pill-active-brand' : 'dt-pill-inactive'"
         @click="setStatusFilter(item.value)"
       >
         {{ item.label }}
@@ -123,11 +115,7 @@
     <div class="flex flex-wrap gap-2">
       <button
         class="rounded-full border px-3 py-1 text-xs font-medium transition"
-        :class="
-          selectedType === ''
-            ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-300'
-            : 'border-slate-700 bg-white/[0.05] text-slate-300 hover:bg-white/[0.08]'
-        "
+        :class="selectedType === '' ? 'dt-pill-active-success' : 'dt-pill-inactive'"
         @click="setTypeFilter('')"
       >
         全部类型
@@ -136,11 +124,7 @@
         v-for="item in quickTypeFilters"
         :key="item.value"
         class="rounded-full border px-3 py-1 text-xs font-medium transition"
-        :class="
-          selectedType === item.value
-            ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-300'
-            : 'border-slate-700 bg-white/[0.05] text-slate-300 hover:bg-white/[0.08]'
-        "
+        :class="selectedType === item.value ? 'dt-pill-active-success' : 'dt-pill-inactive'"
         @click="setTypeFilter(item.value)"
       >
         {{ item.label }}
@@ -151,51 +135,47 @@
       <span
         v-for="chip in activeFilterChips"
         :key="chip.key"
-        class="inline-flex items-center gap-2 rounded-full border border-slate-600/30 bg-slate-500/15 px-3 py-1 text-xs text-slate-300"
+        class="dt-chip inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs"
       >
         {{ chip.label }}
-        <button class="text-slate-500 hover:text-slate-200" @click="chip.clear">×</button>
+        <button class="dt-chip-close" @click="chip.clear">×</button>
       </span>
     </div>
 
     <div
       v-if="actionState"
       class="rounded-xl border px-4 py-3 text-sm"
-      :class="
-        actionState.status === 'success'
-          ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
-          : 'border-rose-500/30 bg-rose-500/10 text-rose-400'
-      "
+      :class="actionState.status === 'success' ? 'dt-alert-success' : 'dt-alert-error'"
     >
       {{ actionState.message }}
     </div>
 
     <div class="grid grid-cols-1 gap-4 md:grid-cols-3 xl:grid-cols-6">
-      <div class="rounded-lg bg-white/[0.03] border border-white/[0.06] shadow-xl p-4">
-        <div class="text-sm text-slate-400">当前结果</div>
-        <div class="mt-2 text-2xl font-semibold text-slate-100">{{ total }}</div>
+      <div class="dt-stat-card rounded-lg border shadow-xl p-4">
+        <div class="text-sm dt-text-muted">当前结果</div>
+        <div class="mt-2 text-2xl font-semibold dt-text-primary">{{ total }}</div>
       </div>
-      <div class="rounded-lg bg-white/[0.03] border border-white/[0.06] shadow-xl p-4">
-        <div class="text-sm text-slate-400">进行中 / 待处理</div>
-        <div class="mt-2 text-2xl font-semibold text-indigo-400">{{ activeCount }}</div>
+      <div class="dt-stat-card rounded-lg border shadow-xl p-4">
+        <div class="text-sm dt-text-muted">进行中 / 待处理</div>
+        <div class="mt-2 text-2xl font-semibold dt-text-brand">{{ activeCount }}</div>
       </div>
-      <div class="rounded-lg bg-white/[0.03] border border-white/[0.06] shadow-xl p-4">
-        <div class="text-sm text-slate-400">已完成</div>
-        <div class="mt-2 text-2xl font-semibold text-emerald-400">{{ completedCount }}</div>
+      <div class="dt-stat-card rounded-lg border shadow-xl p-4">
+        <div class="text-sm dt-text-muted">已完成</div>
+        <div class="mt-2 text-2xl font-semibold dt-text-success-light">{{ completedCount }}</div>
       </div>
-      <div class="rounded-lg bg-white/[0.03] border border-white/[0.06] shadow-xl p-4">
-        <div class="text-sm text-slate-400">异常 / 取消</div>
-        <div class="mt-2 text-2xl font-semibold text-rose-400">{{ failedCount }}</div>
+      <div class="dt-stat-card rounded-lg border shadow-xl p-4">
+        <div class="text-sm dt-text-muted">异常 / 取消</div>
+        <div class="mt-2 text-2xl font-semibold dt-text-error-light">{{ failedCount }}</div>
       </div>
-      <div class="rounded-lg bg-white/[0.03] border border-white/[0.06] shadow-xl p-4">
-        <div class="text-sm text-slate-400">覆盖用户 / 媒体</div>
-        <div class="mt-2 text-2xl font-semibold text-slate-100">
+      <div class="dt-stat-card rounded-lg border shadow-xl p-4">
+        <div class="text-sm dt-text-muted">覆盖用户 / 媒体</div>
+        <div class="mt-2 text-2xl font-semibold dt-text-primary">
           {{ uniqueUserCount }} / {{ uniqueMediaCount }}
         </div>
       </div>
-      <div class="rounded-lg bg-white/[0.03] border border-white/[0.06] shadow-xl p-4">
-        <div class="text-sm text-slate-400">24h 内启动 / Magnet</div>
-        <div class="mt-2 text-2xl font-semibold text-slate-100">
+      <div class="dt-stat-card rounded-lg border shadow-xl p-4">
+        <div class="text-sm dt-text-muted">24h 内启动 / Magnet</div>
+        <div class="mt-2 text-2xl font-semibold dt-text-primary">
           {{ startedRecentlyCount }} / {{ magnetCount }}
         </div>
       </div>
@@ -203,7 +183,7 @@
 
     <div
       v-if="showExceptionBanner"
-      class="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-400"
+      class="dt-alert-error rounded-xl border px-4 py-3 text-sm"
     >
       <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
@@ -211,26 +191,26 @@
         </div>
         <div class="flex flex-wrap gap-2">
           <button
-            class="rounded-lg border border-rose-500/30 bg-white/[0.05] px-3 py-1.5 font-medium text-rose-400 hover:bg-rose-500/10"
+            class="dt-btn-rose rounded-lg border px-3 py-1.5 font-medium"
             @click="setStatusFilter('error')"
           >
             只看异常
           </button>
           <button
-            class="rounded-lg border border-rose-500/30 bg-white/[0.05] px-3 py-1.5 font-medium text-rose-400 hover:bg-rose-500/10"
+            class="dt-btn-rose rounded-lg border px-3 py-1.5 font-medium"
             @click="setSortMode('exceptions')"
           >
             异常优先
           </button>
           <button
-            class="rounded-lg border border-rose-500/30 bg-white/[0.05] px-3 py-1.5 font-medium text-rose-400 hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+            class="dt-btn-rose rounded-lg border px-3 py-1.5 font-medium disabled:cursor-not-allowed disabled:opacity-60"
             :disabled="bulkActionLoading"
             @click="retryVisibleFailedTasks"
           >
             {{ bulkActionLoading ? '处理中...' : '重置当前页异常' }}
           </button>
           <button
-            class="rounded-lg border border-slate-700 px-3 py-1.5 font-medium text-slate-300 hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-60"
+            class="dt-btn-secondary rounded-lg border px-3 py-1.5 font-medium disabled:cursor-not-allowed disabled:opacity-60"
             :disabled="bulkActionLoading || cancellableTaskCount === 0"
             @click="cancelVisiblePendingTasks"
           >
@@ -240,70 +220,58 @@
       </div>
     </div>
 
-    <div class="rounded-lg bg-white/[0.03] border border-white/[0.06] shadow-xl">
-      <div v-if="loading" class="p-8 text-center text-slate-400">加载中...</div>
-      <div v-else-if="error" class="p-8 text-center text-rose-400">{{ error }}</div>
+    <div class="dt-section-card rounded-lg border shadow-xl">
+      <div v-if="loading" class="p-8 text-center dt-text-muted">加载中...</div>
+      <div v-else-if="error" class="p-8 text-center dt-text-error-light">{{ error }}</div>
       <template v-else>
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-white/[0.06]">
-            <thead class="bg-white/[0.02]">
+          <table class="dt-table min-w-full divide-y">
+            <thead class="dt-table-head">
               <tr>
-                <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
-                >
+                <th class="dt-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   用户 / 媒体
                 </th>
-                <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
-                >
+                <th class="dt-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   文件
                 </th>
-                <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
-                >
+                <th class="dt-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   状态
                 </th>
-                <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
-                >
+                <th class="dt-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   进度
                 </th>
-                <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
-                >
+                <th class="dt-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   类型
                 </th>
-                <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
-                >
+                <th class="dt-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   最近更新
                 </th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-white/[0.06] bg-white/[0.03]">
+            <tbody class="dt-table-body divide-y">
               <template v-for="task in displayedTasks" :key="task.id">
                 <tr :class="rowClass(task)">
-                  <td class="px-4 py-3 text-sm text-slate-100">
+                  <td class="px-4 py-3 text-sm dt-text-primary">
                     <div class="font-medium">
                       {{ task.user?.username || `用户#${task.userId}` }}
                     </div>
-                    <div class="text-xs text-slate-400">{{ task.user?.email || '—' }}</div>
+                    <div class="text-xs dt-text-muted">{{ task.user?.email || '—' }}</div>
                     <div class="mt-2 flex flex-wrap gap-2">
                       <button
-                        class="rounded-full border border-slate-600/30 px-2.5 py-1 text-xs text-slate-400 hover:bg-white/[0.06]"
+                        class="dt-tag-btn rounded-full border px-2.5 py-1 text-xs"
                         @click="setUserFilter(task.userId)"
                       >
                         同用户任务
                       </button>
                       <button
                         v-if="task.mediaResourceId"
-                        class="rounded-full border border-slate-600/30 px-2.5 py-1 text-xs text-slate-400 hover:bg-white/[0.06]"
+                        class="dt-tag-btn rounded-full border px-2.5 py-1 text-xs"
                         @click="setMediaFilter(task.mediaResourceId)"
                       >
                         同媒体任务
                       </button>
                       <button
-                        class="rounded-full border border-slate-600/30 px-2.5 py-1 text-xs text-slate-400 hover:bg-white/[0.06]"
+                        class="dt-tag-btn rounded-full border px-2.5 py-1 text-xs"
                         @click="setTypeFilter(task.type)"
                       >
                         同类型任务
@@ -312,21 +280,21 @@
                     <RouterLink
                       v-if="task.mediaResourceId"
                       :to="{ name: 'media-detail', params: { id: task.mediaResourceId } }"
-                      class="mt-2 inline-flex text-xs text-indigo-400 hover:text-indigo-300"
+                      class="dt-link mt-2 inline-flex text-xs"
                     >
                       {{ task.mediaResource?.title || `媒体#${task.mediaResourceId}` }}
                     </RouterLink>
-                    <div v-else class="mt-2 text-xs text-slate-500">未关联媒体</div>
+                    <div v-else class="mt-2 text-xs dt-text-tertiary">未关联媒体</div>
                   </td>
-                  <td class="px-4 py-3 text-sm text-slate-100">
+                  <td class="px-4 py-3 text-sm dt-text-primary">
                     <div class="font-medium">{{ task.fileName }}</div>
-                    <div class="mt-1 text-xs text-slate-400">
+                    <div class="mt-1 text-xs dt-text-muted">
                       {{ task.sourceLabel || '未标记来源' }}
                     </div>
-                    <div class="mt-1 max-w-md break-all text-xs text-slate-500">{{ task.url }}</div>
-                    <div v-if="task.error" class="mt-2 text-xs text-rose-400">{{ task.error }}</div>
+                    <div class="dt-text-tertiary mt-1 max-w-md break-all text-xs">{{ task.url }}</div>
+                    <div v-if="task.error" class="dt-text-error-light mt-2 text-xs">{{ task.error }}</div>
                     <button
-                      class="task-detail-toggle mt-3 rounded-lg border border-slate-600/30 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/[0.06]"
+                      class="dt-detail-btn task-detail-toggle mt-3 rounded-lg border px-3 py-1.5 text-xs font-medium"
                       @click="toggleTaskDetails(task.id)"
                     >
                       {{ selectedTaskId === task.id ? '收起详情' : '查看详情' }}
@@ -339,29 +307,29 @@
                     >
                       {{ task.status }}
                     </span>
-                    <div class="mt-2 text-xs text-slate-400">
+                    <div class="dt-text-muted mt-2 text-xs">
                       启动 {{ task.launchCount || 0 }} 次
                     </div>
                   </td>
-                  <td class="px-4 py-3 text-sm text-slate-400">
-                    <div class="h-2 w-28 overflow-hidden rounded-full bg-slate-700">
+                  <td class="px-4 py-3 text-sm dt-text-muted">
+                    <div class="dt-progress-track h-2 w-28 overflow-hidden rounded-full">
                       <div
-                        class="h-full bg-indigo-600"
+                        class="dt-progress-bar h-full"
                         :style="{ width: `${displayProgress(task)}%` }"
                       ></div>
                     </div>
-                    <div class="mt-1 text-xs text-slate-400">
+                    <div class="dt-text-muted mt-1 text-xs">
                       {{ displayProgress(task) }}% · {{ formatBytes(task.downloaded) }} /
                       {{ formatBytes(task.total) }}
                     </div>
                   </td>
-                  <td class="px-4 py-3 text-sm text-slate-400">
+                  <td class="px-4 py-3 text-sm dt-text-muted">
                     <div>{{ task.type }}</div>
-                    <div class="mt-1 text-xs text-slate-500">{{ task.handler || 'browser' }}</div>
+                    <div class="dt-text-tertiary mt-1 text-xs">{{ task.handler || 'browser' }}</div>
                   </td>
-                  <td class="px-4 py-3 text-sm text-slate-400">
+                  <td class="px-4 py-3 text-sm dt-text-muted">
                     <div>{{ formatDate(task.updatedAt) }}</div>
-                    <div class="mt-1 text-xs text-slate-500">
+                    <div class="dt-text-tertiary mt-1 text-xs">
                       {{
                         task.lastLaunchedAt
                           ? `启动：${formatDate(task.lastLaunchedAt)}`
@@ -370,23 +338,23 @@
                     </div>
                   </td>
                 </tr>
-                <tr v-if="selectedTaskId === task.id" class="bg-white/[0.02]">
+                <tr v-if="selectedTaskId === task.id" class="dt-row-bg-subtle">
                   <td colspan="6" class="px-4 py-4">
                     <div class="task-detail-panel grid gap-4 lg:grid-cols-2">
                       <div
-                        class="rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-4 py-4 lg:col-span-2"
+                        class="dt-recommend-box rounded-xl border px-4 py-4 lg:col-span-2"
                         data-testid="task-recommendation"
                       >
-                        <div class="text-xs font-medium uppercase tracking-wide text-indigo-400">
+                        <div class="text-xs font-medium uppercase tracking-wide dt-text-brand">
                           Recommended Action
                         </div>
                         <div
-                          class="mt-2 text-sm font-semibold text-slate-100"
+                          class="dt-text-primary mt-2 text-sm font-semibold"
                           data-testid="task-recommendation-title"
                         >
                           {{ taskRecommendation(task).title }}
                         </div>
-                        <div class="mt-2 text-sm text-slate-400">
+                        <div class="dt-text-muted mt-2 text-sm">
                           {{ taskRecommendation(task).description }}
                         </div>
                         <div class="mt-3 flex flex-wrap gap-2">
@@ -394,13 +362,13 @@
                             v-for="action in taskRecommendation(task).actions"
                             :key="`${task.id}-${action.label}`"
                             :to="action.to"
-                            class="rounded-full border border-indigo-500/30 bg-white/[0.05] px-3 py-1.5 text-xs font-medium text-indigo-300 hover:bg-indigo-500/20"
+                            class="dt-action-brand rounded-full border px-3 py-1.5 text-xs font-medium"
                           >
                             {{ action.label }}
                           </router-link>
                           <button
                             v-if="task.status === 'error' || task.status === 'cancelled'"
-                            class="rounded-full border border-emerald-500/30 bg-white/[0.05] px-3 py-1.5 text-xs font-medium text-emerald-400 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                            class="dt-action-success rounded-full border px-3 py-1.5 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-60"
                             :disabled="actionLoadingTaskId === task.id"
                             @click="handleTaskAction(task, 'retry')"
                           >
@@ -408,7 +376,7 @@
                           </button>
                           <button
                             v-if="task.status !== 'completed' && task.status !== 'cancelled'"
-                            class="rounded-full border border-rose-500/30 bg-white/[0.05] px-3 py-1.5 text-xs font-medium text-rose-400 hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                            class="dt-action-error rounded-full border px-3 py-1.5 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-60"
                             :disabled="actionLoadingTaskId === task.id"
                             @click="handleTaskAction(task, 'cancel')"
                           >
@@ -416,19 +384,19 @@
                           </button>
                         </div>
                       </div>
-                      <div class="space-y-3 text-sm text-slate-300">
+                      <div class="space-y-3 text-sm dt-text-muted">
                         <div>
-                          <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                          <div class="dt-detail-label text-xs font-medium uppercase tracking-wide">
                             Task ID
                           </div>
                           <div class="mt-1">{{ task.clientId }}</div>
                         </div>
                         <div>
-                          <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                          <div class="dt-detail-label text-xs font-medium uppercase tracking-wide">
                             创建 / 完成
                           </div>
                           <div class="mt-1">{{ formatDate(task.createdAt) }}</div>
-                          <div class="mt-1 text-xs text-slate-500">
+                          <div class="dt-text-tertiary mt-1 text-xs">
                             {{
                               task.completedAt
                                 ? `完成：${formatDate(task.completedAt)}`
@@ -437,7 +405,7 @@
                           </div>
                         </div>
                         <div>
-                          <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                          <div class="dt-detail-label text-xs font-medium uppercase tracking-wide">
                             最近启动
                           </div>
                           <div class="mt-1">
@@ -445,49 +413,45 @@
                           </div>
                         </div>
                         <div>
-                          <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                          <div class="dt-detail-label text-xs font-medium uppercase tracking-wide">
                             保存路径
                           </div>
                           <div class="mt-1 break-all">{{ task.filePath || '未记录' }}</div>
                         </div>
                         <div>
-                          <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                          <div class="dt-detail-label text-xs font-medium uppercase tracking-wide">
                             原始链接
                           </div>
                           <a
                             :href="task.url"
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="mt-1 inline-flex break-all text-indigo-400 hover:text-indigo-300"
+                            class="dt-link mt-1 inline-flex break-all"
                           >
                             {{ task.url }}
                           </a>
                         </div>
                       </div>
-                      <div class="space-y-3 text-sm text-slate-300">
+                      <div class="space-y-3 text-sm dt-text-muted">
                         <div>
-                          <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                          <div class="dt-detail-label text-xs font-medium uppercase tracking-wide">
                             错误详情
                           </div>
-                          <div
-                            class="mt-1 rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm"
-                          >
+                          <div class="dt-error-box mt-1 rounded-lg border px-3 py-2 text-sm">
                             {{ task.error || '暂无错误信息' }}
                           </div>
                         </div>
                         <div>
-                          <div class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                          <div class="dt-detail-label text-xs font-medium uppercase tracking-wide">
                             Metadata
                           </div>
                           <div v-if="metadataEntries(task).length > 0" class="mt-1 space-y-2">
                             <div
                               v-for="item in metadataEntries(task)"
                               :key="item.key"
-                              class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2"
+                              class="dt-metadata-box rounded-lg border px-3 py-2"
                             >
-                              <div
-                                class="text-xs font-medium uppercase tracking-wide text-slate-400"
-                              >
+                              <div class="dt-detail-label text-xs font-medium uppercase tracking-wide">
                                 {{ item.key }}
                               </div>
                               <div class="mt-1 break-all">{{ item.value }}</div>
@@ -495,7 +459,7 @@
                           </div>
                           <div
                             v-else
-                            class="mt-1 rounded-lg border border-dashed border-slate-700 bg-white/[0.05] px-3 py-2 text-slate-500"
+                            class="dt-metadata-empty mt-1 rounded-lg border border-dashed px-3 py-2"
                           >
                             暂无 metadata
                           </div>
@@ -509,14 +473,12 @@
           </table>
         </div>
 
-        <div
-          class="flex items-center justify-between border-t border-white/[0.06] px-4 py-3 text-sm text-slate-400"
-        >
+        <div class="dt-pagination flex items-center justify-between border-t px-4 py-3 text-sm">
           <span>共 {{ total }} 条</span>
           <div class="flex items-center gap-3">
             <button
               :disabled="page <= 1"
-              class="rounded border border-slate-700 px-3 py-1 text-slate-300 disabled:opacity-50"
+              class="dt-page-btn rounded border px-3 py-1 disabled:opacity-50"
               @click="applyFilters(page - 1)"
             >
               上一页
@@ -524,7 +486,7 @@
             <span>{{ page }} / {{ totalPages }}</span>
             <button
               :disabled="page >= totalPages"
-              class="rounded border border-slate-700 px-3 py-1 text-slate-300 disabled:opacity-50"
+              class="dt-page-btn rounded border px-3 py-1 disabled:opacity-50"
               @click="applyFilters(page + 1)"
             >
               下一页
@@ -1076,12 +1038,12 @@
 
   const statusClass = (status: AdminDownloadTaskItem['status']) => {
     const classMap: Record<AdminDownloadTaskItem['status'], string> = {
-      pending: 'bg-amber-100 text-amber-700',
-      downloading: 'bg-blue-100 text-blue-700',
-      paused: 'bg-slate-100 text-slate-700',
-      completed: 'bg-emerald-100 text-emerald-700',
-      error: 'bg-red-100 text-red-700',
-      cancelled: 'bg-rose-100 text-rose-700',
+      pending: 'dt-status--pending',
+      downloading: 'dt-status--downloading',
+      paused: 'dt-status--paused',
+      completed: 'dt-status--completed',
+      error: 'dt-status--error',
+      cancelled: 'dt-status--cancelled',
     };
 
     return classMap[status];
@@ -1089,10 +1051,10 @@
 
   const rowClass = (task: AdminDownloadTaskItem) => {
     if (task.status === 'error' || task.status === 'cancelled') {
-      return 'bg-red-50/60';
+      return 'dt-row--error';
     }
     if (task.status === 'downloading') {
-      return 'bg-blue-50/50';
+      return 'dt-row--downloading';
     }
     return '';
   };
@@ -1243,3 +1205,310 @@
     { immediate: true },
   );
 </script>
+
+<style scoped>
+  /* ========== Text Colors ========== */
+  .dt-text-primary {
+    color: var(--text-primary);
+  }
+
+  .dt-text-secondary {
+    color: var(--text-secondary);
+  }
+
+  .dt-text-muted {
+    color: var(--text-muted);
+  }
+
+  .dt-text-tertiary {
+    color: var(--text-tertiary);
+  }
+
+  .dt-text-brand {
+    color: var(--color-brand-light, #818cf8);
+  }
+
+  .dt-text-success-light {
+    color: var(--color-success-light, #34d399);
+  }
+
+  .dt-text-error-light {
+    color: var(--color-error-light, #f87171);
+  }
+
+  /* ========== Form Inputs ========== */
+  .dt-input {
+    border-color: var(--border-primary);
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+  }
+
+  .dt-input::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  /* ========== Buttons ========== */
+  .dt-btn-primary {
+    background-color: var(--color-brand-primary);
+    color: #fff;
+  }
+
+  .dt-btn-primary:hover {
+    background-color: var(--color-brand-hover, #4338ca);
+  }
+
+  .dt-btn-secondary {
+    border-color: var(--border-primary);
+    color: var(--text-muted);
+  }
+
+  .dt-btn-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .dt-btn-rose {
+    border-color: rgba(239, 68, 68, 0.3);
+    background-color: var(--bg-secondary);
+    color: var(--color-error-light, #f87171);
+  }
+
+  .dt-btn-rose:hover {
+    background-color: rgba(239, 68, 68, 0.1);
+  }
+
+  /* ========== Filter Pills ========== */
+  .dt-pill-active-brand {
+    border-color: rgba(129, 140, 248, 0.3);
+    background-color: rgba(99, 102, 241, 0.15);
+    color: var(--color-brand-lighter, #a5b4fc);
+  }
+
+  .dt-pill-active-success {
+    border-color: rgba(52, 211, 153, 0.3);
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #6ee7b7;
+  }
+
+  .dt-pill-inactive {
+    border-color: var(--border-primary);
+    background-color: var(--bg-secondary);
+    color: var(--text-muted);
+  }
+
+  .dt-pill-inactive:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+
+  /* ========== Filter Chips ========== */
+  .dt-chip {
+    border-color: rgba(71, 85, 105, 0.3);
+    background-color: rgba(100, 116, 139, 0.15);
+    color: var(--text-muted);
+  }
+
+  .dt-chip-close {
+    color: var(--text-tertiary);
+  }
+
+  .dt-chip-close:hover {
+    color: var(--text-secondary);
+  }
+
+  /* ========== Alerts ========== */
+  .dt-alert-success {
+    border-color: rgba(16, 185, 129, 0.3);
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--color-success-light, #34d399);
+  }
+
+  .dt-alert-error {
+    border-color: rgba(239, 68, 68, 0.3);
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--color-error-light, #f87171);
+  }
+
+  /* ========== Cards ========== */
+  .dt-stat-card {
+    background-color: var(--bg-tertiary);
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .dt-section-card {
+    background-color: var(--bg-tertiary);
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  /* ========== Table ========== */
+  .dt-table > :not(:first-child) {
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .dt-table-head {
+    background-color: rgba(255, 255, 255, 0.02);
+  }
+
+  .dt-th {
+    color: var(--text-muted);
+  }
+
+  .dt-table-body {
+    background-color: var(--bg-tertiary);
+  }
+
+  .dt-table-body > :not(:first-child) {
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  /* ========== Tag Buttons ========== */
+  .dt-tag-btn {
+    border-color: rgba(71, 85, 105, 0.3);
+    color: var(--text-muted);
+  }
+
+  .dt-tag-btn:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+  }
+
+  /* ========== Links ========== */
+  .dt-link {
+    color: var(--color-brand-light, #818cf8);
+  }
+
+  .dt-link:hover {
+    color: var(--color-brand-lighter, #a5b4fc);
+  }
+
+  /* ========== Detail Button ========== */
+  .dt-detail-btn {
+    border-color: rgba(71, 85, 105, 0.3);
+    color: var(--text-muted);
+  }
+
+  .dt-detail-btn:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+  }
+
+  /* ========== Detail Labels ========== */
+  .dt-detail-label {
+    color: var(--text-muted);
+  }
+
+  /* ========== Progress Bar ========== */
+  .dt-progress-track {
+    background-color: var(--border-primary, #334155);
+  }
+
+  .dt-progress-bar {
+    background-color: var(--color-brand-primary);
+  }
+
+  /* ========== Expanded Row ========== */
+  .dt-row-bg-subtle {
+    background-color: rgba(255, 255, 255, 0.02);
+  }
+
+  /* ========== Recommendation Box ========== */
+  .dt-recommend-box {
+    border-color: rgba(99, 102, 241, 0.3);
+    background-color: rgba(99, 102, 241, 0.1);
+  }
+
+  /* ========== Action Buttons (Recommendation) ========== */
+  .dt-action-brand {
+    border-color: rgba(99, 102, 241, 0.3);
+    background-color: var(--bg-secondary);
+    color: var(--color-brand-lighter, #a5b4fc);
+  }
+
+  .dt-action-brand:hover {
+    background-color: rgba(99, 102, 241, 0.2);
+  }
+
+  .dt-action-success {
+    border-color: rgba(16, 185, 129, 0.3);
+    background-color: var(--bg-secondary);
+    color: var(--color-success-light, #34d399);
+  }
+
+  .dt-action-success:hover {
+    background-color: rgba(16, 185, 129, 0.2);
+  }
+
+  .dt-action-error {
+    border-color: rgba(239, 68, 68, 0.3);
+    background-color: var(--bg-secondary);
+    color: var(--color-error-light, #f87171);
+  }
+
+  .dt-action-error:hover {
+    background-color: rgba(239, 68, 68, 0.2);
+  }
+
+  /* ========== Metadata Boxes ========== */
+  .dt-error-box {
+    border-color: var(--border-primary);
+    background-color: var(--bg-secondary);
+  }
+
+  .dt-metadata-box {
+    border-color: var(--border-primary);
+    background-color: var(--bg-secondary);
+  }
+
+  .dt-metadata-empty {
+    border-color: var(--border-primary);
+    background-color: var(--bg-secondary);
+    color: var(--text-tertiary);
+  }
+
+  /* ========== Pagination ========== */
+  .dt-pagination {
+    border-color: rgba(255, 255, 255, 0.06);
+    color: var(--text-muted);
+  }
+
+  .dt-page-btn {
+    border-color: var(--border-primary);
+    color: var(--text-muted);
+  }
+
+  /* ========== Status Badges ========== */
+  .dt-status--pending {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--color-warning-light, #fbbf24);
+  }
+
+  .dt-status--downloading {
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--color-info-light, #60a5fa);
+  }
+
+  .dt-status--paused {
+    background: rgba(148, 163, 184, 0.15);
+    color: var(--text-muted, #94a3b8);
+  }
+
+  .dt-status--completed {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--color-success-light, #34d399);
+  }
+
+  .dt-status--error {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--color-error-light, #f87171);
+  }
+
+  .dt-status--cancelled {
+    background: rgba(244, 63, 94, 0.15);
+    color: var(--color-error-light, #fb7185);
+  }
+
+  /* ========== Row Highlighting ========== */
+  .dt-row--error {
+    background: rgba(239, 68, 68, 0.06);
+  }
+
+  .dt-row--downloading {
+    background: rgba(59, 130, 246, 0.06);
+  }
+</style>

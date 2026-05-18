@@ -2,18 +2,18 @@
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-xl font-semibold text-slate-100">源脚本管理</h1>
-        <p class="mt-1 text-sm text-slate-400">管理自定义视频源插件脚本</p>
+        <h1 class="src-title text-xl font-semibold">源脚本管理</h1>
+        <p class="src-subtitle mt-1 text-sm">管理自定义视频源插件脚本</p>
       </div>
       <div class="flex gap-2">
         <button
-          class="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 transition hover:bg-white/10"
+          class="src-btn-ghost rounded-lg border px-4 py-2 text-sm transition"
           @click="loadTemplate"
         >
           获取模板
         </button>
         <button
-          class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500"
+          class="src-btn-primary rounded-lg px-4 py-2 text-sm font-medium transition"
           @click="openEditor()"
         >
           新建脚本
@@ -22,45 +22,43 @@
     </div>
 
     <div v-if="loading" class="flex justify-center py-12">
-      <div
-        class="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-indigo-500"
-      ></div>
+      <div class="src-spinner h-8 w-8 animate-spin rounded-full border-2"></div>
     </div>
 
     <div
       v-else-if="scripts.length === 0"
-      class="rounded-xl border border-white/[0.06] bg-white/[0.03] py-16 text-center"
+      class="src-empty-card rounded-xl border py-16 text-center"
     >
-      <p class="text-slate-400">暂无源脚本，点击"新建脚本"开始</p>
+      <p class="src-text-muted">暂无源脚本，点击"新建脚本"开始</p>
     </div>
 
     <div v-else class="space-y-3">
       <div
         v-for="script in scripts"
         :key="script.id"
-        class="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.03] p-4 transition hover:border-white/10"
+        class="src-card flex items-center justify-between rounded-xl border p-4 transition"
       >
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-3">
-            <span class="text-sm font-medium text-slate-100">{{ script.name }}</span>
-            <code class="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-400">{{
+            <span class="src-text-primary text-sm font-medium">{{ script.name }}</span>
+            <code class="src-code rounded px-2 py-0.5 text-xs">{{
               script.key
             }}</code>
             <span
               class="rounded-full px-2 py-0.5 text-xs font-medium"
               :class="
                 script.enabled
-                  ? 'bg-emerald-500/15 text-emerald-400'
-                  : 'bg-slate-500/15 text-slate-400'
+                  ? 'src-badge-success'
+                  : 'src-badge-muted'
               "
             >
               {{ script.enabled ? '已启用' : '已禁用' }}
             </span>
           </div>
-          <p v-if="script.description" class="mt-1 truncate text-xs text-slate-500">
+          <p v-if="script.description" class="src-text-tertiary mt-1 truncate text-xs">
             {{ script.description }}
           </p>
-          <div class="mt-2 flex gap-4 text-xs text-slate-500">
+          <div class="src-text-tertiary mt-2 flex gap-4 text-xs">
             <span>请求: {{ script.requestCount }}</span>
             <span>错误: {{ script.errorCount }}</span>
             <span v-if="script.lastUsedAt">最后使用: {{ formatTime(script.lastUsedAt) }}</span>
@@ -68,25 +66,25 @@
         </div>
         <div class="flex items-center gap-2">
           <button
-            class="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-slate-300 transition hover:bg-white/10"
+            class="src-btn-ghost rounded-lg border px-3 py-1.5 text-xs transition"
             @click="testScript(script)"
           >
             测试
           </button>
           <button
-            class="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-slate-300 transition hover:bg-white/10"
+            class="src-btn-ghost rounded-lg border px-3 py-1.5 text-xs transition"
             @click="toggleScript(script)"
           >
             {{ script.enabled ? '禁用' : '启用' }}
           </button>
           <button
-            class="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-slate-300 transition hover:bg-white/10"
+            class="src-btn-ghost rounded-lg border px-3 py-1.5 text-xs transition"
             @click="openEditor(script)"
           >
             编辑
           </button>
           <button
-            class="rounded-lg border border-red-500/20 px-3 py-1.5 text-xs text-red-400 transition hover:bg-red-500/10"
+            class="src-btn-danger rounded-lg border px-3 py-1.5 text-xs transition"
             @click="deleteScript(script)"
           >
             删除
@@ -102,91 +100,91 @@
         @click.self="closeEditor"
       >
         <div
-          class="flex h-[90vh] w-[90vw] max-w-5xl flex-col rounded-2xl border border-white/10 bg-[#0f1520] shadow-2xl"
+          class="src-modal flex h-[90vh] w-[90vw] max-w-5xl flex-col rounded-2xl border shadow-2xl"
         >
-          <div class="flex items-center justify-between border-b border-white/[0.06] px-6 py-4">
-            <h2 class="text-lg font-semibold text-slate-100">
+          <div class="src-border-subtle flex items-center justify-between border-b px-6 py-4">
+            <h2 class="src-text-primary text-lg font-semibold">
               {{ editingScript?.id ? '编辑脚本' : '新建脚本' }}
             </h2>
-            <button class="text-slate-400 hover:text-white" @click="closeEditor">&times;</button>
+            <button class="src-close-btn" @click="closeEditor">&times;</button>
           </div>
 
           <div class="flex flex-1 overflow-hidden">
-            <div class="flex w-80 flex-col border-r border-white/[0.06] p-4">
+            <div class="src-border-subtle flex w-80 flex-col border-r p-4">
               <div class="space-y-3">
                 <div>
-                  <label class="mb-1 block text-xs text-slate-400">脚本 Key</label>
+                  <label class="src-text-muted mb-1 block text-xs">脚本 Key</label>
                   <input
                     v-model="form.key"
-                    class="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 outline-none focus:border-indigo-500"
+                    class="src-input w-full rounded-lg border px-3 py-2 text-sm outline-none"
                     placeholder="my-source"
                   />
                 </div>
                 <div>
-                  <label class="mb-1 block text-xs text-slate-400">名称</label>
+                  <label class="src-text-muted mb-1 block text-xs">名称</label>
                   <input
                     v-model="form.name"
-                    class="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 outline-none focus:border-indigo-500"
+                    class="src-input w-full rounded-lg border px-3 py-2 text-sm outline-none"
                     placeholder="My Source"
                   />
                 </div>
                 <div>
-                  <label class="mb-1 block text-xs text-slate-400">描述</label>
+                  <label class="src-text-muted mb-1 block text-xs">描述</label>
                   <input
                     v-model="form.description"
-                    class="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 outline-none focus:border-indigo-500"
+                    class="src-input w-full rounded-lg border px-3 py-2 text-sm outline-none"
                     placeholder="A custom source"
                   />
                 </div>
               </div>
 
               <div
-                class="mt-4 flex-1 overflow-auto rounded-lg border border-white/[0.06] bg-slate-900/50 p-3"
+                class="src-test-panel mt-4 flex-1 overflow-auto rounded-lg border p-3"
               >
-                <h3 class="mb-2 text-xs font-medium text-slate-400">测试结果</h3>
+                <h3 class="src-text-muted mb-2 text-xs font-medium">测试结果</h3>
                 <div v-if="testResult">
                   <div class="flex items-center gap-2">
                     <span
                       class="rounded-full px-2 py-0.5 text-xs"
                       :class="
                         testResult.ok
-                          ? 'bg-emerald-500/15 text-emerald-400'
-                          : 'bg-red-500/15 text-red-400'
+                          ? 'src-badge-success'
+                          : 'src-badge-error'
                       "
                     >
                       {{ testResult.ok ? '成功' : '失败' }}
                     </span>
-                    <span class="text-xs text-slate-500">{{ testResult.duration }}ms</span>
+                    <span class="src-text-tertiary text-xs">{{ testResult.duration }}ms</span>
                   </div>
                   <pre
                     v-if="testResult.error"
-                    class="mt-2 whitespace-pre-wrap break-all text-xs text-red-300"
+                    class="src-text-error mt-2 whitespace-pre-wrap break-all text-xs"
                     >{{ testResult.error }}</pre
                   >
                   <pre
                     v-if="testResult.logs?.length"
-                    class="mt-2 whitespace-pre-wrap break-all text-xs text-slate-400"
+                    class="src-text-muted mt-2 whitespace-pre-wrap break-all text-xs"
                     >{{ testResult.logs.join('\n') }}</pre
                   >
                   <pre
                     v-if="testResult.result"
-                    class="mt-2 max-h-60 overflow-auto whitespace-pre-wrap break-all text-xs text-slate-300"
+                    class="src-text-secondary mt-2 max-h-60 overflow-auto whitespace-pre-wrap break-all text-xs"
                     >{{ JSON.stringify(testResult.result, null, 2) }}</pre
                   >
                 </div>
-                <p v-else class="text-xs text-slate-500">点击"测试"按钮运行脚本</p>
+                <p v-else class="src-text-tertiary text-xs">点击"测试"按钮运行脚本</p>
               </div>
 
               <div class="mt-4 flex gap-2">
                 <button
-                  class="flex-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:opacity-50"
+                  class="src-btn-primary flex-1 rounded-lg px-4 py-2 text-sm font-medium transition disabled:opacity-50"
                   :disabled="saving || !form.key || !form.name || !form.code"
                   @click="saveScript"
                 >
                   {{ saving ? '保存中...' : '保存' }}
                 </button>
                 <button
-                  class="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 transition hover:bg-white/10 disabled:opacity-50"
+                  class="src-btn-ghost rounded-lg border px-4 py-2 text-sm transition disabled:opacity-50"
                   :disabled="testing"
                   @click="runTest"
                 >
@@ -196,10 +194,10 @@
             </div>
 
             <div class="flex flex-1 flex-col">
-              <div class="flex items-center justify-between border-b border-white/[0.06] px-4 py-2">
-                <span class="text-xs text-slate-400">代码编辑器</span>
+              <div class="src-border-subtle flex items-center justify-between border-b px-4 py-2">
+                <span class="src-text-muted text-xs">代码编辑器</span>
                 <button
-                  class="rounded px-2 py-1 text-xs text-slate-400 hover:bg-white/5"
+                  class="src-action-btn rounded px-2 py-1 text-xs"
                   @click="form.code = template"
                 >
                   插入模板
@@ -207,7 +205,7 @@
               </div>
               <textarea
                 v-model="form.code"
-                class="flex-1 resize-none bg-transparent p-4 font-mono text-sm leading-relaxed text-slate-200 outline-none"
+                class="src-textarea flex-1 resize-none bg-transparent p-4 font-mono text-sm leading-relaxed outline-none"
                 spellcheck="false"
                 placeholder="// Write your script here..."
               ></textarea>
@@ -388,6 +386,164 @@
 </script>
 
 <style scoped>
+  /* ===== 文本色 ===== */
+  .src-title {
+    color: var(--text-primary);
+  }
+
+  .src-subtitle {
+    color: var(--text-muted);
+  }
+
+  .src-text-primary {
+    color: var(--text-primary);
+  }
+
+  .src-text-secondary {
+    color: var(--text-secondary);
+  }
+
+  .src-text-muted {
+    color: var(--text-muted);
+  }
+
+  .src-text-tertiary {
+    color: var(--text-tertiary);
+  }
+
+  .src-text-error {
+    color: var(--color-error-light);
+  }
+
+  .src-close-btn {
+    color: var(--text-muted);
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    transition: color var(--transition-fast);
+  }
+
+  .src-close-btn:hover {
+    color: var(--text-primary);
+  }
+
+  /* ===== 背景色 ===== */
+  .src-empty-card {
+    border-color: var(--border-primary);
+    background-color: var(--bg-tertiary);
+  }
+
+  .src-card {
+    border-color: var(--border-primary);
+    background-color: var(--bg-tertiary);
+  }
+
+  .src-card:hover {
+    border-color: var(--border-secondary);
+  }
+
+  .src-code {
+    background-color: var(--color-gray-800);
+    color: var(--text-muted);
+  }
+
+  .src-modal {
+    border-color: var(--border-secondary);
+    background-color: var(--bg-card);
+  }
+
+  .src-test-panel {
+    border-color: var(--border-primary);
+    background-color: var(--bg-secondary);
+  }
+
+  /* ===== 按钮 ===== */
+  .src-btn-primary {
+    background-color: var(--color-brand-primary);
+    color: var(--text-inverse);
+  }
+
+  .src-btn-primary:hover {
+    background-color: var(--color-brand-primary-light);
+  }
+
+  .src-btn-ghost {
+    border-color: var(--border-secondary);
+    color: var(--text-muted);
+  }
+
+  .src-btn-ghost:hover {
+    background-color: var(--bg-secondary);
+  }
+
+  .src-btn-danger {
+    border-color: var(--color-error);
+    color: var(--color-error-light);
+  }
+
+  .src-btn-danger:hover {
+    background-color: rgba(239, 68, 68, 0.1);
+  }
+
+  /* ===== 表单输入 ===== */
+  .src-input {
+    border-color: var(--border-secondary);
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+  }
+
+  .src-input:focus {
+    border-color: var(--border-focus);
+  }
+
+  /* ===== 徽章 ===== */
+  .src-badge-success {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: var(--color-success-light);
+  }
+
+  .src-badge-error {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: var(--color-error-light);
+  }
+
+  .src-badge-muted {
+    background-color: rgba(100, 116, 139, 0.15);
+    color: var(--text-muted);
+  }
+
+  /* ===== 加载指示器 ===== */
+  .src-spinner {
+    border-color: var(--color-gray-600);
+    border-top-color: var(--color-brand-primary);
+  }
+
+  /* ===== 边框 ===== */
+  .src-border-subtle {
+    border-color: var(--border-primary);
+  }
+
+  /* ===== 操作按钮 ===== */
+  .src-action-btn {
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+  }
+
+  .src-action-btn:hover {
+    background-color: var(--bg-secondary);
+  }
+
+  /* ===== 文本域 ===== */
+  .src-textarea {
+    color: var(--text-secondary);
+  }
+
+  /* ===== 模态框动画 ===== */
   .modal-enter-active,
   .modal-leave-active {
     transition: opacity 0.2s ease;

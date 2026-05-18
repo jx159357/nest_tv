@@ -3,14 +3,15 @@
     <div class="space-y-8">
       <header class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900">偏好设置</h1>
-          <p class="mt-2 text-sm text-gray-600">
+          <h1 class="text-3xl font-bold" style="color: var(--text-primary)">偏好设置</h1>
+          <p class="mt-2 text-sm" style="color: var(--text-muted)">
             在这里维护你的公开资料与推荐偏好，让推荐结果更贴近你的真实兴趣。
           </p>
         </div>
         <router-link
           :to="{ name: 'recommendations', query: { focus: 'profile' } }"
-          class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+          class="rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
+          style="border-color: var(--border-primary); color: var(--text-secondary)"
         >
           查看推荐画像
         </router-link>
@@ -18,7 +19,8 @@
 
       <section
         v-if="hasUnsavedChanges"
-        class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700"
+        class="rounded-xl border px-4 py-3 text-sm"
+        style="border-color: var(--color-warning-border); background: var(--color-warning-bg); color: var(--color-warning)"
       >
         你有尚未保存的更改。离开页面或刷新前，建议先保存。
       </section>
@@ -33,11 +35,11 @@
       />
 
       <div class="grid gap-6 xl:grid-cols-[1.05fr_1fr]">
-        <section class="rounded-2xl bg-white p-6 shadow-sm">
+        <section class="rounded-2xl p-6 shadow-sm" style="background: var(--bg-card)">
           <div class="flex items-center justify-between gap-4">
             <div>
-              <h2 class="text-xl font-semibold text-gray-900">公开资料</h2>
-              <p class="mt-2 text-sm text-gray-600">
+              <h2 class="text-xl font-semibold" style="color: var(--text-primary)">公开资料</h2>
+              <p class="mt-2 text-sm" style="color: var(--text-muted)">
                 这些信息会影响页面上的个人展示和部分推荐文案。
               </p>
             </div>
@@ -49,40 +51,44 @@
 
           <div v-else class="mt-6 space-y-5">
             <label class="block space-y-2">
-              <span class="text-sm font-medium text-gray-700">昵称</span>
+              <span class="text-sm font-medium" style="color: var(--text-secondary)">昵称</span>
               <input
                 v-model="form.nickname"
                 type="text"
-                class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                class="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)"
                 placeholder="给自己一个更容易识别的昵称"
               />
             </label>
 
             <label class="block space-y-2">
-              <span class="text-sm font-medium text-gray-700">手机号</span>
+              <span class="text-sm font-medium" style="color: var(--text-secondary)">手机号</span>
               <input
                 v-model="form.phone"
                 type="text"
-                class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                class="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)"
                 placeholder="用于找回或联系（选填）"
               />
             </label>
 
             <label class="block space-y-2">
-              <span class="text-sm font-medium text-gray-700">头像链接</span>
+              <span class="text-sm font-medium" style="color: var(--text-secondary)">头像链接</span>
               <input
                 v-model="form.avatar"
                 type="text"
-                class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                class="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)"
                 placeholder="https://example.com/avatar.png"
               />
             </label>
 
-            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div class="text-sm font-medium text-gray-700">头像预览</div>
+            <div class="rounded-2xl border p-4" style="border-color: var(--border-primary); background: var(--bg-secondary)">
+              <div class="text-sm font-medium" style="color: var(--text-secondary)">头像预览</div>
               <div class="mt-3 flex items-center gap-4">
                 <div
-                  class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm"
+                  class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full shadow-sm"
+                  style="background: var(--bg-card)"
                 >
                   <img
                     v-if="avatarPreviewUrl && !avatarPreviewError"
@@ -91,11 +97,11 @@
                     class="h-full w-full object-cover"
                     @error="avatarPreviewError = true"
                   />
-                  <span v-else class="text-sm text-slate-400">暂无预览</span>
+                  <span v-else class="text-sm" style="color: var(--text-muted)">暂无预览</span>
                 </div>
-                <div class="text-sm text-slate-500">
+                <div class="text-sm" style="color: var(--text-muted)">
                   <p>建议使用可公开访问的 `http` / `https` 图片地址。</p>
-                  <p v-if="avatarValidationMessage" class="mt-1 text-red-600">
+                  <p v-if="avatarValidationMessage" class="mt-1" style="color: var(--color-danger)">
                     {{ avatarValidationMessage }}
                   </p>
                 </div>
@@ -104,9 +110,9 @@
           </div>
         </section>
 
-        <section class="rounded-2xl bg-white p-6 shadow-sm">
-          <h2 class="text-xl font-semibold text-gray-900">推荐偏好</h2>
-          <p class="mt-2 text-sm text-gray-600">
+        <section class="rounded-2xl p-6 shadow-sm" style="background: var(--bg-card)">
+          <h2 class="text-xl font-semibold" style="color: var(--text-primary)">推荐偏好</h2>
+          <p class="mt-2 text-sm" style="color: var(--text-muted)">
             显式告诉系统你偏好什么、排斥什么，以及希望推荐更偏“新”还是更偏“经典”。
           </p>
 
@@ -116,7 +122,7 @@
 
           <div v-else class="mt-6 space-y-6">
             <div>
-              <div class="text-sm font-medium text-gray-700">偏好类型</div>
+              <div class="text-sm font-medium" style="color: var(--text-secondary)">偏好类型</div>
               <div class="mt-3 flex flex-wrap gap-2">
                 <button
                   v-for="option in typeOptions"
@@ -125,8 +131,8 @@
                   class="rounded-full px-4 py-2 text-sm font-medium transition-colors"
                   :class="
                     isSelected(form.recommendationSettings.preferredTypes, option.value)
-                      ? 'bg-indigo-100 text-indigo-700'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      ? 'tag-selected'
+                      : 'tag-default'
                   "
                   @click="toggleItem(form.recommendationSettings.preferredTypes, option.value)"
                 >
@@ -136,7 +142,7 @@
             </div>
 
             <div>
-              <div class="text-sm font-medium text-gray-700">偏好标签</div>
+              <div class="text-sm font-medium" style="color: var(--text-secondary)">偏好标签</div>
               <div class="mt-3 flex flex-wrap gap-2">
                 <button
                   v-for="genre in genreOptions"
@@ -145,8 +151,8 @@
                   class="rounded-full px-4 py-2 text-sm font-medium transition-colors"
                   :class="
                     isSelected(form.recommendationSettings.preferredGenres, genre)
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      ? 'tag-success'
+                      : 'tag-default'
                   "
                   @click="toggleItem(form.recommendationSettings.preferredGenres, genre)"
                 >
@@ -156,7 +162,7 @@
             </div>
 
             <div>
-              <div class="text-sm font-medium text-gray-700">排除标签</div>
+              <div class="text-sm font-medium" style="color: var(--text-secondary)">排除标签</div>
               <div class="mt-3 flex flex-wrap gap-2">
                 <button
                   v-for="genre in genreOptions"
@@ -165,8 +171,8 @@
                   class="rounded-full px-4 py-2 text-sm font-medium transition-colors"
                   :class="
                     isSelected(form.recommendationSettings.excludedGenres, genre)
-                      ? 'bg-rose-100 text-rose-700'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      ? 'tag-danger'
+                      : 'tag-default'
                   "
                   @click="toggleItem(form.recommendationSettings.excludedGenres, genre)"
                 >
@@ -177,11 +183,12 @@
 
             <div>
               <div class="flex items-center justify-between gap-3">
-                <div class="text-sm font-medium text-gray-700">偏好关键词</div>
+                <div class="text-sm font-medium" style="color: var(--text-secondary)">偏好关键词</div>
                 <button
                   v-if="recentSearches.length > 0"
                   type="button"
-                  class="text-xs font-semibold text-indigo-600 hover:text-indigo-500"
+                  class="text-xs font-semibold"
+                  style="color: var(--color-brand-primary)"
                   @click="applyRecentSearchKeywords"
                 >
                   一键使用最近搜索
@@ -190,7 +197,8 @@
               <input
                 v-model="keywordInput"
                 type="text"
-                class="mt-3 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                class="mt-3 w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)"
                 placeholder="输入关键词，用逗号分隔，例如：沙丘, 科幻, 悬疑"
               />
               <div v-if="recentSearches.length > 0" class="mt-3 flex flex-wrap gap-2">
@@ -198,7 +206,8 @@
                   v-for="keyword in recentSearches"
                   :key="`recent-${keyword}`"
                   type="button"
-                  class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 transition-colors hover:bg-violet-200"
+                  class="rounded-full px-3 py-1 text-xs font-medium transition-colors"
+                  style="background: rgba(139, 92, 246, 0.12); color: #8b5cf6"
                   @click="addKeyword(keyword)"
                 >
                   + {{ keyword }}
@@ -207,7 +216,7 @@
             </div>
 
             <div>
-              <div class="text-sm font-medium text-gray-700">新鲜度偏好</div>
+              <div class="text-sm font-medium" style="color: var(--text-secondary)">新鲜度偏好</div>
               <div class="mt-3 grid gap-3 sm:grid-cols-3">
                 <button
                   v-for="option in freshnessOptions"
@@ -216,8 +225,8 @@
                   class="rounded-2xl border px-4 py-3 text-left transition-colors"
                   :class="
                     form.recommendationSettings.freshnessBias === option.value
-                      ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
-                      : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                      ? 'freshness-selected'
+                      : 'freshness-default'
                   "
                   @click="form.recommendationSettings.freshnessBias = option.value"
                 >
@@ -230,51 +239,55 @@
         </section>
       </div>
 
-      <section class="rounded-2xl bg-white p-6 shadow-sm">
-        <h2 class="text-xl font-semibold text-gray-900">密码安全</h2>
-        <p class="mt-2 text-sm text-gray-600">
+      <section class="rounded-2xl p-6 shadow-sm" style="background: var(--bg-card)">
+        <h2 class="text-xl font-semibold" style="color: var(--text-primary)">密码安全</h2>
+        <p class="mt-2 text-sm" style="color: var(--text-muted)">
           定期更新密码，避免与当前密码重复，并确保两次输入一致。
         </p>
 
         <div class="mt-6 grid gap-5 md:grid-cols-3">
           <label class="block space-y-2">
-            <span class="text-sm font-medium text-gray-700">当前密码</span>
+            <span class="text-sm font-medium" style="color: var(--text-secondary)">当前密码</span>
             <input
               v-model="passwordForm.oldPassword"
               type="password"
-              class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+              class="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+              style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)"
               autocomplete="current-password"
             />
           </label>
 
           <label class="block space-y-2">
-            <span class="text-sm font-medium text-gray-700">新密码</span>
+            <span class="text-sm font-medium" style="color: var(--text-secondary)">新密码</span>
             <input
               v-model="passwordForm.newPassword"
               type="password"
-              class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+              class="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+              style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)"
               autocomplete="new-password"
             />
           </label>
 
           <label class="block space-y-2">
-            <span class="text-sm font-medium text-gray-700">确认新密码</span>
+            <span class="text-sm font-medium" style="color: var(--text-secondary)">确认新密码</span>
             <input
               v-model="passwordForm.confirmPassword"
               type="password"
-              class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+              class="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+              style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)"
               autocomplete="new-password"
             />
           </label>
         </div>
 
-        <p v-if="passwordValidationMessage" class="mt-4 text-sm text-red-600">
+        <p v-if="passwordValidationMessage" class="mt-4 text-sm" style="color: var(--color-danger)">
           {{ passwordValidationMessage }}
         </p>
 
         <div class="mt-5 flex justify-end">
           <button
-            class="rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            class="rounded-xl border px-5 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+            style="border-color: var(--border-primary); color: var(--text-secondary)"
             :disabled="saving || !canSubmitPassword"
             @click="submitPasswordChange"
           >
@@ -285,7 +298,8 @@
 
       <div class="flex justify-end">
         <button
-          class="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+          class="rounded-xl px-6 py-3 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+          style="background: var(--color-brand-primary)"
           :disabled="loading || saving || !!avatarValidationMessage || !profileDirty"
           @click="saveSettings"
         >
@@ -295,6 +309,48 @@
     </div>
   </div>
 </template>
+
+<style scoped>
+  .tag-selected {
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--color-brand-primary-light);
+  }
+
+  .tag-success {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+  }
+
+  .tag-danger {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+  }
+
+  .tag-default {
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+  }
+
+  .tag-default:hover {
+    background: var(--bg-secondary);
+  }
+
+  .freshness-selected {
+    border-color: var(--border-focus);
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--color-brand-primary-light);
+  }
+
+  .freshness-default {
+    border-color: var(--border-primary);
+    background: var(--bg-secondary);
+    color: var(--text-muted);
+  }
+
+  .freshness-default:hover {
+    background: var(--bg-tertiary);
+  }
+</style>
 
 <script setup lang="ts">
   import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';

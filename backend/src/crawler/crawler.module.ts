@@ -1,4 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { CrawlerService } from './crawler.service';
 import { CrawlerSchedulerService } from '../scheduler/crawler-scheduler.service';
 import { MediaResourceModule } from '../media/media.module';
@@ -7,9 +8,16 @@ import { CrawlerController } from './crawler.controller';
 import { ProxyPoolModule } from '../modules/proxy-pool/proxy-pool.module';
 import { PlaySourceModule } from '../play-sources/play-source.module';
 import { AppLoggerService } from '../common/services/app-logger.service';
+import { CrawlerTarget } from '../entities/crawler-target.entity';
 
 @Module({
-  imports: [MediaResourceModule, PlaySourceModule, CommonModule, ProxyPoolModule],
+  imports: [
+    TypeOrmModule.forFeature([CrawlerTarget]),
+    MediaResourceModule,
+    PlaySourceModule,
+    CommonModule,
+    ProxyPoolModule,
+  ],
   controllers: [CrawlerController],
   providers: [CrawlerService, CrawlerSchedulerService, AppLoggerService],
   exports: [CrawlerService],

@@ -2,17 +2,18 @@
   <div class="page-container">
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">观看历史</h1>
+        <h1 class="text-2xl font-bold" style="color: var(--text-primary)">观看历史</h1>
       </div>
 
       <!-- 筛选区域 -->
-      <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+      <div class="rounded-lg shadow-sm p-6 mb-6" style="background: var(--bg-card)">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">观看状态</label>
+            <label class="block text-sm font-medium mb-1" style="color: var(--text-secondary)">观看状态</label>
             <select
               v-model="filters.isCompleted"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)"
             >
               <option value="">全部</option>
               <option :value="true">已看完</option>
@@ -21,10 +22,11 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">排序方式</label>
+            <label class="block text-sm font-medium mb-1" style="color: var(--text-secondary)">排序方式</label>
             <select
               v-model="filters.sortBy"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)"
             >
               <option value="updatedAt">最近观看</option>
               <option value="createdAt">添加时间</option>
@@ -33,10 +35,11 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">排序顺序</label>
+            <label class="block text-sm font-medium mb-1" style="color: var(--text-secondary)">排序顺序</label>
             <select
               v-model="filters.sortOrder"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)"
             >
               <option value="DESC">降序</option>
               <option value="ASC">升序</option>
@@ -45,13 +48,15 @@
 
           <div class="flex items-end space-x-2">
             <button
-              class="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              class="flex-1 text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              style="background: var(--color-brand-primary)"
               @click="applyFilters()"
             >
               搜索
             </button>
             <button
-              class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              class="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              style="border-color: var(--border-primary); color: var(--text-secondary)"
               @click="resetFilters"
             >
               重置
@@ -61,7 +66,7 @@
       </div>
 
       <!-- 观看历史列表 -->
-      <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+      <div class="rounded-lg shadow-sm overflow-hidden" style="background: var(--bg-card)">
         <div v-if="loading" class="text-center py-12">
           <div
             class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"
@@ -70,38 +75,43 @@
         </div>
 
         <div v-else-if="watchHistory.length > 0" class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+          <table class="min-w-full divide-y" style="border-color: var(--border-primary)">
+            <thead style="background: var(--bg-secondary)">
               <tr>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  style="color: var(--text-muted)"
                 >
                   影视
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  style="color: var(--text-muted)"
                 >
                   进度
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  style="color: var(--text-muted)"
                 >
                   状态
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  style="color: var(--text-muted)"
                 >
                   观看时间
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  style="color: var(--text-muted)"
                 >
                   操作
                 </th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="item in watchHistory" :key="item.id">
+            <tbody style="background: var(--bg-card)">
+              <tr v-for="item in watchHistory" :key="item.id" class="wh-history-row">
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="flex items-center">
                     <div class="flex-shrink-0 h-16 w-12">
@@ -113,56 +123,55 @@
                       />
                       <div
                         v-else
-                        class="h-16 w-12 bg-gray-200 rounded flex items-center justify-center"
+                        class="h-16 w-12 rounded flex items-center justify-center"
+                        style="background: var(--bg-tertiary)"
                       >
-                        <span class="text-gray-500 text-xs">暂无</span>
+                        <span class="text-xs" style="color: var(--text-muted)">暂无</span>
                       </div>
                     </div>
                     <div class="ml-4">
-                      <div class="text-sm font-medium text-gray-900">
+                      <div class="text-sm font-medium" style="color: var(--text-primary)">
                         {{ item.mediaResource.title }}
                       </div>
-                      <div class="text-sm text-gray-500">{{ item.mediaResource.type }}</div>
+                      <div class="text-sm" style="color: var(--text-muted)">{{ item.mediaResource.type }}</div>
                     </div>
                   </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm text-gray-900">
+                  <div class="text-sm" style="color: var(--text-primary)">
                     {{ formatTime(item.currentTime) }} / {{ formatTime(item.duration) }}
                   </div>
-                  <div class="mt-1 w-32 bg-gray-200 rounded-full h-2">
+                  <div class="mt-1 w-32 rounded-full h-2" style="background: var(--bg-tertiary)">
                     <div
-                      class="bg-indigo-600 h-2 rounded-full"
+                      class="h-2 rounded-full wh-progress-fill"
                       :style="{ width: calculateProgress(item) + '%' }"
                     ></div>
                   </div>
-                  <div class="text-xs text-gray-500 mt-1">{{ calculateProgress(item) }}%</div>
+                  <div class="text-xs mt-1" style="color: var(--text-muted)">{{ calculateProgress(item) }}%</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span
                     :class="[
                       'px-2 inline-flex text-xs leading-5 font-semibold rounded-full',
-                      item.isCompleted
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-yellow-100 text-yellow-800',
+                      item.isCompleted ? 'wh-status-completed' : 'wh-status-watching',
                     ]"
                   >
                     {{ item.isCompleted ? '已看完' : '观看中' }}
                   </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: var(--text-muted)">
                   {{ formatDate(item.updatedAt) }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div class="flex space-x-2">
                     <button
-                      class="text-indigo-600 hover:text-indigo-900"
+                      class="wh-action-continue"
                       @click="continueWatching(item)"
                     >
                       继续观看
                     </button>
                     <button
-                      class="text-red-600 hover:text-red-900"
+                      class="wh-action-delete"
                       :disabled="deletingId === item.id"
                       @click="deleteHistory(item.id)"
                     >
@@ -176,13 +185,13 @@
         </div>
 
         <div v-else class="text-center py-12">
-          <p class="text-gray-500">暂无观看历史</p>
+          <p style="color: var(--text-muted)">暂无观看历史</p>
         </div>
       </div>
 
       <!-- 分页 -->
       <div v-if="pagination.totalPages > 1" class="mt-6 flex items-center justify-between">
-        <div class="text-sm text-gray-700">
+        <div class="text-sm" style="color: var(--text-secondary)">
           显示第 {{ (pagination.page - 1) * pagination.limit + 1 }} 到
           {{ Math.min(pagination.page * pagination.limit, pagination.total) }} 条记录， 共
           {{ pagination.total }} 条记录
@@ -190,7 +199,7 @@
         <div class="flex space-x-2">
           <button
             :disabled="pagination.page <= 1"
-            class="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="wh-page-btn"
             @click="applyFilters(pagination.page - 1)"
           >
             上一页
@@ -199,10 +208,8 @@
             v-for="page in getPageNumbers()"
             :key="page"
             :class="[
-              'px-3 py-1 border rounded-md text-sm font-medium',
-              page === pagination.page
-                ? 'border-indigo-500 bg-indigo-50 text-indigo-600'
-                : 'border-gray-300 text-gray-700 hover:bg-gray-50',
+              'wh-page-btn',
+              page === pagination.page ? 'wh-page-btn--active' : '',
             ]"
             @click="typeof page === 'number' ? applyFilters(page) : undefined"
           >
@@ -210,7 +217,7 @@
           </button>
           <button
             :disabled="pagination.page >= pagination.totalPages"
-            class="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="wh-page-btn"
             @click="applyFilters(pagination.page + 1)"
           >
             下一页
@@ -220,6 +227,69 @@
     </main>
   </div>
 </template>
+
+<style scoped>
+  .wh-history-row {
+    border-bottom: 1px solid var(--border-primary);
+  }
+
+  .wh-progress-fill {
+    background: var(--color-brand-primary);
+  }
+
+  .wh-status-completed {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+  }
+
+  .wh-status-watching {
+    background: var(--color-warning-bg);
+    color: var(--color-warning);
+  }
+
+  .wh-action-continue {
+    color: var(--color-brand-primary);
+  }
+
+  .wh-action-continue:hover {
+    color: var(--color-brand-primary-light);
+  }
+
+  .wh-action-delete {
+    color: var(--color-danger);
+  }
+
+  .wh-action-delete:hover {
+    opacity: 0.8;
+  }
+
+  .wh-page-btn {
+    padding: 0.25rem 0.75rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .wh-page-btn:hover:not(:disabled) {
+    background: var(--bg-secondary);
+  }
+
+  .wh-page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .wh-page-btn--active {
+    border-color: var(--color-brand-primary);
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--color-brand-primary-light);
+  }
+</style>
 
 <script setup>
   import { ref, watch } from 'vue';

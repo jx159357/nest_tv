@@ -11,15 +11,12 @@ import { PlaySource } from '../entities/play-source.entity';
 import { WatchHistory } from '../entities/watch-history.entity';
 import { Recommendation } from '../entities/recommendation.entity';
 import { DownloadTask } from '../entities/download-task.entity';
+import { CrawlerTarget } from '../entities/crawler-target.entity';
 import { AdminRoleGuard } from './admin-role.guard';
+import { CrawlerTargetInitService } from './crawler-target-init.service';
 
-/**
- * 后台管理模块
- * 提供系统管理、用户管理、内容管理等功能
- */
 @Module({
   imports: [
-    // 导入TypeORM模块，用于数据库操作
     TypeOrmModule.forFeature([
       AdminRole,
       AdminPermission,
@@ -30,10 +27,11 @@ import { AdminRoleGuard } from './admin-role.guard';
       WatchHistory,
       Recommendation,
       DownloadTask,
+      CrawlerTarget,
     ]),
   ],
   controllers: [AdminController],
-  providers: [AdminService, AdminRoleGuard],
+  providers: [AdminService, AdminRoleGuard, CrawlerTargetInitService],
   exports: [AdminService],
 })
 export class AdminModule {}

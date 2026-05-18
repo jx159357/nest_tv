@@ -38,7 +38,23 @@
       </div>
     </section>
 
-    <section v-if="selectedType || selectedGenre" class="categories-section">
+    <section v-if="sources.length > 0" class="categories-section">
+      <h2 class="section-label">数据源</h2>
+      <div class="genre-chips">
+        <button
+          v-for="s in sources"
+          :key="s.name"
+          class="genre-chip"
+          :class="{ active: selectedSource === s.name }"
+          @click="selectSource(s.name)"
+        >
+          {{ s.name }}
+          <span class="genre-count">{{ s.count }}</span>
+        </button>
+      </div>
+    </section>
+
+    <section v-if="selectedType || selectedGenre || selectedSource" class="categories-section">
       <div class="filter-bar">
         <div class="filter-tags">
           <span v-if="selectedType" class="filter-tag" @click="selectedType = ''">
@@ -46,6 +62,9 @@
           </span>
           <span v-if="selectedGenre" class="filter-tag" @click="selectedGenre = ''">
             {{ selectedGenre }} &times;
+          </span>
+          <span v-if="selectedSource" class="filter-tag" @click="selectedSource = ''">
+            {{ selectedSource }} &times;
           </span>
         </div>
         <button class="btn-clear" @click="clearFilters">清除筛选</button>
@@ -61,6 +80,7 @@
           v-for="media in mediaList"
           :key="media.id"
           :media="media"
+          :show-release-date="false"
           @click="goToDetail(media.id)"
         />
       </div>
@@ -94,6 +114,7 @@
 
   const types = ref<Array<{ name: string; label: string; count: number }>>([]);
   const genres = ref<Array<{ name: string; count: number }>>([]);
+  const sources = ref<Array<{ name: string; count: number }>>([]);
   const mediaList = ref<MediaResource[]>([]);
   const loading = ref(false);
   const page = ref(1);
@@ -102,6 +123,7 @@
 
   const selectedType = ref('');
   const selectedGenre = ref('');
+  const selectedSource = ref('');
 
   const typeIconMap: Record<string, string> = {
     movie: '🎬',
@@ -125,16 +147,20 @@
 
   const loadCategories = async () => {
     try {
-      const data = await mediaApi.getCategoryStats();
-      types.value = data.types;
-      genres.value = data.genres;
+      const [categoryData, sourceData] = await Promise.all([
+        mediaApi.getCategoryStats(),
+        mediaApi.getSources(),
+      ]);
+      types.value = categoryData.types;
+      genres.value = categoryData.genres;
+      sources.value = sourceData;
     } catch (error) {
       log.error('Categories', '加载分类数据失败:', error);
     }
   };
 
   const loadMedia = async () => {
-    if (!selectedType.value && !selectedGenre.value) {
+    if (!selectedType.value && !selectedGenre.value && !selectedSource.value) {
       mediaList.value = [];
       return;
     }
@@ -150,6 +176,9 @@
       }
       if (selectedGenre.value) {
         params.tags = selectedGenre.value;
+      }
+      if (selectedSource.value) {
+        params.source = selectedSource.value;
       }
 
       const result = await mediaApi.getMediaList(params);
@@ -175,9 +204,15 @@
     page.value = 1;
   };
 
+  const selectSource = (name: string) => {
+    selectedSource.value = selectedSource.value === name ? '' : name;
+    page.value = 1;
+  };
+
   const clearFilters = () => {
     selectedType.value = '';
     selectedGenre.value = '';
+    selectedSource.value = '';
     page.value = 1;
     mediaList.value = [];
   };
@@ -192,7 +227,7 @@
     }
   };
 
-  watch([selectedType, selectedGenre], () => {
+  watch([selectedType, selectedGenre, selectedSource], () => {
     page.value = 1;
     void loadMedia();
   });

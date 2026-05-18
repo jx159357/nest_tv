@@ -29,6 +29,11 @@ export default defineConfig({
         ws: true,
         rewrite: path => path.replace(/^\/api/, ''),
       },
+      '/iptv': {
+        target: 'http://localhost:3334',
+        changeOrigin: true,
+        secure: false,
+      },
       '/socket.io': {
         target: 'http://localhost:3334',
         changeOrigin: true,

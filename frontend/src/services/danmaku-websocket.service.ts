@@ -41,6 +41,13 @@ export class DanmakuWebSocketService {
   // 连接WebSocket
   connect(videoId: string, userId: string) {
     try {
+      if (this.socket) {
+        this.socket.disconnect();
+        this.socket = null;
+        this.stopHeartbeat();
+        this.isConnected.value = false;
+      }
+
       this.roomId.value = videoId;
       this.userId.value = userId;
 

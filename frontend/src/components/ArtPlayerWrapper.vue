@@ -7,6 +7,7 @@
   import Artplayer from 'artplayer';
   import Hls from 'hls.js';
   import artplayerPluginHlsControl from 'artplayer-plugin-hls-control';
+  import { log } from '@/utils/logger';
 
   interface Props {
     src: string;
@@ -32,6 +33,7 @@
 
   const artRef = ref<HTMLDivElement>();
   let art: Artplayer | null = null;
+  let proxyFallbackAttempted = false;
 
   const isHlsUrl = (url: string): boolean => {
     return url.includes('.m3u8') || url.includes('m3u8');
@@ -47,60 +49,85 @@
   };
 
   const getProxiedUrl = (url: string): string => {
-    const apiBase = import.meta.env.VITE_API_BASE_URL || '/api';
-    return `${apiBase}/iptv/stream/proxy?url=${encodeURIComponent(url)}`;
+    return `/iptv/stream/proxy?url=${encodeURIComponent(url)}`;
   };
 
   const getPlayableUrl = (url: string): string => {
-    if (isCrossOrigin(url)) {
+    if (!url) return url;
+    if (isHlsUrl(url) && isCrossOrigin(url)) {
       return getProxiedUrl(url);
     }
     return url;
   };
 
-  const playM3u8 = (video: HTMLVideoElement, url: string, art: Artplayer): void => {
-    const hls = new Hls({
+  let hlsInstance: Hls | null = null;
+
+  const destroyHls = () => {
+    if (hlsInstance) {
+      hlsInstance.destroy();
+      hlsInstance = null;
+    }
+  };
+
+  const setupHls = (video: HTMLVideoElement, url: string, art: Artplayer): void => {
+    destroyHls();
+
+    if (!Hls.isSupported()) {
+      log.error('ArtPlayer', 'hls.js not supported in this browser');
+      emit('error', 'HLS is not supported in this browser');
+      return;
+    }
+
+    log.info('ArtPlayer', 'Creating hls.js instance for', url);
+    hlsInstance = new Hls({
       maxBufferLength: 30,
       maxMaxBufferLength: 600,
       startFragPrefetch: true,
       enableWorker: true,
     });
 
-    hls.loadSource(url);
-    hls.attachMedia(video);
+    hlsInstance.loadSource(url);
+    hlsInstance.attachMedia(video);
 
-    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+    hlsInstance.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
+      log.info('ArtPlayer', 'MANIFEST_PARSED', { levels: data.levels?.length });
       if (props.autoplay) {
-        art.play();
+        art.play().catch(() => {});
       }
     });
 
-    let networkRetries = 0;
-    hls.on(Hls.Events.ERROR, (_event, data) => {
+    let mediaErrorRetries = 0;
+    hlsInstance.on(Hls.Events.ERROR, (_event, data) => {
+      log.error('ArtPlayer', 'hls.js error', { type: data.type, details: data.details, fatal: data.fatal });
       if (data.fatal) {
         switch (data.type) {
           case Hls.ErrorTypes.NETWORK_ERROR:
-            if (networkRetries < 3) {
-              networkRetries++;
-              hls.startLoad();
-            } else {
-              emit('error', 'Network error, failed to load stream');
-              hls.destroy();
-            }
+            log.warn('ArtPlayer', 'Fatal network error, restarting load');
+            hlsInstance?.startLoad();
             break;
           case Hls.ErrorTypes.MEDIA_ERROR:
-            hls.recoverMediaError();
+            if (mediaErrorRetries < 3) {
+              mediaErrorRetries++;
+              log.warn('ArtPlayer', `Media error recovery attempt ${mediaErrorRetries}`);
+              try {
+                hlsInstance?.recoverMediaError();
+              } catch (e) {
+                log.error('ArtPlayer', 'recoverMediaError failed', e);
+              }
+            } else {
+              log.error('ArtPlayer', 'Media error recovery exhausted');
+              emit('error', `Media playback error: ${data.details}`);
+            }
             break;
           default:
             emit('error', `HLS playback error: ${data.details}`);
-            hls.destroy();
             break;
         }
       }
     });
 
     art.on('destroy', () => {
-      hls.destroy();
+      destroyHls();
     });
   };
 
@@ -109,12 +136,13 @@
 
     const isHls = isHlsUrl(props.src);
     const playableUrl = getPlayableUrl(props.src);
+    log.info('ArtPlayer', 'initPlayer', { src: props.src, isHls, playableUrl });
 
     art = new Artplayer({
       container: artRef.value!,
       url: isHls ? '' : playableUrl,
       poster: props.poster,
-      autoplay: props.autoplay,
+      autoplay: props.autoplay && !isHls,
       autoSize: false,
       autoMini: true,
       loop: false,
@@ -133,54 +161,6 @@
       fullscreenWeb: true,
       subtitleOffset: false,
       miniProgressBar: true,
-      icons: {
-        // loading: '<div class="art-loading"><div class="art-loading-spinner"></div></div>',
-        // state: '<div class="art-state"><div class="art-state-icon"></div></div>',
-        loading: '',
-        state: '',
-        play: '',
-        pause: '',
-        volume: '',
-        volumeClose: '',
-        screenshot: '',
-        setting: '',
-        fullscreen: '',
-        fullscreenWeb: '',
-        pip: '',
-        arrowLeft: '',
-        arrowRight: '',
-        playbackRate: '',
-        aspectRatio: '',
-        flip: '',
-        quality: '',
-      },
-      ...(isHls
-        ? {
-            customType: {
-              m3u8: playM3u8,
-            },
-            plugins: [
-              artplayerPluginHlsControl({
-                quality: {
-                  control: true,
-                  setting: true,
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  getName: (level: any) => `${level.height}P`,
-                  title: 'Quality',
-                  auto: 'Auto',
-                },
-                audio: {
-                  control: true,
-                  setting: true,
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  getName: (track: any) => track.name || `Track ${track.id}`,
-                  title: 'Audio',
-                  auto: 'Auto',
-                },
-              }),
-            ],
-          }
-        : {}),
     });
 
     art.on('ready', () => {
@@ -201,11 +181,14 @@
     });
 
     art.on('error', (error: Error) => {
-      emit('error', String(error));
+      const errMsg = String(error);
+      log.error('ArtPlayer', 'video element error', errMsg);
+      emit('error', errMsg);
     });
 
     if (isHls) {
-      art.url = playableUrl;
+      const video = art.video as HTMLVideoElement;
+      setupHls(video, playableUrl, art);
     }
   };
 
@@ -213,13 +196,17 @@
     () => props.src,
     newSrc => {
       if (!art) return;
+      proxyFallbackAttempted = false;
 
       const isHls = isHlsUrl(newSrc);
       const playableUrl = getPlayableUrl(newSrc);
+      log.info('ArtPlayer', 'src changed', { newSrc, isHls, playableUrl });
 
       if (isHls) {
-        art.url = playableUrl;
+        const video = art.video as HTMLVideoElement;
+        setupHls(video, playableUrl, art);
       } else {
+        destroyHls();
         art.url = playableUrl;
       }
     },

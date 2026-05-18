@@ -174,9 +174,16 @@ export class MediaResourceService {
 
     if (Array.isArray(mediaResource.playSources)) {
       const now = new Date();
-      mediaResource.playSources = [...mediaResource.playSources].sort((left, right) =>
+      const sorted = [...mediaResource.playSources].sort((left, right) =>
         comparePlaySources(left, right, now),
       );
+      const seen = new Set<string>();
+      mediaResource.playSources = sorted.filter(s => {
+        if (!s.url) return false;
+        if (seen.has(s.url)) return false;
+        seen.add(s.url);
+        return true;
+      });
     }
 
     return mediaResource;
@@ -652,6 +659,26 @@ export class MediaResourceService {
 
       return accumulator;
     }, {});
+  }
+
+  /**
+   * 获取数据源列表（用于前台筛选）
+   */
+  async getSourceList(): Promise<Array<{ name: string; count: number }>> {
+    const rows = await this.mediaResourceRepository
+      .createQueryBuilder('mediaResource')
+      .select('mediaResource.source', 'name')
+      .addSelect('COUNT(*)', 'count')
+      .where('mediaResource.source IS NOT NULL')
+      .andWhere("mediaResource.source != ''")
+      .groupBy('mediaResource.source')
+      .orderBy('count', 'DESC')
+      .getRawMany<{ name: string; count: string }>();
+
+    return rows.map(row => ({
+      name: row.name,
+      count: parseInt(row.count, 10) || 0,
+    }));
   }
 
   /**

@@ -40,6 +40,7 @@ import { AdminLog } from './entities/admin-log.entity';
 import { SearchHistory } from './entities/search-history.entity';
 import { DownloadTask } from './entities/download-task.entity';
 import { SourceScript } from './entities/source-script.entity';
+import { CrawlerTarget } from './entities/crawler-target.entity';
 import { Danmaku } from './danmaku/entities/danmaku.entity';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -84,6 +85,7 @@ interface MysqlTypeCastField {
           ParseProvider,
           DownloadTask,
           SourceScript,
+          CrawlerTarget,
         ], // 所有实体类
 
         // 连接池优化配置（生产环境增强）

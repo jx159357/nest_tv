@@ -2,12 +2,17 @@
   <div class="space-y-6">
     <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">播放源管理</h1>
-        <p class="mt-2 text-gray-600">按来源排查播放源状态、优先级和关联媒体</p>
+        <h1 class="text-2xl font-bold" style="color: var(--text-primary)">播放源管理</h1>
+        <p class="mt-2" style="color: var(--text-muted)">按来源排查播放源状态、优先级和关联媒体</p>
       </div>
       <div class="flex flex-wrap gap-2">
         <button
-          class="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+          class="rounded-full px-4 py-2 text-sm font-medium transition"
+          style="
+            border: 1px solid var(--border-primary);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+          "
           @click="refreshPlaySources"
         >
           刷新列表
@@ -244,31 +249,23 @@
         </div>
       </div>
 
-      <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-        <h3 class="text-base font-medium text-gray-900">运维建议</h3>
-        <p class="mt-1 text-sm text-gray-500">结合当前来源健康状态给出处理建议</p>
+      <div class="ops-card">
+        <h3 class="ops-card-title">运维建议</h3>
+        <p class="ops-card-desc">结合当前来源健康状态给出处理建议</p>
 
-        <div
-          v-if="sourceContextLoading"
-          class="mt-4 rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500"
-        >
-          正在生成来源建议...
-        </div>
+        <div v-if="sourceContextLoading" class="ops-loading-box">正在生成来源建议...</div>
 
         <div v-else-if="focusedSourceHealth || focusedSourceCollectionStats" class="mt-4 space-y-3">
-          <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
+          <div class="ops-recommendation-box">
             {{ focusedSourceHealth?.recommendation || defaultSourceRecommendation }}
           </div>
 
-          <div
-            v-if="focusedSourceAttentionItem"
-            class="rounded-2xl border border-amber-100 bg-amber-50/70 p-4 text-sm text-amber-900"
-          >
-            <div class="text-xs text-amber-700">建议动作</div>
-            <div class="mt-2 font-medium text-gray-900">
+          <div v-if="focusedSourceAttentionItem" class="ops-attention-box">
+            <div class="ops-attention-label">建议动作</div>
+            <div class="ops-attention-title">
               {{ focusedSourceAttentionItem.recommendedAction.label }}
             </div>
-            <div class="mt-1 text-[13px] text-gray-600">
+            <div class="ops-attention-desc">
               {{ focusedSourceAttentionItem.recommendedAction.description }}
             </div>
             <div class="mt-3 flex flex-wrap gap-2">
@@ -287,9 +284,7 @@
             </div>
           </div>
 
-          <div
-            class="rounded-2xl border border-amber-100 bg-amber-50/80 p-4 text-sm text-amber-800"
-          >
+          <div class="ops-troubleshoot-box">
             <div class="font-medium">排障建议</div>
             <ul class="mt-2 space-y-1 text-[13px]">
               <li>- 优先查看 `error` 与 `checking` 状态的播放源是否集中在同一批链接。</li>
@@ -299,49 +294,39 @@
           </div>
         </div>
 
-        <div
-          v-else
-          class="mt-4 rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500"
-        >
+        <div v-else class="ops-loading-box">
           {{ sourceContextError || '当前来源尚未生成可展示的健康摘要。' }}
         </div>
       </div>
     </div>
 
-    <form
-      class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
-      @submit.prevent="applyFilters"
-    >
+    <form class="filter-form" @submit.prevent="applyFilters">
       <div
         class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(220px,1fr)_minmax(220px,1fr)_160px_180px_220px_auto]"
       >
         <label class="flex flex-col gap-2">
-          <span class="text-sm font-medium text-gray-700">来源筛选</span>
+          <span class="filter-label">来源筛选</span>
           <input
             v-model.trim="source"
             type="text"
             placeholder="如：豆瓣电影、量子源"
-            class="rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+            class="filter-input"
           />
         </label>
 
         <label class="flex flex-col gap-2">
-          <span class="text-sm font-medium text-gray-700">搜索关键词</span>
+          <span class="filter-label">搜索关键词</span>
           <input
             v-model.trim="search"
             type="text"
             placeholder="搜索媒体标题、链接、来源名"
-            class="rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+            class="filter-input"
           />
         </label>
 
         <label class="flex flex-col gap-2">
-          <span class="text-sm font-medium text-gray-700">类型</span>
-          <select
-            v-model="type"
-            class="rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-            @change="applyFilters"
-          >
+          <span class="filter-label">类型</span>
+          <select v-model="type" class="filter-input" @change="applyFilters">
             <option value="">全部类型</option>
             <option value="online">online</option>
             <option value="stream">stream</option>
@@ -353,12 +338,8 @@
         </label>
 
         <label class="flex flex-col gap-2">
-          <span class="text-sm font-medium text-gray-700">状态</span>
-          <select
-            v-model="status"
-            class="rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none transition focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
-            @change="applyFilters"
-          >
+          <span class="filter-label">状态</span>
+          <select v-model="status" class="filter-input" @change="applyFilters">
             <option value="">全部状态</option>
             <option value="active">active</option>
             <option value="checking">checking</option>
@@ -368,12 +349,8 @@
         </label>
 
         <label class="flex flex-col gap-2">
-          <span class="text-sm font-medium text-gray-700">排序</span>
-          <select
-            v-model="sortKey"
-            class="rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
-            @change="applyFilters"
-          >
+          <span class="filter-label">排序</span>
+          <select v-model="sortKey" class="filter-input" @change="applyFilters">
             <option value="lastCheckedAt:ASC">最久未校验优先</option>
             <option value="lastCheckedAt:DESC">最近已校验优先</option>
             <option value="createdAt:DESC">最新创建优先</option>
@@ -382,45 +359,20 @@
         </label>
 
         <div class="flex flex-wrap items-end gap-2">
-          <button
-            type="submit"
-            class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700"
-          >
-            应用筛选
-          </button>
-          <button
-            type="button"
-            class="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-            @click="resetFilters"
-          >
-            重置
-          </button>
+          <button type="submit" class="btn-primary">应用筛选</button>
+          <button type="button" class="btn-secondary" @click="resetFilters">重置</button>
         </div>
       </div>
 
-      <div
-        v-if="hasActiveFilters"
-        class="mt-4 flex flex-wrap items-center gap-2 text-xs text-gray-500"
-      >
-        <span class="rounded-full bg-gray-100 px-2.5 py-1">筛选已生效</span>
-        <span
-          v-if="focusedSourceName"
-          class="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700"
-        >
+      <div v-if="hasActiveFilters" class="filter-tags">
+        <span class="filter-tag-default">筛选已生效</span>
+        <span v-if="focusedSourceName" class="filter-tag-emerald">
           来源：{{ focusedSourceName }}
         </span>
-        <span v-if="appliedSearch" class="rounded-full bg-indigo-50 px-2.5 py-1 text-indigo-700">
-          搜索：{{ appliedSearch }}
-        </span>
-        <span v-if="appliedType" class="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700">
-          类型：{{ appliedType }}
-        </span>
-        <span v-if="appliedStatus" class="rounded-full bg-rose-50 px-2.5 py-1 text-rose-700">
-          状态：{{ appliedStatus }}
-        </span>
-        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
-          排序：{{ sortLabel }}
-        </span>
+        <span v-if="appliedSearch" class="filter-tag-indigo">搜索：{{ appliedSearch }}</span>
+        <span v-if="appliedType" class="filter-tag-amber">类型：{{ appliedType }}</span>
+        <span v-if="appliedStatus" class="filter-tag-rose">状态：{{ appliedStatus }}</span>
+        <span class="filter-tag-slate">排序：{{ sortLabel }}</span>
       </div>
     </form>
 
@@ -454,74 +406,71 @@
       </div>
 
       <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div class="text-xs text-gray-500">当前页条目</div>
-          <div class="mt-2 text-2xl font-semibold text-gray-900">{{ currentPageStats.total }}</div>
-          <div class="mt-1 text-xs text-gray-400">当前筛选结果</div>
+        <div class="stat-card">
+          <div class="stat-card-label">当前页条目</div>
+          <div class="stat-card-value">{{ currentPageStats.total }}</div>
+          <div class="stat-card-hint">当前筛选结果</div>
         </div>
-        <div class="rounded-2xl border border-rose-100 bg-rose-50/80 p-4 shadow-sm">
-          <div class="text-xs text-rose-500">异常源</div>
-          <div class="mt-2 text-2xl font-semibold text-rose-700">{{ currentPageStats.error }}</div>
-          <div class="mt-1 text-xs text-rose-400">状态为 error</div>
+        <div class="stat-card stat-card-rose">
+          <div class="stat-card-label-rose">异常源</div>
+          <div class="stat-card-value-rose">{{ currentPageStats.error }}</div>
+          <div class="stat-card-hint-rose">状态为 error</div>
         </div>
-        <div class="rounded-2xl border border-amber-100 bg-amber-50/80 p-4 shadow-sm">
-          <div class="text-xs text-amber-600">待校验 / 检查中</div>
-          <div class="mt-2 text-2xl font-semibold text-amber-700">
-            {{ currentPageStats.needsAttention }}
-          </div>
-          <div class="mt-1 text-xs text-amber-500">checking 或尚无校验时间</div>
+        <div class="stat-card stat-card-amber">
+          <div class="stat-card-label-amber">待校验 / 检查中</div>
+          <div class="stat-card-value-amber">{{ currentPageStats.needsAttention }}</div>
+          <div class="stat-card-hint-amber">checking 或尚无校验时间</div>
         </div>
-        <div class="rounded-2xl border border-emerald-100 bg-emerald-50/80 p-4 shadow-sm">
-          <div class="text-xs text-emerald-600">近24h已校验</div>
-          <div class="mt-2 text-2xl font-semibold text-emerald-700">
-            {{ currentPageStats.checkedRecently }}
-          </div>
-          <div class="mt-1 text-xs text-emerald-500">适合判断近期稳定性</div>
+        <div class="stat-card stat-card-emerald">
+          <div class="stat-card-label-emerald">近24h已校验</div>
+          <div class="stat-card-value-emerald">{{ currentPageStats.checkedRecently }}</div>
+          <div class="stat-card-hint-emerald">适合判断近期稳定性</div>
         </div>
       </div>
     </div>
 
-    <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-      <div v-if="loading" class="p-8 text-center text-gray-500">加载中...</div>
-      <div v-else-if="error" class="p-8 text-center text-red-600">{{ error }}</div>
+    <div class="table-container">
+      <div v-if="loading" class="p-8 text-center" style="color: var(--text-muted)">加载中...</div>
+      <div v-else-if="error" class="p-8 text-center" style="color: var(--color-danger)">
+        {{ error }}
+      </div>
       <template v-else>
         <div v-if="playSources.length === 0" class="p-10 text-center">
           <div class="mx-auto max-w-md">
-            <h3 class="text-base font-semibold text-gray-900">未找到匹配的播放源</h3>
-            <p class="mt-2 text-sm leading-6 text-gray-500">
+            <h3 class="text-base font-semibold" style="color: var(--text-primary)">
+              未找到匹配的播放源
+            </h3>
+            <p class="mt-2 text-sm leading-6" style="color: var(--text-muted)">
               可以尝试放宽来源或搜索关键词，或者返回爬虫页继续检查采集策略和来源可用性。
             </p>
-            <p
-              v-if="focusedSourceAttentionItem"
-              class="mt-3 rounded-2xl border border-amber-100 bg-amber-50/80 p-4 text-left text-sm text-amber-900"
-            >
-              <span class="block text-xs text-amber-700">建议动作</span>
-              <span class="mt-1 block font-medium text-gray-900">
+            <p v-if="focusedSourceAttentionItem" class="ops-attention-box mt-3 text-left text-sm">
+              <span class="ops-attention-label">建议动作</span>
+              <span class="ops-attention-title">
                 {{ focusedSourceAttentionItem.recommendedAction.label }}
               </span>
-              <span class="mt-1 block text-[13px] text-gray-600">
+              <span class="ops-attention-desc">
                 {{ focusedSourceAttentionItem.recommendedAction.description }}
               </span>
             </p>
             <p
               v-else-if="alertFilterRecommendation"
-              class="mt-3 rounded-2xl border border-rose-100 bg-rose-50/80 p-4 text-left text-sm text-rose-900"
+              class="mt-3 rounded-2xl p-4 text-left text-sm"
+              style="
+                border: 1px solid var(--color-danger-border);
+                background: var(--color-danger-bg);
+                color: var(--color-danger);
+              "
             >
-              <span class="block text-xs text-rose-700">告警建议</span>
-              <span class="mt-1 block font-medium text-gray-900">
+              <span class="block text-xs" style="color: var(--color-danger)">告警建议</span>
+              <span class="mt-1 block font-medium" style="color: var(--text-primary)">
                 {{ alertFilterRecommendation.label }}
               </span>
-              <span class="mt-1 block text-[13px] text-gray-600">
+              <span class="mt-1 block text-[13px]" style="color: var(--text-secondary)">
                 {{ alertFilterRecommendation.description }}
               </span>
             </p>
             <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
-              <button
-                class="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-                @click="resetFilters"
-              >
-                清空筛选
-              </button>
+              <button class="btn-secondary" @click="resetFilters">清空筛选</button>
               <router-link
                 v-if="focusedSourceName"
                 :to="buildCrawlerLink()"
@@ -551,98 +500,67 @@
         </div>
 
         <div v-else class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+          <table class="data-table">
+            <thead>
               <tr>
-                <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
-                >
-                  来源
-                </th>
-                <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
-                >
-                  媒体
-                </th>
-                <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
-                >
-                  类型
-                </th>
-                <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
-                >
-                  状态
-                </th>
-                <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
-                >
-                  优先级
-                </th>
-                <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
-                >
-                  最后校验
-                </th>
-                <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
-                >
-                  创建时间
-                </th>
+                <th>来源</th>
+                <th>媒体</th>
+                <th>类型</th>
+                <th>状态</th>
+                <th>优先级</th>
+                <th>最后校验</th>
+                <th>创建时间</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200 bg-white">
+            <tbody>
               <tr v-for="item in playSources" :key="item.id" :class="getPlaySourceRowClass(item)">
-                <td class="px-4 py-3 text-sm text-gray-900">
-                  <div class="font-medium">
+                <td>
+                  <div class="font-medium" style="color: var(--text-primary)">
                     {{ item.sourceName || item.name || '未命名播放源' }}
                   </div>
-                  <div class="line-clamp-1 text-xs text-gray-500">{{ item.url }}</div>
+                  <div class="line-clamp-1 text-xs" style="color: var(--text-muted)">
+                    {{ item.url }}
+                  </div>
                   <div
                     v-if="getValidationSummary(item)"
-                    class="mt-1 line-clamp-2 text-xs text-gray-400"
+                    class="mt-1 line-clamp-2 text-xs"
+                    style="color: var(--text-muted)"
                   >
                     {{ getValidationSummary(item) }}
                   </div>
                 </td>
-                <td class="px-4 py-3 text-sm text-gray-600">
+                <td style="color: var(--text-secondary)">
                   <div>{{ item.mediaResource?.title || `#${item.mediaResourceId}` }}</div>
-                  <div v-if="item.mediaResource?.source" class="text-xs text-gray-400">
+                  <div
+                    v-if="item.mediaResource?.source"
+                    class="text-xs"
+                    style="color: var(--text-muted)"
+                  >
                     资源来源：{{ item.mediaResource.source }}
                   </div>
                 </td>
-                <td class="px-4 py-3 text-sm text-gray-600">{{ item.type }}</td>
-                <td class="px-4 py-3 text-sm">
-                  <span :class="getStatusClass(item.status)">
-                    {{ item.status }}
-                  </span>
+                <td style="color: var(--text-secondary)">{{ item.type }}</td>
+                <td>
+                  <span :class="getStatusClass(item.status)">{{ item.status }}</span>
                 </td>
-                <td class="px-4 py-3 text-sm text-gray-600">{{ item.priority }}</td>
-                <td class="px-4 py-3 text-sm text-gray-600">
-                  {{ formatDate(item.lastCheckedAt) }}
-                </td>
-                <td class="px-4 py-3 text-sm text-gray-600">{{ formatDate(item.createdAt) }}</td>
+                <td style="color: var(--text-secondary)">{{ item.priority }}</td>
+                <td style="color: var(--text-secondary)">{{ formatDate(item.lastCheckedAt) }}</td>
+                <td style="color: var(--text-secondary)">{{ formatDate(item.createdAt) }}</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <div
-          class="flex flex-col gap-3 border-t border-gray-200 px-4 py-3 text-sm text-gray-600 md:flex-row md:items-center md:justify-between"
-        >
+        <div class="table-footer">
           <span>共 {{ total }} 条</span>
           <div class="flex items-center gap-3 self-end md:self-auto">
-            <button
-              :disabled="page <= 1"
-              class="rounded-lg border border-gray-300 px-3 py-1.5 disabled:opacity-50"
-              @click="changePage(page - 1)"
-            >
+            <button :disabled="page <= 1" class="pagination-btn" @click="changePage(page - 1)">
               上一页
             </button>
             <span>{{ page }} / {{ totalPages }}</span>
             <button
               :disabled="page >= totalPages"
-              class="rounded-lg border border-gray-300 px-3 py-1.5 disabled:opacity-50"
+              class="pagination-btn"
               @click="changePage(page + 1)"
             >
               下一页
@@ -1092,7 +1010,7 @@
     return [
       'rounded-full px-3.5 py-2 text-sm font-medium transition',
       isActive
-        ? 'bg-white text-slate-900 shadow-sm'
+        ? 'ps-quick-filter--active'
         : 'border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10',
     ];
   };
@@ -1116,8 +1034,8 @@
     return [
       'inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-medium transition',
       focusedSourceAttentionItem.value?.recommendedAction.target === target
-        ? 'border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
-        : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50',
+        ? 'border border-amber-400/30 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20'
+        : 'border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10',
     ];
   };
 
@@ -1140,13 +1058,13 @@
   const getStatusClass = (status?: string) => {
     switch (status) {
       case 'active':
-        return 'rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700';
+        return 'status-badge status-active';
       case 'checking':
-        return 'rounded-full bg-sky-100 px-2 py-1 text-xs font-medium text-sky-700';
+        return 'status-badge status-checking';
       case 'error':
-        return 'rounded-full bg-rose-100 px-2 py-1 text-xs font-medium text-rose-700';
+        return 'status-badge status-error';
       default:
-        return 'rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700';
+        return 'status-badge status-default';
     }
   };
 
@@ -1199,16 +1117,14 @@
         .some(value => value.includes(focusedSourceName.value));
 
     if (item.status === 'error') {
-      return matchesFocusedSource ? 'bg-rose-50 ring-1 ring-inset ring-rose-100' : 'bg-rose-50/70';
+      return matchesFocusedSource ? 'row-error row-highlight' : 'row-error';
     }
 
     if (item.status === 'checking' || !item.lastCheckedAt) {
-      return matchesFocusedSource
-        ? 'bg-amber-50 ring-1 ring-inset ring-amber-100'
-        : 'bg-amber-50/60';
+      return matchesFocusedSource ? 'row-checking row-highlight' : 'row-checking';
     }
 
-    return matchesFocusedSource ? 'bg-amber-50/60' : 'hover:bg-gray-50/80';
+    return matchesFocusedSource ? 'row-highlight' : 'row-default';
   };
 
   const formatDate = (value?: Date | string | null) => {
@@ -1265,5 +1181,428 @@
     -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+
+  .ps-quick-filter--active {
+    background: var(--color-brand-primary, #6366f1);
+    color: #fff;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .ops-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .ops-card-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .ops-card-desc {
+    margin-top: 4px;
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  .ops-loading-box {
+    margin-top: 16px;
+    border: 1px dashed var(--border-primary);
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    padding: 16px;
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  .ops-recommendation-box {
+    border-radius: 16px;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-secondary);
+    padding: 16px;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .ops-attention-box {
+    border-radius: 16px;
+    border: 1px solid var(--color-warning-border, rgba(245, 158, 11, 0.3));
+    background: var(--color-warning-bg, rgba(245, 158, 11, 0.08));
+    padding: 16px;
+    font-size: 14px;
+    color: var(--color-warning, #f59e0b);
+  }
+
+  .ops-attention-label {
+    font-size: 12px;
+    color: var(--color-warning, #f59e0b);
+  }
+
+  .ops-attention-title {
+    margin-top: 8px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .ops-attention-desc {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .ops-troubleshoot-box {
+    border-radius: 16px;
+    border: 1px solid var(--color-warning-border, rgba(245, 158, 11, 0.3));
+    background: var(--color-warning-bg, rgba(245, 158, 11, 0.08));
+    padding: 16px;
+    font-size: 14px;
+    color: var(--color-warning, #f59e0b);
+  }
+
+  .filter-form {
+    border-radius: 16px;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-card);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .filter-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .filter-input {
+    border-radius: 12px;
+    border: 1px solid var(--border-secondary);
+    padding: 10px 16px;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+    background: var(--bg-card);
+    color: var(--text-primary);
+  }
+
+  .filter-input:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+    background: var(--color-brand-primary, #6366f1);
+    transition: all 0.2s;
+  }
+
+  .btn-primary:hover {
+    opacity: 0.9;
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    border: 1px solid var(--border-secondary);
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--bg-card);
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover {
+    background: var(--bg-secondary);
+  }
+
+  .filter-tags {
+    margin-top: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .filter-tag-default {
+    border-radius: 9999px;
+    background: var(--bg-secondary);
+    padding: 4px 10px;
+  }
+
+  .filter-tag-emerald {
+    border-radius: 9999px;
+    background: rgba(16, 185, 129, 0.1);
+    padding: 4px 10px;
+    color: var(--color-success, #10b981);
+  }
+
+  .filter-tag-indigo {
+    border-radius: 9999px;
+    background: rgba(99, 102, 241, 0.1);
+    padding: 4px 10px;
+    color: var(--color-brand-primary-light, #818cf8);
+  }
+
+  .filter-tag-amber {
+    border-radius: 9999px;
+    background: rgba(245, 158, 11, 0.1);
+    padding: 4px 10px;
+    color: var(--color-warning, #f59e0b);
+  }
+
+  .filter-tag-rose {
+    border-radius: 9999px;
+    background: rgba(244, 63, 94, 0.1);
+    padding: 4px 10px;
+    color: var(--color-danger, #f43f5e);
+  }
+
+  .filter-tag-slate {
+    border-radius: 9999px;
+    background: var(--bg-secondary);
+    padding: 4px 10px;
+    color: var(--text-muted);
+  }
+
+  .stat-card {
+    border-radius: 16px;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-card);
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .stat-card-label {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .stat-card-value {
+    margin-top: 8px;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .stat-card-hint {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .stat-card-rose {
+    border-color: var(--color-danger-border, rgba(244, 63, 94, 0.2));
+    background: var(--color-danger-bg, rgba(244, 63, 94, 0.05));
+  }
+
+  .stat-card-label-rose {
+    font-size: 12px;
+    color: var(--color-danger, #f43f5e);
+  }
+
+  .stat-card-value-rose {
+    margin-top: 8px;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--color-danger, #f43f5e);
+  }
+
+  .stat-card-hint-rose {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--color-danger, #f43f5e);
+    opacity: 0.7;
+  }
+
+  .stat-card-amber {
+    border-color: var(--color-warning-border, rgba(245, 158, 11, 0.2));
+    background: var(--color-warning-bg, rgba(245, 158, 11, 0.05));
+  }
+
+  .stat-card-label-amber {
+    font-size: 12px;
+    color: var(--color-warning, #f59e0b);
+  }
+
+  .stat-card-value-amber {
+    margin-top: 8px;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--color-warning, #f59e0b);
+  }
+
+  .stat-card-hint-amber {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--color-warning, #f59e0b);
+    opacity: 0.7;
+  }
+
+  .stat-card-emerald {
+    border-color: var(--color-success-border, rgba(16, 185, 129, 0.2));
+    background: var(--color-success-bg, rgba(16, 185, 129, 0.05));
+  }
+
+  .stat-card-label-emerald {
+    font-size: 12px;
+    color: var(--color-success, #10b981);
+  }
+
+  .stat-card-value-emerald {
+    margin-top: 8px;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--color-success, #10b981);
+  }
+
+  .stat-card-hint-emerald {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--color-success, #10b981);
+    opacity: 0.7;
+  }
+
+  .table-container {
+    border-radius: 16px;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-card);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .data-table thead {
+    background: var(--bg-secondary);
+  }
+
+  .data-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+  }
+
+  .data-table tbody {
+    border-top: 1px solid var(--border-primary);
+  }
+
+  .data-table td {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+
+  .data-table tbody tr {
+    border-bottom: 1px solid var(--border-primary);
+    transition: background 0.15s;
+  }
+
+  .data-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .row-default:hover {
+    background: var(--bg-secondary);
+  }
+
+  .row-error {
+    background: var(--color-danger-bg, rgba(244, 63, 94, 0.06));
+  }
+
+  .row-checking {
+    background: var(--color-warning-bg, rgba(245, 158, 11, 0.06));
+  }
+
+  .row-highlight {
+    outline: 1px solid var(--border-focus);
+    outline-offset: -1px;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .status-active {
+    background: var(--color-success-bg, rgba(16, 185, 129, 0.15));
+    color: var(--color-success, #10b981);
+  }
+
+  .status-checking {
+    background: var(--color-info-bg, rgba(14, 165, 233, 0.15));
+    color: var(--color-info, #0ea5e9);
+  }
+
+  .status-error {
+    background: var(--color-danger-bg, rgba(244, 63, 94, 0.15));
+    color: var(--color-danger, #f43f5e);
+  }
+
+  .status-default {
+    background: var(--bg-secondary);
+    color: var(--text-muted);
+  }
+
+  .table-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border-top: 1px solid var(--border-primary);
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  @media (min-width: 768px) {
+    .table-footer {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  .pagination-btn {
+    border-radius: 8px;
+    border: 1px solid var(--border-secondary);
+    padding: 6px 12px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    background: var(--bg-card);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .pagination-btn:hover:not(:disabled) {
+    background: var(--bg-secondary);
+  }
+
+  .pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 </style>

@@ -39,6 +39,7 @@ const AdminWatchHistoryView = () => import('../views/AdminWatchHistoryView.vue')
 const AdminLogsView = () => import('../views/AdminLogsView.vue');
 const AdminDanmakuView = () => import('../views/AdminDanmakuView.vue');
 const AdminSourceScriptsView = () => import('../views/AdminSourceScriptsView.vue');
+const AdminCrawlerTargetsView = () => import('../views/AdminCrawlerTargetsView.vue');
 
 // 路由懒加载配置 - 其他
 const NotFoundView = () => import('../views/NotFoundView.vue');
@@ -355,6 +356,16 @@ const routes: RouteRecordRaw[] = [
         component: CrawlerView,
         meta: {
           title: '数据采集 - Nest TV',
+          requiresAuth: true,
+          requiresAdmin: true,
+        },
+      },
+      {
+        path: 'crawler-targets',
+        name: 'admin-crawler-targets',
+        component: AdminCrawlerTargetsView,
+        meta: {
+          title: '数据源管理 - Nest TV',
           requiresAuth: true,
           requiresAdmin: true,
         },

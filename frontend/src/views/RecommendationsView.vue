@@ -1,33 +1,28 @@
 <template>
   <div class="page-container">
-    <header class="mb-8">
-      <h1 class="mb-4 text-3xl font-bold text-gray-900">推荐中心</h1>
-      <p class="text-gray-600">
+    <header class="page-header">
+      <h1 class="page-title">推荐中心</h1>
+      <p class="page-desc">
         结合你的观看历史、收藏兴趣、搜索线索和站内内容热度，持续生成更贴近偏好的推荐结果。
       </p>
     </header>
 
     <section
       v-if="authStore.isAuthenticated"
-      class="mb-10 rounded-2xl bg-white p-6 shadow-sm"
-      :class="{ 'ring-2 ring-blue-200 ring-offset-2': focusedSection === 'profile' }"
+      class="section-card profile-section"
+      :class="{ 'profile-section--focused': focusedSection === 'profile' }"
     >
-      <div
-        v-if="focusedSection === 'profile'"
-        class="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700"
-      >
-        已从“推荐设置”入口进入，可先查看你的偏好画像，再刷新个性化推荐。
+      <div v-if="focusedSection === 'profile'" class="profile-hint">
+        已从"推荐设置"入口进入，可先查看你的偏好画像，再刷新个性化推荐。
       </div>
 
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div class="profile-header">
         <div>
-          <h2 class="text-2xl font-semibold text-gray-900">偏好画像</h2>
-          <p class="mt-2 text-sm text-gray-600">
-            {{ strategyDescription }}
-          </p>
+          <h2 class="section-title">偏好画像</h2>
+          <p class="section-desc">{{ strategyDescription }}</p>
         </div>
         <button
-          class="rounded-lg bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
+          class="btn-primary"
           :disabled="personalizedLoading || profileLoading"
           @click="refreshRecommendations"
         >
@@ -35,94 +30,79 @@
         </button>
       </div>
 
-      <div v-if="profileLoading" class="py-8 text-center">
-        <div
-          class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
-        ></div>
-        <p class="mt-2 text-gray-600">正在分析你的推荐画像...</p>
+      <div v-if="profileLoading" class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>正在分析你的推荐画像...</p>
       </div>
 
-      <div
-        v-else-if="profileError"
-        class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
-      >
+      <div v-else-if="profileError" class="error-state">
         {{ profileError }}
       </div>
 
-      <div v-else-if="profile" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <div class="text-xs text-slate-500">观看记录</div>
-          <div class="mt-2 text-2xl font-semibold text-slate-900">{{ profile.totalWatched }}</div>
-          <div class="mt-1 text-xs text-slate-500">近期活跃 {{ profile.recentWatchCount }} 条</div>
+      <div v-else-if="profile" class="profile-stats">
+        <div class="stat-card">
+          <div class="stat-label">观看记录</div>
+          <div class="stat-value">{{ profile.totalWatched }}</div>
+          <div class="stat-sub">近期活跃 {{ profile.recentWatchCount }} 条</div>
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <div class="text-xs text-slate-500">完成度</div>
-          <div class="mt-2 text-2xl font-semibold text-slate-900">
-            {{ profile.averageCompletionRate }}%
-          </div>
-          <div class="mt-1 text-xs text-slate-500">已看完 {{ profile.completedCount }} 条</div>
+        <div class="stat-card">
+          <div class="stat-label">完成度</div>
+          <div class="stat-value">{{ profile.averageCompletionRate }}%</div>
+          <div class="stat-sub">已看完 {{ profile.completedCount }} 条</div>
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
-          <div class="text-xs text-slate-500">偏好类型 / 标签 / 导演 / 搜索兴趣</div>
-          <div class="mt-3 space-y-3 text-sm text-slate-700">
-            <div>
-              <span class="font-medium">偏好类型：</span>
-              <span v-if="profile.favoriteTypes.length === 0" class="text-slate-500"
-                >暂无明显偏好</span
-              >
-              <span v-else class="flex flex-wrap gap-2 pt-2">
+        <div class="stat-card stat-card--wide">
+          <div class="stat-label">偏好类型 / 标签 / 导演 / 搜索兴趣</div>
+          <div class="preference-list">
+            <div class="preference-group">
+              <span class="preference-key">偏好类型：</span>
+              <span v-if="profile.favoriteTypes.length === 0" class="preference-empty">暂无明显偏好</span>
+              <span v-else class="preference-tags">
                 <span
                   v-for="item in profile.favoriteTypes"
                   :key="`type-${item.key}`"
-                  class="rounded-full bg-blue-100 px-3 py-1 text-xs text-blue-700"
+                  class="tag tag--type"
                 >
                   {{ formatPreferenceLabel(item.key) }} · {{ item.score }}
                 </span>
               </span>
             </div>
 
-            <div>
-              <span class="font-medium">偏好标签：</span>
-              <span v-if="profile.favoriteGenres.length === 0" class="text-slate-500"
-                >暂无明显偏好</span
-              >
-              <span v-else class="flex flex-wrap gap-2 pt-2">
+            <div class="preference-group">
+              <span class="preference-key">偏好标签：</span>
+              <span v-if="profile.favoriteGenres.length === 0" class="preference-empty">暂无明显偏好</span>
+              <span v-else class="preference-tags">
                 <span
                   v-for="item in profile.favoriteGenres"
                   :key="`genre-${item.key}`"
-                  class="rounded-full bg-emerald-100 px-3 py-1 text-xs text-emerald-700"
+                  class="tag tag--genre"
                 >
                   {{ item.key }} · {{ item.score }}
                 </span>
               </span>
             </div>
 
-            <div>
-              <span class="font-medium">导演偏好：</span>
-              <span v-if="profile.favoriteDirectors.length === 0" class="text-slate-500"
-                >暂无明显偏好</span
-              >
-              <span v-else class="flex flex-wrap gap-2 pt-2">
+            <div class="preference-group">
+              <span class="preference-key">导演偏好：</span>
+              <span v-if="profile.favoriteDirectors.length === 0" class="preference-empty">暂无明显偏好</span>
+              <span v-else class="preference-tags">
                 <span
                   v-for="item in profile.favoriteDirectors"
                   :key="`director-${item.key}`"
-                  class="rounded-full bg-amber-100 px-3 py-1 text-xs text-amber-700"
+                  class="tag tag--director"
                 >
                   {{ item.key }} · {{ item.score }}
                 </span>
               </span>
             </div>
 
-            <div>
-              <span class="font-medium">最近搜索：</span>
-              <span v-if="profile.recentSearchKeywords.length === 0" class="text-slate-500"
-                >暂无明显搜索兴趣</span
-              >
-              <span v-else class="flex flex-wrap gap-2 pt-2">
+            <div class="preference-group">
+              <span class="preference-key">最近搜索：</span>
+              <span v-if="profile.recentSearchKeywords.length === 0" class="preference-empty">暂无明显搜索兴趣</span>
+              <span v-else class="preference-tags">
                 <span
                   v-for="item in profile.recentSearchKeywords"
                   :key="`search-${item.key}`"
-                  class="rounded-full bg-violet-100 px-3 py-1 text-xs text-violet-700"
+                  class="tag tag--search"
                 >
                   {{ item.key }} · {{ item.score }}
                 </span>
@@ -133,16 +113,16 @@
       </div>
     </section>
 
-    <section v-if="authStore.isAuthenticated" class="mb-12 rounded-2xl bg-white p-6 shadow-sm">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <section v-if="authStore.isAuthenticated" class="section-card">
+      <div class="section-header">
         <div>
-          <h2 class="text-2xl font-semibold text-gray-900">搜索兴趣</h2>
-          <p class="mt-2 text-sm text-gray-600">
+          <h2 class="section-title">搜索兴趣</h2>
+          <p class="section-desc">
             结合你最近搜索过的内容，提供一个更直接的继续探索入口。
           </p>
         </div>
         <button
-          class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          class="btn-outline"
           :disabled="searchHistoryLoading || searchHistory.length === 0"
           @click="clearSearchHistory"
         >
@@ -150,36 +130,28 @@
         </button>
       </div>
 
-      <div v-if="searchHistoryLoading" class="py-8 text-center">
-        <div
-          class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
-        ></div>
-        <p class="mt-2 text-gray-600">正在加载搜索兴趣...</p>
+      <div v-if="searchHistoryLoading" class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>正在加载搜索兴趣...</p>
       </div>
 
-      <div
-        v-else-if="searchHistoryError"
-        class="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
-      >
+      <div v-else-if="searchHistoryError" class="error-state">
         {{ searchHistoryError }}
       </div>
 
-      <div
-        v-else-if="searchHistory.length === 0"
-        class="mt-6 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500"
-      >
+      <div v-else-if="searchHistory.length === 0" class="empty-hint">
         暂无服务端搜索历史。你在顶部搜索或首页搜索后，这里会逐步形成你的搜索兴趣画像。
       </div>
 
-      <div v-else class="mt-6 space-y-6">
+      <div v-else class="search-interests">
         <div>
-          <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">最近搜索</div>
-          <div class="mt-3 flex flex-wrap gap-2">
+          <div class="group-label">最近搜索</div>
+          <div class="keyword-list">
             <button
               v-for="keyword in searchHistory"
               :key="`history-${keyword}`"
               type="button"
-              class="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+              class="keyword-btn"
               @click="searchByKeyword(keyword)"
             >
               {{ keyword }}
@@ -188,15 +160,13 @@
         </div>
 
         <div v-if="relatedKeywords.length > 0">
-          <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            继续探索 {{ searchHistory[0] }}
-          </div>
-          <div class="mt-3 flex flex-wrap gap-2">
+          <div class="group-label">继续探索 {{ searchHistory[0] }}</div>
+          <div class="keyword-list">
             <button
               v-for="keyword in relatedKeywords"
               :key="`related-${keyword}`"
               type="button"
-              class="rounded-full bg-blue-50 px-4 py-2 text-sm text-blue-700 transition-colors hover:bg-blue-100"
+              class="keyword-btn keyword-btn--related"
               @click="searchByKeyword(keyword)"
             >
               {{ keyword }}
@@ -206,35 +176,31 @@
       </div>
     </section>
 
-    <section v-if="authStore.isAuthenticated" class="mb-12">
-      <div class="mb-6 flex items-center justify-between">
+    <section v-if="authStore.isAuthenticated" class="section-block">
+      <div class="section-header">
         <div>
-          <h2 class="text-2xl font-semibold text-gray-900">为你推荐</h2>
-          <p class="mt-1 text-sm text-gray-600">
+          <h2 class="section-title">为你推荐</h2>
+          <p class="section-desc">
             展示推荐理由，帮助你快速理解这条内容为什么值得现在打开。
           </p>
         </div>
       </div>
 
-      <div v-if="personalizedLoading" class="py-8 text-center">
-        <div
-          class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
-        ></div>
-        <p class="mt-2 text-gray-600">正在加载个性化推荐...</p>
+      <div v-if="personalizedLoading" class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>正在加载个性化推荐...</p>
       </div>
 
-      <div v-else-if="personalizedError" class="py-8 text-center">
-        <p class="text-red-600">{{ personalizedError }}</p>
-        <button class="mt-2 text-blue-500 hover:underline" @click="loadPersonalizedRecommendations">
-          重试
-        </button>
+      <div v-else-if="personalizedError" class="loading-state">
+        <p class="error-text">{{ personalizedError }}</p>
+        <button class="btn-link" @click="loadPersonalizedRecommendations">重试</button>
       </div>
 
-      <div v-else-if="personalizedItems.length === 0" class="py-8 text-center text-gray-500">
+      <div v-else-if="personalizedItems.length === 0" class="loading-state">
         <p>暂无个性化推荐</p>
       </div>
 
-      <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div v-else class="media-grid">
         <MediaCard
           v-for="item in personalizedItems"
           :key="item.media.id"
@@ -242,15 +208,13 @@
           @click="openMediaDetail"
         >
           <template #badge>
-            <div class="space-y-2">
-              <div class="text-xs font-medium text-slate-500">
-                推荐分 {{ item.score.toFixed(1) }}
-              </div>
-              <div class="flex flex-wrap gap-2">
+            <div class="recommend-badge">
+              <div class="recommend-score">推荐分 {{ item.score.toFixed(1) }}</div>
+              <div class="recommend-reasons">
                 <span
                   v-for="reason in item.reasons"
                   :key="`${item.media.id}-${reason}`"
-                  class="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] text-blue-700"
+                  class="reason-tag"
                 >
                   {{ reason }}
                 </span>
@@ -261,48 +225,44 @@
       </div>
     </section>
 
-    <section class="mb-12">
-      <h2 class="mb-6 text-2xl font-semibold text-gray-900">热门推荐</h2>
+    <section class="section-block">
+      <h2 class="section-title">热门推荐</h2>
 
-      <div v-if="popularLoading" class="py-8 text-center">
-        <div
-          class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
-        ></div>
-        <p class="mt-2 text-gray-600">正在加载...</p>
+      <div v-if="popularLoading" class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>正在加载...</p>
       </div>
 
-      <div v-else-if="popularError" class="py-8 text-center">
-        <p class="text-red-600">{{ popularError }}</p>
+      <div v-else-if="popularError" class="loading-state">
+        <p class="error-text">{{ popularError }}</p>
       </div>
 
-      <div v-else-if="popular.length === 0" class="py-8 text-center text-gray-500">
+      <div v-else-if="popular.length === 0" class="loading-state">
         <p>暂无热门推荐</p>
       </div>
 
-      <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div v-else class="media-grid">
         <MediaCard v-for="item in popular" :key="item.id" :media="item" @click="openMediaDetail" />
       </div>
     </section>
 
-    <section class="mb-12">
-      <h2 class="mb-6 text-2xl font-semibold text-gray-900">高分精选</h2>
+    <section class="section-block">
+      <h2 class="section-title">高分精选</h2>
 
-      <div v-if="editorialLoading" class="py-8 text-center">
-        <div
-          class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
-        ></div>
-        <p class="mt-2 text-gray-600">正在加载...</p>
+      <div v-if="editorialLoading" class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>正在加载...</p>
       </div>
 
-      <div v-else-if="editorialError" class="py-8 text-center">
-        <p class="text-red-600">{{ editorialError }}</p>
+      <div v-else-if="editorialError" class="loading-state">
+        <p class="error-text">{{ editorialError }}</p>
       </div>
 
-      <div v-else-if="editorial.length === 0" class="py-8 text-center text-gray-500">
+      <div v-else-if="editorial.length === 0" class="loading-state">
         <p>暂无高分内容</p>
       </div>
 
-      <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div v-else class="media-grid">
         <MediaCard
           v-for="item in editorial"
           :key="item.id"
@@ -312,25 +272,23 @@
       </div>
     </section>
 
-    <section>
-      <h2 class="mb-6 text-2xl font-semibold text-gray-900">最新上架</h2>
+    <section class="section-block">
+      <h2 class="section-title">最新上架</h2>
 
-      <div v-if="latestLoading" class="py-8 text-center">
-        <div
-          class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"
-        ></div>
-        <p class="mt-2 text-gray-600">正在加载...</p>
+      <div v-if="latestLoading" class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>正在加载...</p>
       </div>
 
-      <div v-else-if="latestError" class="py-8 text-center">
-        <p class="text-red-600">{{ latestError }}</p>
+      <div v-else-if="latestError" class="loading-state">
+        <p class="error-text">{{ latestError }}</p>
       </div>
 
-      <div v-else-if="latest.length === 0" class="py-8 text-center text-gray-500">
+      <div v-else-if="latest.length === 0" class="loading-state">
         <p>暂无最新内容</p>
       </div>
 
-      <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div v-else class="media-grid">
         <MediaCard v-for="item in latest" :key="item.id" :media="item" @click="openMediaDetail" />
       </div>
     </section>
@@ -608,129 +566,387 @@
     margin: 0 auto;
   }
 
-  .page-container :deep(h1),
-  .page-container :deep(h2),
-  .page-container :deep(h3) {
-    color: var(--text-primary) !important;
+  .page-header {
+    margin-bottom: 32px;
   }
 
-  .page-container :deep(p) {
-    color: var(--text-secondary) !important;
+  .page-title {
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 12px;
   }
 
-  .page-container :deep(section) {
-    background: var(--bg-card) !important;
-    border-color: var(--border-primary) !important;
+  .page-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
   }
 
-  .page-container :deep(.rounded-2xl) {
-    background: var(--bg-card) !important;
-    border-color: var(--border-primary) !important;
+  .section-card {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 40px;
+    border: 1px solid var(--border-primary);
+    box-shadow: var(--shadow-sm);
   }
 
-  .page-container :deep(.text-slate-500),
-  .page-container :deep(.text-gray-500),
-  .page-container :deep(.text-gray-600) {
-    color: var(--text-muted) !important;
+  .section-block {
+    margin-bottom: 48px;
   }
 
-  .page-container :deep(.text-slate-700),
-  .page-container :deep(.text-slate-900),
-  .page-container :deep(.text-gray-900) {
-    color: var(--text-primary) !important;
+  .section-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
   }
 
-  .page-container :deep(.bg-white) {
-    background: var(--bg-card) !important;
+  .section-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
   }
 
-  .page-container :deep(.bg-slate-50),
-  .page-container :deep(.bg-gray-50) {
-    background: var(--bg-secondary) !important;
+  .section-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
   }
 
-  .page-container :deep(.border-slate-200),
-  .page-container :deep(.border-gray-200) {
-    border-color: var(--border-primary) !important;
+  .profile-section--focused {
+    ring: 2px solid var(--color-brand-primary);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
   }
 
-  .page-container :deep(.text-red-600) {
-    color: var(--color-error-light) !important;
+  .profile-hint {
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    background: rgba(99, 102, 241, 0.08);
+    font-size: 13px;
+    color: var(--color-brand-primary-light);
   }
 
-  .page-container :deep(.bg-red-50) {
-    background: rgba(239, 68, 68, 0.1) !important;
+  .profile-header {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
 
-  .page-container :deep(.border-red-200) {
-    border-color: rgba(239, 68, 68, 0.3) !important;
+  @media (min-width: 1024px) {
+    .profile-header {
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
   }
 
-  .page-container :deep(.text-blue-700) {
-    color: var(--color-brand-primary-light) !important;
+  .profile-stats {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 24px;
   }
 
-  .page-container :deep(.bg-blue-50) {
-    background: rgba(99, 102, 241, 0.1) !important;
+  @media (min-width: 768px) {
+    .profile-stats {
+      grid-template-columns: 1fr 1fr;
+    }
   }
 
-  .page-container :deep(.bg-blue-100) {
-    background: rgba(99, 102, 241, 0.15) !important;
+  @media (min-width: 1280px) {
+    .profile-stats {
+      grid-template-columns: 1fr 1fr 2fr;
+    }
   }
 
-  .page-container :deep(.border-blue-200) {
-    border-color: rgba(99, 102, 241, 0.3) !important;
+  .stat-card {
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    padding: 16px;
+    border: 1px solid var(--border-primary);
   }
 
-  .page-container :deep(.text-emerald-700) {
-    color: var(--color-success-light) !important;
+  .stat-card--wide {
+    grid-column: 1 / -1;
   }
 
-  .page-container :deep(.bg-emerald-100) {
-    background: rgba(16, 185, 129, 0.15) !important;
+  @media (min-width: 1280px) {
+    .stat-card--wide {
+      grid-column: auto;
+    }
   }
 
-  .page-container :deep(.text-amber-700) {
-    color: var(--color-warning-light) !important;
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
   }
 
-  .page-container :deep(.bg-amber-100) {
-    background: rgba(245, 158, 11, 0.15) !important;
+  .stat-value {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--text-primary);
   }
 
-  .page-container :deep(.text-violet-700) {
-    color: #a78bfa !important;
+  .stat-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
   }
 
-  .page-container :deep(.bg-violet-100) {
-    background: rgba(139, 92, 246, 0.15) !important;
+  .preference-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--text-secondary);
   }
 
-  .page-container :deep(.border-slate-300) {
-    border-color: var(--border-secondary) !important;
+  .preference-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
-  .page-container :deep(.text-slate-700) {
-    color: var(--text-primary) !important;
+  .preference-key {
+    font-weight: 500;
+    color: var(--text-primary);
   }
 
-  .page-container :deep(.hover\:bg-slate-50:hover) {
-    background: var(--bg-secondary) !important;
+  .preference-empty {
+    color: var(--text-muted);
   }
 
-  .page-container :deep(.hover\:bg-blue-100:hover) {
-    background: rgba(99, 102, 241, 0.2) !important;
+  .preference-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
-  .page-container :deep(.hover\:border-blue-200:hover) {
-    border-color: rgba(99, 102, 241, 0.4) !important;
+  .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
   }
 
-  .page-container :deep(.hover\:text-blue-700:hover) {
-    color: var(--color-brand-primary-light) !important;
+  .tag--type {
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--color-brand-primary-light);
   }
 
-  .page-container :deep(.shadow-sm) {
-    box-shadow: var(--shadow-sm) !important;
+  .tag--genre {
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--color-success-light);
+  }
+
+  .tag--director {
+    background: rgba(245, 158, 11, 0.12);
+    color: var(--color-warning-light);
+  }
+
+  .tag--search {
+    background: rgba(139, 92, 246, 0.12);
+    color: #a78bfa;
+  }
+
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 40px 0;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  .loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--bg-tertiary);
+    border-top-color: var(--color-brand-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .error-state {
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.08);
+    font-size: 13px;
+    color: var(--color-error-light);
+  }
+
+  .error-text {
+    color: var(--color-error-light);
+  }
+
+  .empty-hint {
+    margin-top: 24px;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px dashed var(--border-primary);
+    background: var(--bg-secondary);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .search-interests {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    margin-top: 24px;
+  }
+
+  .group-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+
+  .keyword-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .keyword-btn {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .keyword-btn:hover {
+    border-color: rgba(99, 102, 241, 0.3);
+    background: rgba(99, 102, 241, 0.08);
+    color: var(--color-brand-primary-light);
+  }
+
+  .keyword-btn--related {
+    background: rgba(99, 102, 241, 0.06);
+    color: var(--color-brand-primary-light);
+    border-color: transparent;
+  }
+
+  .keyword-btn--related:hover {
+    background: rgba(99, 102, 241, 0.12);
+  }
+
+  .btn-primary {
+    padding: 10px 20px;
+    border-radius: 10px;
+    background: var(--color-brand-primary);
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-primary:hover {
+    background: var(--color-brand-primary-dark);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-outline {
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: 1px solid var(--border-secondary);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-outline:hover {
+    background: var(--bg-secondary);
+  }
+
+  .btn-outline:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-link {
+    margin-top: 8px;
+    background: none;
+    border: none;
+    color: var(--color-brand-primary-light);
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .btn-link:hover {
+    text-decoration: underline;
+  }
+
+  .media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+  }
+
+  @media (max-width: 640px) {
+    .media-grid {
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+    }
+  }
+
+  .recommend-badge {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .recommend-score {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+
+  .recommend-reasons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .reason-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    background: rgba(99, 102, 241, 0.08);
+    color: var(--color-brand-primary-light);
   }
 </style>

@@ -2,19 +2,19 @@
   <div class="space-y-6">
     <div class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-slate-100">用户管理</h1>
-        <p class="mt-2 text-slate-400">查看系统用户、角色和账户状态</p>
+        <h1 class="page-title text-2xl font-bold">用户管理</h1>
+        <p class="page-description mt-2">查看系统用户、角色和账户状态</p>
       </div>
       <div class="flex gap-3">
         <input
           v-model="search"
           type="text"
-          class="w-64 rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
+          class="search-input w-64 rounded-lg border px-3 py-2 text-sm"
           placeholder="搜索用户名 / 邮箱 / 昵称"
           @keyup.enter="applyFilters(1)"
         />
         <button
-          class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+          class="btn-primary rounded-lg px-4 py-2 text-sm font-medium"
           @click="applyFilters(1)"
         >
           搜索
@@ -22,84 +22,82 @@
       </div>
     </div>
 
-    <div class="rounded-lg border border-white/[0.06] bg-white/[0.03] shadow-xl">
-      <div v-if="loading" class="p-8 text-center text-slate-400">加载中...</div>
-      <div v-else-if="error" class="p-8 text-center text-rose-400">{{ error }}</div>
+    <div class="content-card rounded-lg border shadow-xl">
+      <div v-if="loading" class="text-muted p-8 text-center">加载中...</div>
+      <div v-else-if="error" class="error-text p-8 text-center">{{ error }}</div>
       <template v-else>
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-white/[0.06]">
-            <thead class="bg-white/[0.02]">
+          <table class="table-divide min-w-full">
+            <thead class="table-thead">
               <tr>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
+                  class="table-header-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
                 >
                   用户
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
+                  class="table-header-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
                 >
                   邮箱
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
+                  class="table-header-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
                 >
                   角色
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
+                  class="table-header-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
                 >
                   状态
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
+                  class="table-header-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
                 >
                   最后登录
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
+                  class="table-header-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
                 >
                   注册时间
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
+                  class="table-header-cell px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
                 >
                   操作
                 </th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-white/[0.06]">
+            <tbody class="table-divide">
               <tr v-for="item in users" :key="item.id">
-                <td class="px-4 py-3 text-sm text-slate-100">
-                  <div class="font-medium">{{ item.nickname || item.username }}</div>
-                  <div class="text-xs text-slate-500">@{{ item.username }}</div>
+                <td class="px-4 py-3 text-sm">
+                  <div class="user-name font-medium">{{ item.nickname || item.username }}</div>
+                  <div class="username-hint text-xs">@{{ item.username }}</div>
                   <router-link
                     :to="{ name: 'admin-download-tasks', query: { userId: String(item.id) } }"
-                    class="mt-2 inline-flex text-xs text-indigo-400 hover:text-indigo-300"
+                    class="download-link mt-2 inline-flex text-xs"
                   >
                     查看下载任务
                   </router-link>
                 </td>
-                <td class="px-4 py-3 text-sm text-slate-400">{{ item.email }}</td>
-                <td class="px-4 py-3 text-sm text-slate-400">{{ item.role }}</td>
+                <td class="cell-text px-4 py-3 text-sm">{{ item.email }}</td>
+                <td class="cell-text px-4 py-3 text-sm">{{ item.role }}</td>
                 <td class="px-4 py-3 text-sm">
                   <span
                     :class="[
                       'rounded-full px-2 py-1 text-xs font-medium',
-                      item.isActive ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400',
+                      item.isActive ? 'status-active' : 'status-inactive',
                     ]"
                   >
                     {{ item.isActive ? '启用' : '停用' }}
                   </span>
                 </td>
-                <td class="px-4 py-3 text-sm text-slate-400">{{ formatDate(item.lastLoginAt) }}</td>
-                <td class="px-4 py-3 text-sm text-slate-400">{{ formatDate(item.createdAt) }}</td>
+                <td class="cell-text px-4 py-3 text-sm">{{ formatDate(item.lastLoginAt) }}</td>
+                <td class="cell-text px-4 py-3 text-sm">{{ formatDate(item.createdAt) }}</td>
                 <td class="px-4 py-3 text-sm">
                   <button
                     :class="[
                       'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
-                      item.isActive
-                        ? 'bg-rose-600/20 text-rose-400 hover:bg-rose-600/30'
-                        : 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30',
+                      item.isActive ? 'btn-danger' : 'btn-success',
                     ]"
                     @click="toggleUserStatus(item)"
                   >
@@ -112,13 +110,13 @@
         </div>
 
         <div
-          class="flex items-center justify-between border-t border-white/[0.06] px-4 py-3 text-sm text-slate-400"
+          class="pagination-bar flex items-center justify-between border-t px-4 py-3 text-sm"
         >
           <span>共 {{ total }} 条</span>
           <div class="flex items-center gap-3">
             <button
               :disabled="page <= 1"
-              class="rounded border border-slate-700 px-3 py-1 text-slate-300 disabled:opacity-50"
+              class="page-btn rounded border px-3 py-1 disabled:opacity-50"
               @click="applyFilters(page - 1)"
             >
               上一页
@@ -126,7 +124,7 @@
             <span>{{ page }} / {{ totalPages }}</span>
             <button
               :disabled="page >= totalPages"
-              class="rounded border border-slate-700 px-3 py-1 text-slate-300 disabled:opacity-50"
+              class="page-btn rounded border px-3 py-1 disabled:opacity-50"
               @click="applyFilters(page + 1)"
             >
               下一页
@@ -238,3 +236,119 @@
     { immediate: true },
   );
 </script>
+
+<style scoped>
+  .page-title {
+    color: var(--text-primary);
+  }
+
+  .page-description {
+    color: var(--text-muted);
+  }
+
+  .search-input {
+    border-color: var(--border-primary);
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+  }
+
+  .search-input::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  .btn-primary {
+    background-color: var(--color-brand-primary);
+    color: var(--text-inverse);
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-brand-primary-dark);
+  }
+
+  .content-card {
+    border-color: var(--border-secondary);
+    background-color: var(--bg-tertiary);
+  }
+
+  .text-muted {
+    color: var(--text-muted);
+  }
+
+  .error-text {
+    color: var(--color-error-light);
+  }
+
+  .table-thead {
+    background-color: var(--bg-secondary);
+  }
+
+  .table-header-cell {
+    color: var(--text-muted);
+  }
+
+  .table-divide {
+    border-color: var(--border-secondary);
+  }
+
+  .table-divide > tr {
+    border-color: var(--border-secondary);
+  }
+
+  .user-name {
+    color: var(--text-primary);
+  }
+
+  .username-hint {
+    color: var(--text-tertiary);
+  }
+
+  .download-link {
+    color: var(--color-brand-primary-light);
+  }
+
+  .download-link:hover {
+    color: var(--color-brand-primary);
+  }
+
+  .cell-text {
+    color: var(--text-muted);
+  }
+
+  .status-active {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: var(--color-success-light);
+  }
+
+  .status-inactive {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: var(--color-error-light);
+  }
+
+  .btn-danger {
+    background-color: rgba(225, 29, 72, 0.2);
+    color: var(--color-error-light);
+  }
+
+  .btn-danger:hover {
+    background-color: rgba(225, 29, 72, 0.3);
+  }
+
+  .btn-success {
+    background-color: rgba(5, 150, 105, 0.2);
+    color: var(--color-success-light);
+  }
+
+  .btn-success:hover {
+    background-color: rgba(5, 150, 105, 0.3);
+  }
+
+  .pagination-bar {
+    border-color: var(--border-secondary);
+    color: var(--text-muted);
+  }
+
+  .page-btn {
+    border-color: var(--border-primary);
+    color: var(--text-muted);
+  }
+</style>

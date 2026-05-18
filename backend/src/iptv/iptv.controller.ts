@@ -133,6 +133,15 @@ export class IPTVController {
     return this.iptvService.proxyStream(url, res);
   }
 
+  @Get('image/proxy')
+  @Public()
+  @ApiOperation({ summary: '代理图片请求（绕过防盗链）' })
+  @ApiQuery({ name: 'url', description: '图片URL', required: true })
+  @ApiResponse({ status: 200, description: '图片内容' })
+  async proxyImage(@Query('url') url: string, @Res() res: Response) {
+    return this.iptvService.proxyImage(url, res);
+  }
+
   @Get(':id')
   @Public()
   @ApiOperation({ summary: '根据ID查找IPTV频道' })

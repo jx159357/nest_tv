@@ -2,13 +2,13 @@
   <div class="space-y-6">
     <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-slate-100">观看历史管理</h1>
-        <p class="mt-2 text-slate-400">查看用户观看进度、播放次数和最近活动</p>
+        <h1 class="text-2xl font-bold text-primary">观看历史管理</h1>
+        <p class="mt-2 text-muted">查看用户观看进度、播放次数和最近活动</p>
       </div>
       <div class="flex gap-3">
         <select
           v-model="selectedUserId"
-          class="rounded-lg border border-slate-700 bg-white/[0.05] px-3 py-2 text-sm text-slate-200"
+          class="select-field rounded-lg border px-3 py-2 text-sm"
           @change="applyFilters(1)"
         >
           <option value="">全部用户</option>
@@ -17,7 +17,7 @@
           </option>
         </select>
         <button
-          class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+          class="btn-primary rounded-lg px-4 py-2 text-sm font-medium"
           @click="applyFilters(1)"
         >
           刷新
@@ -26,99 +26,99 @@
     </div>
 
     <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-      <div class="rounded-lg border border-white/[0.06] bg-white/[0.03] p-4 shadow-xl">
-        <div class="text-sm text-slate-400">总记录数</div>
-        <div class="mt-2 text-2xl font-semibold text-slate-100">{{ total }}</div>
+      <div class="stat-card rounded-lg border p-4 shadow-xl">
+        <div class="text-sm text-muted">总记录数</div>
+        <div class="mt-2 text-2xl font-semibold text-primary">{{ total }}</div>
       </div>
-      <div class="rounded-lg border border-white/[0.06] bg-white/[0.03] p-4 shadow-xl">
-        <div class="text-sm text-slate-400">已看完</div>
-        <div class="mt-2 text-2xl font-semibold text-slate-100">{{ completedCount }}</div>
+      <div class="stat-card rounded-lg border p-4 shadow-xl">
+        <div class="text-sm text-muted">已看完</div>
+        <div class="mt-2 text-2xl font-semibold text-primary">{{ completedCount }}</div>
       </div>
-      <div class="rounded-lg border border-white/[0.06] bg-white/[0.03] p-4 shadow-xl">
-        <div class="text-sm text-slate-400">继续观看</div>
-        <div class="mt-2 text-2xl font-semibold text-slate-100">{{ inProgressCount }}</div>
+      <div class="stat-card rounded-lg border p-4 shadow-xl">
+        <div class="text-sm text-muted">继续观看</div>
+        <div class="mt-2 text-2xl font-semibold text-primary">{{ inProgressCount }}</div>
       </div>
     </div>
 
-    <div class="rounded-lg border border-white/[0.06] bg-white/[0.03] shadow-xl">
-      <div v-if="loading" class="p-8 text-center text-slate-400">加载中...</div>
-      <div v-else-if="error" class="p-8 text-center text-rose-400">{{ error }}</div>
+    <div class="stat-card rounded-lg border shadow-xl">
+      <div v-if="loading" class="p-8 text-center text-muted">加载中...</div>
+      <div v-else-if="error" class="p-8 text-center text-error">{{ error }}</div>
       <template v-else>
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-white/[0.06]">
-            <thead class="bg-white/[0.02]">
+          <table class="min-w-full divide-y table-divider">
+            <thead class="bg-subtle">
               <tr>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted"
                 >
                   用户
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted"
                 >
                   媒体
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted"
                 >
                   进度
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted"
                 >
                   观看时长
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted"
                 >
                   播放次数
                 </th>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
+                  class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted"
                 >
                   最近更新
                 </th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-white/[0.06]">
+            <tbody class="divide-y table-divider">
               <tr v-for="item in historyItems" :key="item.id">
-                <td class="px-4 py-3 text-sm text-slate-100">
+                <td class="px-4 py-3 text-sm text-primary">
                   <div class="font-medium">{{ item.user?.username || `用户#${item.userId}` }}</div>
-                  <div class="text-xs text-slate-500">{{ item.user?.email || '—' }}</div>
+                  <div class="text-xs text-tertiary">{{ item.user?.email || '—' }}</div>
                 </td>
-                <td class="px-4 py-3 text-sm text-slate-100">
+                <td class="px-4 py-3 text-sm text-primary">
                   <div class="font-medium">
                     {{ item.mediaResource?.title || `资源#${item.mediaResourceId}` }}
                   </div>
-                  <div class="text-xs text-slate-500">{{ item.mediaResource?.type || '—' }}</div>
+                  <div class="text-xs text-tertiary">{{ item.mediaResource?.type || '—' }}</div>
                 </td>
-                <td class="px-4 py-3 text-sm text-gray-600">
-                  <div class="h-2 w-28 overflow-hidden rounded-full bg-slate-700">
+                <td class="px-4 py-3 text-sm text-muted">
+                  <div class="progress-track h-2 w-28 overflow-hidden rounded-full">
                     <div
-                      class="h-full bg-emerald-500"
+                      class="progress-bar h-full"
                       :style="{ width: `${getProgress(item)}%` }"
                     ></div>
                   </div>
-                  <div class="mt-1 text-xs text-slate-400">{{ getProgress(item) }}%</div>
+                  <div class="mt-1 text-xs text-muted">{{ getProgress(item) }}%</div>
                 </td>
-                <td class="px-4 py-3 text-sm text-slate-400">
+                <td class="px-4 py-3 text-sm text-muted">
                   {{ formatDuration(item.watchDuration) }}
                 </td>
-                <td class="px-4 py-3 text-sm text-slate-400">{{ item.playCount }}</td>
-                <td class="px-4 py-3 text-sm text-slate-400">{{ formatDate(item.updatedAt) }}</td>
+                <td class="px-4 py-3 text-sm text-muted">{{ item.playCount }}</td>
+                <td class="px-4 py-3 text-sm text-muted">{{ formatDate(item.updatedAt) }}</td>
               </tr>
             </tbody>
           </table>
         </div>
 
         <div
-          class="flex items-center justify-between border-t border-white/[0.06] px-4 py-3 text-sm text-slate-400"
+          class="pagination-footer flex items-center justify-between border-t px-4 py-3 text-sm"
         >
           <span>共 {{ total }} 条</span>
           <div class="flex items-center gap-3">
             <button
               :disabled="page <= 1"
-              class="rounded border border-slate-700 px-3 py-1 text-slate-300 disabled:opacity-50"
+              class="pagination-btn rounded border px-3 py-1 disabled:opacity-50"
               @click="applyFilters(page - 1)"
             >
               上一页
@@ -126,7 +126,7 @@
             <span>{{ page }} / {{ totalPages }}</span>
             <button
               :disabled="page >= totalPages"
-              class="rounded border border-slate-700 px-3 py-1 text-slate-300 disabled:opacity-50"
+              class="pagination-btn rounded border px-3 py-1 disabled:opacity-50"
               @click="applyFilters(page + 1)"
             >
               下一页
@@ -268,3 +268,72 @@
     { immediate: true },
   );
 </script>
+
+<style scoped>
+.text-primary {
+  color: var(--text-primary);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.text-tertiary {
+  color: var(--text-tertiary);
+}
+
+.text-error {
+  color: var(--color-error-light);
+}
+
+.select-field {
+  border-color: var(--border-primary);
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.btn-primary {
+  background-color: var(--color-brand-primary);
+  color: #fff;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  filter: brightness(0.9);
+}
+
+.stat-card {
+  border-color: var(--border-primary);
+  background-color: var(--bg-tertiary);
+}
+
+.bg-subtle {
+  background-color: var(--bg-secondary);
+}
+
+.table-divider {
+  border-color: var(--border-primary);
+}
+
+.progress-track {
+  background-color: var(--border-primary);
+}
+
+.progress-bar {
+  background-color: var(--color-success, #10b981);
+}
+
+.pagination-footer {
+  border-color: var(--border-primary);
+  color: var(--text-muted);
+}
+
+.pagination-btn {
+  border-color: var(--border-primary);
+  color: var(--text-muted);
+}
+</style>

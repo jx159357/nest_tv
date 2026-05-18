@@ -13,6 +13,7 @@ import {
   DownloadTaskStatus,
   DownloadTaskType,
 } from '../entities/download-task.entity';
+import { CrawlerTarget } from '../entities/crawler-target.entity';
 import {
   CreatePermissionDto,
   CreateRoleDto,
@@ -156,6 +157,8 @@ export class AdminService {
     private watchHistoryRepository: Repository<WatchHistory>,
     @InjectRepository(DownloadTask)
     private downloadTaskRepository: Repository<DownloadTask>,
+    @InjectRepository(CrawlerTarget)
+    private crawlerTargetRepository: Repository<CrawlerTarget>,
   ) {}
 
   /**
@@ -1027,5 +1030,75 @@ export class AdminService {
       this.logger.error('Failed to get admin logs:', error);
       throw error;
     }
+  }
+
+  // ==================== 数据源管理 ====================
+
+  async getCrawlerTargets(): Promise<CrawlerTarget[]> {
+    return this.crawlerTargetRepository.find({
+      order: { priority: 'ASC', id: 'ASC' },
+    });
+  }
+
+  async getCrawlerTargetById(id: number): Promise<CrawlerTarget> {
+    const target = await this.crawlerTargetRepository.findOne({ where: { id } });
+    if (!target) {
+      throw new HttpException('数据源不存在', HttpStatus.NOT_FOUND);
+    }
+    return target;
+  }
+
+  async createCrawlerTarget(data: Partial<CrawlerTarget>): Promise<CrawlerTarget> {
+    const existing = await this.crawlerTargetRepository.findOne({
+      where: { name: data.name },
+    });
+    if (existing) {
+      throw new HttpException('数据源名称已存在', HttpStatus.CONFLICT);
+    }
+    const target = this.crawlerTargetRepository.create(data);
+    return this.crawlerTargetRepository.save(target);
+  }
+
+  async updateCrawlerTarget(id: number, data: Partial<CrawlerTarget>): Promise<CrawlerTarget> {
+    const target = await this.getCrawlerTargetById(id);
+    Object.assign(target, data);
+    return this.crawlerTargetRepository.save(target);
+  }
+
+  async deleteCrawlerTarget(id: number): Promise<void> {
+    const target = await this.getCrawlerTargetById(id);
+    if (target.isActive) {
+      throw new HttpException('不能删除已激活的数据源，请先取消激活', HttpStatus.BAD_REQUEST);
+    }
+    await this.crawlerTargetRepository.remove(target);
+  }
+
+  async activateCrawlerTarget(id: number): Promise<CrawlerTarget> {
+    const target = await this.getCrawlerTargetById(id);
+    if (!target.enabled) {
+      throw new HttpException('已禁用的数据源无法激活', HttpStatus.BAD_REQUEST);
+    }
+    await this.crawlerTargetRepository.update({ isActive: true }, { isActive: false });
+    target.isActive = true;
+    return this.crawlerTargetRepository.save(target);
+  }
+
+  async deactivateCrawlerTarget(id: number): Promise<CrawlerTarget> {
+    const target = await this.getCrawlerTargetById(id);
+    target.isActive = false;
+    return this.crawlerTargetRepository.save(target);
+  }
+
+  async toggleCrawlerTargetEnabled(id: number): Promise<CrawlerTarget> {
+    const target = await this.getCrawlerTargetById(id);
+    target.enabled = !target.enabled;
+    if (!target.enabled) {
+      target.isActive = false;
+    }
+    return this.crawlerTargetRepository.save(target);
+  }
+
+  async getActiveCrawlerTarget(): Promise<CrawlerTarget | null> {
+    return this.crawlerTargetRepository.findOne({ where: { isActive: true } });
   }
 }

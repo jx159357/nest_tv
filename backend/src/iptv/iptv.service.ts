@@ -603,6 +603,8 @@ export class IPTVService {
         'Cache-Control': 'no-cache',
       });
 
+      const stripCharset = (ct: string) => ct.replace(/;\s*charset=[^;]*/i, '').trim();
+
       if (isM3u8Url) {
         const bodyStr = Buffer.from(response.data).toString('utf-8');
         const isM3u8 =
@@ -610,20 +612,33 @@ export class IPTVService {
           remoteContentType.includes('m3u8') ||
           bodyStr.trimStart().startsWith('#EXTM3U');
 
-        res.set({ 'Content-Type': isM3u8 ? 'application/vnd.apple.mpegurl' : (remoteContentType || 'application/octet-stream') });
+        const contentType = isM3u8 ? 'application/vnd.apple.mpegurl' : stripCharset(remoteContentType || 'application/octet-stream');
+        res.setHeader('Content-Type', contentType);
 
         if (isM3u8) {
           const rewritten = this.rewriteM3u8Urls(bodyStr, decodedUrl);
-          res.send(rewritten);
+          const buf = Buffer.from(rewritten, 'utf-8');
+          res.setHeader('Content-Length', buf.length.toString());
+          res.end(buf);
         } else {
-          res.send(bodyStr);
+          const buf = Buffer.from(response.data);
+          res.setHeader('Content-Length', buf.length.toString());
+          res.end(buf);
         }
       } else {
-        res.set({
-          'Content-Type': remoteContentType || 'application/octet-stream',
-          ...(response.headers['content-length'] ? { 'Content-Length': response.headers['content-length'] } : {}),
+        const contentType = stripCharset(remoteContentType || 'application/octet-stream');
+        const chunks: Buffer[] = [];
+        response.data.on('data', (chunk: Buffer) => chunks.push(chunk));
+        await new Promise<void>((resolve, reject) => {
+          response.data.on('end', () => {
+            const buf = Buffer.concat(chunks);
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Content-Length', buf.length.toString());
+            res.end(buf);
+            resolve();
+          });
+          response.data.on('error', reject);
         });
-        response.data.pipe(res);
       }
     } catch (error) {
       const err = this.toError(error);
@@ -638,6 +653,52 @@ export class IPTVService {
         throw new HttpException('视频资源访问被拒绝', HttpStatus.FORBIDDEN);
       }
       throw new HttpException('代理流媒体失败: ' + err.message, HttpStatus.BAD_GATEWAY);
+    }
+  }
+
+  /**
+   * 代理图片请求（绕过防盗链）
+   */
+  async proxyImage(url: string, res: Response): Promise<void> {
+    try {
+      const decodedUrl = this.decodeUnicodeUrl(url);
+
+      let referer: string;
+      try {
+        referer = new URL(decodedUrl).origin + '/';
+      } catch {
+        referer = 'https://www.google.com/';
+      }
+
+      const response = await axios.get(decodedUrl, {
+        responseType: 'arraybuffer',
+        timeout: 15000,
+        maxRedirects: 5,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Referer': referer,
+          'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+        },
+        validateStatus: status => status >= 200 && status < 400,
+      });
+
+      const contentType = (response.headers['content-type'] || '').toLowerCase();
+      const isImage = contentType.startsWith('image/');
+
+      res.set({
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': isImage ? contentType : 'application/octet-stream',
+        'Cache-Control': 'public, max-age=86400',
+        ...(response.headers['content-length'] ? { 'Content-Length': response.headers['content-length'] } : {}),
+      });
+
+      res.send(Buffer.from(response.data));
+    } catch (error) {
+      const err = this.toError(error);
+      const axiosErr = error as any;
+      const statusCode = axiosErr?.response?.status;
+      this.logger.error(`代理图片失败: ${url} (状态码: ${statusCode || 'N/A'})`, err.message);
+      throw new HttpException('代理图片失败', HttpStatus.BAD_GATEWAY);
     }
   }
 
@@ -683,7 +744,7 @@ export class IPTVService {
     } else {
       absolute = basePath + url;
     }
-    return `/api/iptv/stream/proxy?url=${encodeURIComponent(absolute)}`;
+    return `/iptv/stream/proxy?url=${encodeURIComponent(absolute)}`;
   }
 
   async getChannelEpg(

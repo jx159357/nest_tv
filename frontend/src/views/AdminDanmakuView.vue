@@ -2,15 +2,12 @@
   <div class="space-y-6">
     <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">弹幕管理</h1>
-        <p class="mt-2 text-gray-600">查看弹幕运行态并维护当前服务进程内的过滤规则。</p>
+        <h1 class="text-2xl font-bold" style="color: var(--text-primary)">弹幕管理</h1>
+        <p class="mt-2" style="color: var(--text-muted)">
+          查看弹幕运行态并维护当前服务进程内的过滤规则。
+        </p>
       </div>
-      <button
-        class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-        @click="loadDanmakuState"
-      >
-        刷新
-      </button>
+      <button class="btn-secondary" @click="loadDanmakuState">刷新</button>
     </div>
 
     <div v-if="notice" class="rounded-xl border px-4 py-3 text-sm" :class="noticeClass">
@@ -18,82 +15,73 @@
     </div>
 
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
-      <div class="rounded-lg bg-white p-4 shadow">
-        <div class="text-sm text-gray-500">活跃房间</div>
-        <div class="mt-2 text-2xl font-semibold text-gray-900">
-          {{ health?.performance.activeRooms ?? 0 }}
-        </div>
+      <div class="dm-stat-card">
+        <div class="dm-stat-label">活跃房间</div>
+        <div class="dm-stat-value">{{ health?.performance.activeRooms ?? 0 }}</div>
       </div>
-      <div class="rounded-lg bg-white p-4 shadow">
-        <div class="text-sm text-gray-500">在线连接</div>
-        <div class="mt-2 text-2xl font-semibold text-blue-600">
+      <div class="dm-stat-card">
+        <div class="dm-stat-label">在线连接</div>
+        <div class="dm-stat-value dm-stat-blue">
           {{ health?.performance.activeConnections ?? 0 }}
         </div>
       </div>
-      <div class="rounded-lg bg-white p-4 shadow">
-        <div class="text-sm text-gray-500">房间消息</div>
-        <div class="mt-2 text-2xl font-semibold text-indigo-600">
-          {{ health?.performance.totalMessages ?? 0 }}
-        </div>
+      <div class="dm-stat-card">
+        <div class="dm-stat-label">房间消息</div>
+        <div class="dm-stat-value dm-stat-indigo">{{ health?.performance.totalMessages ?? 0 }}</div>
       </div>
-      <div class="rounded-lg bg-white p-4 shadow">
-        <div class="text-sm text-gray-500">规则级别</div>
-        <div class="mt-2 text-2xl font-semibold text-emerald-600">{{ rulesForm.level }}</div>
+      <div class="dm-stat-card">
+        <div class="dm-stat-label">规则级别</div>
+        <div class="dm-stat-value dm-stat-emerald">{{ rulesForm.level }}</div>
       </div>
-      <div class="rounded-lg bg-white p-4 shadow">
-        <div class="text-sm text-gray-500">敏感词条数</div>
-        <div class="mt-2 text-2xl font-semibold text-rose-600">{{ sensitiveWordCount }}</div>
+      <div class="dm-stat-card">
+        <div class="dm-stat-label">敏感词条数</div>
+        <div class="dm-stat-value dm-stat-rose">{{ sensitiveWordCount }}</div>
       </div>
-      <div class="rounded-lg bg-white p-4 shadow">
-        <div class="text-sm text-gray-500">垃圾模式数</div>
-        <div class="mt-2 text-2xl font-semibold text-amber-600">{{ spamPatternCount }}</div>
+      <div class="dm-stat-card">
+        <div class="dm-stat-label">垃圾模式数</div>
+        <div class="dm-stat-value dm-stat-amber">{{ spamPatternCount }}</div>
       </div>
     </div>
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-      <section class="rounded-lg bg-white p-6 shadow">
+      <section class="dm-section">
         <div class="mb-4">
-          <h2 class="text-lg font-semibold text-gray-900">过滤规则</h2>
-          <p class="mt-1 text-sm text-gray-500">使用换行分隔规则项，保存后立即影响当前后端进程。</p>
+          <h2 class="dm-section-title">过滤规则</h2>
+          <p class="dm-section-desc">使用换行分隔规则项，保存后立即影响当前后端进程。</p>
         </div>
 
         <div class="space-y-4">
           <label class="block">
-            <span class="mb-2 block text-sm font-medium text-gray-700">敏感词</span>
+            <span class="dm-label">敏感词</span>
             <textarea
               v-model="sensitiveWordsText"
               rows="6"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+              class="dm-textarea"
               placeholder="每行一个敏感词"
             />
           </label>
 
           <label class="block">
-            <span class="mb-2 block text-sm font-medium text-gray-700">垃圾模式</span>
+            <span class="dm-label">垃圾模式</span>
             <textarea
               v-model="spamPatternsText"
               rows="6"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+              class="dm-textarea"
               placeholder="每行一个正则或匹配片段"
             />
           </label>
 
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <label class="block">
-              <span class="mb-2 block text-sm font-medium text-gray-700">规则级别</span>
-              <select
-                v-model="rulesForm.level"
-                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
-              >
+              <span class="dm-label">规则级别</span>
+              <select v-model="rulesForm.level" class="dm-select">
                 <option value="low">low</option>
                 <option value="medium">medium</option>
                 <option value="high">high</option>
               </select>
             </label>
 
-            <label
-              class="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700"
-            >
+            <label class="dm-checkbox-label">
               <input v-model="rulesForm.autoBlock" type="checkbox" class="h-4 w-4 rounded" />
               自动拦截命中规则的弹幕
             </label>
@@ -101,14 +89,14 @@
 
           <div class="flex justify-end">
             <button
-              class="mr-3 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:bg-gray-100"
+              class="btn-secondary mr-3 disabled:cursor-not-allowed disabled:opacity-50"
               :disabled="saving"
               @click="resetRules"
             >
               恢复默认规则
             </button>
             <button
-              class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300"
+              class="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
               :disabled="saving"
               @click="saveRules"
             >
@@ -118,129 +106,110 @@
         </div>
       </section>
 
-      <section class="rounded-lg bg-white p-6 shadow">
+      <section class="dm-section">
         <div class="mb-4">
-          <h2 class="text-lg font-semibold text-gray-900">运行状态</h2>
-          <p class="mt-1 text-sm text-gray-500">基于当前后端进程的弹幕网关与房间统计。</p>
+          <h2 class="dm-section-title">运行状态</h2>
+          <p class="dm-section-desc">基于当前后端进程的弹幕网关与房间统计。</p>
         </div>
 
-        <div v-if="health" class="space-y-4 text-sm text-gray-700">
+        <div v-if="health" class="space-y-4 text-sm" style="color: var(--text-secondary)">
           <div>
-            <div class="text-xs font-medium uppercase tracking-wide text-gray-400">状态</div>
+            <div class="dm-kv-label">状态</div>
             <div class="mt-1">{{ health.message }}</div>
           </div>
           <div>
-            <div class="text-xs font-medium uppercase tracking-wide text-gray-400">
-              数据库 / WebSocket
-            </div>
+            <div class="dm-kv-label">数据库 / WebSocket</div>
             <div class="mt-1">{{ health.database }} / {{ health.websocket }}</div>
           </div>
           <div>
-            <div class="text-xs font-medium uppercase tracking-wide text-gray-400">最后更新</div>
+            <div class="dm-kv-label">最后更新</div>
             <div class="mt-1">{{ formatDateTime(health.lastUpdate) }}</div>
           </div>
           <div>
-            <div class="text-xs font-medium uppercase tracking-wide text-gray-400">
-              服务运行时长
-            </div>
+            <div class="dm-kv-label">服务运行时长</div>
             <div class="mt-1">{{ formatUptime(health.uptime) }}</div>
           </div>
         </div>
-        <div v-else class="text-sm text-gray-500">暂无弹幕运行数据</div>
+        <div v-else class="text-sm" style="color: var(--text-muted)">暂无弹幕运行数据</div>
       </section>
     </div>
 
-    <section class="rounded-lg bg-white p-6 shadow">
+    <section class="dm-section">
       <div class="mb-4 flex items-center justify-between">
         <div>
-          <h2 class="text-lg font-semibold text-gray-900">举报弹幕</h2>
-          <p class="mt-1 text-sm text-gray-500">
-            当前已被举报的弹幕列表，按举报次数和最近举报时间排序。
-          </p>
+          <h2 class="dm-section-title">举报弹幕</h2>
+          <p class="dm-section-desc">当前已被举报的弹幕列表，按举报次数和最近举报时间排序。</p>
         </div>
         <div class="flex flex-wrap gap-3">
           <input
             v-model="reportSearch"
             type="text"
-            class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            class="dm-input"
             placeholder="搜索弹幕内容 / 原因 / 视频ID"
           />
-          <button
-            class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            @click="loadReportedDanmaku"
-          >
-            刷新列表
-          </button>
+          <button class="btn-secondary" @click="loadReportedDanmaku">刷新列表</button>
         </div>
       </div>
 
       <div class="mb-4 flex flex-wrap gap-2">
         <button
-          class="rounded-full border px-3 py-1 text-xs font-medium transition"
-          :class="
-            reportStatusFilter === 'all'
-              ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
-              : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
-          "
+          class="dm-filter-chip"
+          :class="reportStatusFilter === 'all' ? 'dm-filter-chip-active' : ''"
           @click="reportStatusFilter = 'all'"
         >
           全部
         </button>
         <button
-          class="rounded-full border px-3 py-1 text-xs font-medium transition"
-          :class="
-            reportStatusFilter === 'reported'
-              ? 'border-amber-300 bg-amber-50 text-amber-700'
-              : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
-          "
+          class="dm-filter-chip"
+          :class="reportStatusFilter === 'reported' ? 'dm-filter-chip-amber' : ''"
           @click="reportStatusFilter = 'reported'"
         >
           待处理
         </button>
         <button
-          class="rounded-full border px-3 py-1 text-xs font-medium transition"
-          :class="
-            reportStatusFilter === 'hidden'
-              ? 'border-rose-300 bg-rose-50 text-rose-700'
-              : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
-          "
+          class="dm-filter-chip"
+          :class="reportStatusFilter === 'hidden' ? 'dm-filter-chip-rose' : ''"
           @click="reportStatusFilter = 'hidden'"
         >
           已隐藏
         </button>
       </div>
 
-      <div v-if="filteredReportedDanmaku.length === 0" class="text-sm text-gray-500">
+      <div
+        v-if="filteredReportedDanmaku.length === 0"
+        class="text-sm"
+        style="color: var(--text-muted)"
+      >
         当前筛选下没有举报弹幕。
       </div>
       <div v-else class="space-y-3">
-        <div
-          v-for="item in filteredReportedDanmaku"
-          :key="item.id"
-          class="rounded-xl border border-gray-200 px-4 py-3"
-        >
+        <div v-for="item in filteredReportedDanmaku" :key="item.id" class="dm-report-item">
           <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
             <div>
-              <div class="text-sm font-medium text-gray-900">{{ item.text }}</div>
-              <div class="mt-1 text-xs text-gray-500">
+              <div class="text-sm font-medium" style="color: var(--text-primary)">
+                {{ item.text }}
+              </div>
+              <div class="mt-1 text-xs" style="color: var(--text-muted)">
                 video={{ item.videoId }} · user={{ item.userId }} · 状态={{ item.status }}
               </div>
-              <div class="mt-1 text-xs text-gray-500">最新原因：{{ item.latestReason || '—' }}</div>
+              <div class="mt-1 text-xs" style="color: var(--text-muted)">
+                最新原因：{{ item.latestReason || '—' }}
+              </div>
             </div>
-            <div class="text-xs text-gray-500 md:text-right">
+            <div class="text-xs md:text-right" style="color: var(--text-muted)">
               <div>举报 {{ item.reportCount }} 次</div>
               <div class="mt-1">最近：{{ formatDateTime(item.lastReportedAt || undefined) }}</div>
               <div class="mt-2 flex flex-wrap justify-end gap-2">
                 <button
                   v-if="item.status !== 'hidden'"
-                  class="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-medium text-rose-700 hover:bg-rose-100"
+                  class="dm-action-btn dm-action-rose"
                   @click="moderateReportedDanmaku(item.id, 'hide')"
                 >
                   隐藏弹幕
                 </button>
                 <button
                   v-else
-                  class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                  class="dm-action-btn dm-action-emerald"
                   @click="moderateReportedDanmaku(item.id, 'restore')"
                 >
                   恢复显示
@@ -277,9 +246,7 @@
   const notice = ref<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const noticeClass = computed(() =>
-    notice.value?.type === 'success'
-      ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-300'
-      : 'border-rose-400/30 bg-rose-500/15 text-rose-300',
+    notice.value?.type === 'success' ? 'dm-notice-success' : 'dm-notice-error',
   );
   const sensitiveWordCount = computed(() => toLines(sensitiveWordsText.value).length);
   const spamPatternCount = computed(() => toLines(spamPatternsText.value).length);
@@ -440,3 +407,262 @@
 
   void loadDanmakuState();
 </script>
+
+<style scoped>
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+    background: var(--color-brand-primary, #6366f1);
+    transition: all 0.2s;
+  }
+
+  .btn-primary:hover {
+    opacity: 0.9;
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 1px solid var(--border-secondary);
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--bg-card);
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover {
+    background: var(--bg-secondary);
+  }
+
+  .dm-stat-card {
+    border-radius: 8px;
+    background: var(--bg-card);
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-primary);
+  }
+
+  .dm-stat-label {
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  .dm-stat-value {
+    margin-top: 8px;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .dm-stat-blue {
+    color: var(--color-info, #3b82f6);
+  }
+
+  .dm-stat-indigo {
+    color: var(--color-brand-primary-light, #6366f1);
+  }
+
+  .dm-stat-emerald {
+    color: var(--color-success, #10b981);
+  }
+
+  .dm-stat-rose {
+    color: var(--color-danger, #f43f5e);
+  }
+
+  .dm-stat-amber {
+    color: var(--color-warning, #f59e0b);
+  }
+
+  .dm-section {
+    border-radius: 8px;
+    background: var(--bg-card);
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-primary);
+  }
+
+  .dm-section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .dm-section-desc {
+    margin-top: 4px;
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  .dm-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .dm-textarea {
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--border-secondary);
+    padding: 8px 12px;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+    background: var(--bg-card);
+    color: var(--text-primary);
+  }
+
+  .dm-textarea:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+  }
+
+  .dm-select {
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--border-secondary);
+    padding: 8px 12px;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+    background: var(--bg-card);
+    color: var(--text-primary);
+  }
+
+  .dm-select:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+  }
+
+  .dm-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-primary);
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .dm-kv-label {
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+  }
+
+  .dm-input {
+    border-radius: 8px;
+    border: 1px solid var(--border-secondary);
+    padding: 8px 12px;
+    font-size: 14px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    outline: none;
+  }
+
+  .dm-input:focus {
+    border-color: var(--border-focus);
+  }
+
+  .dm-filter-chip {
+    border-radius: 9999px;
+    border: 1px solid var(--border-secondary);
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--bg-card);
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .dm-filter-chip:hover {
+    background: var(--bg-secondary);
+  }
+
+  .dm-filter-chip-active {
+    border-color: var(--border-focus);
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--color-brand-primary-light, #818cf8);
+  }
+
+  .dm-filter-chip-amber {
+    border-color: var(--color-warning-border, rgba(245, 158, 11, 0.3));
+    background: var(--color-warning-bg, rgba(245, 158, 11, 0.1));
+    color: var(--color-warning, #f59e0b);
+  }
+
+  .dm-filter-chip-rose {
+    border-color: var(--color-danger-border, rgba(244, 63, 94, 0.3));
+    background: var(--color-danger-bg, rgba(244, 63, 94, 0.1));
+    color: var(--color-danger, #f43f5e);
+  }
+
+  .dm-report-item {
+    border-radius: 12px;
+    border: 1px solid var(--border-primary);
+    padding: 12px 16px;
+    transition: background 0.15s;
+  }
+
+  .dm-report-item:hover {
+    background: var(--bg-secondary);
+  }
+
+  .dm-action-btn {
+    border-radius: 9999px;
+    border: 1px solid;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .dm-action-rose {
+    border-color: var(--color-danger-border, rgba(244, 63, 94, 0.3));
+    background: var(--color-danger-bg, rgba(244, 63, 94, 0.08));
+    color: var(--color-danger, #f43f5e);
+  }
+
+  .dm-action-rose:hover {
+    background: var(--color-danger-bg, rgba(244, 63, 94, 0.15));
+  }
+
+  .dm-action-emerald {
+    border-color: var(--color-success-border, rgba(16, 185, 129, 0.3));
+    background: var(--color-success-bg, rgba(16, 185, 129, 0.08));
+    color: var(--color-success, #10b981);
+  }
+
+  .dm-action-emerald:hover {
+    background: var(--color-success-bg, rgba(16, 185, 129, 0.15));
+  }
+
+  .dm-notice-success {
+    border-color: rgba(52, 211, 153, 0.3);
+    background-color: rgba(16, 185, 129, 0.15);
+    color: var(--color-success-light, #34d399);
+  }
+
+  .dm-notice-error {
+    border-color: rgba(251, 113, 133, 0.3);
+    background-color: rgba(239, 68, 68, 0.15);
+    color: var(--color-error-light, #f87171);
+  }
+</style>
