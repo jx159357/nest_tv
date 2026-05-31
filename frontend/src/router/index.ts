@@ -40,6 +40,7 @@ const AdminLogsView = () => import('../views/AdminLogsView.vue');
 const AdminDanmakuView = () => import('../views/AdminDanmakuView.vue');
 const AdminSourceScriptsView = () => import('../views/AdminSourceScriptsView.vue');
 const AdminCrawlerTargetsView = () => import('../views/AdminCrawlerTargetsView.vue');
+const AdminIptvView = () => import('../views/AdminIptvView.vue');
 
 // 路由懒加载配置 - 其他
 const NotFoundView = () => import('../views/NotFoundView.vue');
@@ -93,6 +94,15 @@ const routes: RouteRecordRaw[] = [
           title: 'IPTV - Nest TV',
           requiresAuth: false,
           preload: false,
+        },
+      },
+      {
+        path: 'dashboard',
+        name: 'userDashboard',
+        component: () => import('@/views/UserDashboardView.vue'),
+        meta: {
+          title: '用户中心 - Nest TV',
+          requiresAuth: true,
         },
       },
       {
@@ -380,6 +390,16 @@ const routes: RouteRecordRaw[] = [
           requiresAdmin: true,
         },
       },
+      {
+        path: 'iptv',
+        name: 'admin-iptv',
+        component: AdminIptvView,
+        meta: {
+          title: 'IPTV管理 - Nest TV',
+          requiresAuth: true,
+          requiresAdmin: true,
+        },
+      },
     ],
   },
 
@@ -437,7 +457,7 @@ router.beforeEach(to => {
   if (requiresAdmin) {
     const role = authStore.user?.role;
     if (role !== 'admin' && role !== 'superAdmin') {
-      return '/';
+      return '/dashboard';
     }
   }
 

@@ -66,6 +66,7 @@ describe('DanmakuController', () => {
       videoId: 'video-1',
       userId: 5,
       danmakuId: 12,
+      text: '来了',
     });
   });
 

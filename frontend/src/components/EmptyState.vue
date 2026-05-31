@@ -117,47 +117,77 @@
 
 <style scoped>
   .empty-state {
-    @apply flex flex-col items-center justify-center py-12 text-center;
+    display: flex;
+    min-height: var(--state-panel-min-height);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-8) var(--spacing-4);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--panel-radius);
+    background: var(--state-empty-bg);
+    color: var(--text-muted);
+    text-align: center;
   }
 
   .empty-state-icon {
-    @apply mb-4 text-gray-400;
+    color: var(--text-muted);
+    opacity: 0.78;
   }
 
   .empty-state-title {
-    @apply text-lg font-medium text-gray-900 mb-1;
+    margin: 0;
+    color: var(--text-primary);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
   }
 
   .empty-state-description {
-    @apply text-gray-500 max-w-md;
+    max-width: 28rem;
+    margin: 0;
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-relaxed);
   }
 
   .empty-state-action {
-    @apply mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors duration-200;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--control-height-md);
+    padding: var(--button-padding-md);
+    border-radius: var(--radius-control);
+    background: var(--color-brand-primary);
+    color: var(--text-inverse);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    transition: all var(--transition-fast);
   }
 
   .empty-state-action:hover {
-    @apply bg-indigo-700;
+    background: var(--color-brand-primary-light);
+    box-shadow: 0 10px 28px var(--color-brand-glow);
   }
 
   /* Icon specific styles */
   .icon-search svg {
-    @apply text-gray-400;
+    color: var(--text-muted);
   }
 
   .icon-film svg {
-    @apply text-gray-400;
+    color: var(--text-muted);
   }
 
   .icon-heart svg {
-    @apply text-red-400;
+    color: var(--color-error-light);
   }
 
   .icon-light svg {
-    @apply text-yellow-400;
+    color: var(--color-warning-light);
   }
 
   .icon-document svg {
-    @apply text-gray-400;
+    color: var(--text-muted);
   }
 </style>

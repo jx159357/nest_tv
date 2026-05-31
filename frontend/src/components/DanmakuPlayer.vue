@@ -1,7 +1,10 @@
 <template>
   <div ref="danmakuContainer" class="danmaku-player">
     <!-- 弹幕显示区域 -->
-    <div class="danmaku-container" :class="{ 'danmaku-hidden': !settings.enabled, 'report-mode': reportMode }">
+    <div
+      class="danmaku-container"
+      :class="{ 'danmaku-hidden': !settings.enabled, 'report-mode': reportMode }"
+    >
       <div
         v-for="danmaku in visibleDanmaku"
         :key="danmaku.id"
@@ -19,17 +22,36 @@
     </div>
 
     <!-- 弹幕输入区域 -->
-    <div v-if="showControls" class="danmaku-controls" :class="{ 'controls-visible': controlsVisible }">
+    <div
+      v-if="showControls"
+      class="danmaku-controls"
+      :class="{ 'controls-visible': controlsVisible }"
+    >
       <button class="danmaku-toggle-btn" title="弹幕开关" @click="toggleDanmaku">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="toggle-icon">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          class="toggle-icon"
+        >
           <path v-if="settings.enabled" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
           <circle v-if="settings.enabled" cx="12" cy="12" r="3" />
-          <path v-if="!settings.enabled" d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
+          <path
+            v-if="!settings.enabled"
+            d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"
+          />
           <line v-if="!settings.enabled" x1="1" y1="1" x2="23" y2="23" />
         </svg>
       </button>
       <button class="danmaku-toggle-btn" title="收起弹幕栏" @click="toggleControls">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="toggle-icon">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          class="toggle-icon"
+        >
           <polyline points="6 9 12 15 18 9" />
         </svg>
       </button>
@@ -41,11 +63,13 @@
           class="danmaku-input"
           :disabled="!canSendDanmaku"
           maxlength="100"
-          @keyup.enter="sendDanmaku"
+          @focus="showControlsPanel"
+          @keydown.stop
+          @keyup.enter.stop="sendDanmaku"
         />
         <div class="danmaku-extra">
           <input v-model="selectedColor" type="color" class="color-input" title="弹幕颜色" />
-          <select v-model="selectedType" class="danmaku-type-select" title="弹幕位置">
+          <select v-model="selectedType" class="danmaku-type-select" title="弹幕位置" @keydown.stop>
             <option value="scroll">滚动</option>
             <option value="top">顶部</option>
             <option value="bottom">底部</option>
@@ -58,9 +82,17 @@
             发送
           </button>
           <button class="danmaku-settings-btn" title="弹幕设置" @click="toggleSettings">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="settings-svg">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              class="settings-svg"
+            >
               <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+              <path
+                d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"
+              />
             </svg>
           </button>
           <button
@@ -69,12 +101,37 @@
             :title="reportMode ? '退出举报模式' : '举报弹幕'"
             @click="toggleReportMode"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="settings-svg">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              class="settings-svg"
+            >
               <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
               <line x1="4" y1="22" x2="4" y2="15" />
             </svg>
           </button>
         </div>
+      </div>
+      <div v-if="danmakuSuggestions.length > 0" class="danmaku-suggestions">
+        <button
+          v-for="suggestion in danmakuSuggestions"
+          :key="suggestion.text"
+          class="danmaku-suggestion-chip"
+          type="button"
+          @click="applySuggestion(suggestion)"
+        >
+          {{ suggestion.text }}
+        </button>
+        <button
+          class="danmaku-suggestion-refresh"
+          type="button"
+          :disabled="suggestionsLoading"
+          @click="loadDanmakuSuggestions"
+        >
+          刷新建议
+        </button>
       </div>
     </div>
 
@@ -86,7 +143,13 @@
       title="展开弹幕栏"
       @click="toggleControls"
     >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="float-icon">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        class="float-icon"
+      >
         <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
       </svg>
       <span class="float-label">弹幕</span>
@@ -267,22 +330,14 @@
 </template>
 
 <script setup lang="ts">
-  import {
-    ref,
-    reactive,
-    computed,
-    onMounted,
-    onUnmounted,
-    watch,
-    type CSSProperties,
-  } from 'vue';
+  import { ref, reactive, computed, onMounted, onUnmounted, watch, type CSSProperties } from 'vue';
   import {
     useDanmakuWebSocket,
     type DanmakuMessage,
     type DanmakuSettings,
     type RoomInfo,
   } from '@/services/danmaku-websocket.service';
-  import { danmakuApi } from '@/api/danmaku';
+  import { danmakuApi, type DanmakuSuggestionItem } from '@/api/danmaku';
   import { useAuthStore } from '@/stores/auth';
 
   // Props 定义
@@ -322,6 +377,8 @@
   const reportReasons = ['违规内容', '垃圾广告', '恶意刷屏', '色情低俗', '其他'];
   const connectionError = ref<string | null>(null);
   const sendFeedback = ref<string | null>(null);
+  const danmakuSuggestions = ref<DanmakuSuggestionItem[]>([]);
+  const suggestionsLoading = ref(false);
   const backendFilterRules = ref<Awaited<ReturnType<typeof danmakuApi.getFilterRules>> | null>(
     null,
   );
@@ -388,11 +445,21 @@
     },
   };
 
-  // 设置状态
-  const settings = reactive<DanmakuSettings>({
+  const getDefaultSettings = (): DanmakuSettings => ({
     ...initialDefaultSettings,
     ...props.defaultSettings,
+    filter: {
+      ...initialDefaultSettings.filter,
+      ...props.defaultSettings.filter,
+    },
+    display: {
+      ...initialDefaultSettings.display,
+      ...props.defaultSettings.display,
+    },
   });
+
+  // 设置状态
+  const settings = reactive<DanmakuSettings>(getDefaultSettings());
 
   // 自定义过滤关键词
   const newFilterKeyword = ref('');
@@ -403,17 +470,25 @@
     return all.length - visible.length;
   });
 
-  const SESSION_KEY = `danmaku_filters_${props.videoId}`;
+  const getSessionKey = () => `danmaku_filters_${props.videoId}`;
+
+  const resetSessionState = () => {
+    customFilterKeywords.value = [];
+    Object.assign(settings, getDefaultSettings());
+  };
 
   const loadSessionFilters = () => {
+    resetSessionState();
+
     try {
-      const saved = sessionStorage.getItem(SESSION_KEY);
+      const saved = sessionStorage.getItem(getSessionKey());
       if (saved) {
         const data = JSON.parse(saved);
         if (data.keywords) customFilterKeywords.value = data.keywords;
         if (data.settings) {
           Object.assign(settings.filter, data.settings.filter || {});
           Object.assign(settings.display, data.settings.display || {});
+          settings.enabled = data.settings.enabled ?? settings.enabled;
           settings.opacity = data.settings.opacity ?? settings.opacity;
           settings.fontSize = data.settings.fontSize ?? settings.fontSize;
           settings.speed = data.settings.speed ?? settings.speed;
@@ -427,10 +502,11 @@
   const saveSessionFilters = () => {
     try {
       sessionStorage.setItem(
-        SESSION_KEY,
+        getSessionKey(),
         JSON.stringify({
           keywords: customFilterKeywords.value,
           settings: {
+            enabled: settings.enabled,
             filter: { ...settings.filter },
             display: { ...settings.display },
             opacity: settings.opacity,
@@ -469,7 +545,14 @@
   };
 
   watch(
-    () => [settings.filter, settings.display, settings.opacity, settings.fontSize, settings.speed],
+    () => [
+      settings.enabled,
+      settings.filter,
+      settings.display,
+      settings.opacity,
+      settings.fontSize,
+      settings.speed,
+    ],
     () => {
       saveSessionFilters();
     },
@@ -530,9 +613,20 @@
   } = useDanmakuWebSocket(props.videoId);
 
   // 事件监听设置
+  const handleFullscreenChange = () => {
+    if (document.fullscreenElement) {
+      controlsVisible.value = true;
+    }
+  };
+
+  const showControlsPanel = () => {
+    controlsVisible.value = true;
+  };
+
   onMounted(() => {
     loadSessionFilters();
     setupEventListeners();
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
 
     if (userId.value && props.videoId) {
       wsConnect();
@@ -540,6 +634,7 @@
   });
 
   onUnmounted(() => {
+    document.removeEventListener('fullscreenchange', handleFullscreenChange);
     cleanup();
   });
 
@@ -710,6 +805,32 @@
     }
   };
 
+  const loadDanmakuSuggestions = async () => {
+    if (!props.videoId && !resolvedMediaResourceId.value) return;
+
+    suggestionsLoading.value = true;
+    try {
+      const response = await danmakuApi.getSuggestions({
+        videoId: props.videoId,
+        mediaResourceId: resolvedMediaResourceId.value ?? undefined,
+        type: 'relevant',
+        limit: 5,
+      });
+      danmakuSuggestions.value = response.suggestions;
+    } catch {
+      danmakuSuggestions.value = [];
+    } finally {
+      suggestionsLoading.value = false;
+    }
+  };
+
+  const applySuggestion = (suggestion: DanmakuSuggestionItem) => {
+    inputText.value = suggestion.text;
+    selectedColor.value = suggestion.color || selectedColor.value;
+    selectedType.value = suggestion.type || selectedType.value;
+    showControlsPanel();
+  };
+
   const refreshRoomSummary = async () => {
     await loadHttpRoomInfo();
     await loadFilterRules();
@@ -739,27 +860,23 @@
       baseStyle.animation = `danmaku-scroll-lr ${duration}s linear forwards`;
     } else if (danmaku.type === 'top') {
       baseStyle.top = `${lanePos ?? 2}%`;
-      baseStyle.left = '50%';
-      baseStyle.transform = 'translateX(-50%)';
-      baseStyle.textAlign = 'center';
-      baseStyle.animation = 'danmaku-fade-in-out 4s ease forwards';
+      baseStyle.left = '100%';
+      const duration = Math.max(5, (11 - settings.speed) * 1.2);
+      baseStyle.animation = `danmaku-scroll-lr ${duration}s linear forwards`;
     } else if (danmaku.type === 'bottom') {
       baseStyle.bottom = `${lanePos ?? 2}%`;
-      baseStyle.left = '50%';
-      baseStyle.transform = 'translateX(-50%)';
-      baseStyle.textAlign = 'center';
-      baseStyle.animation = 'danmaku-fade-in-out 4s ease forwards';
+      baseStyle.left = '100%';
+      const duration = Math.max(5, (11 - settings.speed) * 1.2);
+      baseStyle.animation = `danmaku-scroll-lr ${duration}s linear forwards`;
     }
 
     return baseStyle;
   };
 
   const handleAnimationEnd = (danmaku: DanmakuMessage) => {
-    if (danmaku.type === 'top' || danmaku.type === 'bottom') {
-      const idx = danmakuList.value.findIndex(d => d.id === danmaku.id);
-      if (idx !== -1) {
-        danmakuList.value.splice(idx, 1);
-      }
+    const idx = danmakuList.value.findIndex(d => d.id === danmaku.id);
+    if (idx !== -1) {
+      danmakuList.value.splice(idx, 1);
     }
   };
 
@@ -845,8 +962,10 @@
   watch(
     () => props.videoId,
     () => {
+      loadSessionFilters();
       void loadHttpRoomInfo();
       void loadFilterRules();
+      void loadDanmakuSuggestions();
     },
     { immediate: true },
   );

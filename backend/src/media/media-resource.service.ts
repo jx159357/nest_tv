@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Like, Not, Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { MediaResource } from '../entities/media-resource.entity';
 import { User } from '../entities/user.entity';
+import { PlaySource } from '../entities/play-source.entity';
 import { CreateMediaResourceDto } from './dtos/create-media-resource.dto';
 import { UpdateMediaResourceDto } from './dtos/update-media-resource.dto';
 import { MediaResourceQueryDto } from './dtos/media-resource-query.dto';
@@ -30,6 +31,33 @@ interface MediaSourceStatisticsRow {
   withDownloadUrls: string;
 }
 
+interface MediaDedupInput {
+  title: string;
+  type?: string | null;
+  releaseDate?: Date | string | null;
+  source?: string | null;
+}
+
+const MEDIA_CARD_SELECT_FIELDS = [
+  'mediaResource.id',
+  'mediaResource.title',
+  'mediaResource.description',
+  'mediaResource.type',
+  'mediaResource.genres',
+  'mediaResource.releaseDate',
+  'mediaResource.quality',
+  'mediaResource.poster',
+  'mediaResource.backdrop',
+  'mediaResource.rating',
+  'mediaResource.viewCount',
+  'mediaResource.isActive',
+  'mediaResource.source',
+  'mediaResource.duration',
+  'mediaResource.episodeCount',
+  'mediaResource.createdAt',
+  'mediaResource.updatedAt',
+];
+
 @Injectable()
 export class MediaResourceService {
   constructor(
@@ -37,8 +65,68 @@ export class MediaResourceService {
     private mediaResourceRepository: Repository<MediaResource>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(PlaySource)
+    private playSourceRepository: Repository<PlaySource>,
     private readonly cacheService: CacheService,
   ) {}
+
+  private normalizeText(value?: string | null): string {
+    return String(value || '')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toLowerCase();
+  }
+
+  private normalizeReleaseDate(value?: Date | string | null): string {
+    if (!value) return '';
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toISOString().slice(0, 10);
+  }
+
+  private buildMediaDedupKey(media: MediaDedupInput): string {
+    return [
+      this.normalizeText(media.title),
+      this.normalizeText(media.type),
+      this.normalizeReleaseDate(media.releaseDate),
+      this.normalizeText(media.source),
+    ].join('|');
+  }
+
+  private compareMediaKeepPriority(left: MediaResource, right: MediaResource): number {
+    if (left.isActive !== right.isActive) {
+      return left.isActive ? -1 : 1;
+    }
+    if ((left.playSources?.length || 0) !== (right.playSources?.length || 0)) {
+      return (right.playSources?.length || 0) - (left.playSources?.length || 0);
+    }
+    if ((left.rating || 0) !== (right.rating || 0)) {
+      return (right.rating || 0) - (left.rating || 0);
+    }
+    if ((left.viewCount || 0) !== (right.viewCount || 0)) {
+      return (right.viewCount || 0) - (left.viewCount || 0);
+    }
+    return left.id - right.id;
+  }
+
+  async findDuplicateCandidate(input: MediaDedupInput): Promise<MediaResource | null> {
+    const title = String(input.title || '').trim();
+    if (!title) {
+      return null;
+    }
+
+    const candidates = await this.mediaResourceRepository.find({
+      where: { title },
+      relations: ['playSources'],
+    });
+    const targetKey = this.buildMediaDedupKey(input);
+
+    return (
+      candidates
+        .filter(candidate => this.buildMediaDedupKey(candidate) === targetKey)
+        .sort((left, right) => this.compareMediaKeepPriority(left, right))[0] || null
+    );
+  }
 
   /**
    * 创建影视资源
@@ -48,7 +136,15 @@ export class MediaResourceService {
     key: 'media:list:*', // 清除媒体列表缓存
   })
   async create(createMediaResourceDto: CreateMediaResourceDto): Promise<MediaResource> {
-    const mediaResource = this.mediaResourceRepository.create(createMediaResourceDto);
+    const existing = await this.findDuplicateCandidate(createMediaResourceDto);
+    if (existing) {
+      return existing;
+    }
+
+    const mediaResource = this.mediaResourceRepository.create({
+      ...createMediaResourceDto,
+      title: String(createMediaResourceDto.title || '').trim(),
+    });
     return this.mediaResourceRepository.save(mediaResource);
   }
 
@@ -60,6 +156,7 @@ export class MediaResourceService {
     total: number;
     page: number;
     pageSize: number;
+    limit: number;
     totalPages: number;
   }> {
     const {
@@ -75,7 +172,8 @@ export class MediaResourceService {
       endDate,
     } = queryDto;
 
-    const queryBuilder = this.mediaResourceRepository.createQueryBuilder('mediaResource');
+    const queryBuilder = this.createCardQueryBuilder();
+    queryBuilder.where('mediaResource.isActive = :isActive', { isActive: true });
 
     // 搜索条件 - 优化索引使用
     if (search) {
@@ -155,6 +253,7 @@ export class MediaResourceService {
       total,
       page,
       pageSize,
+      limit: pageSize,
       totalPages,
     };
   }
@@ -264,28 +363,24 @@ export class MediaResourceService {
    * 获取热门影视
    */
   async getPopular(limit: number = 10): Promise<MediaResource[]> {
-    return this.mediaResourceRepository.find({
-      where: {
-        rating: Not(0),
-      },
-      order: {
-        viewCount: 'DESC',
-        rating: 'DESC',
-      },
-      take: limit,
-    });
+    return this.createCardQueryBuilder()
+      .where('mediaResource.isActive = :isActive', { isActive: true })
+      .andWhere('mediaResource.rating != :rating', { rating: 0 })
+      .orderBy('mediaResource.viewCount', 'DESC')
+      .addOrderBy('mediaResource.rating', 'DESC')
+      .take(limit)
+      .getMany();
   }
 
   /**
    * 获取最新影视
    */
   async getLatest(limit: number = 10): Promise<MediaResource[]> {
-    return this.mediaResourceRepository.find({
-      order: {
-        createdAt: 'DESC',
-      },
-      take: limit,
-    });
+    return this.createCardQueryBuilder()
+      .where('mediaResource.isActive = :isActive', { isActive: true })
+      .orderBy('mediaResource.createdAt', 'DESC')
+      .take(limit)
+      .getMany();
   }
 
   /**
@@ -567,6 +662,74 @@ export class MediaResourceService {
     });
   }
 
+  async deduplicateMediaResources(): Promise<{
+    duplicateGroups: number;
+    deactivated: number;
+    movedPlaySources: number;
+  }> {
+    const mediaResources = await this.mediaResourceRepository.find({
+      relations: ['playSources'],
+      order: { id: 'ASC' },
+    });
+    const groups = new Map<string, MediaResource[]>();
+
+    for (const mediaResource of mediaResources) {
+      const key = this.buildMediaDedupKey(mediaResource);
+      if (!key.split('|')[0]) continue;
+
+      const group = groups.get(key) || [];
+      group.push(mediaResource);
+      groups.set(key, group);
+    }
+
+    const duplicateGroups = Array.from(groups.values()).filter(group => group.length > 1);
+    let deactivated = 0;
+    let movedPlaySources = 0;
+
+    for (const group of duplicateGroups) {
+      const [keeper, ...duplicates] = [...group].sort((left, right) =>
+        this.compareMediaKeepPriority(left, right),
+      );
+
+      for (const duplicate of duplicates) {
+        const duplicateSourceUrls = new Set(
+          (keeper.playSources || []).map(source => source.url).filter(Boolean),
+        );
+        const sourcesToMove = (duplicate.playSources || []).filter(source => {
+          if (!source.url || duplicateSourceUrls.has(source.url)) {
+            return false;
+          }
+          duplicateSourceUrls.add(source.url);
+          return true;
+        });
+
+        if (sourcesToMove.length > 0) {
+          await this.playSourceRepository.update(
+            sourcesToMove.map(source => source.id),
+            { mediaResourceId: keeper.id },
+          );
+          movedPlaySources += sourcesToMove.length;
+        }
+
+        if (duplicate.isActive) {
+          duplicate.isActive = false;
+          await this.mediaResourceRepository.save(duplicate);
+          deactivated++;
+        }
+      }
+    }
+
+    if (deactivated > 0 || movedPlaySources > 0) {
+      await this.cacheService.clearPattern('media:list:*');
+    }
+
+    return {
+      duplicateGroups: duplicateGroups.length,
+      deactivated,
+      movedPlaySources,
+    };
+  }
+
   async getSourceStatistics(sourceNames?: string[]): Promise<
     Record<
       string,
@@ -702,5 +865,12 @@ export class MediaResourceService {
         title: title,
       },
     });
+  }
+
+  private createCardQueryBuilder() {
+    return this.mediaResourceRepository
+      .createQueryBuilder('mediaResource')
+      .select(MEDIA_CARD_SELECT_FIELDS)
+      .loadRelationCountAndMap('mediaResource.playSourceCount', 'mediaResource.playSources');
   }
 }

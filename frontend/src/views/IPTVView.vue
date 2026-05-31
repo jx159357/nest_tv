@@ -83,12 +83,28 @@
             </label>
             <button class="channel-content" @click="selectChannel(channel.id)">
               <div class="channel-info">
-                <span class="channel-name">{{ channel.name }}</span>
-                <span class="channel-meta"
-                  >{{ channel.group }} · {{ channel.country || '未知' }}</span
-                >
+                <div class="channel-name-row">
+                  <img
+                    v-if="channel.logo"
+                    :src="getLogoUrl(channel.logo)"
+                    :alt="channel.name"
+                    class="channel-logo"
+                    @error="($event.target as HTMLImageElement).style.display = 'none'"
+                  />
+                  <span class="channel-name">{{ channel.name }}</span>
+                </div>
+                <span class="channel-meta">
+                  {{ channel.group || '未分组' }} · {{ channel.country || '未知' }}
+                </span>
               </div>
               <div class="channel-tags">
+                <span
+                  v-if="channel.qualityScore"
+                  class="tag-quality"
+                  :class="getQualityClass(channel.qualityScore)"
+                >
+                  {{ channel.qualityScore }}分
+                </span>
                 <span
                   class="tag-status"
                   :class="channel.isActive ? 'tag--active' : 'tag--inactive'"
@@ -121,12 +137,7 @@
       <div class="import-panel">
         <h2 class="section-title">导入频道</h2>
         <form class="import-form" @submit.prevent="importM3UPlaylist">
-          <input
-            v-model="m3uUrl"
-            type="url"
-            class="filter-input"
-            placeholder="M3U 播放列表 URL"
-          />
+          <input v-model="m3uUrl" type="url" class="filter-input" placeholder="M3U 播放列表 URL" />
           <input
             v-model="importGroup"
             type="text"
@@ -147,7 +158,11 @@
             placeholder='粘贴 JSON 数组，格式: [{"name":"频道名","url":"http://...","group":"分组","logo":"http://..."}]'
             rows="4"
           ></textarea>
-          <button class="btn-import" :disabled="importing || !jsonInput.trim()" @click="importJsonChannels">
+          <button
+            class="btn-import"
+            :disabled="importing || !jsonInput.trim()"
+            @click="importJsonChannels"
+          >
             {{ importing ? '导入中...' : '导入 JSON' }}
           </button>
         </div>
@@ -285,7 +300,8 @@
 
   const loadGroups = async () => {
     try {
-      groups.value = await iptvApi.getGroups();
+      const result = await iptvApi.getGroups();
+      groups.value = Array.isArray(result) ? result : [];
     } catch {
       groups.value = [];
     }
@@ -293,7 +309,8 @@
 
   const loadStats = async () => {
     try {
-      stats.value = await iptvApi.getStats();
+      const result = await iptvApi.getStats();
+      stats.value = result || null;
     } catch {
       stats.value = null;
     }
@@ -366,7 +383,10 @@
     }
     importing.value = true;
     try {
-      const result = await iptvApi.importFromM3U(m3uUrl.value.trim(), importGroup.value.trim() || undefined);
+      const result = await iptvApi.importFromM3U(
+        m3uUrl.value.trim(),
+        importGroup.value.trim() || undefined,
+      );
       importMessage.value = `已导入 ${result.length} 个频道`;
       importGroup.value = '';
       await Promise.all([loadChannels(1), loadGroups(), loadStats()]);
@@ -448,23 +468,38 @@
 
   const openChannelUrl = (url: string) => window.open(url, '_blank', 'noopener,noreferrer');
 
+  const getLogoUrl = (url: string) => {
+    if (!url) return '';
+    if (url.startsWith('http')) {
+      return iptvApi.getImageProxyUrl(url);
+    }
+    return url;
+  };
+
+  const getQualityClass = (score?: number) => {
+    if (!score) return 'quality-low';
+    if (score >= 80) return 'quality-high';
+    if (score >= 60) return 'quality-medium';
+    return 'quality-low';
+  };
+
   onMounted(() => void Promise.all([loadGroups(), loadStats(), loadChannels(1)]));
 </script>
 
 <style scoped>
   .iptv-view {
     min-height: 100vh;
-    background: var(--bg-page);
+    background: transparent;
     color: var(--text-primary);
-    padding: 24px;
-    max-width: 1400px;
+    padding: 28px var(--page-gutter) 40px;
+    max-width: var(--content-max-width);
     margin: 0 auto;
   }
   .iptv-header {
-    margin-bottom: 24px;
+    margin-bottom: 18px;
   }
   .iptv-title {
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 700;
     margin-bottom: 8px;
   }
@@ -475,15 +510,15 @@
 
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 16px;
-    margin-bottom: 24px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
   }
   .stat-card {
-    background: var(--bg-card);
-    border-radius: 12px;
-    padding: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.045);
+    border-radius: 8px;
+    padding: 14px 16px;
+    border: 1px solid var(--border-primary);
   }
   .stat-label {
     font-size: 13px;
@@ -491,8 +526,11 @@
     margin-bottom: 8px;
   }
   .stat-value {
-    font-size: 28px;
+    font-size: 24px;
     font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .stat-value.text-sm {
     font-size: 14px;
@@ -504,22 +542,34 @@
   }
 
   .filter-section {
-    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 18px;
+    padding: 12px;
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.035);
   }
   .filter-form {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    flex: 1;
+    grid-template-columns: minmax(220px, 1.3fr) minmax(160px, 0.9fr) minmax(100px, 0.55fr) minmax(100px, 0.55fr) auto;
     gap: 10px;
-    margin-bottom: 12px;
+    min-width: 0;
+    margin-bottom: 0;
   }
   .filter-input,
   .filter-select {
-    padding: 10px 14px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
+    min-width: 0;
+    min-height: 38px;
+    padding: 0 12px;
+    background: var(--surface-control);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
     color: var(--text-primary);
-    font-size: 14px;
+    font-size: 13px;
     outline: none;
   }
   .filter-input:focus,
@@ -531,10 +581,11 @@
   }
   .btn-filter,
   .btn-import {
-    padding: 10px 20px;
+    min-height: 38px;
+    padding: 0 18px;
     background: var(--color-brand-primary);
     border: none;
-    border-radius: 10px;
+    border-radius: 8px;
     color: white;
     font-size: 14px;
     font-weight: 500;
@@ -567,8 +618,8 @@
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    background: rgba(99, 102, 241, 0.1);
-    border: 1px solid rgba(99, 102, 241, 0.2);
+    background: var(--color-info-overlay);
+    border: 1px solid var(--color-info-border);
     border-radius: 10px;
     margin-bottom: 16px;
   }
@@ -578,8 +629,8 @@
   }
   .btn-batch-delete {
     padding: 8px 16px;
-    background: rgba(239, 68, 68, 0.2);
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: var(--color-error-overlay);
+    border: 1px solid var(--color-error-border);
     border-radius: 8px;
     color: var(--color-error-light);
     font-size: 13px;
@@ -587,12 +638,12 @@
     transition: all 0.2s;
   }
   .btn-batch-delete:hover {
-    background: rgba(239, 68, 68, 0.3);
+    background: var(--color-error-border);
   }
   .btn-batch-cancel {
     padding: 8px 16px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--bg-card);
+    border: 1px solid var(--border-secondary);
     border-radius: 8px;
     color: var(--text-muted);
     font-size: 13px;
@@ -600,13 +651,13 @@
     transition: all 0.2s;
   }
   .btn-batch-cancel:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--bg-tertiary);
   }
 
   .error-banner {
     padding: 12px 16px;
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.2);
+    background: var(--color-error-overlay);
+    border: 1px solid var(--color-error-border);
     border-radius: 10px;
     color: var(--color-error-light);
     font-size: 14px;
@@ -615,15 +666,26 @@
 
   .content-grid {
     display: grid;
-    grid-template-columns: 1fr 320px;
-    gap: 24px;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 18px;
     margin-bottom: 24px;
+  }
+  .channel-list-wrapper,
+  .import-panel,
+  .detail-section {
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.035);
+  }
+  .channel-list-wrapper {
+    min-width: 0;
+    padding: 16px;
   }
   .list-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
   .section-title {
     font-size: 18px;
@@ -647,26 +709,28 @@
   .channel-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    max-height: 600px;
+    gap: 6px;
+    max-height: 640px;
     overflow-y: auto;
+    padding-right: 4px;
   }
   .channel-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 14px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
+    gap: 8px;
+    min-width: 0;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
     transition: all 0.2s;
   }
   .channel-item:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--bg-tertiary);
   }
   .channel-item--active {
     border-color: var(--border-focus);
-    background: rgba(99, 102, 241, 0.1);
+    background: rgba(229, 9, 20, 0.08);
   }
   .channel-checkbox {
     display: flex;
@@ -690,23 +754,48 @@
     width: 100%;
     color: var(--text-primary);
     padding: 0;
+    min-width: 0;
+    gap: 12px;
   }
   .channel-info {
     display: flex;
     flex-direction: column;
+    min-width: 0;
   }
   .channel-name {
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .channel-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .channel-logo {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    object-fit: contain;
+    flex-shrink: 0;
+    background: var(--surface-muted);
   }
   .channel-meta {
     font-size: 12px;
     color: var(--text-tertiary);
     margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .channel-tags {
     display: flex;
     gap: 6px;
+    flex: 0 0 auto;
+    align-items: center;
   }
   .tag-status {
     font-size: 11px;
@@ -722,11 +811,34 @@
     color: var(--text-muted);
   }
   .tag-format {
+    max-width: 70px;
     font-size: 11px;
     padding: 2px 8px;
-    background: rgba(255, 255, 255, 0.06);
-    border-radius: 20px;
+    background: var(--bg-tertiary);
+    border-radius: 6px;
     color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tag-quality {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  .quality-high {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+  }
+  .quality-medium {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+  }
+  .quality-low {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
   }
 
   .pagination {
@@ -740,15 +852,15 @@
   }
   .pagination button {
     padding: 8px 16px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--bg-card);
+    border: 1px solid var(--border-secondary);
     border-radius: 8px;
     color: var(--text-primary);
     cursor: pointer;
     transition: all 0.2s;
   }
   .pagination button:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--bg-tertiary);
   }
   .pagination button:disabled {
     opacity: 0.3;
@@ -756,10 +868,10 @@
   }
 
   .import-panel {
-    background: var(--bg-card);
-    border-radius: 14px;
-    padding: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    align-self: start;
+    padding: 16px;
+    position: sticky;
+    top: 76px;
   }
   .import-form {
     display: flex;
@@ -797,8 +909,8 @@
   .json-textarea {
     width: 100%;
     padding: 10px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--bg-card);
+    border: 1px solid var(--border-secondary);
     border-radius: 10px;
     color: var(--text-primary);
     font-size: 12px;
@@ -832,7 +944,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 10px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--bg-tertiary);
     border-radius: 8px;
     margin-bottom: 6px;
     font-size: 13px;
@@ -844,7 +956,7 @@
     text-align: left;
   }
   .mini-item:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--border-primary);
   }
   .mini-meta {
     color: var(--text-tertiary);
@@ -880,10 +992,9 @@
   }
 
   .detail-section {
-    background: var(--bg-card);
-    border-radius: 14px;
+    max-width: var(--content-max-width);
+    margin: 0 auto;
     padding: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
   }
   .detail-content {
     display: flex;
@@ -904,7 +1015,7 @@
   }
   .tag {
     padding: 4px 12px;
-    background: rgba(99, 102, 241, 0.15);
+    background: rgba(229, 9, 20, 0.1);
     color: var(--text-link-hover);
     border-radius: 20px;
     font-size: 12px;
@@ -914,6 +1025,7 @@
     font-size: 13px;
     color: var(--text-muted);
     margin-bottom: 8px;
+    word-break: break-all;
   }
   .detail-url strong,
   .detail-desc strong {
@@ -955,12 +1067,12 @@
     opacity: 0.5;
   }
   .btn-open {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--bg-card);
     color: var(--text-primary);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--border-secondary);
   }
   .btn-open:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--bg-tertiary);
   }
   .btn-delete {
     padding: 12px 20px;
@@ -977,8 +1089,24 @@
   }
 
   @media (max-width: 1024px) {
+    .filter-section {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .filter-form {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .btn-filter {
+      grid-column: span 2;
+    }
+
     .content-grid {
       grid-template-columns: 1fr;
+    }
+    .import-panel {
+      position: static;
     }
     .detail-content {
       flex-direction: column;
@@ -986,6 +1114,78 @@
     .detail-actions {
       flex-direction: row;
       flex-wrap: wrap;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .iptv-view {
+      padding: 18px var(--page-gutter) 84px;
+    }
+
+    .iptv-title {
+      font-size: 22px;
+    }
+
+    .stats-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .stat-card {
+      padding: 10px;
+    }
+
+    .stat-label,
+    .stat-sub {
+      font-size: 11px;
+    }
+
+    .stat-value {
+      font-size: 18px;
+    }
+
+    .filter-form {
+      grid-template-columns: 1fr;
+    }
+
+    .btn-filter {
+      grid-column: auto;
+    }
+
+    .channel-list-wrapper,
+    .import-panel,
+    .detail-section {
+      padding: 12px;
+    }
+
+    .channel-list {
+      max-height: none;
+      padding-right: 0;
+    }
+
+    .channel-item {
+      align-items: flex-start;
+    }
+
+    .channel-content {
+      align-items: stretch;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .channel-tags {
+      flex-wrap: wrap;
+    }
+
+    .detail-actions {
+      flex-direction: column;
+    }
+
+    .btn-play,
+    .btn-validate,
+    .btn-open,
+    .btn-delete {
+      width: 100%;
     }
   }
 </style>

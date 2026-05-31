@@ -33,6 +33,7 @@ import { PlaySource } from './entities/play-source.entity';
 import { WatchHistory } from './entities/watch-history.entity';
 import { Recommendation } from './entities/recommendation.entity';
 import { IPTVChannel } from './entities/iptv-channel.entity';
+import { ChannelLogo } from './entities/channel-logo.entity';
 import { ParseProvider } from './entities/parse-provider.entity';
 import { AdminRole } from './entities/admin-role.entity';
 import { AdminPermission } from './entities/admin-permission.entity';
@@ -51,6 +52,21 @@ interface MysqlTypeCastField {
   string(): string | null;
 }
 
+function getBooleanConfig(
+  configService: ConfigService,
+  key: string,
+  defaultValue: boolean,
+): boolean {
+  const value = configService.get<string | boolean>(key);
+  if (value === undefined || value === null || value === '') {
+    return defaultValue;
+  }
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  return ['1', 'true', 'yes', 'on'].includes(value.toLowerCase());
+}
+
 @ApiTags('系统')
 @Module({
   imports: [
@@ -63,130 +79,138 @@ interface MysqlTypeCastField {
     // TypeORM模块 - 用于数据库连接
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: 'mysql',
-        host: configService.get<string>('DB_HOST'),
-        port: configService.get<number>('DB_PORT'),
-        username: configService.get<string>('DB_USERNAME'),
-        password: configService.get<string>('DB_PASSWORD'),
-        database: configService.get<string>('DB_DATABASE'),
-        entities: [
-          User,
-          MediaResource,
-          PlaySource,
-          WatchHistory,
-          Recommendation,
-          SearchHistory,
-          Danmaku,
-          AdminRole,
-          AdminPermission,
-          AdminLog,
-          IPTVChannel,
-          ParseProvider,
-          DownloadTask,
-          SourceScript,
-          CrawlerTarget,
-        ], // 所有实体类
+      useFactory: (configService: ConfigService) => {
+        const dbDebug = getBooleanConfig(configService, 'DB_DEBUG', false);
+        const dbLogging = getBooleanConfig(configService, 'DB_LOGGING', false);
 
-        // 连接池优化配置（生产环境增强）
-        extra: {
-          // 基础连接池设置 - 支持更大并发
-          connectionLimit: Math.max(
-            parseInt(configService.get<string>('DB_POOL_MIN', '5')),
-            Math.min(
-              parseInt(configService.get<string>('DB_POOL_MAX', '50')),
-              Math.ceil(
-                process.env.DB_CONNECTION_LIMIT ? parseInt(process.env.DB_CONNECTION_LIMIT) : 25,
+        return {
+          type: 'mysql',
+          host: configService.get<string>('DB_HOST'),
+          port: configService.get<number>('DB_PORT'),
+          username: configService.get<string>('DB_USERNAME'),
+          password: configService.get<string>('DB_PASSWORD'),
+          database: configService.get<string>('DB_DATABASE'),
+          entities: [
+            User,
+            MediaResource,
+            PlaySource,
+            WatchHistory,
+            Recommendation,
+            SearchHistory,
+            Danmaku,
+            AdminRole,
+            AdminPermission,
+            AdminLog,
+            IPTVChannel,
+            ChannelLogo,
+            ParseProvider,
+            DownloadTask,
+            SourceScript,
+            CrawlerTarget,
+          ], // 所有实体类
+
+          // 连接池优化配置（生产环境增强）
+          extra: {
+            // 基础连接池设置 - 支持更大并发
+            connectionLimit: Math.max(
+              parseInt(configService.get<string>('DB_POOL_MIN', '5')),
+              Math.min(
+                parseInt(configService.get<string>('DB_POOL_MAX', '50')),
+                Math.ceil(
+                  process.env.DB_CONNECTION_LIMIT ? parseInt(process.env.DB_CONNECTION_LIMIT) : 25,
+                ),
               ),
             ),
-          ),
-          acquireTimeout: parseInt(configService.get<string>('DB_ACQUIRE_TIMEOUT', '60000')),
-          timeout: parseInt(configService.get<string>('DB_QUERY_TIMEOUT', '60000')),
+            acquireTimeout: parseInt(configService.get<string>('DB_ACQUIRE_TIMEOUT', '60000')),
+            timeout: parseInt(configService.get<string>('DB_QUERY_TIMEOUT', '60000')),
 
-          // 高级连接池设置 - 增强生产环境性能
-          queueLimit: parseInt(configService.get<string>('DB_QUEUE_LIMIT', '30')),
-          waitForConnections: true,
-          connectTimeout: parseInt(
-            configService.get<string>('DB_CONNECTION_CHECK_TIMEOUT', '30000'),
-            10,
-          ),
+            // 高级连接池设置 - 增强生产环境性能
+            queueLimit: parseInt(configService.get<string>('DB_QUEUE_LIMIT', '30')),
+            waitForConnections: true,
+            connectTimeout: parseInt(
+              configService.get<string>('DB_CONNECTION_CHECK_TIMEOUT', '30000'),
+              10,
+            ),
 
-          // SSL配置（安全连接）
-          ssl: configService.get<boolean>('DB_SSL', false) ? { rejectUnauthorized: false } : false,
+            // SSL配置（安全连接）
+            ssl: configService.get<boolean>('DB_SSL', false)
+              ? { rejectUnauthorized: false }
+              : false,
 
-          // 字符集和时区配置
-          charset: 'utf8mb4',
-          timezone: '+00:00',
+            // 字符集和时区配置
+            charset: 'utf8mb4',
+            timezone: '+00:00',
 
-          // 连接复用和安全设置
-          multipleStatements: false,
-          namedPlaceholders: true,
+            // 连接复用和安全设置
+            multipleStatements: false,
+            namedPlaceholders: true,
 
-          // 数据类型和性能配置
-          bigNumberStrings: false,
-          dateStrings: false,
-          debug: process.env.NODE_ENV === 'development',
+            // 数据类型和性能配置
+            bigNumberStrings: false,
+            dateStrings: false,
+            debug: dbDebug,
 
-          // 性能优化设置
-          supportBigNumbers: true,
-          typeCast: (field: MysqlTypeCastField, next: () => unknown): unknown => {
-            if (field.type === 'TINY' && field.length === 1) {
-              return field.string() === '1';
-            }
-            return next();
+            // 性能优化设置
+            supportBigNumbers: true,
+            typeCast: (field: MysqlTypeCastField, next: () => unknown): unknown => {
+              if (field.type === 'TINY' && field.length === 1) {
+                return field.string() === '1';
+              }
+              return next();
+            },
+
+            // 连接保活设置
+            enableKeepAlive: true,
+            keepAliveInitialDelay: 10000, // 保活初始延迟10秒
+
+            // 重连配置 - 增强重连机制
+            reconnect: true,
+            idleTimeout: 60000, // 空闲超时60秒
+
+            // 连接检测配置
+            socketTimeout: 180000, // Socket超时3分钟
+
+            // 错误恢复配置
+            poolPing: true, // 启用连接池健康检查
+            poolPingInterval: 30000, // 每30秒检查一次连接
           },
 
-          // 连接保活设置
-          enableKeepAlive: true,
-          keepAliveInitialDelay: 10000, // 保活初始延迟10秒
+          // 事务和连接管理
+          autoSaveEntities: false,
+          retryAttempts: configService.get<number>('DB_RETRY_ATTEMPTS', 5), // 增加重试次数
+          retryDelay: configService.get<number>('DB_RETRY_DELAY', 5000), // 增加重试延迟
 
-          // 重连配置 - 增强重连机制
-          reconnect: true,
-          idleTimeout: 60000, // 空闲超时60秒
+          // 查询性能监控
+          maxQueryExecutionTime: configService.get<number>('DB_MAX_QUERY_TIME', 3000), // 增加最大查询时间
+          slowQueryLimit: configService.get<number>('DB_SLOW_QUERY_LIMIT', 500), // 增加慢查询阈值
 
-          // 连接检测配置
-          socketTimeout: 180000, // Socket超时3分钟
+          // 缓存策略 - 禁用TypeORM默认缓存，使用自定义Redis缓存
+          cache: false,
 
-          // 错误恢复配置
-          poolPing: true, // 启用连接池健康检查
-          poolPingInterval: 30000, // 每30秒检查一次连接
-        },
+          // 监控和订阅者管理
+          subscribers: [], // 禁用默认订阅者，防止内存泄漏
 
-        // 事务和连接管理
-        autoSaveEntities: false,
-        retryAttempts: configService.get<number>('DB_RETRY_ATTEMPTS', 5), // 增加重试次数
-        retryDelay: configService.get<number>('DB_RETRY_DELAY', 5000), // 增加重试延迟
+          // 数据库迁移配置 - 使用编译后的JS文件避免ES Module问题
+          migrationsRun: false, // 禁用自动运行迁移
+          dropSchema: false, // 禁用自动删除数据库
+          migrations: ['dist/migrations/*.js'], // 使用编译后的JS文件
 
-        // 查询性能监控
-        maxQueryExecutionTime: configService.get<number>('DB_MAX_QUERY_TIME', 3000), // 增加最大查询时间
-        slowQueryLimit: configService.get<number>('DB_SLOW_QUERY_LIMIT', 500), // 增加慢查询阈值
+          // 日志和调试配置
+          logging: dbLogging,
+          logger: 'advanced-console', // 高级控制台日志
+          loggerOptions: {
+            warnLevel: 'warn',
+            infoLevel: 'info',
+            logLevel: dbLogging ? 'info' : 'warn',
+          },
 
-        // 缓存策略 - 禁用TypeORM默认缓存，使用自定义Redis缓存
-        cache: false,
-
-        // 监控和订阅者管理
-        subscribers: [], // 禁用默认订阅者，防止内存泄漏
-
-        // 数据库迁移配置 - 使用编译后的JS文件避免ES Module问题
-        migrationsRun: false, // 禁用自动运行迁移
-        dropSchema: false, // 禁用自动删除数据库
-        migrations: ['dist/migrations/*.js'], // 使用编译后的JS文件
-
-        // 日志和调试配置
-        logging: configService.get<boolean>('DB_LOGGING', process.env.NODE_ENV === 'development'),
-        logger: 'advanced-console', // 高级控制台日志
-        loggerOptions: {
-          warnLevel: 'warn',
-          infoLevel: 'info',
-          logLevel: process.env.NODE_ENV === 'development' ? 'debug' : 'warn',
-        },
-
-        // 生产环境配置
-        synchronize: configService.get<boolean>(
-          'DB_SYNCHRONIZE',
-          process.env.NODE_ENV === 'development',
-        ),
-      }),
+          // 生产环境配置
+          synchronize: configService.get<boolean>(
+            'DB_SYNCHRONIZE',
+            process.env.NODE_ENV === 'development',
+          ),
+        };
+      },
       inject: [ConfigService],
     }),
 

@@ -87,6 +87,145 @@
           @detail="item => goToMediaDetail(item.id)"
         />
         <div v-else-if="popularLoading" class="banner-skeleton"></div>
+        <div v-else-if="homeLoadError" class="home-offline-hero">
+          <div class="home-offline-hero__content">
+            <span class="home-offline-hero__eyebrow">Nest TV</span>
+            <h1 class="home-offline-hero__title">视频库暂时连不上</h1>
+            <p class="home-offline-hero__desc">
+              前端已经可用。启动后端服务后，首页会自动加载热门、最新和高分内容。
+            </p>
+            <button class="home-offline-hero__button" @click="loadHomeData">重新加载</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="home-search">
+        <div class="home-search__content">
+          <div class="home-search__copy">
+            <span class="home-search__eyebrow">Nest TV</span>
+            <h1 class="home-search__title">找片、续看、直播和下载</h1>
+          </div>
+          <form class="home-search__form" @submit.prevent="submitHomeSearch">
+            <svg
+              class="home-search__icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              v-model="homeSearchQuery"
+              class="home-search__input"
+              type="search"
+              autocomplete="off"
+              placeholder="搜索电影、剧集、演员、磁力资源"
+              @focus="openHomeSearchMenu"
+              @input="onHomeSearchInput"
+              @blur="closeHomeSearchMenu"
+            />
+            <button class="home-search__button" type="submit">搜索</button>
+            <div
+              v-if="showHomeSearchMenu && (searchSuggestions.length > 0 || recentSearches.length > 0)"
+              class="home-search__menu"
+            >
+              <div v-if="searchSuggestions.length > 0" class="home-search__menu-group">
+                <div class="home-search__menu-title">搜索建议</div>
+                <button
+                  v-for="item in searchSuggestions"
+                  :key="`suggestion-${item.text}`"
+                  type="button"
+                  class="home-search__menu-item"
+                  @mousedown.prevent="selectSearchKeyword(item.text)"
+                >
+                  {{ item.text }}
+                </button>
+              </div>
+              <div v-if="recentSearches.length > 0" class="home-search__menu-group">
+                <div class="home-search__menu-title">
+                  <span>搜索历史</span>
+                  <button type="button" @mousedown.prevent="clearRecentSearches">清空</button>
+                </div>
+                <button
+                  v-for="keyword in recentSearches"
+                  :key="`history-${keyword}`"
+                  type="button"
+                  class="home-search__menu-item"
+                  @mousedown.prevent="selectSearchKeyword(keyword)"
+                >
+                  {{ keyword }}
+                </button>
+              </div>
+            </div>
+          </form>
+          <div class="home-search__quick">
+            <router-link to="/categories?type=movie">电影</router-link>
+            <router-link to="/categories?type=tv_series">剧集</router-link>
+            <router-link to="/categories?type=anime">动漫</router-link>
+            <router-link to="/iptv">直播</router-link>
+          </div>
+        </div>
+      </section>
+
+      <!-- 继续观看 -->
+      <section
+        v-if="authStore.isAuthenticated && continueWatching.length > 0"
+        class="content-section"
+      >
+        <div class="section-header">
+          <h2 class="section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            继续观看
+          </h2>
+          <router-link
+            to="/watch-history?isCompleted=false&sortBy=updatedAt&sortOrder=DESC"
+            class="section-more"
+          >
+            查看更多
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </router-link>
+        </div>
+        <div class="continue-row">
+          <div
+            v-for="item in continueWatching"
+            :key="item.id"
+            class="continue-card"
+            @click="goToWatch(item.mediaResourceId, item.currentTime)"
+          >
+            <div class="continue-card__poster">
+              <img
+                :src="item.mediaResource?.poster || '/placeholder.png'"
+                :alt="item.mediaResource?.title"
+                loading="lazy"
+              />
+              <div class="continue-card__progress">
+                <div
+                  class="continue-card__progress-bar"
+                  :style="{ width: `${getProgress(item)}%` }"
+                ></div>
+              </div>
+              <div class="continue-card__overlay">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+              </div>
+              <span v-if="item.episodeNumber" class="continue-card__episode">
+                第{{ item.episodeNumber }}集
+              </span>
+            </div>
+            <div class="continue-card__info">
+              <h4 class="continue-card__title">{{ item.mediaResource?.title }}</h4>
+              <p class="continue-card__meta">观看至 {{ formatTime(item.currentTime) }}</p>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- 热门推荐 -->
@@ -108,7 +247,7 @@
         <div v-if="popularLoading" class="loading-row">
           <div v-for="i in 6" :key="i" class="skeleton-card"></div>
         </div>
-        <div v-else-if="popularMedia.length > 0" class="media-row">
+        <div v-else-if="popularMedia.length > 0" class="media-row media-row--rail">
           <MediaCard
             v-for="media in popularMedia"
             :key="media.id"
@@ -117,7 +256,7 @@
           />
         </div>
         <div v-else class="empty-row">
-          <p>暂无热门视频</p>
+          <p>{{ homeLoadError || '暂无热门视频' }}</p>
         </div>
       </section>
 
@@ -135,7 +274,7 @@
         <div v-if="latestLoading" class="loading-row">
           <div v-for="i in 6" :key="i" class="skeleton-card"></div>
         </div>
-        <div v-else-if="latestMedia.length > 0" class="media-row">
+        <div v-else-if="latestMedia.length > 0" class="media-row media-row--rail">
           <MediaCard
             v-for="media in latestMedia"
             :key="media.id"
@@ -144,7 +283,7 @@
           />
         </div>
         <div v-else class="empty-row">
-          <p>暂无最新视频</p>
+          <p>{{ homeLoadError || '暂无最新视频' }}</p>
         </div>
       </section>
 
@@ -163,7 +302,7 @@
         <div v-if="topRatedLoading" class="loading-row">
           <div v-for="i in 6" :key="i" class="skeleton-card"></div>
         </div>
-        <div v-else-if="topRatedMedia.length > 0" class="media-row">
+        <div v-else-if="topRatedMedia.length > 0" class="media-row media-row--rail">
           <MediaCard
             v-for="media in topRatedMedia"
             :key="media.id"
@@ -172,7 +311,7 @@
           />
         </div>
         <div v-else class="empty-row">
-          <p>暂无高分视频</p>
+          <p>{{ homeLoadError || '暂无高分视频' }}</p>
         </div>
       </section>
     </template>
@@ -183,11 +322,13 @@
   import { computed, onUnmounted, ref, watch } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { useMediaStore } from '@/stores/media';
+  import { useAuthStore } from '@/stores/auth';
   import MediaCard from '@/components/MediaCard.vue';
   import BannerCarousel from '@/components/BannerCarousel.vue';
   import { log } from '@/utils/logger';
   import { searchApi } from '@/api/search';
-  import type { SseSearchEvent } from '@/api/search';
+  import { watchHistoryApi, type WatchHistoryItem } from '@/api/watchHistory';
+  import type { SearchSuggestionItem, SseSearchEvent } from '@/api/search';
   import type { MediaResource } from '@/types/media';
 
   interface TorrentItem {
@@ -202,6 +343,7 @@
   const route = useRoute();
   const router = useRouter();
   const mediaStore = useMediaStore();
+  const authStore = useAuthStore();
 
   const mediaResults = ref<MediaResource[]>([]);
   const mediaResultsTotal = ref(0);
@@ -211,12 +353,18 @@
   const latestMedia = ref<MediaResource[]>([]);
   const topRatedMedia = ref<MediaResource[]>([]);
   const bannerItems = ref<MediaResource[]>([]);
+  const continueWatching = ref<WatchHistoryItem[]>([]);
+  const homeSearchQuery = ref('');
+  const searchSuggestions = ref<SearchSuggestionItem[]>([]);
+  const recentSearches = ref<string[]>([]);
+  const showHomeSearchMenu = ref(false);
 
   const searchStreaming = ref(false);
   const popularLoading = ref(false);
   const latestLoading = ref(false);
   const topRatedLoading = ref(false);
   const searchError = ref<string | null>(null);
+  const homeLoadError = ref<string | null>(null);
 
   let cancelSse: (() => void) | null = null;
 
@@ -236,25 +384,149 @@
     return String(size);
   };
 
+  const formatTime = (seconds: number) => {
+    if (!seconds) return '00:00';
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  };
+
+  const getProgress = (item: WatchHistoryItem) => {
+    if (!item.duration || item.duration === 0) return 0;
+    return Math.min(100, Math.round((item.currentTime / item.duration) * 100));
+  };
+
+  const goToWatch = (mediaId: number, currentTime?: number) => {
+    const query = currentTime ? `?t=${Math.floor(currentTime)}` : '';
+    void router.push(`/watch/${mediaId}${query}`);
+  };
+
+  const submitHomeSearch = async () => {
+    const query = homeSearchQuery.value.trim();
+    if (!query) return;
+    try {
+      await searchApi.recordHistory({ keyword: query });
+    } catch (error) {
+      log.error('Home', '记录搜索历史失败:', error);
+    }
+    showHomeSearchMenu.value = false;
+    void router.push({ path: '/', query: { q: query } });
+  };
+
+  const loadRecentSearches = async () => {
+    try {
+      recentSearches.value = await searchApi.getHistory(6);
+    } catch {
+      recentSearches.value = [];
+    }
+  };
+
+  const loadSearchSuggestions = async () => {
+    const query = homeSearchQuery.value.trim();
+    if (!query) {
+      searchSuggestions.value = [];
+      return;
+    }
+    try {
+      searchSuggestions.value = await searchApi.getSuggestions(query, 6);
+    } catch {
+      searchSuggestions.value = [];
+    }
+  };
+
+  const openHomeSearchMenu = () => {
+    showHomeSearchMenu.value = true;
+    void loadRecentSearches();
+    void loadSearchSuggestions();
+  };
+
+  const closeHomeSearchMenu = () => {
+    window.setTimeout(() => {
+      showHomeSearchMenu.value = false;
+    }, 120);
+  };
+
+  const onHomeSearchInput = () => {
+    showHomeSearchMenu.value = true;
+    void loadSearchSuggestions();
+  };
+
+  const selectSearchKeyword = (keyword: string) => {
+    homeSearchQuery.value = keyword;
+    void submitHomeSearch();
+  };
+
+  const clearRecentSearches = async () => {
+    await searchApi.clearHistory();
+    recentSearches.value = [];
+  };
+
+  const loadContinueWatching = async () => {
+    if (!authStore.isAuthenticated) return;
+    try {
+      const result = await watchHistoryApi.getContinueWatching(undefined, { limit: 6 });
+      continueWatching.value = Array.isArray(result) ? result : [];
+    } catch (error) {
+      log.error('Home', '加载继续观看失败:', error);
+    }
+  };
+
   const loadHomeData = async () => {
     popularLoading.value = true;
     latestLoading.value = true;
     topRatedLoading.value = true;
+    homeLoadError.value = null;
+
+    const results = await Promise.allSettled([
+      mediaStore.fetchPopularMedia(8, { silent: true }),
+      mediaStore.fetchLatestMedia(8, { silent: true }),
+      mediaStore.fetchTopRatedMedia(8, 8, { silent: true }),
+    ]);
+
+    const [popularResult, latestResult, topRatedResult] = results;
+    const failedCount = results.filter(result => result.status === 'rejected').length;
+
+    if (popularResult.status === 'fulfilled') {
+      popularMedia.value = popularResult.value;
+      bannerItems.value = popularResult.value.slice(0, 5);
+    } else {
+      popularMedia.value = [];
+      bannerItems.value = [];
+      if (!popularResult.reason?.silent) {
+        log.error('Home', '加载热门推荐失败:', popularResult.reason);
+      }
+    }
+
+    if (latestResult.status === 'fulfilled') {
+      latestMedia.value = latestResult.value;
+    } else {
+      latestMedia.value = [];
+      if (!latestResult.reason?.silent) {
+        log.error('Home', '加载最新上线失败:', latestResult.reason);
+      }
+    }
+
+    if (topRatedResult.status === 'fulfilled') {
+      topRatedMedia.value = topRatedResult.value;
+    } else {
+      topRatedMedia.value = [];
+      if (!topRatedResult.reason?.silent) {
+        log.error('Home', '加载高分佳作失败:', topRatedResult.reason);
+      }
+    }
+
+    if (failedCount === results.length) {
+      homeLoadError.value = '内容服务暂时不可用';
+    } else if (failedCount > 0) {
+      homeLoadError.value = '部分内容暂时不可用';
+    }
 
     try {
-      const [popular, latest, topRated] = await Promise.all([
-        mediaStore.fetchPopularMedia(8),
-        mediaStore.fetchLatestMedia(8),
-        mediaStore.fetchTopRatedMedia(8),
-      ]);
-
-      popularMedia.value = popular;
-      latestMedia.value = latest;
-      topRatedMedia.value = topRated;
-
-      bannerItems.value = popular.slice(0, 5);
+      await loadContinueWatching();
     } catch (error) {
-      log.error('Home', '加载首页数据失败:', error);
+      log.error('Home', '加载继续观看失败:', error);
     } finally {
       popularLoading.value = false;
       latestLoading.value = false;
@@ -333,64 +605,277 @@
 <style scoped>
   .home-view {
     min-height: 100vh;
-    background: var(--bg-page);
+    background: transparent;
     color: var(--text-primary);
+    padding-bottom: 36px;
   }
 
   /* 轮播区域 */
+  .home-search {
+    max-width: var(--content-max-width);
+    position: relative;
+    z-index: 4;
+    margin: -34px auto 0;
+    padding: 0 var(--page-gutter);
+  }
+
+  .home-search__content {
+    display: grid;
+    grid-template-columns: minmax(170px, 250px) minmax(320px, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: rgba(8, 9, 13, 0.86);
+    padding: 12px;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
+    backdrop-filter: blur(18px) saturate(125%);
+  }
+
+  .home-search__eyebrow {
+    color: var(--color-brand-primary-light);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+  }
+
+  .home-search__title {
+    margin: 4px 0 0;
+    font-size: 16px;
+    line-height: var(--line-height-tight);
+    color: var(--text-primary);
+  }
+
+  .home-search__form {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .home-search__icon {
+    position: absolute;
+    left: 16px;
+    width: 20px;
+    height: 20px;
+    color: var(--text-muted);
+  }
+
+  .home-search__input {
+    width: 100%;
+    height: 42px;
+    padding: 0 112px 0 46px;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-control);
+    background: rgba(255, 255, 255, 0.055);
+    color: var(--text-primary);
+    font-size: 15px;
+    transition: all var(--transition-fast);
+  }
+
+  .home-search__input:focus {
+    border-color: var(--border-focus);
+    background: var(--surface-card-hover);
+    box-shadow: var(--shadow-focus);
+    outline: none;
+  }
+
+  .home-search__button {
+    position: absolute;
+    right: 7px;
+    height: 32px;
+    padding: 0 22px;
+    border-radius: var(--radius-control);
+    background: var(--color-brand-primary);
+    color: var(--text-inverse);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    transition: all var(--transition-fast);
+  }
+
+  .home-search__button:hover {
+    background: var(--color-brand-primary-light);
+    box-shadow: 0 10px 28px var(--color-brand-glow);
+  }
+
+  .home-search__menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--panel-radius);
+    background: rgba(10, 11, 16, 0.98);
+    box-shadow: var(--shadow-popover);
+  }
+
+  .home-search__menu-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    color: var(--text-muted);
+    font-size: var(--font-size-xs);
+  }
+
+  .home-search__menu-title button {
+    color: var(--color-brand-primary-light);
+    font-size: var(--font-size-xs);
+  }
+
+  .home-search__menu-item {
+    display: block;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: var(--radius-control);
+    color: var(--text-secondary);
+    text-align: left;
+  }
+
+  .home-search__menu-item:hover {
+    background: var(--surface-card-hover);
+    color: var(--text-primary);
+  }
+
+  .home-search__quick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+    min-width: 210px;
+  }
+
+  .home-search__quick a {
+    min-height: var(--tag-height);
+    padding: 5px 10px;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--badge-radius);
+    background: var(--surface-muted);
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+  }
+
+  .home-search__quick a:hover {
+    border-color: var(--color-brand-border);
+    background: var(--color-brand-overlay);
+    color: var(--color-brand-primary-light);
+  }
+
   .carousel-section {
-    max-width: 1400px;
+    max-width: var(--content-max-width);
     margin: 0 auto;
-    padding: 24px 24px 0;
+    padding: 18px var(--page-gutter) 0;
   }
 
   .banner-skeleton {
     aspect-ratio: 21 / 9;
     min-height: 300px;
     max-height: 500px;
-    border-radius: 16px;
+    border-radius: var(--panel-radius);
     background: linear-gradient(135deg, var(--bg-card), var(--bg-tertiary));
     animation: pulse 2s ease-in-out infinite;
   }
 
+  .home-offline-hero {
+    min-height: 360px;
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--panel-radius);
+    background:
+      linear-gradient(90deg, rgba(5, 6, 9, 0.96), rgba(5, 6, 9, 0.68)),
+      radial-gradient(circle at 78% 22%, rgba(229, 9, 20, 0.24), transparent 32%),
+      var(--bg-cinema-soft);
+    box-shadow: var(--shadow-cinema);
+    overflow: hidden;
+  }
+
+  .home-offline-hero__content {
+    width: min(520px, 100%);
+    padding: 44px 52px;
+  }
+
+  .home-offline-hero__eyebrow {
+    display: inline-flex;
+    margin-bottom: 12px;
+    padding: 5px 12px;
+    border-radius: 6px;
+    background: var(--color-brand-primary);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .home-offline-hero__title {
+    margin: 0;
+    color: white;
+    font-size: 34px;
+    line-height: 1.2;
+  }
+
+  .home-offline-hero__desc {
+    margin: 14px 0 22px;
+    color: rgba(226, 232, 240, 0.76);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .home-offline-hero__button {
+    padding: 11px 20px;
+    border-radius: 8px;
+    background: var(--color-brand-primary);
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+    transition: all var(--transition-fast);
+  }
+
+  .home-offline-hero__button:hover {
+    background: var(--color-brand-primary-light);
+    box-shadow: 0 10px 28px var(--color-brand-glow);
+  }
+
   /* 内容区域 */
   .content-section {
-    max-width: 1400px;
+    max-width: var(--content-max-width);
     margin: 0 auto;
-    padding: 24px 24px 0;
+    padding: 32px var(--page-gutter) 0;
   }
 
   .section-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
   }
 
   .section-title {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 20px;
-    font-weight: 600;
+    gap: 9px;
+    font-size: 18px;
+    font-weight: 700;
     color: var(--text-primary);
   }
 
   .section-title svg {
     width: 22px;
     height: 22px;
-    color: var(--color-brand-primary);
+    color: var(--color-brand-primary-light);
   }
 
   .section-more {
     display: flex;
     align-items: center;
     gap: 6px;
-    color: var(--color-brand-primary);
+    color: var(--text-tertiary);
     font-size: 14px;
     font-weight: 500;
     text-decoration: none;
-    transition: color 0.2s;
+    transition: color var(--transition-fast);
   }
 
   .section-more:hover {
@@ -402,33 +887,170 @@
     height: 16px;
   }
 
+  /* 继续观看行 */
+  .continue-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+    padding-bottom: 6px;
+  }
+
+  .continue-card {
+    display: grid;
+    grid-template-columns: 132px 1fr;
+    min-height: 82px;
+    background: rgba(255, 255, 255, 0.045);
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid var(--border-primary);
+  }
+
+  .continue-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.3);
+    border-color: var(--color-brand-border);
+  }
+
+  .continue-card__poster {
+    position: relative;
+    height: 100%;
+    min-height: 82px;
+    overflow: hidden;
+  }
+
+  .continue-card__poster img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .continue-card__progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--overlay-light);
+  }
+
+  .continue-card__progress-bar {
+    height: 100%;
+    background: var(--color-brand-primary);
+    transition: width 0.3s ease;
+  }
+
+  .continue-card__overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--overlay-medium);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .continue-card:hover .continue-card__overlay {
+    opacity: 1;
+  }
+
+  .continue-card__overlay svg {
+    width: 40px;
+    height: 40px;
+    color: white;
+  }
+
+  .continue-card__episode {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 2px 8px;
+    background: var(--overlay-heavy);
+    border-radius: 4px;
+    font-size: 12px;
+    color: white;
+  }
+
+  .continue-card__info {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    padding: 12px 14px;
+  }
+
+  .continue-card__title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .continue-card__meta {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
   /* 媒体行 - 横向滚动 */
   .media-row {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 20px;
-    padding-bottom: 24px;
+    grid-template-columns: repeat(auto-fill, minmax(var(--grid-card-min), 1fr));
+    gap: var(--grid-card-gap);
+    padding-bottom: 4px;
+  }
+
+  .media-row--rail {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(156px, 184px);
+    grid-template-columns: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 2px 2px 18px;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 2px;
+  }
+
+  .media-row--rail > * {
+    scroll-snap-align: start;
+  }
+
+  .media-row--rail::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .media-row--rail::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
   }
 
   /* 媒体网格 */
   .media-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(var(--grid-card-min), 1fr));
+    gap: var(--grid-card-gap);
     padding-bottom: 24px;
   }
 
   /* 加载状态 */
   .loading-row {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(var(--grid-card-min), 1fr));
+    gap: var(--grid-card-gap);
   }
 
   .skeleton-card {
     aspect-ratio: 2/3;
-    background: linear-gradient(135deg, var(--bg-tertiary), var(--color-gray-700));
-    border-radius: 12px;
+    background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-card-elevated));
+    border-radius: var(--poster-radius);
     animation: pulse 2s ease-in-out infinite;
   }
 
@@ -505,9 +1127,9 @@
 
   /* 搜索区域 */
   .search-section {
-    max-width: 1400px;
+    max-width: var(--content-max-width);
     margin: 0 auto;
-    padding: 24px;
+    padding: 28px var(--page-gutter);
   }
 
   .search-header {
@@ -534,17 +1156,18 @@
     align-items: center;
     gap: 8px;
     padding: 10px 20px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 10px;
+    background: var(--surface-muted);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--panel-radius);
     color: var(--text-primary);
     font-size: 14px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--transition-fast);
   }
 
   .btn-back:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--border-primary);
+    border-color: var(--border-secondary);
   }
 
   .btn-back svg {
@@ -556,7 +1179,7 @@
     display: inline-block;
     margin-left: 8px;
     padding: 2px 8px;
-    background: rgba(99, 102, 241, 0.2);
+    background: rgba(229, 9, 20, 0.2);
     border-radius: 10px;
     font-size: 12px;
     color: var(--color-brand-primary-light);
@@ -583,7 +1206,7 @@
     color: var(--text-primary);
     margin-bottom: 16px;
     padding-bottom: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--border-primary);
   }
 
   .torrent-grid {
@@ -593,17 +1216,17 @@
   }
 
   .torrent-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
+    background: var(--surface-muted);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--panel-radius);
     padding: 14px;
     cursor: pointer;
     transition: all 0.2s;
   }
 
   .torrent-card:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(99, 102, 241, 0.3);
+    background: var(--surface-hover);
+    border-color: var(--border-focus);
   }
 
   .torrent-name {
@@ -625,11 +1248,35 @@
 
   /* 响应式 */
   @media (max-width: 768px) {
-    .media-row,
-    .media-grid,
-    .loading-row {
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    .home-search {
+      margin-top: 12px;
+    }
+
+    .home-search__content {
+      grid-template-columns: 1fr;
       gap: 12px;
+      background: rgba(8, 9, 13, 0.72);
+    }
+
+    .home-search__quick {
+      justify-content: flex-start;
+    }
+
+    .continue-row {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .home-search {
+      padding: 18px var(--page-gutter) 0;
+    }
+
+    .home-search__content {
+      padding: 18px;
+    }
+
+    .home-search__title {
+      font-size: 18px;
     }
 
     .section-title {
@@ -638,11 +1285,29 @@
   }
 
   @media (max-width: 480px) {
+    .continue-card {
+      grid-template-columns: 112px 1fr;
+    }
+
     .media-row,
     .media-grid,
     .loading-row {
       grid-template-columns: repeat(2, 1fr);
       gap: 10px;
+    }
+
+    .media-row--rail {
+      grid-auto-columns: minmax(136px, 42vw);
+      grid-template-columns: none;
+    }
+
+    .home-search__input {
+      height: 50px;
+      padding-right: 88px;
+    }
+
+    .home-search__button {
+      padding: 0 16px;
     }
   }
 </style>

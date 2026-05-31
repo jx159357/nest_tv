@@ -30,6 +30,9 @@
               :current-time="resumeTime"
               @ready="onPlayerReady"
               @timeupdate="onTimeUpdate"
+              @play="onPlayerPlay"
+              @pause="onPlayerPause"
+              @seeked="onPlayerSeeked"
               @ended="onVideoEnded"
               @error="onPlayerError"
             />
@@ -45,9 +48,31 @@
 
             <button class="custom-fullscreen-btn" title="全屏（含弹幕）" @click="toggleFullscreen">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+                <path
+                  d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"
+                />
               </svg>
             </button>
+
+            <!-- 移动端手势控制 -->
+            <PlayerGestureControl
+              v-if="isMobile"
+              :video-element="videoElement"
+              :enabled="true"
+              @seek="onGestureSeek"
+              @volume-change="onGestureVolumeChange"
+            />
+
+            <!-- 断点续播提示 -->
+            <Transition name="resume">
+              <div v-if="showResumeTip" class="resume-tip">
+                <span>上次观看到 {{ formatTime(resumeTime) }}</span>
+                <button class="resume-btn" @click="resumeFromTip">继续播放</button>
+                <button class="resume-btn resume-btn--skip" @click="showResumeTip = false">
+                  从头播放
+                </button>
+              </div>
+            </Transition>
           </div>
 
           <div class="play-source-panel">
@@ -147,6 +172,14 @@
         </section>
 
         <aside class="info-sidebar">
+          <WatchRoom
+            v-if="media"
+            ref="watchRoomRef"
+            :media-id="media.id"
+            :media-title="media.title"
+            @sync="onRoomSync"
+          />
+
           <section class="info-card">
             <h1 class="media-title">{{ media.title }}</h1>
 
@@ -193,26 +226,29 @@
           </section>
 
           <section v-if="media.episodeCount" class="info-card">
-            <h2>剧集选择 <span class="episode-total">共 {{ media.episodeCount }} 集</span></h2>
+            <h2>
+              剧集选择 <span class="episode-total">共 {{ media.episodeCount }} 集</span>
+            </h2>
             <div class="episode-grid">
               <button
                 v-for="episode in episodePagination.end - episodePagination.start + 1"
                 :key="episodePagination.start + episode - 1"
-                :class="['episode-btn', { active: currentEpisode === episodePagination.start + episode - 1 }]"
+                :class="[
+                  'episode-btn',
+                  { active: currentEpisode === episodePagination.start + episode - 1 },
+                ]"
                 @click="selectEpisode(episodePagination.start + episode - 1)"
               >
                 {{ episodePagination.start + episode - 1 }}
               </button>
             </div>
             <div v-if="episodePagination.show" class="episode-pagination">
-              <button
-                :disabled="episodePage <= 1"
-                class="episode-page-btn"
-                @click="episodePage--"
-              >
+              <button :disabled="episodePage <= 1" class="episode-page-btn" @click="episodePage--">
                 上一页
               </button>
-              <span class="episode-page-info">{{ episodePage }} / {{ episodePagination.totalPages }}</span>
+              <span class="episode-page-info"
+                >{{ episodePage }} / {{ episodePagination.totalPages }}</span
+              >
               <button
                 :disabled="episodePage >= episodePagination.totalPages"
                 class="episode-page-btn"
@@ -261,13 +297,6 @@
               </div>
             </div>
           </section>
-
-          <WatchRoom
-            v-if="media"
-            :media-id="media.id"
-            :media-title="media.title"
-            @sync="onRoomSync"
-          />
         </aside>
       </div>
 
@@ -287,6 +316,7 @@
   import ArtPlayerWrapper from '@/components/ArtPlayerWrapper.vue';
   import DanmakuPlayer from '@/components/DanmakuPlayer.vue';
   import WatchRoom from '@/components/WatchRoom.vue';
+  import PlayerGestureControl from '@/components/PlayerGestureControl.vue';
   import { batchTestSources, getSourceScore, type SourceTestResult } from '@/utils/source-test';
   import { log } from '@/utils/logger';
   import type { MediaResource, PlaySource } from '@/types/media';
@@ -301,6 +331,8 @@
   const currentPlaySource = ref<PlaySource | null>(null);
   const currentEpisode = ref(1);
   const playerWrapperRef = ref<HTMLElement | null>(null);
+  const watchRoomRef = ref<InstanceType<typeof WatchRoom> | null>(null);
+  const currentPlayer = ref<any>(null);
   const episodePage = ref(1);
   const EPISODES_PER_PAGE = 50;
   const loading = ref(true);
@@ -313,6 +345,31 @@
 
   const testResults = ref<Map<number, SourceTestResult>>(new Map());
   const isTestingAll = ref(false);
+  const videoElement = ref<HTMLVideoElement | null>(null);
+  const showResumeTip = ref(false);
+  const isMobile = ref(false);
+  const isApplyingRoomSync = ref(false);
+  const lastRoomSyncSentAt = ref(0);
+
+  const checkMobile = () => {
+    isMobile.value = window.innerWidth <= 768 || 'ontouchstart' in window;
+  };
+
+  const onGestureSeek = (time: number) => {
+    if (videoElement.value) {
+      videoElement.value.currentTime = time;
+    }
+  };
+
+  const onGestureVolumeChange = (volume: number) => {
+    if (videoElement.value) {
+      videoElement.value.volume = volume;
+    }
+  };
+
+  const resumeFromTip = () => {
+    showResumeTip.value = false;
+  };
 
   const getSpeedDisplay = (sourceId: number) => {
     const r = testResults.value.get(sourceId);
@@ -354,6 +411,17 @@
     });
 
     isTestingAll.value = false;
+  };
+
+  const formatTime = (seconds: number): string => {
+    if (!seconds || seconds <= 0) return '0:00';
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    if (h > 0) {
+      return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+    return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
   const availableDownloadUrls = computed(() => {
@@ -426,8 +494,14 @@
       }
 
       const timeParam = Array.isArray(route.query.time) ? route.query.time[0] : route.query.time;
-      const parsedTime = Number(timeParam);
+      const tParam = Array.isArray(route.query.t) ? route.query.t[0] : route.query.t;
+      const timeValue = timeParam || tParam;
+      const parsedTime = Number(timeValue);
       resumeTime.value = Number.isFinite(parsedTime) && parsedTime > 0 ? parsedTime : 0;
+
+      if (resumeTime.value > 0) {
+        showResumeTip.value = true;
+      }
 
       await syncFavoriteStatus(mediaId);
       await mediaStore.incrementViewCount(String(mediaId));
@@ -438,8 +512,32 @@
     }
   };
 
-  const onPlayerReady = () => {
-    // Player ready
+  const onPlayerReady = (player: any) => {
+    currentPlayer.value = player;
+    if (player && player.video) {
+      videoElement.value = player.video;
+    }
+  };
+
+  const sendRoomSync = (currentTime: number, playing: boolean, force = false) => {
+    if (isApplyingRoomSync.value) return;
+    const now = Date.now();
+    if (!force && now - lastRoomSyncSentAt.value < 1000) return;
+    lastRoomSyncSentAt.value = now;
+    watchRoomRef.value?.sendSync(Math.max(0, currentTime || 0), playing);
+  };
+
+  const onPlayerPlay = (currentTime: number) => {
+    sendRoomSync(currentTime, true, true);
+  };
+
+  const onPlayerPause = (currentTime: number) => {
+    sendRoomSync(currentTime, false, true);
+  };
+
+  const onPlayerSeeked = (currentTime: number) => {
+    const video = videoElement.value;
+    sendRoomSync(currentTime, Boolean(video && !video.paused), true);
   };
 
   const onTimeUpdate = (currentTime: number, duration: number) => {
@@ -466,9 +564,22 @@
 
   const onRoomSync = (currentTime: number, playing: boolean) => {
     resumeTime.value = currentTime;
-    // Note: ArtPlayer playback state would need to be controlled via ref
-    // This is a placeholder for the sync mechanism
-    void playing;
+    const player = currentPlayer.value;
+    if (!player) return;
+
+    isApplyingRoomSync.value = true;
+    try {
+      player.currentTime = Math.max(0, currentTime || 0);
+      if (playing) {
+        void player.play?.();
+      } else {
+        player.pause?.();
+      }
+    } finally {
+      window.setTimeout(() => {
+        isApplyingRoomSync.value = false;
+      }, 500);
+    }
   };
 
   const saveWatchProgress = async (currentTime: number, force = false, playerDuration?: number) => {
@@ -596,6 +707,8 @@
 
   let saveInterval: ReturnType<typeof setInterval>;
   onMounted(() => {
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
     void loadMedia();
 
     saveInterval = setInterval(() => {
@@ -606,6 +719,7 @@
   onUnmounted(() => {
     void saveWatchProgress(0, true);
     clearInterval(saveInterval);
+    window.removeEventListener('resize', checkMobile);
   });
 </script>
 
@@ -728,13 +842,23 @@
 
   .player-wrapper:fullscreen .danmaku-overlay {
     z-index: 9999;
+  }
+
+  .player-wrapper:fullscreen .danmaku-overlay :deep(.danmaku-container) {
     pointer-events: none;
   }
 
-  .player-wrapper:fullscreen .danmaku-overlay:has(.controls-visible),
-  .player-wrapper:fullscreen .danmaku-overlay:has(.danmaku-settings-panel),
-  .player-wrapper:fullscreen .danmaku-overlay:has(.report-dialog-backdrop) {
+  .player-wrapper:fullscreen .danmaku-overlay :deep(.danmaku-controls),
+  .player-wrapper:fullscreen .danmaku-overlay :deep(.danmaku-settings-panel),
+  .player-wrapper:fullscreen .danmaku-overlay :deep(.danmaku-float-toggle),
+  .player-wrapper:fullscreen .danmaku-overlay :deep(.report-dialog-backdrop),
+  .player-wrapper:fullscreen .danmaku-overlay :deep(.connection-toast) {
     pointer-events: all;
+  }
+
+  .player-wrapper:fullscreen .danmaku-overlay :deep(.danmaku-controls) {
+    bottom: 28px;
+    opacity: 1;
   }
 
   .custom-fullscreen-btn {
@@ -774,6 +898,65 @@
     opacity: 1;
   }
 
+  /* 断点续播提示 */
+  .resume-tip {
+    position: absolute;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    background: rgba(0, 0, 0, 0.9);
+    border-radius: 8px;
+    z-index: 300;
+    white-space: nowrap;
+  }
+
+  .resume-tip span {
+    color: white;
+    font-size: 14px;
+  }
+
+  .resume-btn {
+    padding: 6px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .resume-btn:first-of-type {
+    background: var(--color-brand-primary);
+    color: white;
+  }
+
+  .resume-btn:first-of-type:hover {
+    background: var(--color-brand-primary-dark);
+  }
+
+  .resume-btn--skip {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+  }
+
+  .resume-btn--skip:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  .resume-enter-active,
+  .resume-leave-active {
+    transition: all 0.3s ease;
+  }
+
+  .resume-enter-from,
+  .resume-leave-to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+
   .danmaku-overlay {
     position: absolute;
     inset: 0;
@@ -808,8 +991,8 @@
 
   .btn-test-all {
     padding: 5px 14px;
-    background: rgba(99, 102, 241, 0.15);
-    border: 1px solid rgba(99, 102, 241, 0.3);
+    background: rgba(229, 9, 20, 0.15);
+    border: 1px solid rgba(229, 9, 20, 0.3);
     border-radius: 8px;
     color: var(--color-brand-primary-light);
     font-size: 12px;
@@ -818,7 +1001,7 @@
   }
 
   .btn-test-all:hover:not(:disabled) {
-    background: rgba(99, 102, 241, 0.25);
+    background: rgba(229, 9, 20, 0.25);
   }
 
   .btn-test-all:disabled {
@@ -842,7 +1025,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 12px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--bg-secondary);
     border: 1px solid var(--border-primary);
     border-radius: 10px;
     color: var(--text-primary);
@@ -857,7 +1040,7 @@
 
   .source-btn.active {
     border-color: var(--border-focus);
-    background: rgba(99, 102, 241, 0.1);
+    background: rgba(229, 9, 20, 0.1);
   }
 
   .source-name {
@@ -974,7 +1157,7 @@
 
   .btn-primary:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 4px 16px rgba(229, 9, 20, 0.4);
   }
 
   .btn-primary:disabled {
@@ -987,7 +1170,7 @@
   .btn-outline {
     padding: 10px 20px;
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--border-secondary);
     border-radius: 10px;
     color: var(--text-primary);
     font-size: 14px;
@@ -1073,7 +1256,7 @@
 
   .btn-favorite {
     padding: 10px 20px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--border-secondary);
     border-radius: 10px;
     background: transparent;
     color: var(--text-primary);
@@ -1140,8 +1323,8 @@
 
   .episode-page-btn {
     padding: 6px 14px;
-    background: rgba(99, 102, 241, 0.15);
-    border: 1px solid rgba(99, 102, 241, 0.3);
+    background: rgba(229, 9, 20, 0.15);
+    border: 1px solid rgba(229, 9, 20, 0.3);
     border-radius: 6px;
     color: var(--color-brand-primary-light);
     font-size: 12px;
@@ -1150,7 +1333,7 @@
   }
 
   .episode-page-btn:hover:not(:disabled) {
-    background: rgba(99, 102, 241, 0.25);
+    background: rgba(229, 9, 20, 0.25);
   }
 
   .episode-page-btn:disabled {
@@ -1165,7 +1348,7 @@
 
   .episode-btn {
     padding: 8px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--bg-secondary);
     border: 1px solid var(--border-primary);
     border-radius: 8px;
     color: var(--text-primary);

@@ -305,7 +305,7 @@
   }
 
   .type-card.active {
-    background: rgba(99, 102, 241, 0.12);
+    background: rgba(229, 9, 20, 0.12);
     border-color: var(--border-focus);
     color: var(--color-brand-primary-light);
   }
@@ -354,7 +354,7 @@
   }
 
   .genre-chip.active {
-    background: rgba(99, 102, 241, 0.12);
+    background: rgba(229, 9, 20, 0.12);
     border-color: var(--border-focus);
     color: var(--color-brand-primary-light);
   }
@@ -388,7 +388,7 @@
     align-items: center;
     gap: 4px;
     padding: 4px 12px;
-    background: rgba(99, 102, 241, 0.12);
+    background: rgba(229, 9, 20, 0.12);
     border-radius: 16px;
     font-size: 13px;
     color: var(--color-brand-primary-light);
@@ -396,7 +396,7 @@
   }
 
   .filter-tag:hover {
-    background: rgba(99, 102, 241, 0.2);
+    background: rgba(229, 9, 20, 0.2);
   }
 
   .btn-clear {

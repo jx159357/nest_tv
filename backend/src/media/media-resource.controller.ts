@@ -221,6 +221,13 @@ export class MediaResourceController {
     return this.mediaResourceService.getSourceList();
   }
 
+  @Post('deduplicate')
+  @ApiOperation({ summary: '清理重复影视资源' })
+  @ApiResponse({ status: 200, description: '清理成功' })
+  async deduplicateMediaResources() {
+    return this.mediaResourceService.deduplicateMediaResources();
+  }
+
   @Get('favorites')
   @ApiOperation({ summary: '获取当前用户收藏列表' })
   @ApiResponse({ status: 200, description: '获取成功' })

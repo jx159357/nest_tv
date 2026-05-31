@@ -67,6 +67,7 @@ const {
     clearHistory: vi.fn(),
     getRelatedKeywords: vi.fn(),
     recordHistory: vi.fn(),
+    streamSearch: vi.fn(),
   },
   authApi: {
     getProfile: vi.fn(),
@@ -197,6 +198,7 @@ describe('User journey regression', () => {
     searchApi.clearHistory.mockReset();
     searchApi.getRelatedKeywords.mockReset();
     searchApi.recordHistory.mockReset();
+    searchApi.streamSearch.mockReset();
 
     recommendationsApi.getPersonalizedDetailed.mockReset();
     recommendationsApi.getProfile.mockReset();
@@ -272,6 +274,10 @@ describe('User journey regression', () => {
     searchApi.clearHistory.mockResolvedValue({ message: 'ok' });
     searchApi.getRelatedKeywords.mockResolvedValue(['沙丘2']);
     searchApi.recordHistory.mockResolvedValue({ success: true });
+    searchApi.streamSearch.mockImplementation((_keyword, options) => {
+      options.onDone?.();
+      return vi.fn();
+    });
 
     recommendationsApi.getPersonalizedDetailed.mockResolvedValue([
       {
@@ -302,11 +308,12 @@ describe('User journey regression', () => {
     const homeWrapper = mountWithStubs(HomeView);
     await flushPromises();
 
-    await homeWrapper.get('input[type="text"]').setValue('沙丘');
-    await homeWrapper.get('button').trigger('click');
+    await homeWrapper.get('input[type="search"]').setValue('沙丘');
+    await homeWrapper.get('form.home-search__form').trigger('submit');
+    await flushPromises();
 
     expect(routerState.push).toHaveBeenCalledWith({
-      path: '/search',
+      path: '/',
       query: { q: '沙丘' },
     });
     expect(searchApi.recordHistory).toHaveBeenCalledWith({ keyword: '沙丘' });
@@ -318,14 +325,14 @@ describe('User journey regression', () => {
 
     const favoriteButton = detailWrapper
       .findAll('button')
-      .find(button => button.text().includes('加入收藏'));
+      .find(button => button.text().includes('收藏'));
     expect(favoriteButton).toBeTruthy();
 
     await favoriteButton!.trigger('click');
     await flushPromises();
 
     expect(mediaStore.toggleFavorite).toHaveBeenCalledWith('9', false);
-    expect(detailWrapper.text()).toContain('已将《沙丘》加入收藏');
+    expect(detailWrapper.text()).toContain('已收藏《沙丘》');
 
     const goFavoritesButton = detailWrapper
       .findAll('button')

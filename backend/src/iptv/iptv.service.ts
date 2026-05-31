@@ -45,9 +45,17 @@ interface M3U8ParserInstance {
   end(): void;
 }
 
+export interface ChannelDuplicateGroup {
+  keeper: Pick<IPTVChannel, 'id' | 'name' | 'url' | 'group' | 'isActive' | 'qualityScore'>;
+  duplicates: Array<
+    Pick<IPTVChannel, 'id' | 'name' | 'url' | 'group' | 'isActive' | 'qualityScore'>
+  >;
+}
+
 @Injectable()
 export class IPTVService {
   private readonly logger = new Logger(IPTVService.name);
+  private static readonly MAX_PAGE_SIZE = 200;
 
   constructor(
     @InjectRepository(IPTVChannel)
@@ -58,11 +66,120 @@ export class IPTVService {
     return error instanceof Error ? error : new Error(String(error));
   }
 
+  private normalizePagination(page?: number, limit?: number) {
+    const parsedPage = Number(page);
+    const parsedLimit = Number(limit);
+    const safePage = Number.isFinite(parsedPage) && parsedPage > 0 ? Math.floor(parsedPage) : 1;
+    const safeLimit =
+      Number.isFinite(parsedLimit) && parsedLimit > 0
+        ? Math.min(Math.floor(parsedLimit), IPTVService.MAX_PAGE_SIZE)
+        : 10;
+
+    return { safePage, safeLimit };
+  }
+
+  private toOptionalBoolean(value: unknown): boolean | undefined {
+    if (value === undefined || value === null || value === '') {
+      return undefined;
+    }
+    if (typeof value === 'boolean') {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (['true', '1', 'yes', 'on'].includes(normalized)) {
+        return true;
+      }
+      if (['false', '0', 'no', 'off'].includes(normalized)) {
+        return false;
+      }
+    }
+    return Boolean(value);
+  }
+
+  private normalizeChannelUrl(url: string): string {
+    return String(url || '').trim();
+  }
+
+  private normalizeChannelText(value?: string): string {
+    return String(value || '')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toLowerCase();
+  }
+
+  private buildChannelDedupKey(channel: Pick<CreateIPTVChannelDto, 'name' | 'url' | 'group'>) {
+    const url = this.normalizeChannelUrl(channel.url);
+    if (url) {
+      return `url:${url}`;
+    }
+
+    return `name:${this.normalizeChannelText(channel.group)}:${this.normalizeChannelText(channel.name)}`;
+  }
+
+  private dedupeChannelDtos(channels: CreateIPTVChannelDto[]): CreateIPTVChannelDto[] {
+    const seen = new Set<string>();
+    const result: CreateIPTVChannelDto[] = [];
+
+    for (const channel of channels) {
+      const url = this.normalizeChannelUrl(channel.url);
+      if (!url) continue;
+
+      const normalized = {
+        ...channel,
+        name: String(channel.name || '').trim(),
+        url,
+        group: String(channel.group || '').trim() || '未分组',
+      };
+      const key = this.buildChannelDedupKey(normalized);
+      if (seen.has(key)) continue;
+
+      seen.add(key);
+      result.push(normalized);
+    }
+
+    return result;
+  }
+
+  private async findExistingChannel(channel: Pick<CreateIPTVChannelDto, 'url'>) {
+    const url = this.normalizeChannelUrl(channel.url);
+    if (!url) {
+      return null;
+    }
+
+    return this.iptvChannelRepository.findOne({ where: { url } });
+  }
+
+  private compareChannelKeepPriority(left: IPTVChannel, right: IPTVChannel): number {
+    if (left.isActive !== right.isActive) {
+      return left.isActive ? -1 : 1;
+    }
+    if ((left.qualityScore || 0) !== (right.qualityScore || 0)) {
+      return (right.qualityScore || 0) - (left.qualityScore || 0);
+    }
+    if ((left.viewCount || 0) !== (right.viewCount || 0)) {
+      return (right.viewCount || 0) - (left.viewCount || 0);
+    }
+    return left.id - right.id;
+  }
+
   /**
    * 创建IPTV频道
    */
   async create(createIPTVChannelDto: CreateIPTVChannelDto): Promise<IPTVChannel> {
-    const iptvChannel = this.iptvChannelRepository.create(createIPTVChannelDto);
+    const normalized = {
+      ...createIPTVChannelDto,
+      url: this.normalizeChannelUrl(createIPTVChannelDto.url),
+      name: String(createIPTVChannelDto.name || '').trim(),
+      group: String(createIPTVChannelDto.group || '').trim() || '未分组',
+    };
+
+    const existing = await this.findExistingChannel(normalized);
+    if (existing) {
+      return existing;
+    }
+
+    const iptvChannel = this.iptvChannelRepository.create(normalized);
     return await this.iptvChannelRepository.save(iptvChannel);
   }
 
@@ -85,15 +202,18 @@ export class IPTVService {
       region,
       resolution,
       streamFormat,
-      activeOnly = true,
+      activeOnly: rawActiveOnly = true,
+      isActive: rawIsActive,
       isLive,
       sortBy = 'createdAt',
       sortOrder = 'DESC',
       search,
     } = queryDto;
 
-    const page = Number(rawPage) || 1;
-    const limit = Number(rawLimit) || 10;
+    const { safePage, safeLimit } = this.normalizePagination(rawPage, rawLimit);
+    const activeOnly = this.toOptionalBoolean(rawActiveOnly) ?? true;
+    const isActive = this.toOptionalBoolean(rawIsActive);
+    const liveOnly = this.toOptionalBoolean(isLive);
 
     const queryBuilder = this.iptvChannelRepository.createQueryBuilder('iptv');
 
@@ -136,32 +256,47 @@ export class IPTVService {
     }
 
     // 直播状态过滤
-    if (isLive !== undefined) {
-      queryBuilder.andWhere('iptv.isLive = :isLive', { isLive });
+    if (liveOnly !== undefined) {
+      queryBuilder.andWhere('iptv.isLive = :isLive', { isLive: liveOnly });
     }
 
-    // 只查询可用的频道
-    if (activeOnly) {
+    // 频道启用状态过滤。isActive 精确过滤优先，activeOnly 保持兼容旧调用。
+    if (isActive !== undefined) {
+      queryBuilder.andWhere('iptv.isActive = :isActive', { isActive });
+    } else if (activeOnly) {
       queryBuilder.andWhere('iptv.isActive = :isActive', { isActive: true });
     }
 
     // 排序
-    const validSortFields = ['id', 'name', 'group', 'viewCount', 'createdAt', 'updatedAt'];
+    const validSortFields = [
+      'id',
+      'name',
+      'group',
+      'viewCount',
+      'createdAt',
+      'updatedAt',
+      'qualityScore',
+      'responseTime',
+      'sourceName',
+      'isActive',
+    ];
     const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
-    queryBuilder.orderBy(`iptv.${sortField}`, sortOrder);
+    const direction = sortOrder === 'ASC' ? 'ASC' : 'DESC';
+    queryBuilder.orderBy(`iptv.${sortField}`, direction);
 
     // 分页
-    const offset = (page - 1) * limit;
-    queryBuilder.skip(offset).take(limit);
-
-    const [data, total] = await queryBuilder.getManyAndCount();
+    const total = await queryBuilder.getCount();
+    const totalPages = total > 0 ? Math.ceil(total / safeLimit) : 0;
+    const resolvedPage = totalPages > 0 ? Math.min(safePage, totalPages) : 1;
+    const offset = (resolvedPage - 1) * safeLimit;
+    const data = await queryBuilder.skip(offset).take(safeLimit).getMany();
 
     return {
       data,
       total,
-      page: Number(page),
-      limit: Number(limit),
-      totalPages: Math.ceil(total / limit),
+      page: resolvedPage,
+      limit: safeLimit,
+      totalPages,
     };
   }
 
@@ -248,8 +383,14 @@ export class IPTVService {
    * 批量创建频道
    */
   async createBulk(createIPTVChannelDtos: CreateIPTVChannelDto[]): Promise<IPTVChannel[]> {
-    const iptvChannels = this.iptvChannelRepository.create(createIPTVChannelDtos);
-    return await this.iptvChannelRepository.save(iptvChannels);
+    const channels: IPTVChannel[] = [];
+    for (const channelData of this.dedupeChannelDtos(createIPTVChannelDtos)) {
+      const existing = await this.findExistingChannel(channelData);
+      if (existing) continue;
+      channels.push(this.iptvChannelRepository.create(channelData));
+    }
+
+    return channels.length > 0 ? await this.iptvChannelRepository.save(channels) : [];
   }
 
   /**
@@ -292,11 +433,9 @@ export class IPTVService {
       }
 
       const channels: IPTVChannel[] = [];
-      for (const channelData of parsed) {
+      for (const channelData of this.dedupeChannelDtos(parsed)) {
         try {
-          const existing = await this.iptvChannelRepository.findOne({
-            where: { url: channelData.url },
-          });
+          const existing = await this.findExistingChannel(channelData);
           if (existing) {
             this.logger.log(`频道已存在，跳过: ${channelData.name}`);
             continue;
@@ -321,7 +460,10 @@ export class IPTVService {
    */
   private parseIptvM3U(content: string, defaultGroup?: string): CreateIPTVChannelDto[] {
     const channels: CreateIPTVChannelDto[] = [];
-    const lines = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const lines = content
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => l.length > 0);
 
     for (let i = 0; i < lines.length; i++) {
       if (!lines[i].startsWith('#EXTINF')) continue;
@@ -370,7 +512,11 @@ export class IPTVService {
   /**
    * 解析 HLS 格式 M3U（m3u8-parser 库处理）
    */
-  private parseHlsM3U(content: string, sourceUrl: string, defaultGroup?: string): CreateIPTVChannelDto[] {
+  private parseHlsM3U(
+    content: string,
+    sourceUrl: string,
+    defaultGroup?: string,
+  ): CreateIPTVChannelDto[] {
     const channels: CreateIPTVChannelDto[] = [];
 
     try {
@@ -426,27 +572,31 @@ export class IPTVService {
     defaultGroup?: string,
   ): Promise<IPTVChannel[]> {
     const channels: IPTVChannel[] = [];
-    for (const item of items) {
-      if (!item.url) continue;
-      try {
-        const existing = await this.iptvChannelRepository.findOne({
-          where: { url: item.url },
-        });
-        if (existing) {
-          this.logger.log(`频道已存在，跳过: ${item.name}`);
-          continue;
-        }
-        const isHls = item.url.includes('.m3u8') || item.url.includes('m3u8');
-        const channel = await this.create({
-          name: item.name || `频道${channels.length + 1}`,
-          url: item.url,
+    const normalizedItems = this.dedupeChannelDtos(
+      items.map((item, index) => {
+        const url = this.normalizeChannelUrl(item.url);
+        const isHls = url.includes('.m3u8') || url.includes('m3u8');
+        return {
+          name: item.name || `频道${index + 1}`,
+          url,
           group: item.group || defaultGroup || 'JSON导入',
           logo: item.logo,
           streamFormat: isHls ? 'hls' : 'unknown',
           isActive: true,
           isLive: true,
           viewCount: 0,
-        });
+        };
+      }),
+    );
+
+    for (const item of normalizedItems) {
+      try {
+        const existing = await this.findExistingChannel(item);
+        if (existing) {
+          this.logger.log(`频道已存在，跳过: ${item.name}`);
+          continue;
+        }
+        const channel = await this.create(item);
         channels.push(channel);
       } catch (error: unknown) {
         this.logger.warn(`导入频道失败: ${item.name}`, this.toError(error).message);
@@ -459,9 +609,16 @@ export class IPTVService {
   /**
    * 解析纯文本 URL 列表
    */
-  private parsePlainTextUrls(content: string, sourceUrl: string, defaultGroup?: string): CreateIPTVChannelDto[] {
+  private parsePlainTextUrls(
+    content: string,
+    sourceUrl: string,
+    defaultGroup?: string,
+  ): CreateIPTVChannelDto[] {
     const channels: CreateIPTVChannelDto[] = [];
-    const lines = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const lines = content
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => l.length > 0);
 
     for (const line of lines) {
       if (line.startsWith('#') || line.startsWith('[')) continue;
@@ -568,95 +725,6 @@ export class IPTVService {
   }
 
   /**
-   * 代理IPTV流媒体
-   */
-  async proxyStream(url: string, res: Response): Promise<void> {
-    try {
-      const decodedUrl = this.decodeUnicodeUrl(url);
-      const isM3u8Url = decodedUrl.toLowerCase().includes('.m3u8') || decodedUrl.toLowerCase().includes('m3u8');
-
-      let referer: string;
-      try {
-        referer = new URL(decodedUrl).origin + '/';
-      } catch {
-        referer = 'https://www.google.com/';
-      }
-
-      const response = await axios.get(decodedUrl, {
-        responseType: isM3u8Url ? 'arraybuffer' : 'stream',
-        timeout: isM3u8Url ? 30000 : 120000,
-        maxRedirects: 5,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Referer': referer,
-          'Accept': '*/*',
-        },
-        validateStatus: status => status >= 200 && status < 400,
-      });
-
-      const remoteContentType = (response.headers['content-type'] || '').toLowerCase();
-
-      res.set({
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Range',
-        'Cache-Control': 'no-cache',
-      });
-
-      const stripCharset = (ct: string) => ct.replace(/;\s*charset=[^;]*/i, '').trim();
-
-      if (isM3u8Url) {
-        const bodyStr = Buffer.from(response.data).toString('utf-8');
-        const isM3u8 =
-          remoteContentType.includes('mpegurl') ||
-          remoteContentType.includes('m3u8') ||
-          bodyStr.trimStart().startsWith('#EXTM3U');
-
-        const contentType = isM3u8 ? 'application/vnd.apple.mpegurl' : stripCharset(remoteContentType || 'application/octet-stream');
-        res.setHeader('Content-Type', contentType);
-
-        if (isM3u8) {
-          const rewritten = this.rewriteM3u8Urls(bodyStr, decodedUrl);
-          const buf = Buffer.from(rewritten, 'utf-8');
-          res.setHeader('Content-Length', buf.length.toString());
-          res.end(buf);
-        } else {
-          const buf = Buffer.from(response.data);
-          res.setHeader('Content-Length', buf.length.toString());
-          res.end(buf);
-        }
-      } else {
-        const contentType = stripCharset(remoteContentType || 'application/octet-stream');
-        const chunks: Buffer[] = [];
-        response.data.on('data', (chunk: Buffer) => chunks.push(chunk));
-        await new Promise<void>((resolve, reject) => {
-          response.data.on('end', () => {
-            const buf = Buffer.concat(chunks);
-            res.setHeader('Content-Type', contentType);
-            res.setHeader('Content-Length', buf.length.toString());
-            res.end(buf);
-            resolve();
-          });
-          response.data.on('error', reject);
-        });
-      }
-    } catch (error) {
-      const err = this.toError(error);
-      const axiosErr = error as any;
-      const statusCode = axiosErr?.response?.status;
-      this.logger.error(`代理流媒体失败: ${url} (状态码: ${statusCode || 'N/A'})`, err.message);
-
-      if (statusCode === 404) {
-        throw new HttpException('视频资源不存在或已过期', HttpStatus.NOT_FOUND);
-      }
-      if (statusCode === 403) {
-        throw new HttpException('视频资源访问被拒绝', HttpStatus.FORBIDDEN);
-      }
-      throw new HttpException('代理流媒体失败: ' + err.message, HttpStatus.BAD_GATEWAY);
-    }
-  }
-
-  /**
    * 代理图片请求（绕过防盗链）
    */
   async proxyImage(url: string, res: Response): Promise<void> {
@@ -675,9 +743,10 @@ export class IPTVService {
         timeout: 15000,
         maxRedirects: 5,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Referer': referer,
-          'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          Referer: referer,
+          Accept: 'image/webp,image/apng,image/*,*/*;q=0.8',
         },
         validateStatus: status => status >= 200 && status < 400,
       });
@@ -689,7 +758,9 @@ export class IPTVService {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': isImage ? contentType : 'application/octet-stream',
         'Cache-Control': 'public, max-age=86400',
-        ...(response.headers['content-length'] ? { 'Content-Length': response.headers['content-length'] } : {}),
+        ...(response.headers['content-length']
+          ? { 'Content-Length': response.headers['content-length'] }
+          : {}),
       });
 
       res.send(Buffer.from(response.data));
@@ -704,113 +775,80 @@ export class IPTVService {
 
   private decodeUnicodeUrl(url: string): string {
     try {
-      return url.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+      return url.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
+        String.fromCharCode(parseInt(hex, 16)),
+      );
     } catch {
       return url;
     }
   }
 
+  async deduplicateChannels(dryRun = true): Promise<{
+    dryRun: boolean;
+    duplicateGroups: number;
+    deactivated: number;
+    kept: number;
+    groups: ChannelDuplicateGroup[];
+  }> {
+    const channels = await this.iptvChannelRepository.find({
+      order: { id: 'ASC' },
+    });
+    const groups = new Map<string, IPTVChannel[]>();
 
-  private rewriteM3u8Urls(content: string, baseUrl: string): string {
-    let base: URL;
-    try {
-      base = new URL(baseUrl);
-    } catch {
-      return content;
+    for (const channel of channels) {
+      const key = this.buildChannelDedupKey(channel);
+      const group = groups.get(key) || [];
+      group.push(channel);
+      groups.set(key, group);
     }
-    const basePath = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1);
 
-    return content.split('\n').map(line => {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('#')) {
-        const uriMatch = trimmed.match(/(URI=)(["']?)([^"'\s,]+)/);
-        if (uriMatch) {
-          const resolved = this.resolveUrl(uriMatch[3], basePath, base);
-          return line.replace(uriMatch[3], resolved);
+    const duplicateGroups = Array.from(groups.values()).filter(group => group.length > 1);
+    let deactivated = 0;
+    const previewGroups: ChannelDuplicateGroup[] = [];
+
+    for (const group of duplicateGroups) {
+      const [keeper, ...duplicates] = [...group].sort((left, right) =>
+        this.compareChannelKeepPriority(left, right),
+      );
+
+      previewGroups.push({
+        keeper: this.toChannelPreview(keeper),
+        duplicates: duplicates.map(channel => this.toChannelPreview(channel)),
+      });
+
+      for (const duplicate of duplicates) {
+        if (dryRun) {
+          if (duplicate.isActive) deactivated++;
+          continue;
         }
-        return line;
+        if (duplicate.isActive) {
+          duplicate.isActive = false;
+          await this.iptvChannelRepository.save(duplicate);
+          deactivated++;
+        }
       }
-      const resolved = this.resolveUrl(trimmed, basePath, base);
-      return resolved;
-    }).join('\n');
-  }
-
-  private resolveUrl(url: string, basePath: string, base: URL): string {
-    let absolute: string;
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      absolute = url;
-    } else if (url.startsWith('/')) {
-      absolute = `${base.protocol}//${base.host}${url}`;
-    } else {
-      absolute = basePath + url;
-    }
-    return `/iptv/stream/proxy?url=${encodeURIComponent(absolute)}`;
-  }
-
-  async getChannelEpg(
-    channelId: number,
-    epgUrl?: string,
-  ): Promise<{ channelId: number; epgId: string | null; programs: EpgProgram[] }> {
-    const channel = await this.findById(channelId);
-    const epgId = channel.epgId || null;
-
-    if (!epgUrl) {
-      return { channelId, epgId, programs: [] };
     }
 
-    try {
-      const response = await axios.get(epgUrl, {
-        timeout: 15000,
-        headers: { 'User-Agent': 'Mozilla/5.0' },
-        responseType: 'text',
-      });
-      const xml = String(response.data);
-      const programs = this.parseEpgXml(xml, epgId || channel.name);
-      return { channelId, epgId, programs };
-    } catch {
-      return { channelId, epgId, programs: [] };
-    }
+    return {
+      dryRun,
+      duplicateGroups: duplicateGroups.length,
+      deactivated,
+      kept: duplicateGroups.length,
+      groups: previewGroups,
+    };
   }
 
-  private parseEpgXml(xml: string, channelId: string): EpgProgram[] {
-    const programs: EpgProgram[] = [];
-    const channelLower = channelId.toLowerCase();
-
-    const programmeRegex =
-      /<programme[^>]*start="([^"]*)"[^>]*stop="([^"]*)"[^>]*channel="([^"]*)"[^>]*>([\s\S]*?)<\/programme>/gi;
-    let match: RegExpExecArray | null;
-
-    while ((match = programmeRegex.exec(xml)) !== null) {
-      const progChannel = (match[3] || '').toLowerCase();
-      if (!progChannel.includes(channelLower) && !channelLower.includes(progChannel)) continue;
-
-      const titleMatch = match[4].match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-      const title = titleMatch ? titleMatch[1].trim() : '未知节目';
-
-      programs.push({
-        start: this.parseEpgTime(match[1]),
-        end: this.parseEpgTime(match[2]),
-        title,
-      });
-    }
-
-    programs.sort((a, b) => a.start - b.start);
-    return programs;
+  private toChannelPreview(
+    channel: IPTVChannel,
+  ): Pick<IPTVChannel, 'id' | 'name' | 'url' | 'group' | 'isActive' | 'qualityScore'> {
+    return {
+      id: channel.id,
+      name: channel.name,
+      url: channel.url,
+      group: channel.group,
+      isActive: channel.isActive,
+      qualityScore: channel.qualityScore,
+    };
   }
 
-  private parseEpgTime(raw: string): number {
-    if (!raw) return 0;
-    const clean = raw.replace(/\s/g, '');
-    const m = clean.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/);
-    if (!m) return 0;
-    return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6])).getTime();
-  }
-
-
-}
-
-export interface EpgProgram {
-  start: number;
-  end: number;
-  title: string;
 }

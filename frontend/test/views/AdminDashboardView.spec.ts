@@ -89,7 +89,7 @@ describe('AdminDashboardView', () => {
     expect(wrapper.text()).toContain('弹幕运行态');
     expect(wrapper.text()).toContain('活跃房间');
     expect(wrapper.text()).toContain('在线连接');
-    expect(wrapper.text()).toContain('房间消息');
+    expect(wrapper.text()).toContain('消息数');
     expect(wrapper.text()).toContain('2');
     expect(wrapper.text()).toContain('6');
     expect(wrapper.text()).toContain('15');

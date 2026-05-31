@@ -16,7 +16,7 @@
           <router-link
             to="/"
             class="main-header__nav-item"
-            :class="{ active: $route.path === '/' }"
+            :class="{ active: route.path === '/' }"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -28,7 +28,7 @@
           <router-link
             to="/recommendations"
             class="main-header__nav-item"
-            :class="{ active: $route.path === '/recommendations' }"
+            :class="{ active: route.path === '/recommendations' }"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polygon
@@ -41,7 +41,7 @@
           <router-link
             to="/iptv"
             class="main-header__nav-item"
-            :class="{ active: $route.path === '/iptv' }"
+            :class="{ active: route.path === '/iptv' }"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
@@ -54,7 +54,7 @@
           <router-link
             to="/categories"
             class="main-header__nav-item"
-            :class="{ active: $route.path === '/categories' }"
+            :class="{ active: route.path === '/categories' }"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="3" width="7" height="7" />
@@ -68,7 +68,7 @@
           <router-link
             to="/torrent"
             class="main-header__nav-item"
-            :class="{ active: $route.path === '/torrent' }"
+            :class="{ active: route.path === '/torrent' }"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -87,7 +87,13 @@
             :title="isDark ? '切换到浅色模式' : '切换到暗色模式'"
             @click="toggleTheme"
           >
-            <svg v-if="isDark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg
+              v-if="isDark"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
               <circle cx="12" cy="12" r="5" />
               <line x1="12" y1="1" x2="12" y2="3" />
               <line x1="12" y1="21" x2="12" y2="23" />
@@ -103,18 +109,25 @@
             </svg>
           </button>
 
-          <!-- 管理后台入口 -->
-          <router-link
-            v-if="isAdmin"
-            to="/admin"
-            class="main-header__icon-btn"
-            title="管理后台"
-          >
+          <!-- 管理后台入口 (管理员) -->
+          <router-link v-if="isAdmin" to="/admin" class="main-header__icon-btn" title="管理后台">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="3" width="7" height="7" />
               <rect x="14" y="3" width="7" height="7" />
               <rect x="14" y="14" width="7" height="7" />
               <rect x="3" y="14" width="7" height="7" />
+            </svg>
+          </router-link>
+          <!-- 用户中心入口 (普通用户) -->
+          <router-link
+            v-else-if="authStore.isAuthenticated"
+            to="/dashboard"
+            class="main-header__icon-btn"
+            title="用户中心"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
             </svg>
           </router-link>
 
@@ -251,15 +264,71 @@
         </div>
       </div>
     </footer>
+
+    <!-- 移动端底部导航 -->
+    <nav class="mobile-nav">
+      <router-link to="/" class="mobile-nav__item" :class="{ active: route.path === '/' }">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+        <span>首页</span>
+      </router-link>
+      <router-link
+        to="/categories"
+        class="mobile-nav__item"
+        :class="{ active: route.path === '/categories' }"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+        </svg>
+        <span>分类</span>
+      </router-link>
+      <router-link
+        to="/recommendations"
+        class="mobile-nav__item"
+        :class="{ active: route.path === '/recommendations' }"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon
+            points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+          />
+        </svg>
+        <span>推荐</span>
+      </router-link>
+      <router-link to="/iptv" class="mobile-nav__item" :class="{ active: route.path === '/iptv' }">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+          <line x1="8" y1="21" x2="16" y2="21" />
+          <line x1="12" y1="17" x2="12" y2="21" />
+        </svg>
+        <span>IPTV</span>
+      </router-link>
+      <router-link
+        :to="authStore.isAuthenticated ? '/profile' : '/login'"
+        class="mobile-nav__item"
+        :class="{ active: route.path === '/profile' }"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+        <span>我的</span>
+      </router-link>
+    </nav>
   </div>
 </template>
 
 <script setup lang="ts">
   import { ref, computed, onMounted, onUnmounted } from 'vue';
-  import { useRouter } from 'vue-router';
+  import { useRoute, useRouter } from 'vue-router';
   import { useAuthStore } from '@/stores/auth';
 
   const router = useRouter();
+  const route = useRoute();
   const authStore = useAuthStore();
 
   const searchQuery = ref('');
@@ -329,7 +398,7 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    background: var(--bg-page);
+    background: var(--cinema-gradient);
     color: var(--text-primary);
   }
 
@@ -337,39 +406,44 @@
     position: sticky;
     top: 0;
     z-index: 100;
-    background: color-mix(in srgb, var(--bg-page) 95%, transparent);
-    backdrop-filter: blur(20px);
+    background: rgba(5, 6, 9, 0.9);
+    backdrop-filter: blur(18px) saturate(135%);
     border-bottom: 1px solid var(--border-primary);
+    box-shadow: none;
   }
 
   .main-header__container {
-    max-width: 1400px;
+    max-width: var(--content-max-width);
     margin: 0 auto;
-    padding: 0 24px;
-    height: 64px;
+    padding: 0 28px;
+    height: 56px;
     display: flex;
     align-items: center;
-    gap: 32px;
+    gap: 20px;
   }
 
   .main-header__logo {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 9px;
     text-decoration: none;
     color: inherit;
     font-weight: 700;
-    font-size: 20px;
+    font-size: 17px;
   }
 
   .main-header__logo-icon {
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
     color: var(--color-brand-primary);
   }
 
   .main-header__logo-text {
-    background: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-accent-light));
+    background: linear-gradient(
+      135deg,
+      var(--color-brand-primary),
+      var(--color-brand-accent-light)
+    );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -385,11 +459,12 @@
   .main-header__nav-item {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    border-radius: 10px;
+    gap: 7px;
+    min-height: 32px;
+    padding: 0 12px;
+    border-radius: 8px;
     text-decoration: none;
-    color: var(--text-muted);
+    color: var(--text-tertiary);
     font-size: 14px;
     font-weight: 500;
     transition: all 0.2s;
@@ -401,31 +476,33 @@
   }
 
   .main-header__nav-item:hover {
-    background: var(--border-primary);
+    background: var(--surface-hover);
     color: var(--text-primary);
   }
 
   .main-header__nav-item.active {
-    background: rgba(99, 102, 241, 0.15);
-    color: var(--text-link-hover);
+    background: rgba(229, 9, 20, 0.16);
+    color: var(--color-brand-primary-light);
+    box-shadow: inset 0 0 0 1px rgba(229, 9, 20, 0.28);
   }
 
   .main-header__actions {
     margin-left: auto;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
   }
 
   .main-header__icon-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: var(--border-primary);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--surface-muted);
     color: var(--text-muted);
+    box-shadow: inset 0 0 0 1px var(--border-primary);
     border: none;
     cursor: pointer;
     transition: all 0.2s;
@@ -439,13 +516,13 @@
   }
 
   .main-header__icon-btn:hover {
-    background: var(--border-secondary);
+    background: var(--surface-hover);
     color: var(--text-primary);
   }
 
   .main-header__search {
     position: relative;
-    width: 280px;
+    width: clamp(220px, 24vw, 340px);
     min-width: 0;
     flex-shrink: 1;
   }
@@ -462,11 +539,11 @@
 
   .main-header__search-input {
     width: 100%;
-    height: 40px;
+    height: 34px;
     padding: 0 16px 0 40px;
-    border: 1px solid var(--border-secondary);
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.045);
     font-size: 14px;
     color: var(--text-primary);
     outline: none;
@@ -475,8 +552,8 @@
 
   .main-header__search-input:focus {
     border-color: var(--border-focus);
-    background: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    background: var(--bg-card-elevated);
+    box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.16);
   }
 
   .main-header__search-input::placeholder {
@@ -491,22 +568,23 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 4px 14px 4px 4px;
+    padding: 3px 12px 3px 3px;
     border: none;
-    border-radius: 24px;
-    background: var(--border-primary);
+    border-radius: 8px;
+    background: var(--surface-muted);
+    box-shadow: inset 0 0 0 1px var(--border-primary);
     cursor: pointer;
     transition: all 0.2s;
   }
 
   .main-header__user-btn:hover {
-    background: var(--border-secondary);
+    background: var(--surface-hover);
   }
 
   .main-header__user-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
     background: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-accent));
     color: var(--text-inverse);
     display: flex;
@@ -529,9 +607,9 @@
     margin-top: 8px;
     width: 200px;
     background: var(--bg-card);
-    border-radius: 14px;
+    border-radius: 8px;
     box-shadow: var(--shadow-xl);
-    border: 1px solid var(--border-secondary);
+    border: 1px solid var(--border-primary);
     overflow: hidden;
     z-index: 50;
   }
@@ -558,7 +636,7 @@
   }
 
   .main-header__dropdown-item:hover {
-    background: var(--border-primary);
+    background: var(--surface-hover);
   }
 
   .main-header__dropdown-item--danger {
@@ -587,24 +665,24 @@
 
   .main-header__login-btn {
     padding: 8px 20px;
-    border-radius: 10px;
+    border-radius: 8px;
     text-decoration: none;
     font-size: 14px;
     font-weight: 500;
     color: var(--text-link-hover);
     background: transparent;
-    border: 1px solid rgba(99, 102, 241, 0.3);
+    border: 1px solid rgba(229, 9, 20, 0.3);
     transition: all 0.2s;
   }
 
   .main-header__login-btn:hover {
-    background: rgba(99, 102, 241, 0.1);
+    background: rgba(229, 9, 20, 0.1);
     border-color: var(--border-focus);
   }
 
   .main-header__register-btn {
     padding: 8px 20px;
-    border-radius: 10px;
+    border-radius: 8px;
     text-decoration: none;
     font-size: 14px;
     font-weight: 500;
@@ -615,7 +693,7 @@
 
   .main-header__register-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 4px 16px rgba(229, 9, 20, 0.4);
   }
 
   .main-content {
@@ -623,7 +701,7 @@
   }
 
   .main-footer {
-    background: var(--bg-page);
+    background: #06070a;
     color: var(--text-muted);
     padding: 40px 0;
     margin-top: auto;
@@ -631,7 +709,7 @@
   }
 
   .main-footer__container {
-    max-width: 1400px;
+    max-width: var(--content-max-width);
     margin: 0 auto;
     padding: 0 24px;
     display: flex;
@@ -647,7 +725,11 @@
   .main-footer__logo {
     font-size: 20px;
     font-weight: 700;
-    background: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-accent-light));
+    background: linear-gradient(
+      135deg,
+      var(--color-brand-primary),
+      var(--color-brand-accent-light)
+    );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -681,7 +763,9 @@
 
   .page-fade-enter-active,
   .page-fade-leave-active {
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s ease;
   }
 
   .page-fade-enter-from {
@@ -707,23 +791,59 @@
 
   @media (max-width: 1024px) {
     .main-header__container {
-      gap: 16px;
+      gap: 12px;
     }
 
     .main-header__nav-item {
-      padding: 8px 10px;
+      padding: 0 9px;
       font-size: 13px;
     }
 
     .main-header__search {
-      width: 200px;
+      width: 210px;
     }
+  }
+
+  /* 移动端底部导航 */
+  .mobile-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-header);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border-primary);
+    z-index: 100;
+    padding: 6px 0 env(safe-area-inset-bottom, 0);
+  }
+
+  .mobile-nav__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 0;
+    text-decoration: none;
+    color: var(--text-muted);
+    font-size: 10px;
+    transition: color 0.2s;
+  }
+
+  .mobile-nav__item svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .mobile-nav__item.active {
+    color: var(--color-brand-primary);
   }
 
   @media (max-width: 768px) {
     .main-header__container {
       padding: 0 16px;
       gap: 12px;
+      height: 54px;
     }
 
     .main-header__nav {
@@ -731,12 +851,40 @@
     }
 
     .main-header__search {
-      width: 160px;
+      width: min(48vw, 220px);
       flex-shrink: 1;
+    }
+
+    .main-header__icon-btn,
+    .main-header__auth {
+      display: none;
     }
 
     .main-header__user-name {
       display: none;
+    }
+
+    .main-footer {
+      display: none;
+    }
+
+    .main-content {
+      padding-bottom: 60px;
+    }
+
+    .mobile-nav {
+      display: flex;
+      justify-content: space-around;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .main-header__logo-text {
+      display: none;
+    }
+
+    .main-header__search {
+      width: calc(100vw - 88px);
     }
   }
 </style>

@@ -12,6 +12,8 @@ export interface CreateDanmakuDto {
   color?: string;
   type?: 'scroll' | 'top' | 'bottom';
   priority?: number;
+  mediaResourceId?: number;
+  videoId?: string;
 }
 
 export type DanmakuUpdateDto = Partial<CreateDanmakuDto> & {
@@ -161,11 +163,42 @@ interface DanmakuLeaderboardRaw {
 @Injectable()
 export class DanmakuService {
   private readonly logger = new Logger(DanmakuService.name);
+  private static readonly DEFAULT_LIMIT = 50;
+  private static readonly MAX_LIMIT = 200;
+  private static readonly VALID_SORT_FIELDS = new Set(['createdAt', 'priority', 'id']);
 
   constructor(
     @InjectRepository(Danmaku)
     private readonly danmakuRepository: Repository<Danmaku>,
   ) {}
+
+  private generateDanmakuId(): string {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+  }
+
+  private normalizeLimit(limit?: number, defaultLimit = DanmakuService.DEFAULT_LIMIT): number {
+    const parsed = Number(limit);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return defaultLimit;
+    }
+    return Math.min(Math.floor(parsed), DanmakuService.MAX_LIMIT);
+  }
+
+  private normalizeOffset(offset?: number): number {
+    const parsed = Number(offset);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      return 0;
+    }
+    return Math.floor(parsed);
+  }
+
+  private normalizeSort(sort?: 'ASC' | 'DESC'): 'ASC' | 'DESC' {
+    return sort === 'ASC' ? 'ASC' : 'DESC';
+  }
+
+  private normalizeSortBy(sortBy?: DanmakuQueryDto['sortBy']): DanmakuQueryDto['sortBy'] {
+    return DanmakuService.VALID_SORT_FIELDS.has(String(sortBy)) ? sortBy : 'createdAt';
+  }
 
   // 创建弹幕
   async create(
@@ -174,15 +207,20 @@ export class DanmakuService {
     mediaResourceId: number,
     videoId: string,
   ): Promise<Danmaku> {
+    const text = this.filterText(createDto.text);
+    if (!text) {
+      throw new BadRequestException('弹幕内容不能为空');
+    }
+
     const danmaku = this.danmakuRepository.create({
-      danmakuId: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      text: this.filterText(createDto.text),
+      danmakuId: this.generateDanmakuId(),
+      text,
       color: createDto.color || '#FFFFFF',
       type: createDto.type || 'scroll',
       priority: createDto.priority || 1,
       isHighlighted: false,
       isActive: true,
-      filters: this.analyzeContent(createDto.text),
+      filters: this.analyzeContent(text),
       metadata: {
         timestamp: Date.now(),
         userAgent: 'server-generated',
@@ -197,24 +235,32 @@ export class DanmakuService {
 
   // 批量创建弹幕（用于导入）
   async createBulk(createDtos: CreateDanmakuDto[], userId: number): Promise<Danmaku[]> {
-    const danmakuEntities = createDtos.map(dto => ({
-      danmakuId: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      text: this.filterText(dto.text),
-      color: dto.color || '#FFFFFF',
-      type: dto.type || 'scroll',
-      priority: dto.priority || 1,
-      isHighlighted: false,
-      isActive: true,
-      filters: this.analyzeContent(dto.text),
-      metadata: {
-        timestamp: Date.now(),
-        userAgent: 'bulk-import',
-      },
-      userId,
-      // 需要从dto中提取mediaResourceId和videoId
-      mediaResourceId: 0, // 临时值
-      videoId: '', // 临时值
-    }));
+    const danmakuEntities = createDtos
+      .map(dto => {
+        const text = this.filterText(dto.text || '');
+        if (!text || !dto.mediaResourceId || !dto.videoId) {
+          return null;
+        }
+
+        return this.danmakuRepository.create({
+          danmakuId: this.generateDanmakuId(),
+          text,
+          color: dto.color || '#FFFFFF',
+          type: dto.type || 'scroll',
+          priority: dto.priority || 1,
+          isHighlighted: false,
+          isActive: true,
+          filters: this.analyzeContent(text),
+          metadata: {
+            timestamp: Date.now(),
+            userAgent: 'bulk-import',
+          },
+          userId,
+          mediaResourceId: dto.mediaResourceId,
+          videoId: dto.videoId,
+        });
+      })
+      .filter((item): item is Danmaku => item !== null);
 
     return await this.danmakuRepository.save(danmakuEntities);
   }
@@ -225,8 +271,8 @@ export class DanmakuService {
       videoId,
       mediaResourceId,
       userId,
-      limit = 50,
-      offset = 0,
+      limit,
+      offset,
       startDate,
       endDate,
       isActive = true,
@@ -269,7 +315,11 @@ export class DanmakuService {
     }
 
     // 排序和分页
-    queryBuilder.orderBy(`danmaku.${sortBy}`, sort).skip(offset).take(limit);
+    const safeLimit = this.normalizeLimit(limit);
+    const safeOffset = this.normalizeOffset(offset);
+    const safeSort = this.normalizeSort(sort);
+    const safeSortBy = this.normalizeSortBy(sortBy);
+    queryBuilder.orderBy(`danmaku.${safeSortBy}`, safeSort).skip(safeOffset).take(safeLimit);
 
     const [data, total] = await queryBuilder.getManyAndCount();
 
@@ -367,38 +417,43 @@ export class DanmakuService {
 
   // 获取热门弹幕
   async getPopularDanmaku(limit = 50): Promise<Danmaku[]> {
+    const safeLimit = this.normalizeLimit(limit);
     return await this.danmakuRepository.find({
       where: { isActive: true },
       order: {
         createdAt: 'DESC',
       },
-      take: limit,
+      take: safeLimit,
       relations: ['user', 'mediaResource'],
     });
   }
 
   // 获取用户弹幕历史
   async getUserDanmaku(userId: number, limit = 50, offset = 0): Promise<Danmaku[]> {
+    const safeLimit = this.normalizeLimit(limit);
+    const safeOffset = this.normalizeOffset(offset);
     return await this.danmakuRepository.find({
       where: { userId, isActive: true },
       order: {
         createdAt: 'DESC',
       },
-      skip: offset,
-      take: limit,
+      skip: safeOffset,
+      take: safeLimit,
       relations: ['mediaResource'],
     });
   }
 
   // 获取媒体资源弹幕
   async getMediaDanmaku(mediaResourceId: number, limit = 100, offset = 0): Promise<Danmaku[]> {
+    const safeLimit = this.normalizeLimit(limit, 100);
+    const safeOffset = this.normalizeOffset(offset);
     return await this.danmakuRepository.find({
       where: { mediaResourceId, isActive: true },
       order: {
         createdAt: 'ASC', // 按时间正序排列，用于播放时显示
       },
-      skip: offset,
-      take: limit,
+      skip: safeOffset,
+      take: safeLimit,
       relations: ['user'],
     });
   }
@@ -442,6 +497,7 @@ export class DanmakuService {
     period?: 'all' | 'day' | 'week' | 'month';
   }): Promise<DanmakuLeaderboardItem[]> {
     const { videoId, mediaResourceId, limit = 20, period = 'all' } = options;
+    const safeLimit = this.normalizeLimit(limit, 20);
 
     const queryBuilder = this.danmakuRepository
       .createQueryBuilder('danmaku')
@@ -477,7 +533,7 @@ export class DanmakuService {
       .orderBy('count', 'DESC')
       .addOrderBy('highlightedCount', 'DESC')
       .addOrderBy('lastCreatedAt', 'DESC')
-      .limit(limit)
+      .limit(safeLimit)
       .getRawMany<DanmakuLeaderboardRaw>();
 
     return rows.map(row => ({
@@ -497,6 +553,7 @@ export class DanmakuService {
     limit?: number;
   }): Promise<string[]> {
     const { videoId, mediaResourceId, minFrequency = 2, limit = 100 } = options;
+    const safeLimit = this.normalizeLimit(limit, 100);
 
     const queryBuilder = this.danmakuRepository
       .createQueryBuilder('danmaku')
@@ -537,7 +594,7 @@ export class DanmakuService {
 
         return left[0].localeCompare(right[0], 'zh-CN');
       })
-      .slice(0, limit)
+      .slice(0, safeLimit)
       .map(([keyword]) => keyword);
   }
 
@@ -737,6 +794,7 @@ export class DanmakuService {
     limit?: number;
   }): Promise<DanmakuSuggestionRecord[]> {
     const { videoId, mediaResourceId, type = 'popular', limit = 10 } = options;
+    const safeLimit = this.normalizeLimit(limit, 10);
 
     const queryBuilder = this.danmakuRepository
       .createQueryBuilder('danmaku')
@@ -763,34 +821,35 @@ export class DanmakuService {
     if (type === 'recent') {
       const recentDanmaku = await queryBuilder
         .orderBy('danmaku.createdAt', 'DESC')
-        .take(limit * 3)
+        .take(safeLimit * 3)
         .getMany();
-      return this.buildSuggestionRecords(recentDanmaku, 'recent').slice(0, limit);
+      return this.buildSuggestionRecords(recentDanmaku, 'recent').slice(0, safeLimit);
     }
 
     if (type === 'relevant') {
       const relevantDanmaku = await queryBuilder
         .orderBy('danmaku.createdAt', 'DESC')
         .addOrderBy('danmaku.isHighlighted', 'DESC')
-        .take(limit * 5)
+        .take(safeLimit * 5)
         .getMany();
-      return this.buildRelevantSuggestionRecords(relevantDanmaku).slice(0, limit);
+      return this.buildRelevantSuggestionRecords(relevantDanmaku).slice(0, safeLimit);
     }
 
     const popularDanmaku = await queryBuilder
       .orderBy('danmaku.isHighlighted', 'DESC')
       .addOrderBy('danmaku.createdAt', 'DESC')
-      .take(limit * 4)
+      .take(safeLimit * 4)
       .getMany();
 
-    return this.buildSuggestionRecords(popularDanmaku, 'popular').slice(0, limit);
+    return this.buildSuggestionRecords(popularDanmaku, 'popular').slice(0, safeLimit);
   }
 
   async getReportedDanmaku(limit = 20): Promise<ReportedDanmakuRecord[]> {
+    const safeLimit = this.normalizeLimit(limit, 20);
     const danmakuItems = await this.danmakuRepository.find({
       where: { isActive: true },
       order: { updatedAt: 'DESC', createdAt: 'DESC' },
-      take: Math.max(limit * 4, limit),
+      take: Math.max(safeLimit * 4, safeLimit),
     });
 
     const reportedItems: Array<ReportedDanmakuRecord | null> = danmakuItems.map(item => {
@@ -831,7 +890,7 @@ export class DanmakuService {
           new Date(left.lastReportedAt || 0).getTime()
         );
       })
-      .slice(0, limit);
+      .slice(0, safeLimit);
   }
 
   async moderateDanmaku(id: number, action: 'hide' | 'restore'): Promise<Danmaku | null> {
@@ -935,9 +994,13 @@ export class DanmakuService {
     queryBuilder: SelectQueryBuilder<Danmaku>,
     queryDto: DanmakuQueryDto,
   ): void {
-    const { limit = 50, offset = 0, sort = 'DESC', sortBy = 'createdAt' } = queryDto;
+    const { limit, offset, sort = 'DESC', sortBy = 'createdAt' } = queryDto;
+    const safeLimit = this.normalizeLimit(limit);
+    const safeOffset = this.normalizeOffset(offset);
+    const safeSort = this.normalizeSort(sort);
+    const safeSortBy = this.normalizeSortBy(sortBy);
 
-    queryBuilder.orderBy(`danmaku.${sortBy}`, sort).skip(offset).take(limit);
+    queryBuilder.orderBy(`danmaku.${safeSortBy}`, safeSort).skip(safeOffset).take(safeLimit);
   }
 
   // 文本过滤和清理
@@ -1006,23 +1069,32 @@ export class DanmakuService {
 
     for (let i = 0; i < data.length; i += batchSize) {
       const batch = data.slice(i, i + batchSize);
-      const processedBatch = batch.map(item => ({
-        danmakuId: item.id || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        text: this.filterText(item.text || ''),
-        color: item.color || '#FFFFFF',
-        type: item.type || 'scroll',
-        priority: item.priority || 1,
-        isHighlighted: item.isHighlighted || false,
-        isActive: true,
-        filters: this.analyzeContent(item.text || ''),
-        metadata: {
-          timestamp: item.timestamp || Date.now(),
-          userAgent: item.userAgent || 'imported',
-        },
-        userId: item.userId || 1,
-        mediaResourceId: item.mediaResourceId || 0,
-        videoId: item.videoId || '',
-      }));
+      const processedBatch = batch
+        .map(item => {
+          const text = this.filterText(item.text || '');
+          if (!text || !item.mediaResourceId || !item.videoId) {
+            return null;
+          }
+
+          return this.danmakuRepository.create({
+            danmakuId: item.id || this.generateDanmakuId(),
+            text,
+            color: item.color || '#FFFFFF',
+            type: item.type || 'scroll',
+            priority: item.priority || 1,
+            isHighlighted: item.isHighlighted || false,
+            isActive: true,
+            filters: this.analyzeContent(text),
+            metadata: {
+              timestamp: item.timestamp || Date.now(),
+              userAgent: item.userAgent || 'imported',
+            },
+            userId: item.userId || 1,
+            mediaResourceId: item.mediaResourceId,
+            videoId: item.videoId,
+          });
+        })
+        .filter((item): item is Danmaku => item !== null);
 
       const savedBatch = await this.danmakuRepository.save(processedBatch);
       importedCount += savedBatch.length;

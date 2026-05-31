@@ -25,6 +25,12 @@ api.interceptors.response.use(interceptor.onResponse, interceptor.onResponseErro
 // 应用缓存拦截器
 setupCacheInterceptors(api);
 
+const assertJsonLikeResponse = (data: unknown, url: string, silent?: boolean): void => {
+  if (typeof data === 'string' && data.trim().startsWith('<')) {
+    throw Object.assign(new Error(`接口返回了非 JSON 内容: ${url}`), { silent });
+  }
+};
+
 // 增强的API客户端
 class ApiClient {
   private static instance = api;
@@ -36,7 +42,10 @@ class ApiClient {
       const cacheConfig = config?.cacheConfig || { enabled: true };
       return this.instance
         .get(url, withCache(config || {}, cacheConfig))
-        .then(response => response.data)
+        .then(response => {
+          assertJsonLikeResponse(response.data, url, config?.silent);
+          return response.data;
+        })
         .catch(error => {
           if (error?.cached) {
             // 返回缓存的旧数据
@@ -51,6 +60,7 @@ class ApiClient {
     try {
       return await RetryHelper.retry(async () => {
         const response = await this.instance.get(url, config);
+        assertJsonLikeResponse(response.data, url, config?.silent);
         return response.data;
       });
     } catch (error) {
@@ -68,6 +78,7 @@ class ApiClient {
     try {
       return await RetryHelper.retry(async () => {
         const response = await this.instance.post(url, data, config);
+        assertJsonLikeResponse(response.data, url, config?.silent);
         apiCacheManager.clearCacheByPattern(/^GET:/);
         return response.data;
       });
@@ -86,6 +97,7 @@ class ApiClient {
     try {
       return await RetryHelper.retry(async () => {
         const response = await this.instance.put(url, data, config);
+        assertJsonLikeResponse(response.data, url, config?.silent);
         apiCacheManager.clearCacheByPattern(/^GET:/);
         return response.data;
       });
@@ -104,6 +116,7 @@ class ApiClient {
     try {
       return await RetryHelper.retry(async () => {
         const response = await this.instance.patch(url, data, config);
+        assertJsonLikeResponse(response.data, url, config?.silent);
         apiCacheManager.clearCacheByPattern(/^GET:/);
         return response.data;
       });
@@ -118,6 +131,7 @@ class ApiClient {
     try {
       return await RetryHelper.retry(async () => {
         const response = await this.instance.delete(url, config);
+        assertJsonLikeResponse(response.data, url, config?.silent);
         apiCacheManager.clearCacheByPattern(/^GET:/);
         return response.data;
       });

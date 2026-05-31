@@ -14,6 +14,7 @@ import {
   NotFoundException,
   UsePipes,
   ValidationPipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import {
@@ -163,14 +164,28 @@ export class DanmakuController {
       videoId,
     );
 
-    this.danmakuGateway.sendDanmaku({
+    const realtimeMessage: {
+      videoId: string;
+      userId: number;
+      danmakuId: number;
+      text: string;
+      color?: string;
+      type?: Danmaku['type'];
+    } = {
       videoId,
       userId: user.id,
       danmakuId: danmaku.id,
       text: danmaku.text,
-      color: danmaku.color,
-      type: danmaku.type,
-    });
+    };
+
+    if (danmaku.color) {
+      realtimeMessage.color = danmaku.color;
+    }
+    if (danmaku.type) {
+      realtimeMessage.type = danmaku.type;
+    }
+
+    this.danmakuGateway.sendDanmaku(realtimeMessage);
 
     return danmaku;
   }
@@ -183,11 +198,13 @@ export class DanmakuController {
     @Body() createDtos: Array<CreateDanmakuDto & { videoId: string; mediaResourceId: number }>,
     @User() user: CurrentUser,
   ): Promise<Danmaku[]> {
-    const processedDtos = createDtos.map(dto => ({
+    const processedDtos: CreateDanmakuDto[] = createDtos.map(dto => ({
       text: dto.text,
       color: dto.color,
       type: dto.type,
       priority: dto.priority,
+      mediaResourceId: dto.mediaResourceId,
+      videoId: dto.videoId,
     }));
 
     return await this.danmakuService.createBulk(processedDtos, user.id);
@@ -213,49 +230,15 @@ export class DanmakuController {
     return await this.danmakuService.search(filters, query);
   }
 
-  // 根据ID获取弹幕
-  @Get(':id')
-  @ApiOperation({ summary: '获取弹幕详情', description: '根据弹幕ID获取详细信息' })
-  @ApiResponse({ status: 200, description: '弹幕详情', type: Danmaku })
-  async getDanmakuById(@Param('id') id: number): Promise<Danmaku | null> {
-    return await this.danmakuService.findById(id);
-  }
-
-  // 更新弹幕
-  @Put(':id')
-  @ApiOperation({ summary: '更新弹幕', description: '更新弹幕内容或属性' })
-  @ApiResponse({ status: 200, description: '更新后的弹幕', type: Danmaku })
-  async updateDanmaku(
-    @Param('id') id: number,
-    @Body() updateDto: Partial<CreateDanmakuDto>,
-  ): Promise<Danmaku | null> {
-    return await this.danmakuService.update(id, updateDto);
-  }
-
-  // 删除弹幕（软删除）
-  @Delete(':id')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: '删除弹幕', description: '软删除指定弹幕' })
-  @ApiResponse({ status: 200, description: '删除成功' })
-  async deleteDanmaku(
-    @Param('id') id: number,
-    @User() user: CurrentUser,
-  ): Promise<{ success: boolean; message: string }> {
-    const success = await this.danmakuService.delete(id, user.id);
-
-    return {
-      success,
-      message: success ? '弹幕删除成功' : '删除失败或无权限',
-    };
-  }
-
   // 硬删除弹幕
   @Delete(':id/hard')
   @UseGuards(AdminRoleGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '永久删除弹幕', description: '从数据库中永久删除弹幕' })
   @ApiResponse({ status: 200, description: '永久删除成功' })
-  async hardDeleteDanmaku(@Param('id') id: number): Promise<{ success: boolean; message: string }> {
+  async hardDeleteDanmaku(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<{ success: boolean; message: string }> {
     const success = await this.danmakuService.hardDelete(id);
 
     return {
@@ -525,7 +508,7 @@ export class DanmakuController {
   @UseGuards(AdminRoleGuard)
   @ApiOperation({ summary: '设置弹幕高亮', description: '将指定弹幕设置为高亮状态' })
   async setDanmakuHighlight(
-    @Param('id') id: number,
+    @Param('id', ParseIntPipe) id: number,
     @Body() body: { isHighlighted: boolean },
   ): Promise<Danmaku | null> {
     const updateDto: DanmakuUpdateDto = {
@@ -556,7 +539,7 @@ export class DanmakuController {
   @Patch(':id/moderation')
   @UseGuards(AdminRoleGuard)
   @ApiOperation({ summary: '处置举报弹幕', description: '隐藏或恢复指定弹幕' })
-  async moderateDanmaku(@Param('id') id: number, @Body() body: ModerateDanmakuDto) {
+  async moderateDanmaku(@Param('id', ParseIntPipe) id: number, @Body() body: ModerateDanmakuDto) {
     const danmaku = await this.danmakuService.moderateDanmaku(id, body.action);
     if (!danmaku) {
       throw new NotFoundException(`Danmaku ${id} not found`);
@@ -587,7 +570,7 @@ export class DanmakuController {
   @Get(':id/reports')
   @UseGuards(AdminRoleGuard)
   @ApiOperation({ summary: '获取弹幕举报', description: '获取指定弹幕的举报信息' })
-  async getDanmakuReports(@Param('id') id: number): Promise<DanmakuReportsResponse> {
+  async getDanmakuReports(@Param('id', ParseIntPipe) id: number): Promise<DanmakuReportsResponse> {
     const snapshot = await this.danmakuService.getReportsSnapshot(id);
     if (!snapshot) {
       throw new NotFoundException(`Danmaku ${id} not found`);
@@ -605,7 +588,7 @@ export class DanmakuController {
   @ApiOperation({ summary: '举报弹幕', description: '举报指定弹幕内容' })
   @UsePipes(new ValidationPipe({ transform: true }))
   async reportDanmaku(
-    @Param('id') id: number,
+    @Param('id', ParseIntPipe) id: number,
     @Body() body: ReportDanmakuDto,
     @User() user: CurrentUser,
   ): Promise<{ success: boolean; message: string; reportCount: number }> {
@@ -729,6 +712,42 @@ export class DanmakuController {
         roomStats.totalRooms > 0
           ? `弹幕系统运行正常，当前监控 ${roomStats.totalRooms} 个活跃房间。`
           : '弹幕系统运行正常，当前暂无活跃房间。',
+    };
+  }
+
+  // 根据ID获取弹幕。放在静态路由之后，避免吞掉 /popular、/stats 等路径。
+  @Get(':id')
+  @ApiOperation({ summary: '获取弹幕详情', description: '根据弹幕ID获取详细信息' })
+  @ApiResponse({ status: 200, description: '弹幕详情', type: Danmaku })
+  async getDanmakuById(@Param('id', ParseIntPipe) id: number): Promise<Danmaku | null> {
+    return await this.danmakuService.findById(id);
+  }
+
+  // 更新弹幕
+  @Put(':id')
+  @ApiOperation({ summary: '更新弹幕', description: '更新弹幕内容或属性' })
+  @ApiResponse({ status: 200, description: '更新后的弹幕', type: Danmaku })
+  async updateDanmaku(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateDto: Partial<CreateDanmakuDto>,
+  ): Promise<Danmaku | null> {
+    return await this.danmakuService.update(id, updateDto);
+  }
+
+  // 删除弹幕（软删除）
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '删除弹幕', description: '软删除指定弹幕' })
+  @ApiResponse({ status: 200, description: '删除成功' })
+  async deleteDanmaku(
+    @Param('id', ParseIntPipe) id: number,
+    @User() user: CurrentUser,
+  ): Promise<{ success: boolean; message: string }> {
+    const success = await this.danmakuService.delete(id, user.id);
+
+    return {
+      success,
+      message: success ? '弹幕删除成功' : '删除失败或无权限',
     };
   }
 }

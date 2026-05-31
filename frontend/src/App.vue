@@ -5,11 +5,13 @@
   import UpdateNotification from '@/components/UpdateNotification.vue';
   import Toast from '@/components/Toast.vue';
   import NotificationToast from '@/components/NotificationToast.vue';
+  import GlobalProgressBar from '@/components/GlobalProgressBar.vue';
   import { log } from '@/utils/logger';
   import { modalState } from '@/composables/useModal';
 
   const authStore = useAuthStore();
   const toastRef = ref<InstanceType<typeof Toast> | null>(null);
+  const progressRef = ref<InstanceType<typeof GlobalProgressBar> | null>(null);
 
   const initializeApp = async () => {
     try {
@@ -37,7 +39,12 @@
 
 <template>
   <div id="app-root">
-    <RouterView />
+    <GlobalProgressBar ref="progressRef" />
+    <RouterView v-slot="{ Component, route }">
+      <Transition name="page-slide" mode="out-in">
+        <component :is="Component" :key="route.path" />
+      </Transition>
+    </RouterView>
 
     <EnhancedModal
       v-if="modalState.isVisible"
@@ -63,5 +70,22 @@
     min-height: 100vh;
     background: var(--bg-page);
     color: var(--text-primary);
+  }
+
+  .page-slide-enter-active,
+  .page-slide-leave-active {
+    transition:
+      opacity 0.25s ease,
+      transform 0.25s ease;
+  }
+
+  .page-slide-enter-from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  .page-slide-leave-to {
+    opacity: 0;
+    transform: translateY(-12px);
   }
 </style>

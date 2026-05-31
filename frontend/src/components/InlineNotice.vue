@@ -1,14 +1,14 @@
 <template>
-  <div class="rounded-xl border px-4 py-3 text-sm" :class="noticeClass" role="status">
-    <div class="flex items-start justify-between gap-4">
-      <div class="min-w-0 flex-1">
-        <div v-if="title" class="font-semibold">{{ title }}</div>
+  <div class="inline-notice" :class="noticeClass" role="status">
+    <div class="inline-notice__inner">
+      <div class="inline-notice__content">
+        <div v-if="title" class="inline-notice__title">{{ title }}</div>
         <div>{{ message }}</div>
       </div>
       <button
         v-if="dismissible"
         type="button"
-        class="text-current/70 transition hover:text-current"
+        class="inline-notice__close"
         aria-label="关闭提示"
         @click="$emit('dismiss')"
       >
@@ -41,13 +41,72 @@
   const noticeClass = computed(() => {
     switch (props.type) {
       case 'success':
-        return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+        return 'inline-notice--success';
       case 'error':
-        return 'border-red-200 bg-red-50 text-red-600';
+        return 'inline-notice--error';
       case 'warning':
-        return 'border-amber-200 bg-amber-50 text-amber-700';
+        return 'inline-notice--warning';
       default:
-        return 'border-blue-200 bg-blue-50 text-blue-700';
+        return 'inline-notice--info';
     }
   });
 </script>
+
+<style scoped>
+  .inline-notice {
+    border: 1px solid var(--state-info-border);
+    border-radius: var(--panel-radius);
+    background: var(--state-info-bg);
+    color: var(--color-info-light);
+    padding: var(--spacing-3) var(--spacing-4);
+    font-size: var(--font-size-sm);
+  }
+
+  .inline-notice__inner {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--spacing-4);
+  }
+
+  .inline-notice__content {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .inline-notice__title {
+    margin-bottom: var(--spacing-1);
+    color: currentColor;
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .inline-notice__close {
+    color: currentColor;
+    font-size: var(--font-size-lg);
+    line-height: 1;
+    opacity: 0.7;
+    transition: opacity var(--transition-fast);
+  }
+
+  .inline-notice__close:hover {
+    opacity: 1;
+  }
+
+  .inline-notice--success {
+    border-color: var(--state-success-border);
+    background: var(--state-success-bg);
+    color: var(--color-success-light);
+  }
+
+  .inline-notice--error {
+    border-color: var(--state-error-border);
+    background: var(--state-error-bg);
+    color: var(--color-error-light);
+  }
+
+  .inline-notice--warning {
+    border-color: var(--state-warning-border);
+    background: var(--state-warning-bg);
+    color: var(--color-warning-light);
+  }
+</style>

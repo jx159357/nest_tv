@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import LoginView from '@/views/LoginView.vue';
 import SettingsView from '@/views/SettingsView.vue';
-import AppLayout from '@/components/AppLayout.vue';
+import MainLayout from '@/layouts/MainLayout.vue';
 
 const { routeState, routerState, authStore, authApi, searchApi, setLocale } = vi.hoisted(() => {
   const session = {
@@ -249,18 +249,18 @@ describe('Auth profile journey regression', () => {
 
     routeState.path = '/';
     routeState.query = {};
-    const appLayoutWrapper = mountWithRouter(AppLayout);
+    const appLayoutWrapper = mountWithRouter(MainLayout);
     await flushPromises();
 
-    await appLayoutWrapper.get('.app-layout__user-menu').trigger('click');
+    await appLayoutWrapper.get('.main-header__user-btn').trigger('click');
     const logoutButton = appLayoutWrapper
       .findAll('button')
-      .find(button => button.text().includes('common.logout'));
+      .find(button => button.text().includes('退出登录'));
     expect(logoutButton).toBeTruthy();
     await logoutButton!.trigger('click');
 
     expect(authStore.logout).toHaveBeenCalled();
-    expect(routerState.push).toHaveBeenCalledWith('/login');
+    expect(routerState.push).toHaveBeenCalledWith('/');
 
     routeState.path = '/login';
     const reloginWrapper = mountWithRouter(LoginView);

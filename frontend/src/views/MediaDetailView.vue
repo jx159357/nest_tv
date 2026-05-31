@@ -44,14 +44,23 @@
               <span class="meta-item">{{ media.viewCount || 0 }} 次播放</span>
             </div>
             <div class="detail-tags">
-              <span v-for="genre in media.genres || []" :key="genre" class="tag">{{ genre }}</span>
+              <span v-for="genre in visibleGenres" :key="genre" class="tag" :title="genre">
+                {{ genre }}
+              </span>
+              <span v-if="hiddenGenreCount > 0" class="tag tag--more">
+                +{{ hiddenGenreCount }}
+              </span>
             </div>
             <div class="detail-extra">
-              <div v-if="media.director" class="extra-line"><strong>导演：</strong>{{ media.director }}</div>
+              <div v-if="media.director" class="extra-line">
+                <strong>导演：</strong>{{ media.director }}
+              </div>
               <div v-if="media.actors" class="extra-line">
                 <strong>主演：</strong><TextClamp :text="media.actors" :max-lines="2" />
               </div>
-              <div v-if="media.source" class="extra-line"><strong>来源：</strong>{{ media.source }}</div>
+              <div v-if="media.source" class="extra-line">
+                <strong>来源：</strong>{{ media.source }}
+              </div>
             </div>
             <div class="detail-actions">
               <button class="btn-watch" @click="goToWatch">
@@ -79,7 +88,12 @@
                 {{ favoriteLoading ? '处理中...' : isFavorite ? '已收藏' : '收藏' }}
               </button>
             </div>
-            <div v-if="favoriteMessage" class="fav-message">{{ favoriteMessage }}</div>
+            <div v-if="favoriteMessage" class="fav-message">
+              <span>{{ favoriteMessage }}</span>
+              <button v-if="isFavorite" class="fav-message__link" @click="goToFavorites">
+                查看收藏
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -242,6 +256,12 @@
     if (media.value) router.push(`/watch/${media.value.id}`);
   };
   const goToMediaDetail = (id: number) => router.push(`/media/${id}`);
+  const goToFavorites = () => {
+    router.push({
+      name: 'favorites',
+      query: { highlight: String(media.value?.id ?? '') },
+    });
+  };
 
   const toggleFavorite = async () => {
     if (!media.value) return;
@@ -310,6 +330,11 @@
       rating: media.value.rating,
     };
   });
+
+  const visibleGenres = computed(() => media.value?.genres?.filter(Boolean).slice(0, 3) || []);
+  const hiddenGenreCount = computed(() =>
+    Math.max((media.value?.genres?.filter(Boolean).length || 0) - visibleGenres.value.length, 0),
+  );
 
   onMounted(() => void loadMedia());
 </script>
@@ -471,13 +496,22 @@
     flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 16px;
+    max-width: 680px;
   }
   .tag {
+    max-width: 128px;
     padding: 4px 14px;
-    background: rgba(99, 102, 241, 0.15);
+    background: rgba(229, 9, 20, 0.15);
     color: var(--text-link-hover);
-    border-radius: 20px;
+    border-radius: 8px;
     font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tag--more {
+    color: var(--text-tertiary);
+    background: var(--surface-muted);
   }
   .detail-extra {
     display: flex;
@@ -520,7 +554,7 @@
   }
   .btn-watch:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 8px 24px rgba(229, 9, 20, 0.4);
   }
   .btn-watch svg {
     width: 18px;
@@ -532,7 +566,7 @@
     gap: 8px;
     padding: 14px 24px;
     background: var(--border-primary);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--border-secondary);
     border-radius: 12px;
     color: var(--text-primary);
     font-size: 15px;
@@ -540,7 +574,7 @@
     transition: all 0.2s;
   }
   .btn-fav:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--bg-tertiary);
   }
   .btn-fav--active {
     color: var(--color-error);
@@ -552,12 +586,23 @@
     height: 18px;
   }
   .fav-message {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
     margin-top: 12px;
     padding: 10px 16px;
-    background: rgba(99, 102, 241, 0.1);
+    background: rgba(229, 9, 20, 0.1);
     border-radius: 10px;
     font-size: 13px;
     color: var(--text-link-hover);
+  }
+  .fav-message__link {
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 
   .detail-body {
@@ -713,7 +758,7 @@
   .btn-outline {
     background: transparent;
     color: var(--text-muted);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--border-secondary);
   }
   .btn-outline:hover {
     background: var(--border-primary);
@@ -743,6 +788,7 @@
     }
     .detail-tags {
       justify-content: center;
+      margin-inline: auto;
     }
     .detail-extra {
       justify-content: center;
@@ -769,13 +815,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 4px 20px rgba(229, 9, 20, 0.4);
     transition: all 0.3s ease;
   }
 
   .ai-fab:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 28px rgba(99, 102, 241, 0.55);
+    box-shadow: 0 6px 28px rgba(229, 9, 20, 0.55);
   }
 
   @media (max-width: 640px) {
@@ -793,6 +839,16 @@
     .ai-fab {
       bottom: 80px;
       right: 16px;
+    }
+    .detail-tags {
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+      max-width: 100%;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .tag {
+      flex: 0 0 auto;
     }
   }
 </style>

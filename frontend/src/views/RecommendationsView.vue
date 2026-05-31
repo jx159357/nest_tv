@@ -55,7 +55,9 @@
           <div class="preference-list">
             <div class="preference-group">
               <span class="preference-key">偏好类型：</span>
-              <span v-if="profile.favoriteTypes.length === 0" class="preference-empty">暂无明显偏好</span>
+              <span v-if="profile.favoriteTypes.length === 0" class="preference-empty"
+                >暂无明显偏好</span
+              >
               <span v-else class="preference-tags">
                 <span
                   v-for="item in profile.favoriteTypes"
@@ -69,7 +71,9 @@
 
             <div class="preference-group">
               <span class="preference-key">偏好标签：</span>
-              <span v-if="profile.favoriteGenres.length === 0" class="preference-empty">暂无明显偏好</span>
+              <span v-if="profile.favoriteGenres.length === 0" class="preference-empty"
+                >暂无明显偏好</span
+              >
               <span v-else class="preference-tags">
                 <span
                   v-for="item in profile.favoriteGenres"
@@ -83,7 +87,9 @@
 
             <div class="preference-group">
               <span class="preference-key">导演偏好：</span>
-              <span v-if="profile.favoriteDirectors.length === 0" class="preference-empty">暂无明显偏好</span>
+              <span v-if="profile.favoriteDirectors.length === 0" class="preference-empty"
+                >暂无明显偏好</span
+              >
               <span v-else class="preference-tags">
                 <span
                   v-for="item in profile.favoriteDirectors"
@@ -97,7 +103,9 @@
 
             <div class="preference-group">
               <span class="preference-key">最近搜索：</span>
-              <span v-if="profile.recentSearchKeywords.length === 0" class="preference-empty">暂无明显搜索兴趣</span>
+              <span v-if="profile.recentSearchKeywords.length === 0" class="preference-empty"
+                >暂无明显搜索兴趣</span
+              >
               <span v-else class="preference-tags">
                 <span
                   v-for="item in profile.recentSearchKeywords"
@@ -117,9 +125,7 @@
       <div class="section-header">
         <div>
           <h2 class="section-title">搜索兴趣</h2>
-          <p class="section-desc">
-            结合你最近搜索过的内容，提供一个更直接的继续探索入口。
-          </p>
+          <p class="section-desc">结合你最近搜索过的内容，提供一个更直接的继续探索入口。</p>
         </div>
         <button
           class="btn-outline"
@@ -180,9 +186,7 @@
       <div class="section-header">
         <div>
           <h2 class="section-title">为你推荐</h2>
-          <p class="section-desc">
-            展示推荐理由，帮助你快速理解这条内容为什么值得现在打开。
-          </p>
+          <p class="section-desc">展示推荐理由，帮助你快速理解这条内容为什么值得现在打开。</p>
         </div>
       </div>
 
@@ -619,15 +623,15 @@
 
   .profile-section--focused {
     ring: 2px solid var(--color-brand-primary);
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+    box-shadow: 0 0 0 4px rgba(229, 9, 20, 0.15);
   }
 
   .profile-hint {
     margin-bottom: 16px;
     padding: 12px 16px;
     border-radius: 12px;
-    border: 1px solid rgba(99, 102, 241, 0.3);
-    background: rgba(99, 102, 241, 0.08);
+    border: 1px solid rgba(229, 9, 20, 0.3);
+    background: rgba(229, 9, 20, 0.08);
     font-size: 13px;
     color: var(--color-brand-primary-light);
   }
@@ -738,7 +742,7 @@
   }
 
   .tag--type {
-    background: rgba(99, 102, 241, 0.12);
+    background: rgba(229, 9, 20, 0.12);
     color: var(--color-brand-primary-light);
   }
 
@@ -839,19 +843,19 @@
   }
 
   .keyword-btn:hover {
-    border-color: rgba(99, 102, 241, 0.3);
-    background: rgba(99, 102, 241, 0.08);
+    border-color: rgba(229, 9, 20, 0.3);
+    background: rgba(229, 9, 20, 0.08);
     color: var(--color-brand-primary-light);
   }
 
   .keyword-btn--related {
-    background: rgba(99, 102, 241, 0.06);
+    background: rgba(229, 9, 20, 0.06);
     color: var(--color-brand-primary-light);
     border-color: transparent;
   }
 
   .keyword-btn--related:hover {
-    background: rgba(99, 102, 241, 0.12);
+    background: rgba(229, 9, 20, 0.12);
   }
 
   .btn-primary {
@@ -946,7 +950,7 @@
     padding: 3px 10px;
     border-radius: 20px;
     font-size: 11px;
-    background: rgba(99, 102, 241, 0.08);
+    background: rgba(229, 9, 20, 0.08);
     color: var(--color-brand-primary-light);
   }
 </style>

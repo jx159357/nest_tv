@@ -1313,20 +1313,7 @@ export class DataCollectionService {
     mediaData: MediaData,
     sourceName: string,
   ): Promise<PersistenceResult> {
-    const existingMedia = await this.mediaResourceService.findByTitle(mediaData.title);
-
-    if (existingMedia) {
-      const updatedMedia = await this.enrichExistingMedia(existingMedia, mediaData);
-      const syncResult = await this.syncPlaySources(updatedMedia.id, mediaData, sourceName);
-      return {
-        mediaResourceId: updatedMedia.id,
-        created: false,
-        playSourceCount: syncResult.created,
-        skippedPlaySources: syncResult.skipped,
-      };
-    }
-
-    const createdMedia = await this.mediaResourceService.create({
+    const createPayload = {
       title: mediaData.title,
       description: mediaData.description,
       type: mediaData.type,
@@ -1342,7 +1329,22 @@ export class DataCollectionService {
       duration: mediaData.duration,
       metadata: mediaData.metadata,
       downloadUrls: mediaData.downloadUrls,
-    });
+    };
+
+    const existingMedia = await this.mediaResourceService.findDuplicateCandidate(createPayload);
+
+    if (existingMedia) {
+      const updatedMedia = await this.enrichExistingMedia(existingMedia, mediaData);
+      const syncResult = await this.syncPlaySources(updatedMedia.id, mediaData, sourceName);
+      return {
+        mediaResourceId: updatedMedia.id,
+        created: false,
+        playSourceCount: syncResult.created,
+        skippedPlaySources: syncResult.skipped,
+      };
+    }
+
+    const createdMedia = await this.mediaResourceService.create(createPayload);
 
     const syncResult = await this.syncPlaySources(createdMedia.id, mediaData, sourceName);
     return {

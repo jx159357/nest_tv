@@ -80,8 +80,13 @@
           </div>
         </div>
         <div class="chat-input">
-          <input v-model="chatInput" placeholder="发送消息..." @keyup.enter="sendChat" />
-          <button @click="sendChat">发送</button>
+          <input
+            v-model="chatInput"
+            placeholder="发送消息..."
+            maxlength="300"
+            @keyup.enter="sendChat"
+          />
+          <button :disabled="!chatInput.trim() || !socket" @click="sendChat">发送</button>
         </div>
       </div>
 
@@ -103,12 +108,22 @@
 
   const io = socketIOClient;
   type Socket = ReturnType<typeof io>;
-  import { notifyInfo } from '@/composables/useModal';
+  import { notifyError, notifyInfo } from '@/composables/useModal';
 
   interface RoomUser {
     userId: string;
     username: string;
     joinedAt: number;
+  }
+
+  interface JoinRoomResponse {
+    success: boolean;
+    room?: {
+      hostId: string;
+      users: Record<string, RoomUser>;
+      currentTime: number;
+      isPlaying: boolean;
+    };
   }
 
   interface ActiveRoom {
@@ -209,6 +224,10 @@
         scrollChatToBottom();
       },
     );
+
+    socket.value.on('connect_error', () => {
+      addSystemMessage('房间连接失败，请稍后重试');
+    });
   };
 
   const disconnectSocket = () => {
@@ -233,36 +252,65 @@
     }
   };
 
-  const createRoom = () => {
+  const createRoom = async () => {
     if (!socket.value) {
       connectSocket();
     }
 
-    const roomId = `room-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    try {
+      const token = authStore.token || localStorage.getItem('token');
+      const response = await fetch(`${BASE_URL}/watch-room/create`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          mediaId: props.mediaId,
+          mediaTitle: props.mediaTitle,
+        }),
+      });
 
-    socket.value?.emit(
-      'join-room',
-      { roomId, mediaId: props.mediaId.toString() },
-      (response: { success: boolean }) => {
-        if (response.success) {
-          currentRoomId.value = roomId;
-          isInRoom.value = true;
-          onlineCount.value = 1;
-          hostId.value = authStore.user?.id?.toString() || '';
-          addSystemMessage('房间已创建，分享房间号邀请朋友加入吧');
-        }
-      },
-    );
+      if (!response.ok) {
+        throw new Error('创建房间失败');
+      }
+
+      const created = (await response.json()) as { roomId: string };
+      joinRoom(created.roomId, '房间已创建，分享房间号邀请朋友加入吧');
+    } catch (error) {
+      notifyError('创建房间失败', error instanceof Error ? error.message : '请稍后重试');
+    }
+  };
+
+  const applyJoinedRoom = (
+    roomId: string,
+    response: JoinRoomResponse,
+    message: string,
+  ) => {
+    if (response.success && response.room) {
+      currentRoomId.value = roomId;
+      isInRoom.value = true;
+      hostId.value = response.room.hostId;
+      const users = response.room.users;
+      roomUsers.value = Object.values(users);
+      onlineCount.value = roomUsers.value.length;
+      isPlaying.value = response.room.isPlaying;
+      addSystemMessage(message);
+
+      if (response.room.currentTime > 0 || response.room.isPlaying) {
+        emit('sync', response.room.currentTime, response.room.isPlaying);
+      }
+    }
   };
 
   const joinRoomById = () => {
     const id = joinRoomId.value.trim();
     if (!id) return;
-    joinRoom(id);
+    joinRoom(id, '已加入房间');
     joinRoomId.value = '';
   };
 
-  const joinRoom = (roomId: string) => {
+  const joinRoom = (roomId: string, joinedMessage = '已加入房间') => {
     if (!socket.value) {
       connectSocket();
     }
@@ -270,26 +318,7 @@
     socket.value?.emit(
       'join-room',
       { roomId, mediaId: props.mediaId.toString() },
-      (response: {
-        success: boolean;
-        room?: {
-          hostId: string;
-          users: Record<string, RoomUser>;
-          currentTime: number;
-          isPlaying: boolean;
-        };
-      }) => {
-        if (response.success && response.room) {
-          currentRoomId.value = roomId;
-          isInRoom.value = true;
-          hostId.value = response.room.hostId;
-          const users = response.room.users;
-          roomUsers.value = Object.values(users);
-          onlineCount.value = roomUsers.value.length;
-          isPlaying.value = response.room.isPlaying;
-          addSystemMessage('已加入房间');
-        }
-      },
+      (response: JoinRoomResponse) => applyJoinedRoom(roomId, response, joinedMessage),
     );
   };
 
@@ -303,9 +332,10 @@
   };
 
   const sendChat = () => {
-    if (!chatInput.value.trim() || !socket.value) return;
+    const message = chatInput.value.trim();
+    if (!message || !socket.value) return;
 
-    socket.value.emit('chat', { message: chatInput.value.trim() });
+    socket.value.emit('chat', { message: message.slice(0, 300) });
     chatInput.value = '';
   };
 

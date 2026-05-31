@@ -15,6 +15,10 @@ export interface BusinessError {
   data?: any;
 }
 
+const isSilentError = (error: any): boolean => {
+  return error?.config?.silent === true || error?.silent === true;
+};
+
 // 全局错误处理器
 export class GlobalErrorHandler {
   // 通用错误处理方法
@@ -24,7 +28,10 @@ export class GlobalErrorHandler {
 
   // 处理API错误
   static handleApiError(error: any, defaultMessage: string = '操作失败'): ApiError {
-    log.error('GlobalErrorHandler', 'API Error:', error);
+    const silent = isSilentError(error);
+    if (!silent) {
+      log.error('GlobalErrorHandler', 'API Error:', error);
+    }
 
     // 提取错误信息
     let message = defaultMessage;
@@ -84,11 +91,13 @@ export class GlobalErrorHandler {
     }
 
     // 显示错误提示
-    showNotification({
-      type: 'error',
-      title: '请求错误',
-      message,
-    });
+    if (!silent) {
+      showNotification({
+        type: 'error',
+        title: '请求错误',
+        message,
+      });
+    }
 
     // 特殊错误处理（登录页面不触发自动跳转）
     if (statusCode === 401 && !window.location.pathname.includes('/login')) {

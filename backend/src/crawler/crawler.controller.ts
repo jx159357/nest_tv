@@ -469,20 +469,6 @@ export class CrawlerController {
       throw new Error('无效的爬取数据：缺少标题');
     }
 
-    // 检查是否已存在相同标题的资源
-    const existingMedia = await this.mediaResourceService.findByTitle(data.title);
-    if (existingMedia) {
-      const syncResult = await this.syncPlaySources(existingMedia.id, data, source);
-      this.logger.log(`资源已存在，已同步播放源: ${data.title}`);
-      return {
-        mediaResourceId: existingMedia.id,
-        created: false,
-        playSourceCount: syncResult.created,
-        skippedPlaySources: syncResult.skipped,
-      };
-    }
-
-    // 转换数据格式
     const mediaData = {
       title: data.title,
       description: data.description || '',
@@ -504,7 +490,18 @@ export class CrawlerController {
       downloadUrls: Array.isArray(data.downloadUrls) ? data.downloadUrls : [],
     };
 
-    // 保存到数据库
+    const existingMedia = await this.mediaResourceService.findDuplicateCandidate(mediaData);
+    if (existingMedia) {
+      const syncResult = await this.syncPlaySources(existingMedia.id, data, source);
+      this.logger.log(`资源已存在，已同步播放源: ${data.title}`);
+      return {
+        mediaResourceId: existingMedia.id,
+        created: false,
+        playSourceCount: syncResult.created,
+        skippedPlaySources: syncResult.skipped,
+      };
+    }
+
     const mediaResource = await this.mediaResourceService.create(mediaData);
     const syncResult = await this.syncPlaySources(mediaResource.id, data, source);
     this.logger.log(`成功保存资源: ${data.title}`);

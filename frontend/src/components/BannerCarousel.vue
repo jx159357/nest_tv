@@ -15,9 +15,12 @@
         class="carousel-slide"
         :class="{ active: index === currentIndex }"
       >
-        <div class="slide-bg" :class="{ 'slide-bg-placeholder': !item.backdrop && !item.poster }">
+        <div
+          class="slide-bg"
+          :class="{ 'slide-bg-placeholder': !hasHeroImage(item, index) }"
+        >
           <img
-            v-if="item.backdrop || item.poster"
+            v-if="hasHeroImage(item, index)"
             :src="item.backdrop || item.poster"
             :alt="item.title"
             class="slide-bg-img"
@@ -25,7 +28,7 @@
             @load="onImageLoad(index)"
             @error="onImageError(index)"
           />
-          <div v-if="!item.backdrop && !item.poster" class="slide-placeholder-icon">
+          <div v-if="!hasHeroImage(item, index)" class="slide-placeholder-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <rect x="2" y="2" width="20" height="20" rx="2" />
               <circle cx="8" cy="8" r="2" />
@@ -73,8 +76,8 @@
             </div>
           </div>
 
-          <div v-if="item.poster" class="slide-poster">
-            <img :src="item.poster" :alt="item.title" />
+          <div v-if="item.poster && !failedPosterImages.has(index)" class="slide-poster">
+            <img :src="item.poster" :alt="item.title" @error="onPosterError(index)" />
           </div>
         </div>
       </div>
@@ -126,6 +129,8 @@
 
   const currentIndex = ref(0);
   const loadedImages = reactive(new Set<number>());
+  const failedHeroImages = reactive(new Set<number>());
+  const failedPosterImages = reactive(new Set<number>());
   const isPaused = ref(false);
 
   let timer: ReturnType<typeof setInterval> | null = null;
@@ -156,12 +161,21 @@
     return '精选推荐';
   };
 
+  const hasHeroImage = (item: MediaResource, index: number) =>
+    Boolean((item.backdrop || item.poster) && !failedHeroImages.has(index));
+
   const onImageLoad = (index: number) => {
     loadedImages.add(index);
+    failedHeroImages.delete(index);
   };
 
   const onImageError = (index: number) => {
     loadedImages.delete(index);
+    failedHeroImages.add(index);
+  };
+
+  const onPosterError = (index: number) => {
+    failedPosterImages.add(index);
   };
 
   const goTo = (index: number) => {
@@ -233,6 +247,8 @@
     () => props.items,
     () => {
       loadedImages.clear();
+      failedHeroImages.clear();
+      failedPosterImages.clear();
       currentIndex.value = 0;
       startAutoPlay();
     },
@@ -252,11 +268,12 @@
     position: relative;
     width: 100%;
     aspect-ratio: 21 / 9;
-    min-height: 300px;
-    max-height: 500px;
-    border-radius: 16px;
+    min-height: 360px;
+    max-height: 560px;
+    border-radius: var(--panel-radius);
     overflow: hidden;
-    background: var(--bg-primary);
+    background: var(--bg-cinema-soft);
+    box-shadow: 0 30px 76px rgba(0, 0, 0, 0.42);
     touch-action: pan-y;
   }
 
@@ -302,7 +319,7 @@
     object-fit: cover;
     opacity: 0;
     transition: opacity 0.5s ease;
-    filter: blur(2px) brightness(0.4);
+    filter: brightness(0.5) saturate(1.08);
     transform: scale(1.05);
   }
 
@@ -313,12 +330,9 @@
   .slide-bg-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-      to right,
-      color-mix(in srgb, var(--bg-page) 95%, transparent) 0%,
-      color-mix(in srgb, var(--bg-page) 60%, transparent) 50%,
-      color-mix(in srgb, var(--bg-page) 30%, transparent) 100%
-    );
+    background:
+      linear-gradient(to top, rgba(5, 6, 9, 0.94) 0%, rgba(5, 6, 9, 0.18) 52%),
+      linear-gradient(to right, rgba(5, 6, 9, 0.98) 0%, rgba(5, 6, 9, 0.66) 42%, rgba(5, 6, 9, 0.16) 100%);
   }
 
   .slide-content {
@@ -328,20 +342,20 @@
     align-items: center;
     justify-content: space-between;
     height: 100%;
-    padding: 40px 48px;
+    padding: 54px 58px 70px;
     gap: 32px;
   }
 
   .slide-info {
     flex: 1;
-    max-width: 560px;
+    max-width: 610px;
   }
 
   .slide-badge {
     display: inline-block;
-    padding: 5px 14px;
+    padding: 5px 12px;
     background: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-accent));
-    border-radius: 20px;
+    border-radius: 6px;
     font-size: 12px;
     font-weight: 600;
     color: var(--text-inverse);
@@ -349,7 +363,7 @@
   }
 
   .slide-title {
-    font-size: 32px;
+    font-size: clamp(30px, 4vw, 46px);
     font-weight: 700;
     color: var(--text-inverse);
     line-height: 1.25;
@@ -363,7 +377,7 @@
 
   .slide-desc {
     font-size: 14px;
-    color: var(--text-tertiary);
+    color: rgba(226, 232, 240, 0.76);
     line-height: 1.6;
     margin-bottom: 16px;
     display: -webkit-box;
@@ -398,8 +412,8 @@
   .meta-year,
   .meta-genre {
     padding: 3px 10px;
-    background: var(--border-secondary);
-    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
     font-size: 12px;
     color: var(--text-tertiary);
   }
@@ -416,7 +430,7 @@
     padding: 12px 24px;
     background: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-accent));
     border: none;
-    border-radius: 10px;
+    border-radius: 8px;
     color: var(--text-inverse);
     font-size: 14px;
     font-weight: 600;
@@ -426,7 +440,7 @@
 
   .btn-play:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+    box-shadow: 0 10px 28px var(--color-brand-glow);
   }
 
   .btn-play svg {
@@ -441,7 +455,7 @@
     padding: 12px 24px;
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 10px;
+    border-radius: 8px;
     color: var(--text-primary);
     font-size: 14px;
     font-weight: 500;
@@ -460,9 +474,9 @@
 
   .slide-poster {
     flex-shrink: 0;
-    width: 180px;
-    height: 252px;
-    border-radius: 12px;
+    width: 190px;
+    height: 266px;
+    border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
   }
@@ -481,7 +495,7 @@
     height: 40px;
     background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(8px);
-    border: 1px solid var(--border-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 50%;
     color: var(--text-inverse);
     cursor: pointer;
@@ -498,7 +512,7 @@
   }
 
   .carousel-arrow:hover {
-    background: rgba(99, 102, 241, 0.7);
+    background: rgba(229, 9, 20, 0.72);
   }
 
   .carousel-arrow svg {
@@ -561,12 +575,12 @@
   @media (max-width: 768px) {
     .banner-carousel {
       aspect-ratio: 16 / 9;
-      min-height: 220px;
-      border-radius: 12px;
+      min-height: 250px;
+      border-radius: var(--panel-radius);
     }
 
     .slide-content {
-      padding: 24px;
+      padding: 28px 24px 48px;
     }
 
     .slide-title {
@@ -594,6 +608,10 @@
   }
 
   @media (max-width: 480px) {
+    .banner-carousel {
+      min-height: 230px;
+    }
+
     .slide-poster {
       display: none;
     }

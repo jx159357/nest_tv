@@ -445,10 +445,13 @@ export class AdvancedSearchService {
 
     switch (sortBy) {
       case 'relevance':
-        // 相关性排序：优先匹配关键词的标题，然后评分
         if (keyword.trim()) {
           queryBuilder
-            .addOrderBy('CASE WHEN mediaResource.title LIKE :exactKeyword THEN 1 ELSE 2 END', 'ASC')
+            .addOrderBy(
+              'CASE WHEN mediaResource.title LIKE :exactKeyword THEN 1 ELSE 2 END',
+              'ASC',
+            )
+            .setParameter('exactKeyword', `%${keyword.trim()}%`)
             .addOrderBy('mediaResource.rating', order);
         } else {
           queryBuilder.addOrderBy('mediaResource.rating', order);

@@ -2,28 +2,41 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import HomeView from '@/views/HomeView.vue';
 
-const { routerPush, routeState, mediaStore, searchApi } = vi.hoisted(() => ({
-  routerPush: vi.fn(),
-  routeState: {
-    query: {} as Record<string, string>,
-  },
-  mediaStore: {
-    fetchPopularMedia: vi.fn(),
-    fetchLatestMedia: vi.fn(),
-    fetchTopRatedMedia: vi.fn(),
-    searchMedia: vi.fn(),
-  },
-  searchApi: {
-    getSuggestions: vi.fn(),
-    getPopularKeywords: vi.fn(),
-    getHistory: vi.fn(),
-    clearHistory: vi.fn(),
-    getRelatedKeywords: vi.fn(),
-    recordHistory: vi.fn(),
-  },
-}));
+const { routerPush, routeState, mediaStore, authStore, searchApi, watchHistoryApi } = vi.hoisted(
+  () => ({
+    routerPush: vi.fn(),
+    routeState: {
+      query: {} as Record<string, string>,
+    },
+    mediaStore: {
+      fetchPopularMedia: vi.fn(),
+      fetchLatestMedia: vi.fn(),
+      fetchTopRatedMedia: vi.fn(),
+      searchMedia: vi.fn(),
+    },
+    authStore: {
+      isAuthenticated: false,
+    },
+    searchApi: {
+      getSuggestions: vi.fn(),
+      getPopularKeywords: vi.fn(),
+      getHistory: vi.fn(),
+      clearHistory: vi.fn(),
+      getRelatedKeywords: vi.fn(),
+      recordHistory: vi.fn(),
+      streamSearch: vi.fn(),
+    },
+    watchHistoryApi: {
+      getContinueWatching: vi.fn(),
+    },
+  }),
+);
 
 vi.mock('vue-router', () => ({
+  RouterLink: {
+    props: ['to'],
+    template: '<a class="router-link-stub" :data-to="JSON.stringify(to)"><slot /></a>',
+  },
   useRoute: () => routeState,
   useRouter: () => ({
     push: routerPush,
@@ -34,8 +47,16 @@ vi.mock('@/stores/media', () => ({
   useMediaStore: () => mediaStore,
 }));
 
+vi.mock('@/stores/auth', () => ({
+  useAuthStore: () => authStore,
+}));
+
 vi.mock('@/api/search', () => ({
   searchApi,
+}));
+
+vi.mock('@/api/watchHistory', () => ({
+  watchHistoryApi,
 }));
 
 vi.mock('@/components/NavigationLayout.vue', () => ({
@@ -48,6 +69,14 @@ vi.mock('@/components/MediaCard.vue', () => ({
   default: {
     props: ['media'],
     template: '<button class="media-card" @click="$emit(\'click\')">{{ media.title }}</button>',
+  },
+}));
+
+vi.mock('@/components/BannerCarousel.vue', () => ({
+  default: {
+    props: ['items'],
+    template:
+      '<div class="banner-carousel-stub"><button v-for="item in items" :key="item.id" @click="$emit(\'detail\', item)">{{ item.title }}</button></div>',
   },
 }));
 
@@ -73,26 +102,41 @@ describe('HomeView', () => {
     mediaStore.fetchLatestMedia.mockReset();
     mediaStore.fetchTopRatedMedia.mockReset();
     mediaStore.searchMedia.mockReset();
+    watchHistoryApi.getContinueWatching.mockReset();
     searchApi.getSuggestions.mockReset();
     searchApi.getPopularKeywords.mockReset();
     searchApi.getHistory.mockReset();
     searchApi.clearHistory.mockReset();
     searchApi.getRelatedKeywords.mockReset();
     searchApi.recordHistory.mockReset();
+    searchApi.streamSearch.mockReset();
 
     mediaStore.fetchPopularMedia.mockResolvedValue([]);
     mediaStore.fetchLatestMedia.mockResolvedValue([]);
     mediaStore.fetchTopRatedMedia.mockResolvedValue([]);
     mediaStore.searchMedia.mockResolvedValue({ data: [] });
+    watchHistoryApi.getContinueWatching.mockResolvedValue([]);
     searchApi.getSuggestions.mockResolvedValue([]);
     searchApi.getPopularKeywords.mockResolvedValue([]);
     searchApi.getHistory.mockResolvedValue([]);
     searchApi.clearHistory.mockResolvedValue({ message: 'ok' });
     searchApi.getRelatedKeywords.mockResolvedValue([]);
     searchApi.recordHistory.mockResolvedValue({ success: true });
+    searchApi.streamSearch.mockImplementation((_keyword, options) => {
+      options.onDone?.();
+      return vi.fn();
+    });
   });
 
-  const mountView = () => mount(HomeView);
+  const mountView = () =>
+    mount(HomeView, {
+      global: {
+        stubs: {
+          RouterLink: true,
+          'router-link': true,
+        },
+      },
+    });
 
   it('loads home media lists on mount when there is no search query', async () => {
     mediaStore.fetchPopularMedia.mockResolvedValue([{ id: 1, title: '热门视频', rating: 8.8 }]);
@@ -102,9 +146,9 @@ describe('HomeView', () => {
     const wrapper = mountView();
     await flushPromises();
 
-    expect(mediaStore.fetchPopularMedia).toHaveBeenCalledWith(8);
-    expect(mediaStore.fetchLatestMedia).toHaveBeenCalledWith(8);
-    expect(mediaStore.fetchTopRatedMedia).toHaveBeenCalledWith(8);
+    expect(mediaStore.fetchPopularMedia).toHaveBeenCalledWith(8, { silent: true });
+    expect(mediaStore.fetchLatestMedia).toHaveBeenCalledWith(8, { silent: true });
+    expect(mediaStore.fetchTopRatedMedia).toHaveBeenCalledWith(8, 8, { silent: true });
     expect(wrapper.text()).toContain('热门视频');
     expect(wrapper.text()).toContain('最新视频');
     expect(wrapper.text()).toContain('高评分视频');
@@ -113,11 +157,12 @@ describe('HomeView', () => {
   it('navigates to search when keyword is submitted', async () => {
     const wrapper = mountView();
 
-    await wrapper.get('input[type="text"]').setValue('星际穿越');
-    await wrapper.get('button').trigger('click');
+    await wrapper.get('input[type="search"]').setValue('星际穿越');
+    await wrapper.get('form.home-search__form').trigger('submit');
+    await flushPromises();
 
     expect(routerPush).toHaveBeenCalledWith({
-      path: '/search',
+      path: '/',
       query: { q: '星际穿越' },
     });
     expect(searchApi.recordHistory).toHaveBeenCalledWith({ keyword: '星际穿越' });
@@ -136,14 +181,23 @@ describe('HomeView', () => {
 
   it('loads search results when route query q is present', async () => {
     routeState.query = { q: '星际穿越' };
-    mediaStore.searchMedia.mockResolvedValue({
-      data: [{ id: 9, title: '星际穿越', rating: 9.1 }],
+    searchApi.streamSearch.mockImplementation((_keyword, options) => {
+      options.onEvent({
+        type: 'media',
+        data: [{ id: 9, title: '星际穿越', rating: 9.1 }],
+        total: 1,
+      });
+      options.onDone?.();
+      return vi.fn();
     });
 
     const wrapper = mountView();
     await flushPromises();
 
-    expect(mediaStore.searchMedia).toHaveBeenCalledWith('星际穿越', { page: 1, limit: 12 });
+    expect(searchApi.streamSearch).toHaveBeenCalledWith(
+      '星际穿越',
+      expect.objectContaining({ limit: 20 }),
+    );
     expect(wrapper.text()).toContain('搜索结果');
     expect(wrapper.text()).toContain('星际穿越');
   });
@@ -154,7 +208,7 @@ describe('HomeView', () => {
     const wrapper = mountView();
     await flushPromises();
 
-    const input = wrapper.get('input[type="text"]');
+    const input = wrapper.get('input[type="search"]');
     await input.trigger('focus');
     await input.setValue('星际');
     await flushPromises();
@@ -169,7 +223,7 @@ describe('HomeView', () => {
     const wrapper = mountView();
     await flushPromises();
 
-    await wrapper.get('input[type="text"]').trigger('focus');
+    await wrapper.get('input[type="search"]').trigger('focus');
     await flushPromises();
 
     const clearButton = wrapper.findAll('button').find(button => button.text().includes('清空'));

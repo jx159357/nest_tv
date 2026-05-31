@@ -14,13 +14,14 @@ vi.mock('@/api/index', () => ({
 }));
 
 import { mediaApi } from '@/api/media';
+import { watchHistoryApi } from '@/api/watchHistory';
 
 describe('mediaApi', () => {
   it('disables client cache for user-specific media reads', async () => {
     apiGet.mockResolvedValue(undefined);
 
     await mediaApi.getFavorites({ limit: 20 });
-    await mediaApi.getWatchHistory({ page: 2 });
+    await watchHistoryApi.getMyWatchHistory({ page: 2 });
 
     expect(apiGet).toHaveBeenNthCalledWith(1, '/media/favorites', { params: { limit: 20 } }, false);
     expect(apiGet).toHaveBeenNthCalledWith(

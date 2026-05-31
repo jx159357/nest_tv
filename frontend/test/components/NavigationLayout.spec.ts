@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
-import NavigationLayout from '@/components/NavigationLayout.vue';
+import MainLayout from '@/layouts/MainLayout.vue';
 
 const { authStore, routeState, routerPush } = vi.hoisted(() => ({
   authStore: {
@@ -14,50 +14,45 @@ const { authStore, routeState, routerPush } = vi.hoisted(() => ({
 }));
 
 vi.mock('vue-router', () => ({
+  RouterLink: {
+    props: ['to'],
+    template: '<a class="router-link-stub" :data-to="JSON.stringify(to)"><slot /></a>',
+  },
+  RouterView: {
+    template: '<div class="router-view-stub" />',
+  },
   useRoute: () => routeState,
   useRouter: () => ({
     push: routerPush,
   }),
 }));
 
-const RouterLinkStub = {
-  props: ['to'],
-  template: '<a class="router-link-stub" :data-to="JSON.stringify(to)"><slot /></a>',
-};
-
 vi.mock('@/stores/auth', () => ({
   useAuthStore: () => authStore,
 }));
 
-describe('NavigationLayout', () => {
+describe('MainLayout navigation', () => {
   beforeEach(() => {
     authStore.logout.mockReset();
     routerPush.mockReset();
     routeState.path = '/';
   });
 
-  it('logs out from the mobile menu', async () => {
-    const wrapper = mount(NavigationLayout, {
+  it('logs out from the user menu', async () => {
+    const wrapper = mount(MainLayout, {
       global: {
-        stubs: { RouterLink: RouterLinkStub },
-      },
-      slots: {
-        default: '<div>content</div>',
+        stubs: { RouterLink: true, RouterView: true },
       },
     });
 
-    const menuButton = wrapper
-      .findAll('button')
-      .find(button => !button.classes().includes('mobile-logout-button'));
-    expect(menuButton).toBeTruthy();
-    await menuButton!.trigger('click');
+    await wrapper.get('.main-header__user-btn').trigger('click');
     await flushPromises();
 
-    const logoutButton = wrapper.find('.mobile-logout-button');
-    expect(logoutButton.exists()).toBe(true);
-    await logoutButton.trigger('click');
+    const logoutButton = wrapper.findAll('button').find(button => button.text().includes('退出登录'));
+    expect(logoutButton).toBeTruthy();
+    await logoutButton!.trigger('click');
 
     expect(authStore.logout).toHaveBeenCalledTimes(1);
-    expect(routerPush).toHaveBeenCalledWith('/login');
+    expect(routerPush).toHaveBeenCalledWith('/');
   });
 });

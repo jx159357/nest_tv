@@ -62,7 +62,9 @@ export const useMediaStore = defineStore('media', () => {
       const response = await mediaApi.getPopularMedia(limit, params);
       return response;
     } catch (error) {
-      log.error('MediaStore', '获取热门媒体失败:', error);
+      if (!(error as any)?.silent) {
+        log.error('MediaStore', '获取热门媒体失败:', error);
+      }
       throw error;
     }
   };
@@ -72,7 +74,9 @@ export const useMediaStore = defineStore('media', () => {
       const response = await mediaApi.getLatestMedia(limit, params);
       return response;
     } catch (error) {
-      log.error('MediaStore', '获取最新媒体失败:', error);
+      if (!(error as any)?.silent) {
+        log.error('MediaStore', '获取最新媒体失败:', error);
+      }
       throw error;
     }
   };
@@ -82,7 +86,9 @@ export const useMediaStore = defineStore('media', () => {
       const response = await mediaApi.getTopRatedMedia(limit, minRating, params);
       return response;
     } catch (error) {
-      log.error('MediaStore', '获取高评分媒体失败:', error);
+      if (!(error as any)?.silent) {
+        log.error('MediaStore', '获取高评分媒体失败:', error);
+      }
       throw error;
     }
   };

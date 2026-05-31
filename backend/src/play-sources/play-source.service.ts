@@ -20,6 +20,13 @@ interface PlaySourceValidationResult {
   magnetInfo?: Record<string, unknown>;
 }
 
+interface PlaySourceDuplicateGroup {
+  keeper: Pick<PlaySource, 'id' | 'mediaResourceId' | 'url' | 'status' | 'isActive' | 'priority'>;
+  duplicates: Array<
+    Pick<PlaySource, 'id' | 'mediaResourceId' | 'url' | 'status' | 'isActive' | 'priority'>
+  >;
+}
+
 @Injectable()
 export class PlaySourceService {
   constructor(
@@ -91,7 +98,20 @@ export class PlaySourceService {
   }
 
   async create(createPlaySourceDto: CreatePlaySourceDto): Promise<PlaySource> {
+    const url = this.normalizeUrl(createPlaySourceDto.url);
+    const existing = await this.playSourceRepository.findOne({
+      where: {
+        mediaResourceId: createPlaySourceDto.mediaResourceId,
+        url,
+      },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
     const playSource = this.playSourceRepository.create(createPlaySourceDto);
+    playSource.url = url;
     playSource.status = PlaySourceStatus.ACTIVE;
     return this.playSourceRepository.save(playSource);
   }
@@ -289,11 +309,64 @@ export class PlaySourceService {
   private deduplicateByUrl(sources: PlaySource[]): PlaySource[] {
     const seen = new Set<string>();
     return sources.filter(s => {
-      if (!s.url) return false;
-      if (seen.has(s.url)) return false;
-      seen.add(s.url);
+      const key = this.normalizeUrl(s.url);
+      if (!key) return false;
+      if (seen.has(key)) return false;
+      seen.add(key);
       return true;
     });
+  }
+
+  async deduplicatePlaySources(dryRun = true): Promise<{
+    dryRun: boolean;
+    duplicateGroups: number;
+    deactivated: number;
+    groups: PlaySourceDuplicateGroup[];
+  }> {
+    const sources = await this.playSourceRepository.find({
+      order: { mediaResourceId: 'ASC', priority: 'ASC', id: 'ASC' },
+    });
+    const grouped = new Map<string, PlaySource[]>();
+
+    for (const source of sources) {
+      const key = `${source.mediaResourceId}:${this.normalizeUrl(source.url)}`;
+      if (!source.mediaResourceId || key.endsWith(':')) continue;
+      const group = grouped.get(key) || [];
+      group.push(source);
+      grouped.set(key, group);
+    }
+
+    const duplicateGroups = Array.from(grouped.values()).filter(group => group.length > 1);
+    const previewGroups: PlaySourceDuplicateGroup[] = [];
+    let deactivated = 0;
+
+    for (const group of duplicateGroups) {
+      const [keeper, ...duplicates] = this.sortPlaySources(group);
+      previewGroups.push({
+        keeper: this.toPlaySourcePreview(keeper),
+        duplicates: duplicates.map(source => this.toPlaySourcePreview(source)),
+      });
+
+      if (dryRun) {
+        deactivated += duplicates.filter(source => source.isActive).length;
+        continue;
+      }
+
+      for (const duplicate of duplicates) {
+        if (!duplicate.isActive) continue;
+        duplicate.isActive = false;
+        duplicate.status = PlaySourceStatus.INACTIVE;
+        await this.playSourceRepository.save(duplicate);
+        deactivated++;
+      }
+    }
+
+    return {
+      dryRun,
+      duplicateGroups: duplicateGroups.length,
+      deactivated,
+      groups: previewGroups,
+    };
   }
 
   private async validatePlaySource(playSource: PlaySource): Promise<PlaySourceValidationResult> {
@@ -685,5 +758,22 @@ export class PlaySourceService {
   private sortPlaySources(sources: PlaySource[]): PlaySource[] {
     const now = new Date();
     return [...sources].sort((left, right) => comparePlaySources(left, right, now));
+  }
+
+  private normalizeUrl(url?: string): string {
+    return String(url || '').trim();
+  }
+
+  private toPlaySourcePreview(
+    source: PlaySource,
+  ): Pick<PlaySource, 'id' | 'mediaResourceId' | 'url' | 'status' | 'isActive' | 'priority'> {
+    return {
+      id: source.id,
+      mediaResourceId: source.mediaResourceId,
+      url: source.url,
+      status: source.status,
+      isActive: source.isActive,
+      priority: source.priority,
+    };
   }
 }

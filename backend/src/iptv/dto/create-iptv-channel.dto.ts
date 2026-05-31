@@ -86,4 +86,36 @@ export class CreateIPTVChannelDto {
   @IsArray()
   @IsString({ each: true })
   backupUrls?: string[];
+
+  @ApiProperty({ description: '质量评分', required: false, default: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  qualityScore?: number = 0;
+
+  @ApiProperty({ description: '响应时间（毫秒）', required: false, default: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  responseTime?: number = 0;
+
+  @ApiProperty({ description: '来源名称', required: false })
+  @IsOptional()
+  @IsString()
+  sourceName?: string;
+
+  @ApiProperty({ description: '来源URL', required: false })
+  @IsOptional()
+  @IsString()
+  sourceUrl?: string;
+
+  @ApiProperty({ description: '是否支持IPv6', required: false, default: false })
+  @IsOptional()
+  @IsBoolean()
+  isIpv6?: boolean = false;
+
+  @ApiProperty({ description: '频道分类', required: false })
+  @IsOptional()
+  @IsString()
+  category?: string;
 }

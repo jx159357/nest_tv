@@ -7,6 +7,7 @@
   import Artplayer from 'artplayer';
   import Hls from 'hls.js';
   import artplayerPluginHlsControl from 'artplayer-plugin-hls-control';
+  import { iptvApi } from '@/api/iptv';
   import { log } from '@/utils/logger';
 
   interface Props {
@@ -27,6 +28,9 @@
   const emit = defineEmits<{
     ready: [player: Artplayer];
     timeupdate: [currentTime: number, duration: number];
+    play: [currentTime: number];
+    pause: [currentTime: number];
+    seeked: [currentTime: number];
     ended: [];
     error: [error: string];
   }>();
@@ -49,7 +53,7 @@
   };
 
   const getProxiedUrl = (url: string): string => {
-    return `/iptv/stream/proxy?url=${encodeURIComponent(url)}`;
+    return iptvApi.getStreamProxyUrl(url);
   };
 
   const getPlayableUrl = (url: string): string => {
@@ -98,7 +102,11 @@
 
     let mediaErrorRetries = 0;
     hlsInstance.on(Hls.Events.ERROR, (_event, data) => {
-      log.error('ArtPlayer', 'hls.js error', { type: data.type, details: data.details, fatal: data.fatal });
+      log.error('ArtPlayer', 'hls.js error', {
+        type: data.type,
+        details: data.details,
+        fatal: data.fatal,
+      });
       if (data.fatal) {
         switch (data.type) {
           case Hls.ErrorTypes.NETWORK_ERROR:
@@ -157,8 +165,8 @@
       backdrop: true,
       playsInline: true,
       volume: 0.7,
-      fullscreen: true,
-      fullscreenWeb: true,
+      fullscreen: false,
+      fullscreenWeb: false,
       subtitleOffset: false,
       miniProgressBar: true,
     });
@@ -173,6 +181,24 @@
     art.on('video:timeupdate', () => {
       if (art) {
         emit('timeupdate', art.currentTime, art.duration);
+      }
+    });
+
+    art.on('video:play', () => {
+      if (art) {
+        emit('play', art.currentTime);
+      }
+    });
+
+    art.on('video:pause', () => {
+      if (art) {
+        emit('pause', art.currentTime);
+      }
+    });
+
+    art.on('video:seeked', () => {
+      if (art) {
+        emit('seeked', art.currentTime);
       }
     });
 

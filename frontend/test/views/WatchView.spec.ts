@@ -54,11 +54,34 @@ vi.mock('@/api/watchHistory', () => ({
   watchHistoryApi,
 }));
 
+vi.mock('@/components/ArtPlayerWrapper.vue', () => ({
+  default: {
+    props: ['src', 'title', 'poster', 'autoplay', 'currentTime'],
+    emits: ['ready', 'timeupdate', 'play', 'pause', 'seeked', 'ended', 'error'],
+    template:
+      '<div class="art-player-wrapper-stub" :data-src="src" :data-current-time="currentTime" />',
+  },
+}));
+
 vi.mock('@/components/DanmakuPlayer.vue', () => ({
   default: {
     props: ['videoId', 'mediaResourceId'],
     template:
       '<div class="danmaku-player-stub" :data-video-id="videoId" :data-media-resource-id="mediaResourceId" />',
+  },
+}));
+
+vi.mock('@/components/WatchRoom.vue', () => ({
+  default: {
+    props: ['mediaId', 'mediaTitle'],
+    template: '<div class="watch-room-stub" />',
+  },
+}));
+
+vi.mock('@/components/PlayerGestureControl.vue', () => ({
+  default: {
+    props: ['videoElement', 'enabled'],
+    template: '<div class="player-gesture-control-stub" />',
   },
 }));
 
@@ -105,16 +128,8 @@ describe('WatchView', () => {
     });
     await flushPromises();
 
-    const video = wrapper.get('video');
-    Object.defineProperty(video.element, 'duration', {
-      configurable: true,
-      value: 3600,
-    });
-    video.element.currentTime = 0;
-
-    await video.trigger('loadedmetadata');
-
-    expect(video.element.currentTime).toBe(128);
+    const player = wrapper.get('.art-player-wrapper-stub');
+    expect(player.attributes('data-current-time')).toBe('128');
   });
 
   it('renders safely when media rating is missing', async () => {

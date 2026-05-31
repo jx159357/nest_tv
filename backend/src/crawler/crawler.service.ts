@@ -90,6 +90,7 @@ export class CrawlerService {
   private readonly logger = new Logger(CrawlerService.name);
   private readonly httpClient: AxiosInstance;
   private readonly cache: Map<string, { data: CrawledData; timestamp: number }> = new Map();
+  private readonly inFlightCrawls: Map<string, Promise<CrawlWebsiteResult>> = new Map();
   private readonly proxySettings: CrawlerProxySettings | undefined = (
     CRAWLER_CONFIG as typeof CRAWLER_CONFIG & { proxy?: CrawlerProxySettings }
   ).proxy;
@@ -313,7 +314,7 @@ export class CrawlerService {
   private async fetchWithRetry(
     url: string,
     options: AxiosRequestConfig = {},
-    maxRetries: number = 3,
+    maxRetries: number = CRAWLER_CONFIG.request.retries,
     retryDelay: number = 2000,
   ): Promise<AxiosResponse<Buffer>> {
     let lastError: Error = new Error('Unknown error');
@@ -333,6 +334,7 @@ export class CrawlerService {
         return response;
       } catch (error: unknown) {
         lastError = this.toError(error);
+        const shouldRetry = this.shouldRetryRequest(error);
 
         this.appLogger.logExternalServiceError(
           'Crawler HTTP Client',
@@ -342,17 +344,32 @@ export class CrawlerService {
           requestId,
         );
 
-        if (attempt < maxRetries) {
+        if (attempt < maxRetries && shouldRetry) {
           // 指数退避
           const delay = retryDelay * Math.pow(2, attempt - 1);
           this.appLogger.warn(`等待 ${delay}ms 后重试...`, 'CRAWLER_RETRY', requestId);
           await this.delay(delay);
+        } else {
+          break;
         }
       }
     }
 
     this.appLogger.error(`所有重试失败: ${url}`, 'CRAWLER_FAILED', lastError.stack, requestId);
     throw lastError;
+  }
+
+  private shouldRetryRequest(error: unknown): boolean {
+    if (!axios.isAxiosError(error)) {
+      return true;
+    }
+
+    const status = error.response?.status;
+    if (!status) {
+      return true;
+    }
+
+    return status === 408 || status === 429 || status >= 500;
   }
 
   /**
@@ -450,6 +467,23 @@ export class CrawlerService {
    * @returns 爬取的结果，包含成功/失败状态和详细信息
    */
   async crawlWebsite(targetName: string, url: string): Promise<CrawlWebsiteResult> {
+    const crawlKey = `${targetName}:${url}`;
+    const inFlight = this.inFlightCrawls.get(crawlKey);
+    if (inFlight) {
+      return inFlight;
+    }
+
+    const task = this.doCrawlWebsite(targetName, url);
+    this.inFlightCrawls.set(crawlKey, task);
+
+    try {
+      return await task;
+    } finally {
+      this.inFlightCrawls.delete(crawlKey);
+    }
+  }
+
+  private async doCrawlWebsite(targetName: string, url: string): Promise<CrawlWebsiteResult> {
     const requestId = this.generateRequestId();
 
     try {
@@ -635,7 +669,10 @@ export class CrawlerService {
     // 方法1: 从 #downlist 提取磁力链接（display:none 也能解析）
     $('#downlist a').each((_, element) => {
       const href = $(element).attr('href');
-      if (href && (href.startsWith('magnet:') || href.startsWith('thunder://') || href.startsWith('ed2k://'))) {
+      if (
+        href &&
+        (href.startsWith('magnet:') || href.startsWith('thunder://') || href.startsWith('ed2k://'))
+      ) {
         downloadUrls.push(href);
       }
     });
@@ -649,12 +686,14 @@ export class CrawlerService {
     });
 
     // 方法3: 从 #Zoom 和 .co_content8 提取各种链接
-    $('#Zoom a, .co_content8 a, a[href*="thunder"], a[href*="magnet"], a[href*="ftp"]').each((_, element) => {
-      const href = $(element).attr('href');
-      if (href && !href.includes('javascript') && !href.includes('#')) {
-        downloadUrls.push(this.resolveUrl(href, target.baseUrl)!);
-      }
-    });
+    $('#Zoom a, .co_content8 a, a[href*="thunder"], a[href*="magnet"], a[href*="ftp"]').each(
+      (_, element) => {
+        const href = $(element).attr('href');
+        if (href && !href.includes('javascript') && !href.includes('#')) {
+          downloadUrls.push(this.resolveUrl(href, target.baseUrl)!);
+        }
+      },
+    );
 
     // 方法4: 从页面全文文本中提取链接
     const contentText = $('#Zoom, .co_content8').text();
@@ -678,8 +717,9 @@ export class CrawlerService {
       actors: this.extractDyttActors($),
       genres: this.extractDyttGenres($),
       releaseDate,
-      poster: this.resolveUrl($(target.selectors.poster).first().attr('src'), target.baseUrl)
-        || this.extractPosterFromPage($, target.baseUrl),
+      poster:
+        this.resolveUrl($(target.selectors.poster).first().attr('src'), target.baseUrl) ||
+        this.extractPosterFromPage($, target.baseUrl),
       rating: 6.0,
       source: target.name,
       downloadUrls: uniqueUrls,
@@ -812,7 +852,8 @@ export class CrawlerService {
 
     return {
       title: title || '未知标题',
-      description: descriptionParts.join('\n').substring(0, 1000) || this.extractDescriptionFromPage($),
+      description:
+        descriptionParts.join('\n').substring(0, 1000) || this.extractDescriptionFromPage($),
       type,
       director: director || undefined,
       actors: actors || undefined,
@@ -877,7 +918,9 @@ export class CrawlerService {
     if (zoomText) {
       // 提取 ◎ 开头的描述行
       const lines = zoomText.split('\n').filter(line => line.trim().length > 5);
-      const descLines = lines.filter(line => line.includes('◎') || line.includes('简') || line.includes('剧情'));
+      const descLines = lines.filter(
+        line => line.includes('◎') || line.includes('简') || line.includes('剧情'),
+      );
       if (descLines.length > 0) {
         description = descLines[0].replace(/◎\s*/, '').trim();
       }
@@ -1157,9 +1200,7 @@ export class CrawlerService {
       }
     }
 
-    this.logger.log(
-      `批量爬取完成: 成功 ${results.length}/${urls.length}, 失败 ${failedCount}`,
-    );
+    this.logger.log(`批量爬取完成: 成功 ${results.length}/${urls.length}, 失败 ${failedCount}`);
     return results;
   }
 
@@ -1504,9 +1545,9 @@ export class CrawlerService {
         // DYTT: 从分类列表中提取详情页链接
         $(
           '.co_area2 .co_content8 ul li a, ' +
-          '.list_area li a, ' +
-          '.co_area2 a[href*="html"], ' +
-          '#header .nav a',
+            '.list_area li a, ' +
+            '.co_area2 a[href*="html"], ' +
+            '#header .nav a',
         ).each((_, el) => {
           const href = $(el).attr('href');
           if (href && !href.startsWith('javascript') && href !== '#' && href !== '/') {
@@ -1571,21 +1612,14 @@ export class CrawlerService {
   async saveCrawledData(
     data: CrawledData,
     source: string,
-  ): Promise<{ mediaResourceId: number; created: boolean; playSourceCount: number; skippedPlaySources: number }> {
+  ): Promise<{
+    mediaResourceId: number;
+    created: boolean;
+    playSourceCount: number;
+    skippedPlaySources: number;
+  }> {
     if (!data || !data.title) {
       throw new Error('无效的爬取数据：缺少标题');
-    }
-
-    const existingMedia = await this.mediaResourceService.findByTitle(data.title);
-    if (existingMedia) {
-      const syncResult = await this.syncPlaySources(existingMedia.id, data, source);
-      this.logger.log(`资源已存在，已同步播放源: ${data.title}`);
-      return {
-        mediaResourceId: existingMedia.id,
-        created: false,
-        playSourceCount: syncResult.created,
-        skippedPlaySources: syncResult.skipped,
-      };
     }
 
     const mediaData = {
@@ -1608,6 +1642,18 @@ export class CrawlerService {
       episodeCount: data.episodeCount || undefined,
       downloadUrls: Array.isArray(data.downloadUrls) ? data.downloadUrls : [],
     };
+
+    const existingMedia = await this.mediaResourceService.findDuplicateCandidate(mediaData);
+    if (existingMedia) {
+      const syncResult = await this.syncPlaySources(existingMedia.id, data, source);
+      this.logger.log(`资源已存在，已同步播放源: ${data.title}`);
+      return {
+        mediaResourceId: existingMedia.id,
+        created: false,
+        playSourceCount: syncResult.created,
+        skippedPlaySources: syncResult.skipped,
+      };
+    }
 
     const mediaResource = await this.mediaResourceService.create(mediaData);
     const syncResult = await this.syncPlaySources(mediaResource.id, data, source);
@@ -1640,9 +1686,7 @@ export class CrawlerService {
     let skipped = 0;
 
     // 从 metadata 获取来源名称列表
-    const sourceNames = Array.isArray(data.metadata?.sourceNames)
-      ? data.metadata.sourceNames
-      : [];
+    const sourceNames = Array.isArray(data.metadata?.sourceNames) ? data.metadata.sourceNames : [];
 
     for (const [index, url] of urls.entries()) {
       if (existingUrls.has(url)) {

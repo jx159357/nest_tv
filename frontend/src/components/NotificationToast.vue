@@ -114,7 +114,6 @@
     box-shadow: var(--shadow-lg);
     border: 1px solid var(--border-primary);
     pointer-events: auto;
-    overflow: hidden;
     transform-origin: top right;
     transition: all 0.3s ease;
   }

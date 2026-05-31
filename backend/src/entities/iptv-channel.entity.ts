@@ -78,10 +78,58 @@ export class IPTVChannel {
   @Column({ type: 'json', nullable: true })
   backupUrls?: string[]; // 备用URL列表
 
+  @Column({ type: 'float', default: 0 })
+  qualityScore: number; // 质量评分（0-100，基于响应时间、可用性等）
+
+  @Column({ type: 'int', default: 0 })
+  responseTime: number; // 响应时间（毫秒）
+
+  @Column({ length: 100, nullable: true })
+  sourceName?: string; // 来源名称（如：fanmingming、iptv-org等）
+
+  @Column({ length: 500, nullable: true })
+  sourceUrl?: string; // 来源URL（原始播放列表地址）
+
+  @Column({ type: 'int', default: 0 })
+  consecutiveFailures: number; // 连续失败次数（超过阈值自动禁用）
+
+  @Column({ default: false })
+  isIpv6: boolean; // 是否支持IPv6
+
+  @Column({ length: 50, nullable: true })
+  category?: string; // 频道分类（如：news/sports/movie/entertainment）
+
   // 关联的媒体资源（多对多，用于将IPTV频道关联到影视资源）
   @ManyToMany(() => MediaResource, media => media.iptvChannels)
   @JoinTable()
   mediaResources: MediaResource[];
+
+  /**
+   * 计算质量评分
+   */
+  calculateQualityScore(): number {
+    let score = 100;
+
+    // 响应时间扣分（超过3秒开始扣分）
+    if (this.responseTime > 3000) {
+      score -= Math.min(30, (this.responseTime - 3000) / 1000 * 5);
+    }
+
+    // 连续失败扣分
+    score -= this.consecutiveFailures * 15;
+
+    // 有备用URL加分
+    if (this.backupUrls && this.backupUrls.length > 0) {
+      score += Math.min(10, this.backupUrls.length * 2);
+    }
+
+    // 有EPG加分
+    if (this.epgId) {
+      score += 5;
+    }
+
+    return Math.max(0, Math.min(100, Math.round(score)));
+  }
 
   /**
    * 获取主要流媒体URL

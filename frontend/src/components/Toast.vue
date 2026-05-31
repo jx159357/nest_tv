@@ -306,7 +306,6 @@
     box-shadow: var(--shadow-lg);
     border: 1px solid var(--border-primary);
     pointer-events: auto;
-    overflow: hidden;
     max-width: 100%;
     transform-origin: top right;
   }

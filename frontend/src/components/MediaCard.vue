@@ -71,11 +71,17 @@
         <h3 class="media-card__title">{{ media.title }}</h3>
 
         <div v-if="showMeta" class="media-card__meta">
-          <span v-if="showViewCount && media.viewCount" class="media-card__views">
-            {{ formattedViewCount }}次播放
+          <span v-if="showReleaseDate && releaseYear" class="media-card__meta-pill">
+            {{ releaseYear }}
           </span>
-          <span v-if="showReleaseDate && media.releaseDate" class="media-card__date">
-            {{ formattedDate }}
+          <span v-if="media.quality" class="media-card__meta-pill media-card__meta-pill--quality">
+            {{ qualityLabel }}
+          </span>
+          <span v-if="sourceCount > 0" class="media-card__meta-pill">
+            {{ sourceCount }}源
+          </span>
+          <span v-if="showViewCount && media.viewCount" class="media-card__views">
+            {{ formattedViewCount }}次
           </span>
         </div>
       </div>
@@ -127,6 +133,7 @@
 
 <script setup lang="ts">
   import { computed, ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
+  import { iptvApi } from '@/api/iptv';
   import type { MediaResource } from '@/types/media';
   import { useLongPress } from '@/composables/useLongPress';
 
@@ -144,12 +151,6 @@
       return `${(count / 10000).toFixed(1)}万`;
     }
     return count.toString();
-  };
-
-  const formatDate = (dateString: string | Date): string => {
-    if (!dateString) return '';
-    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
-    return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'short' });
   };
 
   interface Props {
@@ -214,7 +215,7 @@
     const url = props.media.poster;
     if (!url) return '';
     if (useProxy.value && (url.startsWith('http://') || url.startsWith('https://'))) {
-      return `/iptv/image/proxy?url=${encodeURIComponent(url)}`;
+      return iptvApi.getImageProxyUrl(url);
     }
     return url;
   });
@@ -223,7 +224,27 @@
 
   const formattedViewCount = computed(() => formatViewCount(props.media.viewCount));
 
-  const formattedDate = computed(() => formatDate(props.media.releaseDate ?? ''));
+  const releaseYear = computed(() => {
+    if (!props.media.releaseDate) return '';
+    const date =
+      typeof props.media.releaseDate === 'string'
+        ? new Date(props.media.releaseDate)
+        : props.media.releaseDate;
+    const year = date.getFullYear();
+    return Number.isNaN(year) ? '' : String(year);
+  });
+
+  const qualityLabel = computed(() => {
+    const map: Record<string, string> = {
+      sd: 'SD',
+      hd: 'HD',
+      full_hd: '1080P',
+      blue_ray: '蓝光',
+    };
+    return map[props.media.quality] || String(props.media.quality).toUpperCase();
+  });
+
+  const sourceCount = computed(() => props.media.playSources?.length ?? 0);
 
   const cardClasses = computed(() => [
     `media-card--${props.size}`,
@@ -291,6 +312,7 @@
 
     observer.value.observe(target);
 
+
     fallbackTimer = setTimeout(() => {
       if (!shouldLoadImage.value) {
         shouldLoadImage.value = true;
@@ -327,11 +349,12 @@
 
 <style scoped>
   .media-card {
-    background: var(--bg-card);
-    border-radius: var(--radius-xl);
+    background: transparent;
+    border-radius: var(--poster-radius);
     overflow: hidden;
     transition: all var(--transition-normal);
-    border: 1px solid var(--border-primary);
+    border: 0;
+    min-width: 0;
   }
 
   .media-card--clickable {
@@ -339,9 +362,7 @@
   }
 
   .media-card--hoverable:hover {
-    transform: translateY(-6px);
-    box-shadow: var(--shadow-xl);
-    border-color: var(--color-brand-primary);
+    transform: translateY(-3px);
   }
 
   .media-card--loading {
@@ -392,7 +413,11 @@
     position: relative;
     aspect-ratio: 2 / 3;
     overflow: hidden;
-    background: var(--bg-page);
+    background: var(--bg-card);
+    border-radius: 8px;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+      0 10px 24px rgba(0, 0, 0, 0.22);
   }
 
   .media-card__image-img {
@@ -413,7 +438,7 @@
   }
 
   .media-card:hover .media-card__image-img--loaded {
-    transform: scale(1.08);
+    transform: scale(1.06);
   }
 
   .media-card__image-placeholder {
@@ -429,7 +454,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--bg-page);
+    background: var(--bg-card);
     color: var(--text-muted);
   }
 
@@ -442,7 +467,12 @@
   .media-card__overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 50%);
+    background: linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.88) 0%,
+      rgba(0, 0, 0, 0.2) 58%,
+      transparent 100%
+    );
     opacity: 0;
     transition: opacity var(--transition-normal);
     display: flex;
@@ -455,8 +485,8 @@
   }
 
   .media-card__play-btn {
-    width: 52px;
-    height: 52px;
+    width: 44px;
+    height: 44px;
     background: var(--color-brand-primary);
     border-radius: var(--radius-full);
     display: flex;
@@ -464,7 +494,7 @@
     justify-content: center;
     transform: scale(0.8);
     transition: transform var(--transition-normal);
-    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.5);
+    box-shadow: 0 12px 32px var(--color-brand-glow);
   }
 
   .media-card:hover .media-card__play-btn {
@@ -487,9 +517,9 @@
     align-items: center;
     gap: var(--spacing-1);
     padding: var(--spacing-1) var(--spacing-2);
-    background: rgba(0, 0, 0, 0.75);
+    background: rgba(0, 0, 0, 0.78);
     backdrop-filter: blur(8px);
-    border-radius: var(--radius-md);
+    border-radius: 6px;
     font-size: var(--font-size-xs);
     color: var(--color-brand-secondary);
     font-weight: var(--font-weight-semibold);
@@ -506,12 +536,8 @@
     bottom: var(--spacing-2);
     left: var(--spacing-2);
     padding: var(--spacing-1) var(--spacing-2);
-    background: linear-gradient(
-      135deg,
-      var(--color-brand-primary),
-      var(--color-brand-primary-light)
-    );
-    border-radius: var(--radius-md);
+    background: rgba(229, 9, 20, 0.9);
+    border-radius: 6px;
     font-size: 11px;
     font-weight: var(--font-weight-semibold);
     color: var(--text-inverse);
@@ -519,15 +545,16 @@
 
   /* 内容区域 */
   .media-card__content {
-    padding: var(--spacing-3);
+    padding: 8px 1px 0;
   }
 
   .media-card__title {
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
+    font-size: 14px;
+    font-weight: var(--font-weight-semibold);
     color: var(--text-primary);
     margin-bottom: var(--spacing-1);
-    line-height: var(--line-height-relaxed);
+    line-height: 1.35;
+    min-height: 38px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -542,21 +569,42 @@
   .media-card__meta {
     display: flex;
     align-items: center;
-    gap: var(--spacing-2);
+    flex-wrap: wrap;
+    gap: 5px;
     font-size: var(--font-size-xs);
     color: var(--text-muted);
+    min-height: 20px;
   }
 
   .media-card__views,
-  .media-card__date {
+  .media-card__date,
+  .media-card__meta-pill {
     display: flex;
     align-items: center;
     gap: var(--spacing-1);
   }
 
+  .media-card__meta-pill {
+    min-height: 20px;
+    padding: 0 7px;
+    border: 1px solid var(--border-primary);
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.045);
+    color: var(--text-tertiary);
+    font-weight: var(--font-weight-medium);
+    line-height: 1;
+    max-width: 100%;
+  }
+
+  .media-card__meta-pill--quality {
+    border-color: var(--color-brand-border);
+    background: var(--color-brand-overlay);
+    color: var(--color-brand-primary-light);
+  }
+
   /* 尺寸变体 */
   .media-card--small .media-card__content {
-    padding: var(--spacing-2);
+    padding: 8px 2px 0;
   }
 
   .media-card--small .media-card__title {
@@ -564,7 +612,7 @@
   }
 
   .media-card--large .media-card__content {
-    padding: var(--spacing-4);
+    padding: 12px 2px 0;
   }
 
   .media-card--large .media-card__title {

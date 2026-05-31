@@ -39,19 +39,23 @@ frontend/src/
 │   └── watch-room.ts      # 观影房 API
 │
 ├── components/            # 可复用组件
-│   ├── ArtPlayerWrapper.vue    # ArtPlayer 封装
-│   ├── DanmakuPlayer.vue       # 弹幕播放器
+│   ├── AIChatPanel.vue         # AI 对话面板
+│   ├── ArtPlayerWrapper.vue    # ArtPlayer 封装 (HLS.js 集成)
+│   ├── BannerCarousel.vue      # 首页轮播横幅
+│   ├── DanmakuPlayer.vue       # 弹幕播放器 (WebSocket)
+│   ├── EmptyState.vue          # 空状态占位
 │   ├── EnhancedModal.vue       # 增强模态框
-│   ├── IPTVChannelCard.vue     # IPTV 频道卡片
-│   ├── IPTVPlayer.vue          # IPTV 播放器
-│   ├── MediaCard.vue           # 媒体卡片
+│   ├── EpgTimeline.vue         # EPG 节目单时间线 (列表/时间线视图)
+│   ├── GlobalProgressBar.vue   # 全局进度条
+│   ├── PlayerGestureControl.vue # 播放器手势控制
+│   ├── InlineNotice.vue        # 行内提示
+│   ├── LoadingSpinner.vue      # 加载动画
+│   ├── MediaCard.vue           # 媒体卡片 (长按菜单、懒加载、代理回退)
 │   ├── NotificationToast.vue   # 通知提示
-│   ├── SearchBar.vue           # 搜索栏
-│   ├── VideoPlayer.vue         # 视频播放器
-│   └── ui/                     # UI 基础组件
-│       ├── BaseButton.vue
-│       ├── BaseInput.vue
-│       └── BaseModal.vue
+│   ├── TextClamp.vue           # 文本折叠
+│   ├── Toast.vue               # Toast 提示
+│   ├── UpdateNotification.vue  # 更新通知
+│   └── WatchRoom.vue           # 观影房组件
 │
 ├── layouts/               # 布局组件
 │   ├── AdminLayout.vue    # 管理后台布局
@@ -87,42 +91,43 @@ frontend/src/
 │   ├── stream.ts          # 流式请求
 │   └── validation.ts      # 表单验证
 │
-├── views/                 # 页面视图
-│   ├── 公开页面
-│   │   ├── HomeView.vue          # 首页
+├── views/                 # 页面视图 (29个)
+│   ├── 公开页面 (无需登录)
+│   │   ├── HomeView.vue          # 首页 (BannerCarousel + 分类推荐)
 │   │   ├── LoginView.vue         # 登录
 │   │   ├── RegisterView.vue      # 注册
-│   │   ├── MediaDetailView.vue   # 媒体详情
-│   │   ├── WatchView.vue         # 播放页
+│   │   ├── MediaDetailView.vue   # 媒体详情 (播放源、推荐)
+│   │   ├── WatchView.vue         # 播放页 (ArtPlayer + 弹幕)
+│   │   ├── IPTVView.vue          # IPTV 直播 (频道列表 + 播放 + EPG 节目单 + 台标 + 质量评分)
 │   │   ├── CategoriesView.vue    # 分类浏览
-│   │   └── SearchView.vue        # 搜索结果
+│   │   └── RecommendationsView.vue # 推荐页面
 │   │
-│   ├── 用户页面 (需认证)
+│   ├── 用户页面 (需登录)
 │   │   ├── ProfileView.vue       # 个人中心
 │   │   ├── WatchHistoryView.vue  # 观看历史
 │   │   ├── FavoritesView.vue     # 我的收藏
+│   │   ├── SearchHistoryView.vue # 搜索历史
 │   │   ├── DownloadsView.vue     # 下载管理
-│   │   ├── IPTVView.vue          # IPTV 直播
-│   │   ├── TorrentView.vue       # 种子下载
-│   │   ├── SettingsView.vue      # 设置
-│   │   └── WatchRoomView.vue     # 观影房
+│   │   ├── TorrentView.vue       # 磁力资源
+│   │   └── SettingsView.vue      # 偏好设置
 │   │
 │   ├── 管理后台 (需管理员权限)
-│   │   ├── AdminDashboardView.vue      # 仪表盘
+│   │   ├── AdminDashboardView.vue      # 仪表盘 (统计概览)
 │   │   ├── AdminMediaView.vue          # 媒体管理
 │   │   ├── AdminUsersView.vue          # 用户管理
-│   │   ├── AdminRolesView.vue          # 角色管理
-│   │   ├── AdminDanmakuView.vue        # 弹幕管理
-│   │   ├── AdminLogsView.vue           # 日志查看
+│   │   ├── AdminRolesView.vue          # 角色权限管理
+│   │   ├── AdminDanmakuView.vue        # 弹幕管理 (审核)
+│   │   ├── AdminLogsView.vue           # 系统日志
 │   │   ├── AdminPlaySourcesView.vue    # 播放源管理
-│   │   ├── AdminWatchHistoryView.vue   # 观看历史
-│   │   ├── AdminDownloadTasksView.vue  # 下载任务
+│   │   ├── AdminWatchHistoryView.vue   # 观看历史管理
+│   │   ├── AdminDownloadTasksView.vue  # 下载任务管理
 │   │   ├── AdminSourceScriptsView.vue  # 源脚本管理
-│   │   ├── AdminIPTVView.vue           # IPTV 管理
-│   │   └── AdminCrawlerTargetsView.vue # 爬虫目标管理
+│   │   ├── AdminCrawlerTargetsView.vue # 数据源管理
+│   │   ├── AdminIptvView.vue           # IPTV 管理 (频道/源/质量/台标)
+│   │   ├── CrawlerView.vue             # 数据采集
+│   │   └── PlaySourcesView.vue         # 播放源一览
 │   │
 │   └── 特殊页面
-│       ├── RecommendationsView.vue     # 推荐页面
 │       └── NotFoundView.vue            # 404 页面
 │
 ├── App.vue                # 根组件
@@ -135,89 +140,97 @@ frontend/src/
 
 ### 2.1 路由配置
 
+**公开路由 (PUBLIC_ROUTE_NAMES)**:
+home, media-detail, watch, iptv, recommendations, categories
+
 ```typescript
 const routes: RouteRecordRaw[] = [
-  // 公开路由
+  // 主布局路由 - 观影功能
   {
     path: '/',
     component: MainLayout,
     children: [
-      { path: '', name: 'Home', component: HomeView },
-      { path: 'media/:id', name: 'MediaDetail', component: MediaDetailView },
-      { path: 'watch/:id', name: 'Watch', component: WatchView },
-      { path: 'categories', name: 'Categories', component: CategoriesView },
-      { path: 'search', name: 'Search', component: SearchView },
+      { path: '', name: 'home', component: HomeView },
+      { path: 'media/:id', name: 'media-detail', component: MediaDetailView },
+      { path: 'watch/:id', name: 'watch', component: WatchView },
+      { path: 'iptv', name: 'iptv', component: IPTVView },
+      { path: 'recommendations', name: 'recommendations', component: RecommendationsView },
+      { path: 'categories', name: 'categories', component: CategoriesView },
+      { path: 'profile', name: 'profile', component: ProfileView, meta: { requiresAuth: true } },
+      { path: 'settings', name: 'settings', component: SettingsView, meta: { requiresAuth: true } },
+      { path: 'favorites', name: 'favorites', component: FavoritesView, meta: { requiresAuth: true } },
+      { path: 'search-history', name: 'search-history', component: SearchHistoryView, meta: { requiresAuth: true } },
+      { path: 'watch-history', name: 'watch-history', component: WatchHistoryView, meta: { requiresAuth: true } },
+      { path: 'downloads', name: 'downloads', component: DownloadsView, meta: { requiresAuth: true } },
+      { path: 'torrent', name: 'torrent', component: TorrentView, meta: { requiresAuth: true } },
     ],
   },
 
-  // 认证路由
-  {
-    path: '/auth',
-    children: [
-      { path: 'login', name: 'Login', component: LoginView },
-      { path: 'register', name: 'Register', component: RegisterView },
-    ],
-  },
+  // 认证路由 - 无布局
+  { path: '/login', name: 'login', component: LoginView },
+  { path: '/register', name: 'register', component: RegisterView },
 
-  // 用户路由 (需认证)
-  {
-    path: '/user',
-    component: MainLayout,
-    meta: { requiresAuth: true },
-    children: [
-      { path: 'profile', name: 'Profile', component: ProfileView },
-      { path: 'history', name: 'History', component: WatchHistoryView },
-      { path: 'favorites', name: 'Favorites', component: FavoritesView },
-      { path: 'downloads', name: 'Downloads', component: DownloadsView },
-      { path: 'iptv', name: 'IPTV', component: IPTVView },
-      { path: 'torrent', name: 'Torrent', component: TorrentView },
-      { path: 'settings', name: 'Settings', component: SettingsView },
-      { path: 'watch-room', name: 'WatchRoom', component: WatchRoomView },
-    ],
-  },
+  // 重定向路由
+  { path: '/search', redirect: to => ({ path: '/', query: to.query }) },
+  { path: '/continue-watching', redirect: () => ({ name: 'watch-history', query: { isCompleted: 'false', sortBy: 'updatedAt', sortOrder: 'DESC' } }) },
+  { path: '/completed', redirect: () => ({ name: 'watch-history', query: { isCompleted: 'true', sortBy: 'updatedAt', sortOrder: 'DESC' } }) },
 
-  // 管理后台 (需管理员权限)
+  // 管理后台 (AdminLayout)
   {
     path: '/admin',
     component: AdminLayout,
     meta: { requiresAuth: true, requiresAdmin: true },
     children: [
-      { path: '', name: 'AdminDashboard', component: AdminDashboardView },
-      { path: 'media', name: 'AdminMedia', component: AdminMediaView },
-      { path: 'users', name: 'AdminUsers', component: AdminUsersView },
-      { path: 'roles', name: 'AdminRoles', component: AdminRolesView },
-      { path: 'danmaku', name: 'AdminDanmaku', component: AdminDanmakuView },
-      { path: 'logs', name: 'AdminLogs', component: AdminLogsView },
-      { path: 'play-sources', name: 'AdminPlaySources', component: AdminPlaySourcesView },
-      { path: 'watch-history', name: 'AdminWatchHistory', component: AdminWatchHistoryView },
-      { path: 'download-tasks', name: 'AdminDownloadTasks', component: AdminDownloadTasksView },
-      { path: 'source-scripts', name: 'AdminSourceScripts', component: AdminSourceScriptsView },
-      { path: 'iptv', name: 'AdminIPTV', component: AdminIPTVView },
-      { path: 'crawler-targets', name: 'AdminCrawlerTargets', component: AdminCrawlerTargetsView },
+      { path: '', name: 'admin-dashboard', component: AdminDashboardView },
+      { path: 'users', name: 'admin-users', component: AdminUsersView },
+      { path: 'roles', name: 'admin-roles', component: AdminRolesView },
+      { path: 'media', name: 'admin-media', component: AdminMediaView },
+      { path: 'play-sources', name: 'admin-play-sources', component: AdminPlaySourcesView },
+      { path: 'download-tasks', name: 'admin-download-tasks', component: AdminDownloadTasksView },
+      { path: 'watch-history', name: 'admin-watch-history', component: AdminWatchHistoryView },
+      { path: 'logs', name: 'admin-logs', component: AdminLogsView },
+      { path: 'danmaku', name: 'admin-danmaku', component: AdminDanmakuView },
+      { path: 'source-scripts', name: 'admin-source-scripts', component: AdminSourceScriptsView },
+      { path: 'crawler', name: 'admin-crawler', component: CrawlerView },
+      { path: 'crawler-targets', name: 'admin-crawler-targets', component: AdminCrawlerTargetsView },
+      { path: 'play-sources-overview', name: 'admin-play-sources-overview', component: PlaySourcesView },
+      { path: 'iptv', name: 'admin-iptv', component: AdminIptvView },
     ],
   },
+
+  // 404
+  { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFoundView },
 ];
 ```
 
 ### 2.2 路由守卫
 
 ```typescript
-router.beforeEach((to, from, next) => {
+router.beforeEach(to => {
   const authStore = useAuthStore();
+  const requiresAuth = to.matched.some(record => record.meta?.requiresAuth);
+  const requiresAdmin = to.matched.some(record => record.meta?.requiresAdmin);
 
-  // 认证检查
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next({ name: 'Login', query: { redirect: to.fullPath } });
-    return;
+  // 设置页面标题
+  if (typeof to.meta?.title === 'string') {
+    document.title = to.meta.title;
   }
 
-  // 管理员权限检查
-  if (to.meta.requiresAdmin && authStore.user?.role !== 'admin') {
-    next({ name: 'Home' });
-    return;
+  // 公开路由无需登录
+  if (PUBLIC_ROUTE_NAMES.includes(to.name as string)) return true;
+
+  // 需要认证的路由
+  if (requiresAuth && !authStore.token) {
+    return { path: '/login', query: { redirect: to.fullPath } };
   }
 
-  next();
+  // 需要管理员权限的路由
+  if (requiresAdmin) {
+    const role = authStore.user?.role;
+    if (role !== 'admin' && role !== 'superAdmin') return '/';
+  }
+
+  return true;
 });
 ```
 
@@ -241,18 +254,16 @@ const preloadRoute = (routeName: string) => {
 
 ---
 
-## 三、状态管理
+## 三、状态管理 (3个 Store)
 
-### 3.1 Auth Store
+### 3.1 Auth Store (stores/auth.ts)
 
 ```typescript
-// stores/auth.ts
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null);
   const token = ref<string | null>(null);
   const isAuthenticated = computed(() => !!token.value);
 
-  // 登录
   const login = async (credentials: LoginCredentials) => {
     const response = await authApi.login(credentials);
     token.value = response.accessToken;
@@ -260,86 +271,48 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('token', response.accessToken);
   };
 
-  // 登出
   const logout = () => {
     token.value = null;
     user.value = null;
     localStorage.removeItem('token');
   };
 
-  // 初始化 (从 localStorage 恢复)
-  const init = async () => {
-    const savedToken = localStorage.getItem('token');
-    if (savedToken) {
-      token.value = savedToken;
-      await fetchProfile();
-    }
-  };
-
-  return { user, token, isAuthenticated, login, logout, init };
+  return { user, token, isAuthenticated, login, logout };
 });
 ```
 
-### 3.2 Media Store
+### 3.2 Media Store (stores/media.ts)
 
 ```typescript
-// stores/media.ts
 export const useMediaStore = defineStore('media', () => {
   const mediaList = ref<MediaResource[]>([]);
   const currentMedia = ref<MediaResource | null>(null);
   const loading = ref(false);
-  const pagination = ref({ page: 1, limit: 20, total: 0 });
+  const pagination = ref({ page: 1, limit: 10, total: 0, totalPages: 0 });
 
-  // 获取媒体列表
-  const fetchMediaList = async (params?: MediaQueryParams) => {
-    loading.value = true;
-    try {
-      const response = await mediaApi.getList(params);
-      mediaList.value = response.data;
-      pagination.value = {
-        page: response.page,
-        limit: response.limit,
-        total: response.total,
-      };
-    } finally {
-      loading.value = false;
-    }
-  };
+  const fetchMediaList = async (params: MediaQueryParams = {}) => { ... };
+  const fetchMediaDetail = async (id: string | number) => { ... };
+  const fetchPopularMedia = async (limit = 10) => { ... };
+  const fetchLatestMedia = async (limit = 10) => { ... };
+  const fetchTopRatedMedia = async (limit = 10, minRating = 8) => { ... };
+  const fetchRecommendations = async (mediaId: string | number, limit = 6) => { ... };
+  const toggleFavorite = async (id: string, currentState?: boolean) => { ... };
+  const fetchFavorites = async (params?: MediaQueryParams) => { ... };
 
-  // 获取媒体详情
-  const fetchMediaDetail = async (id: number) => {
-    loading.value = true;
-    try {
-      currentMedia.value = await mediaApi.getDetail(id);
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  return { mediaList, currentMedia, loading, pagination, fetchMediaList, fetchMediaDetail };
+  return { mediaList, currentMedia, loading, pagination, ... };
 });
 ```
 
-### 3.3 Downloads Store
+### 3.3 Downloads Store (stores/downloads.ts)
 
 ```typescript
-// stores/downloads.ts
 export const useDownloadsStore = defineStore('downloads', () => {
   const tasks = ref<DownloadTask[]>([]);
   const activeCount = computed(() =>
     tasks.value.filter(t => t.status === 'downloading').length
   );
 
-  // 轮询更新任务状态
-  const startPolling = () => {
-    setInterval(async () => {
-      if (activeCount.value > 0) {
-        await fetchTasks();
-      }
-    }, 2000);
-  };
-
-  return { tasks, activeCount, fetchTasks, startPolling };
+  return { tasks, activeCount, fetchTasks };
 });
 ```
 
@@ -645,7 +618,30 @@ export default defineConfig({
 
 ## 七、特殊功能实现
 
-### 7.1 SSE 流式搜索
+### 7.1 IPTV 直播页面
+
+**IPTVView.vue 功能:**
+- 频道列表：分页、分组筛选、搜索、国家/清晰度过滤
+- 频道卡片：台标显示、质量评分标签、活跃状态标识
+- EPG 节目单：EpgTimeline 组件（列表/时间线视图）、当前节目高亮
+- 播放器：ArtPlayer 集成、HLS 流代理
+- M3U/JSON 导入、批量删除
+
+**AdminIptvView.vue 功能:**
+- 统计仪表盘：总频道数、活跃频道、分组数、高质量频道数
+- 频道管理：表格视图、搜索/排序/分页、测试/编辑/删除
+- 直播源管理：源列表、启用/禁用、添加/删除、收集频道
+- 质量统计：高/中/低质量频道分布、平均响应时间
+- 台标管理：台标列表、初始化预置台标
+- 导入导出：M3U/TXT 导入、M3U/TXT 导出
+
+**EpgTimeline.vue 组件:**
+- 两种视图模式：列表视图、时间线视图
+- 节目状态：past（已播）、playing（正在播）、future（未播）
+- 自动滚动到当前节目
+- 60 秒自动刷新定位
+
+### 7.2 SSE 流式搜索
 
 ```typescript
 // utils/stream.ts
@@ -836,24 +832,15 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': {
-        target: 'http://localhost:3334',
-        changeOrigin: true,
-      },
-      '/iptv': {
-        target: 'http://localhost:3334',
-        changeOrigin: true,
-      },
-    },
-  },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['vue', 'vue-router', 'pinia'],
-          player: ['artplayer', 'hls.js'],
-        },
-      },
+      '/iptv': { target: 'http://localhost:3334', changeOrigin: true },
+      '/crawler': { target: 'http://localhost:3334', changeOrigin: true },
+      '/search': { target: 'http://localhost:3334', changeOrigin: true },
+      '/recommendations': { target: 'http://localhost:3334', changeOrigin: true },
+      '/media': { target: 'http://localhost:3334', changeOrigin: true },
+      '/auth': { target: 'http://localhost:3334', changeOrigin: true },
+      '/admin': { target: 'http://localhost:3334', changeOrigin: true },
+      '/danmaku': { target: 'http://localhost:3334', changeOrigin: true },
+      '/health': { target: 'http://localhost:3334', changeOrigin: true },
     },
   },
 });
@@ -898,5 +885,5 @@ VITE_WS_URL=wss://your-domain.com
 
 ---
 
-*文档版本: v1.0*
-*最后更新: 2026-05-18*
+*文档版本: v2.0*
+*最后更新: 2026-05-23*

@@ -33,6 +33,14 @@ global.localStorage = localStorageMock;
 // 模拟 fetch API
 global.fetch = vi.fn();
 
+if (!URL.createObjectURL) {
+  URL.createObjectURL = vi.fn(() => 'blob:test');
+}
+
+if (!URL.revokeObjectURL) {
+  URL.revokeObjectURL = vi.fn();
+}
+
 // 全局测试超时
 vi.setConfig({
   testTimeout: 10000,

@@ -12,7 +12,7 @@
     "test:ci": "vitest run --coverage --pool threads --poolOptions.threads.singleThread",
     "test:journeys": "vitest run --pool threads --poolOptions.threads.singleThread test/views/LoginView.spec.ts test/views/RegisterView.spec.ts test/views/UserJourney.spec.ts test/views/AuthProfileJourney.spec.ts",
     "test:journeys:admin": "vitest run --pool threads --poolOptions.threads.singleThread test/views/AdminJourney.spec.ts",
-    "test:tools": "vitest run --pool threads --poolOptions.threads.singleThread test/stores/downloads.spec.ts test/utils/clipboard.spec.ts test/views/DownloadsView.spec.ts test/views/TorrentView.spec.ts test/views/VideoWatchView.spec.ts",
+    "test:tools": "vitest run --pool threads --poolOptions.threads.singleThread test/stores/downloads.spec.ts test/utils/clipboard.spec.ts test/views/DownloadsView.spec.ts test/views/TorrentView.spec.ts test/views/WatchView.spec.ts",
     "test:regressions": "npm run test:journeys && npm run test:journeys:admin && npm run test:tools",
     "lint": "node --max-old-space-size=4096 ./node_modules/eslint/bin/eslint.js . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
     "lint:check": "node --max-old-space-size=4096 ./node_modules/eslint/bin/eslint.js . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore",

@@ -9,6 +9,7 @@ interface ApiError {
   code?: string;
   details?: any;
   data?: any;
+  silent?: boolean;
 }
 
 // 成功响应包装器
@@ -39,6 +40,7 @@ export class ApiErrorHandler {
       message: responseData?.message || error.message || '请求失败',
       status: error.response?.status || 500,
       data: error.response?.data || {},
+      silent: (error.config as any)?.silent === true,
     };
 
     // 处理特定错误状态码
@@ -98,9 +100,10 @@ export class RequestInterceptor {
       },
       onResponseError: (error: AxiosError) => {
         const responseData = error.response?.data as { message?: string } | undefined;
+        const silent = (error.config as any)?.silent === true;
 
         // 调试信息，生产环境可删除
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV === 'development' && !silent) {
           log.error('ApiHelpers', 'API Error:', {
             url: error.config?.url,
             method: error.config?.method,

@@ -20,6 +20,10 @@ interface CacheItem<T = any> {
   key: string;
 }
 
+const isHtmlFallback = (data: unknown): boolean => {
+  return typeof data === 'string' && data.trim().startsWith('<');
+};
+
 /**
  * API缓存工具类
  */
@@ -130,7 +134,7 @@ class APICacheManager {
       const response = await axios(config);
 
       // 缓存成功的响应
-      if (response.status >= 200 && response.status < 300) {
+      if (response.status >= 200 && response.status < 300 && !isHtmlFallback(response.data)) {
         const ttl = cacheConfig.ttl || 300000; // 默认5分钟
         this.setCache(cacheKey, response.data, ttl);
       }

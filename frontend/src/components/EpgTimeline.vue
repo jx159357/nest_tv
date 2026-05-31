@@ -71,6 +71,7 @@
 <script setup lang="ts">
   import { ref, watch, nextTick, onMounted } from 'vue';
   import axios from 'axios';
+  import { buildApiUrl } from '@/api/url';
 
   export interface EpgProgram {
     start: number;
@@ -97,7 +98,7 @@
     try {
       const params: Record<string, string> = {};
       if (props.epgUrl) params.epgUrl = props.epgUrl;
-      const { data } = await axios.get(`/api/iptv/${props.channelId}/epg`, { params });
+      const { data } = await axios.get(buildApiUrl(`/iptv/${props.channelId}/epg`), { params });
       programs.value = cleanEpgData(data.programs || []);
       await nextTick();
       scrollToCurrent();

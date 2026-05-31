@@ -1,6 +1,25 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsBoolean, IsNumber, IsString, IsEnum } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
+
+function toOptionalBoolean(value: unknown): boolean | undefined {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['true', '1', 'yes', 'on'].includes(normalized)) {
+      return true;
+    }
+    if (['false', '0', 'no', 'off'].includes(normalized)) {
+      return false;
+    }
+  }
+  return Boolean(value);
+}
 
 export class IPTVChannelQueryDto {
   @ApiProperty({ description: '页码', default: 1 })
@@ -47,13 +66,19 @@ export class IPTVChannelQueryDto {
 
   @ApiProperty({ description: '是否可用', default: true })
   @IsOptional()
-  @Type(() => Boolean)
+  @Transform(({ value }) => toOptionalBoolean(value))
   @IsBoolean()
   activeOnly?: boolean = true;
 
+  @ApiProperty({ description: '频道启用状态', required: false })
+  @IsOptional()
+  @Transform(({ value }) => toOptionalBoolean(value))
+  @IsBoolean()
+  isActive?: boolean;
+
   @ApiProperty({ description: '是否为直播', required: false })
   @IsOptional()
-  @Type(() => Boolean)
+  @Transform(({ value }) => toOptionalBoolean(value))
   @IsBoolean()
   isLive?: boolean;
 

@@ -95,6 +95,11 @@ export class ProxyPoolService {
    */
   private initializeProviders(): void {
     try {
+      if (!this.config.enabled) {
+        this.logger.warn('代理池已禁用，跳过代理提供商初始化');
+        return;
+      }
+
       const providers = this.proxyProviderService.getActiveProviders();
       this.logger.log(`初始化 ${providers.length} 个代理提供商`);
 
@@ -116,6 +121,10 @@ export class ProxyPoolService {
    * 启动验证定时器
    */
   private startValidationTimer(): void {
+    if (!this.config.enabled) {
+      return;
+    }
+
     if (this.validationTimer) {
       clearInterval(this.validationTimer);
     }
@@ -464,6 +473,10 @@ export class ProxyPoolService {
    * 从提供商获取代理
    */
   async fetchProxiesFromProviders(): Promise<number> {
+    if (!this.config.enabled) {
+      return 0;
+    }
+
     let totalFetched = 0;
 
     for (const provider of this.providers.values()) {

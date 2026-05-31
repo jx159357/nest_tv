@@ -115,7 +115,9 @@ describe('AdminDanmakuView', () => {
     await textareas[1]!.setValue(' http \n');
     await wrapper.get('select').setValue('medium');
     await wrapper.get('input[type="checkbox"]').setValue(false);
-    await wrapper.get('button.bg-indigo-600').trigger('click');
+    const saveButton = wrapper.findAll('button').find(button => button.text().includes('保存规则'));
+    expect(saveButton).toBeTruthy();
+    await saveButton!.trigger('click');
     await flushPromises();
 
     expect(danmakuApi.updateFilterRules).toHaveBeenCalledWith({

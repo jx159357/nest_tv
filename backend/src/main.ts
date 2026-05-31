@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
+import compression from 'compression';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { RequestLoggingMiddleware } from './middleware/request-logging.middleware';
@@ -14,6 +15,19 @@ async function bootstrap() {
     logger: ['log', 'error', 'warn'],
     bufferLogs: true,
   });
+
+  // 启用响应压缩
+  app.use(
+    compression({
+      filter: (req: Request, res: Response) => {
+        if (req.path.includes('/iptv/stream/proxy')) {
+          return false;
+        }
+        return compression.filter(req, res);
+      },
+      threshold: 1024,
+    }),
+  );
 
   // 安全的CORS配置
   const isProduction = process.env.NODE_ENV === 'production';
@@ -47,9 +61,12 @@ async function bootstrap() {
     maxAge: 86400, // 预检请求结果缓存24小时
   });
 
-  // 设置响应头以确保字符编码正确
   app.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.path.startsWith('/iptv/stream/proxy') || req.path.startsWith('/iptv/')) {
+    if (
+      req.path.startsWith('/iptv/stream/proxy') ||
+      req.path.startsWith('/iptv/') ||
+      req.path.startsWith('/search/stream')
+    ) {
       next();
       return;
     }

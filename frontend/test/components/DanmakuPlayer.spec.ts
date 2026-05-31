@@ -22,6 +22,7 @@ const { danmakuApi, wsComposable } = vi.hoisted(() => ({
     onDisconnected: vi.fn(),
     onError: vi.fn(),
     onHeartbeat: vi.fn(),
+    onReconnectFailed: vi.fn(),
   },
 }));
 
@@ -48,6 +49,8 @@ describe('DanmakuPlayer', () => {
     wsComposable.connect.mockReset();
     wsComposable.disconnect.mockReset();
     wsComposable.getRoomInfo.mockReset();
+    wsComposable.onReconnectFailed.mockReset();
+    sessionStorage.clear();
 
     danmakuApi.getRoomInfo.mockResolvedValue({
       videoId: 'video-1',
@@ -176,5 +179,34 @@ describe('DanmakuPlayer', () => {
     await flushPromises();
 
     expect(danmakuApi.getSuggestions).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps session settings isolated by video id', async () => {
+    const wrapper = mount(DanmakuPlayer, {
+      props: {
+        videoId: 'video-1',
+        mediaResourceId: 7,
+      },
+    });
+    await flushPromises();
+
+    await wrapper.get('.danmaku-toggle-btn').trigger('click');
+    await flushPromises();
+
+    expect(JSON.parse(sessionStorage.getItem('danmaku_filters_video-1') || '{}')).toMatchObject({
+      settings: {
+        enabled: false,
+      },
+    });
+
+    await wrapper.setProps({ videoId: 'video-2' });
+    await flushPromises();
+
+    expect(wrapper.get('.danmaku-container').classes()).not.toContain('danmaku-hidden');
+
+    await wrapper.setProps({ videoId: 'video-1' });
+    await flushPromises();
+
+    expect(wrapper.get('.danmaku-container').classes()).toContain('danmaku-hidden');
   });
 });

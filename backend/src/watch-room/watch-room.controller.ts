@@ -26,6 +26,13 @@ export class WatchRoomController {
     return this.watchRoomService.getActiveRooms();
   }
 
+  @Get('stats/overview')
+  @ApiOperation({ summary: '获取房间统计' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  getStats() {
+    return this.watchRoomService.getStats();
+  }
+
   @Get(':roomId')
   @ApiOperation({ summary: '获取房间信息' })
   @ApiResponse({ status: 200, description: '获取成功' })
@@ -36,12 +43,5 @@ export class WatchRoomController {
       return { error: '房间不存在' };
     }
     return info;
-  }
-
-  @Get('stats/overview')
-  @ApiOperation({ summary: '获取房间统计' })
-  @ApiResponse({ status: 200, description: '获取成功' })
-  getStats() {
-    return this.watchRoomService.getStats();
   }
 }

@@ -132,7 +132,9 @@
 <style scoped>
   .login-page {
     min-height: 100vh;
-    background: var(--bg-page);
+    background:
+      linear-gradient(180deg, rgba(229, 9, 20, 0.12), transparent 32%),
+      var(--bg-page);
     color: var(--text-primary);
     padding: 48px 16px;
     display: flex;
@@ -144,7 +146,7 @@
     display: grid;
     width: 100%;
     max-width: 1100px;
-    gap: 40px;
+    gap: 32px;
     align-items: center;
   }
 
@@ -157,16 +159,16 @@
   .login-hero {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 20px;
   }
 
   .login-badge {
     display: inline-flex;
     align-self: flex-start;
     padding: 4px 12px;
-    border-radius: 20px;
-    border: 1px solid rgba(99, 102, 241, 0.3);
-    background: rgba(99, 102, 241, 0.08);
+    border-radius: 8px;
+    border: 1px solid var(--color-brand-border);
+    background: var(--color-brand-overlay);
     font-size: 12px;
     font-weight: 500;
     letter-spacing: 0.03em;
@@ -201,9 +203,9 @@
 
   .login-feature-card {
     padding: 16px;
-    border-radius: 16px;
+    border-radius: 8px;
     border: 1px solid var(--border-primary);
-    background: var(--bg-card);
+    background: rgba(255, 255, 255, 0.035);
   }
 
   .login-feature-label {
@@ -220,7 +222,7 @@
 
   .login-card {
     background: var(--bg-card);
-    border-radius: 24px;
+    border-radius: 12px;
     border: 1px solid var(--border-primary);
     padding: 32px;
     box-shadow: var(--shadow-xl);
@@ -264,7 +266,7 @@
   .login-input {
     width: 100%;
     padding: 12px 16px;
-    border-radius: 12px;
+    border-radius: 8px;
     border: 1px solid var(--border-secondary);
     background: var(--bg-secondary);
     color: var(--text-primary);
@@ -275,7 +277,7 @@
 
   .login-input:focus {
     border-color: var(--border-focus);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    box-shadow: var(--shadow-focus);
   }
 
   .login-input::placeholder {
@@ -285,7 +287,7 @@
   .login-submit {
     width: 100%;
     padding: 12px;
-    border-radius: 12px;
+    border-radius: 8px;
     background: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-primary-dark));
     color: white;
     font-size: 14px;
@@ -297,7 +299,7 @@
 
   .login-submit:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 10px 28px var(--color-brand-glow);
   }
 
   .login-submit:disabled {
@@ -321,5 +323,63 @@
 
   .login-link:hover {
     color: var(--color-brand-primary-light);
+  }
+
+  @media (max-width: 767px) {
+    .login-page {
+      align-items: flex-start;
+      padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+    }
+
+    .login-grid {
+      gap: 18px;
+    }
+
+    .login-hero {
+      gap: 12px;
+    }
+
+    .login-hero-title {
+      font-size: 24px;
+      line-height: 1.25;
+    }
+
+    .login-hero-desc {
+      margin-top: 10px;
+      font-size: 13px;
+      line-height: 1.6;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .login-features {
+      display: none;
+    }
+
+    .login-card {
+      padding: 20px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .login-card-title {
+      font-size: 22px;
+    }
+
+    .login-form {
+      margin-top: 20px;
+      gap: 16px;
+    }
+
+    .login-input {
+      min-height: 46px;
+      font-size: 16px;
+    }
+
+    .login-submit {
+      min-height: 46px;
+      font-size: 15px;
+    }
   }
 </style>

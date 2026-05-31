@@ -98,6 +98,7 @@ export interface MediaQueryParams {
   genre?: string;
   minRating?: number;
   maxRating?: number;
+  silent?: boolean;
   sortBy?: 'createdAt' | 'updatedAt' | 'rating' | 'viewCount';
   sortOrder?: 'ASC' | 'DESC';
 }

@@ -1,10 +1,29 @@
 import ApiClient from './index';
+import { apiCacheManager } from '@/utils/api-cache';
 import type { PaginatedResponse } from '@/types/api';
 import type { MediaResource, MediaQueryParams } from '@/types/media';
 
+const splitRequestOptions = (params?: MediaQueryParams) => {
+  const { silent, limit, ...query } = params ?? {};
+  const normalizedQuery = {
+    ...query,
+    ...(limit !== undefined ? { pageSize: limit } : {}),
+  };
+  return { query: normalizedQuery, silent };
+};
+
+const splitLimitRequestOptions = (params?: MediaQueryParams) => {
+  const { silent, ...query } = params ?? {};
+  return { query, silent };
+};
+
 export const mediaApi = {
   getMediaList: (params?: MediaQueryParams) => {
-    return ApiClient.get<PaginatedResponse<MediaResource>>('/media', { params });
+    const { query, silent } = splitRequestOptions(params);
+    return ApiClient.get<PaginatedResponse<MediaResource>>('/media', {
+      params: query,
+      silent,
+    });
   },
 
   getMediaById: (id: string) => {
@@ -12,32 +31,42 @@ export const mediaApi = {
   },
 
   searchMedia: (query: string, params?: MediaQueryParams) => {
-    return ApiClient.get<PaginatedResponse<MediaResource>>('/media/search', {
-      params: { keyword: query, ...params },
+    const { query: normalizedQuery, silent } = splitLimitRequestOptions(params);
+    return ApiClient.get<MediaResource[]>('/media/search', {
+      params: { keyword: query, ...normalizedQuery },
+      silent,
     });
   },
 
   getPopularMedia: (limit?: number, params?: MediaQueryParams) => {
+    const { query, silent } = splitRequestOptions(params);
     return ApiClient.get<MediaResource[]>('/media/popular', {
-      params: { limit, ...params },
+      params: { limit, ...query },
+      silent,
     });
   },
 
   getLatestMedia: (limit?: number, params?: MediaQueryParams) => {
+    const { query, silent } = splitRequestOptions(params);
     return ApiClient.get<MediaResource[]>('/media/latest', {
-      params: { limit, ...params },
+      params: { limit, ...query },
+      silent,
     });
   },
 
   getTopRatedMedia: (limit?: number, minRating?: number, params?: MediaQueryParams) => {
+    const { query, silent } = splitRequestOptions(params);
     return ApiClient.get<MediaResource[]>('/recommendations/top-rated', {
-      params: { limit, minRating, ...params },
+      params: { limit, minRating, ...query },
+      silent,
     });
   },
 
   getMediaByType: (type: string, params?: MediaQueryParams) => {
+    const { query, silent } = splitRequestOptions(params);
     return ApiClient.get<PaginatedResponse<MediaResource>>('/media', {
-      params: { ...params, type },
+      params: { ...query, type },
+      silent,
     });
   },
 
@@ -83,7 +112,12 @@ export const mediaApi = {
   },
 
   getFavorites: (params?: MediaQueryParams) => {
-    return ApiClient.get<PaginatedResponse<MediaResource>>('/media/favorites', { params }, false);
+    const { query, silent } = splitLimitRequestOptions(params);
+    return ApiClient.get<PaginatedResponse<MediaResource>>(
+      '/media/favorites',
+      { params: query, silent },
+      false,
+    );
   },
 
   getCategoryStats: () => {
@@ -97,5 +131,12 @@ export const mediaApi = {
     return ApiClient.get<Array<{ name: string; count: number }>>('/media/sources', undefined, false);
   },
 
-  clearCache: () => undefined,
+  deduplicateMedia: () =>
+    ApiClient.post<{
+      duplicateGroups: number;
+      deactivated: number;
+      movedPlaySources: number;
+    }>('/media/deduplicate'),
+
+  clearCache: () => apiCacheManager.clearCacheByPattern(/^GET:/),
 };
