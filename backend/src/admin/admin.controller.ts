@@ -407,10 +407,7 @@ export class AdminController {
   @Patch('crawler-targets/:id')
   @ApiOperation({ summary: '更新数据源' })
   @ApiResponse({ status: 200, description: '数据源更新成功' })
-  updateCrawlerTarget(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() data: Partial<CrawlerTarget>,
-  ) {
+  updateCrawlerTarget(@Param('id', ParseIntPipe) id: number, @Body() data: Partial<CrawlerTarget>) {
     return this.adminService.updateCrawlerTarget(id, data);
   }
 

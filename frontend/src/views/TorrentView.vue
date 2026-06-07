@@ -2,7 +2,9 @@
   <div class="page-container">
     <header class="mb-8">
       <h1 class="mb-3 text-3xl font-bold" style="color: var(--text-primary)">磁力资源</h1>
-      <p style="color: var(--text-muted)">浏览站内已入库磁力源，支持搜索、热门榜、最新榜和磁力链接解析。</p>
+      <p style="color: var(--text-muted)">
+        浏览站内已入库磁力源，支持搜索、热门榜、最新榜和磁力链接解析。
+      </p>
     </header>
 
     <section class="mb-8 rounded-2xl p-6 shadow-sm" style="background: var(--bg-card)">
@@ -25,10 +27,22 @@
               v-model="keyword"
               type="text"
               class="rounded-lg border px-3 py-2 text-sm"
-              style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)"
+              style="
+                border-color: var(--border-primary);
+                background: var(--bg-secondary);
+                color: var(--text-primary);
+              "
               placeholder="输入关键字，如片名 / 资源组 / infoHash"
             />
-            <select v-model="category" class="rounded-lg border px-3 py-2 text-sm" style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)">
+            <select
+              v-model="category"
+              class="rounded-lg border px-3 py-2 text-sm"
+              style="
+                border-color: var(--border-primary);
+                background: var(--bg-secondary);
+                color: var(--text-primary);
+              "
+            >
               <option value="">全部分类</option>
               <option value="movie">电影</option>
               <option value="tv_series">电视剧</option>
@@ -49,19 +63,34 @@
           <div
             v-if="searchError"
             class="mt-4 rounded-xl border px-4 py-3 text-sm"
-            style="border-color: var(--color-danger-border); background: var(--color-danger-bg); color: var(--color-danger)"
+            style="
+              border-color: var(--color-danger-border);
+              background: var(--color-danger-bg);
+              color: var(--color-danger);
+            "
           >
             {{ searchError }}
           </div>
 
-          <div class="mt-5 overflow-hidden rounded-xl border" style="border-color: var(--border-primary); background: var(--bg-card)">
+          <div
+            class="mt-5 overflow-hidden rounded-xl border"
+            style="border-color: var(--border-primary); background: var(--bg-card)"
+          >
             <div
               class="border-b px-4 py-3 text-sm font-medium"
-              style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-secondary)"
+              style="
+                border-color: var(--border-primary);
+                background: var(--bg-secondary);
+                color: var(--text-secondary);
+              "
             >
               搜索结果
             </div>
-            <div v-if="searchLoading" class="px-4 py-10 text-center text-sm" style="color: var(--text-muted)">
+            <div
+              v-if="searchLoading"
+              class="px-4 py-10 text-center text-sm"
+              style="color: var(--text-muted)"
+            >
               加载中...
             </div>
             <div
@@ -134,7 +163,10 @@
           </div>
         </div>
 
-        <div class="rounded-2xl border p-5" style="border-color: var(--border-primary); background: var(--bg-secondary)">
+        <div
+          class="rounded-2xl border p-5"
+          style="border-color: var(--border-primary); background: var(--bg-secondary)"
+        >
           <h2 class="text-xl font-semibold" style="color: var(--text-primary)">磁力解析</h2>
           <p class="mt-1 text-sm" style="color: var(--text-muted)">
             粘贴 magnet 链接，快速查看解析出的 infoHash、tracker 和 web seed。
@@ -145,7 +177,11 @@
               v-model="magnetInput"
               rows="6"
               class="w-full rounded-lg border px-3 py-2 text-sm"
-              style="border-color: var(--border-primary); background: var(--bg-card); color: var(--text-primary)"
+              style="
+                border-color: var(--border-primary);
+                background: var(--bg-card);
+                color: var(--text-primary);
+              "
               placeholder="magnet:?xt=urn:btih:..."
             />
             <button
@@ -161,7 +197,11 @@
           <div
             v-if="parseError"
             class="mt-4 rounded-xl border px-4 py-3 text-sm"
-            style="border-color: var(--color-danger-border); background: var(--color-danger-bg); color: var(--color-danger)"
+            style="
+              border-color: var(--color-danger-border);
+              background: var(--color-danger-bg);
+              color: var(--color-danger);
+            "
           >
             {{ parseError }}
           </div>
@@ -169,14 +209,19 @@
           <div
             v-if="parsedMagnet"
             class="mt-4 space-y-3 rounded-xl border p-4 text-sm"
-            style="border-color: var(--border-primary); background: var(--bg-card); color: var(--text-secondary)"
+            style="
+              border-color: var(--border-primary);
+              background: var(--bg-card);
+              color: var(--text-secondary);
+            "
           >
             <div>
               <span class="font-medium" style="color: var(--text-primary)">名称：</span
               >{{ parsedMagnet.name || '未命名' }}
             </div>
             <div>
-              <span class="font-medium" style="color: var(--text-primary)">InfoHash：</span>{{ parsedMagnet.infoHash }}
+              <span class="font-medium" style="color: var(--text-primary)">InfoHash：</span
+              >{{ parsedMagnet.infoHash }}
             </div>
             <div>
               <span class="font-medium" style="color: var(--text-primary)">Tracker：</span
@@ -206,7 +251,11 @@
                   )
                 "
                 class="rounded-lg border px-3 py-2 text-xs font-medium"
-                style="border-color: var(--border-primary); background: var(--bg-card); color: var(--text-secondary)"
+                style="
+                  border-color: var(--border-primary);
+                  background: var(--bg-card);
+                  color: var(--text-secondary);
+                "
               >
                 查看下载任务
               </RouterLink>
@@ -225,15 +274,29 @@
             <h2 class="text-xl font-semibold" style="color: var(--text-primary)">热门磁力</h2>
             <p class="mt-1 text-sm" style="color: var(--text-muted)">按播放热度排序</p>
           </div>
-          <button class="text-sm hover:underline" style="color: var(--color-info)" @click="loadPopularTorrents">
+          <button
+            class="text-sm hover:underline"
+            style="color: var(--color-info)"
+            @click="loadPopularTorrents"
+          >
             刷新
           </button>
         </div>
-        <div v-if="popularLoading" class="py-8 text-center text-sm" style="color: var(--text-muted)">加载中...</div>
+        <div
+          v-if="popularLoading"
+          class="py-8 text-center text-sm"
+          style="color: var(--text-muted)"
+        >
+          加载中...
+        </div>
         <div
           v-else-if="popularError"
           class="rounded-xl border px-4 py-3 text-sm"
-          style="border-color: var(--color-danger-border); background: var(--color-danger-bg); color: var(--color-danger)"
+          style="
+            border-color: var(--color-danger-border);
+            background: var(--color-danger-bg);
+            color: var(--color-danger);
+          "
         >
           {{ popularError }}
         </div>
@@ -266,15 +329,25 @@
             <h2 class="text-xl font-semibold" style="color: var(--text-primary)">最新磁力</h2>
             <p class="mt-1 text-sm" style="color: var(--text-muted)">按入库时间排序</p>
           </div>
-          <button class="text-sm hover:underline" style="color: var(--color-info)" @click="loadLatestTorrents">
+          <button
+            class="text-sm hover:underline"
+            style="color: var(--color-info)"
+            @click="loadLatestTorrents"
+          >
             刷新
           </button>
         </div>
-        <div v-if="latestLoading" class="py-8 text-center text-sm" style="color: var(--text-muted)">加载中...</div>
+        <div v-if="latestLoading" class="py-8 text-center text-sm" style="color: var(--text-muted)">
+          加载中...
+        </div>
         <div
           v-else-if="latestError"
           class="rounded-xl border px-4 py-3 text-sm"
-          style="border-color: var(--color-danger-border); background: var(--color-danger-bg); color: var(--color-danger)"
+          style="
+            border-color: var(--color-danger-border);
+            background: var(--color-danger-bg);
+            color: var(--color-danger);
+          "
         >
           {{ latestError }}
         </div>
@@ -304,25 +377,41 @@
       <div class="rounded-2xl p-6 shadow-sm" style="background: var(--bg-card)">
         <div class="mb-4">
           <h2 class="text-xl font-semibold" style="color: var(--text-primary)">磁力详情</h2>
-          <p class="mt-1 text-sm" style="color: var(--text-muted)">查看已入库磁力的详细信息、健康状态和关联媒体。</p>
+          <p class="mt-1 text-sm" style="color: var(--text-muted)">
+            查看已入库磁力的详细信息、健康状态和关联媒体。
+          </p>
         </div>
 
-        <div v-if="selectedLoading" class="py-10 text-center text-sm" style="color: var(--text-muted)">
+        <div
+          v-if="selectedLoading"
+          class="py-10 text-center text-sm"
+          style="color: var(--text-muted)"
+        >
           加载详情中...
         </div>
         <div
           v-else-if="selectedError"
           class="rounded-xl border px-4 py-3 text-sm"
-          style="border-color: var(--color-danger-border); background: var(--color-danger-bg); color: var(--color-danger)"
+          style="
+            border-color: var(--color-danger-border);
+            background: var(--color-danger-bg);
+            color: var(--color-danger);
+          "
         >
           {{ selectedError }}
         </div>
-        <div v-else-if="selectedInfo" class="space-y-4 text-sm" style="color: var(--text-secondary)">
+        <div
+          v-else-if="selectedInfo"
+          class="space-y-4 text-sm"
+          style="color: var(--text-secondary)"
+        >
           <div>
             <div class="text-lg font-semibold" style="color: var(--text-primary)">
               {{ selectedInfo.name || selectedInfo.infoHash }}
             </div>
-            <div class="mt-1 text-xs" style="color: var(--text-muted)">{{ selectedInfo.infoHash }}</div>
+            <div class="mt-1 text-xs" style="color: var(--text-muted)">
+              {{ selectedInfo.infoHash }}
+            </div>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
@@ -340,23 +429,29 @@
             </div>
           </div>
 
-          <div v-if="selectedHealth" class="rounded-xl border p-4" style="border-color: var(--border-primary); background: var(--bg-secondary)">
+          <div
+            v-if="selectedHealth"
+            class="rounded-xl border p-4"
+            style="border-color: var(--border-primary); background: var(--bg-secondary)"
+          >
             <div class="mb-2 text-sm font-medium" style="color: var(--text-primary)">健康状态</div>
             <div class="flex flex-wrap gap-2 text-xs">
               <span
                 :class="[
                   'rounded-full px-2.5 py-1 font-medium',
-                  selectedHealth.isHealthy
-                    ? 'health-healthy'
-                    : 'health-unhealthy',
+                  selectedHealth.isHealthy ? 'health-healthy' : 'health-unhealthy',
                 ]"
               >
                 {{ selectedHealth.isHealthy ? '可用' : '异常' }}
               </span>
-              <span class="rounded-full px-2.5 py-1" style="background: var(--bg-tertiary); color: var(--text-secondary)"
+              <span
+                class="rounded-full px-2.5 py-1"
+                style="background: var(--bg-tertiary); color: var(--text-secondary)"
                 >做种者 {{ selectedHealth.seeders ?? '—' }}</span
               >
-              <span class="rounded-full px-2.5 py-1" style="background: var(--bg-tertiary); color: var(--text-secondary)"
+              <span
+                class="rounded-full px-2.5 py-1"
+                style="background: var(--bg-tertiary); color: var(--text-secondary)"
                 >下载者 {{ selectedHealth.leechers ?? '—' }}</span
               >
             </div>
@@ -365,7 +460,10 @@
             </div>
           </div>
 
-          <div class="rounded-xl border p-4" style="border-color: var(--border-primary); background: var(--bg-secondary)">
+          <div
+            class="rounded-xl border p-4"
+            style="border-color: var(--border-primary); background: var(--bg-secondary)"
+          >
             <div class="mb-2 text-sm font-medium" style="color: var(--text-primary)">快速操作</div>
             <div class="flex flex-wrap gap-2">
               <button
@@ -377,21 +475,33 @@
               </button>
               <button
                 class="rounded-lg border px-3 py-2 text-xs font-medium"
-                style="border-color: var(--border-primary); background: var(--bg-card); color: var(--text-secondary)"
+                style="
+                  border-color: var(--border-primary);
+                  background: var(--bg-card);
+                  color: var(--text-secondary);
+                "
                 @click="copyInfoHash"
               >
                 复制 Hash
               </button>
               <button
                 class="rounded-lg border px-3 py-2 text-xs font-medium"
-                style="border-color: var(--border-focus); background: rgba(99, 102, 241, 0.1); color: var(--color-brand-primary-light)"
+                style="
+                  border-color: var(--border-focus);
+                  background: rgba(99, 102, 241, 0.1);
+                  color: var(--color-brand-primary-light);
+                "
                 @click="queueSelectedTorrentTask"
               >
                 加入下载任务
               </button>
               <button
                 class="rounded-lg border px-3 py-2 text-xs font-medium"
-                style="border-color: var(--color-success-border); background: var(--color-success-bg); color: var(--color-success)"
+                style="
+                  border-color: var(--color-success-border);
+                  background: var(--color-success-bg);
+                  color: var(--color-success);
+                "
                 @click="openMagnetInClient"
               >
                 启动本地客户端
@@ -404,7 +514,11 @@
                   )
                 "
                 class="rounded-lg border px-3 py-2 text-xs font-medium"
-                style="border-color: var(--border-primary); background: var(--bg-card); color: var(--text-secondary)"
+                style="
+                  border-color: var(--border-primary);
+                  background: var(--bg-card);
+                  color: var(--text-secondary);
+                "
               >
                 查看下载任务
               </RouterLink>
@@ -416,7 +530,11 @@
             <div
               v-if="actionMessage"
               class="mt-3 rounded-lg border px-3 py-2 text-xs"
-              style="border-color: var(--border-primary); background: var(--bg-card); color: var(--text-secondary)"
+              style="
+                border-color: var(--border-primary);
+                background: var(--bg-card);
+                color: var(--text-secondary);
+              "
             >
               {{ actionMessage }}
             </div>
@@ -424,7 +542,11 @@
 
           <div>
             <div class="mb-2 text-sm font-medium" style="color: var(--text-primary)">关联媒体</div>
-            <div v-if="selectedInfo.linkedMedia.length === 0" class="text-xs" style="color: var(--text-muted)">
+            <div
+              v-if="selectedInfo.linkedMedia.length === 0"
+              class="text-xs"
+              style="color: var(--text-muted)"
+            >
               暂无关联媒体
             </div>
             <div v-else class="space-y-2">
@@ -436,7 +558,9 @@
                 style="border-color: var(--border-primary)"
               >
                 <div>
-                  <div class="font-medium" style="color: var(--text-primary)">{{ media.title }}</div>
+                  <div class="font-medium" style="color: var(--text-primary)">
+                    {{ media.title }}
+                  </div>
                   <div class="text-xs" style="color: var(--text-muted)">{{ media.type }}</div>
                 </div>
                 <span class="text-xs" style="color: var(--color-info)">打开</span>
@@ -444,7 +568,10 @@
             </div>
           </div>
 
-          <details class="rounded-xl border p-4" style="border-color: var(--border-primary); background: var(--bg-secondary)">
+          <details
+            class="rounded-xl border p-4"
+            style="border-color: var(--border-primary); background: var(--bg-secondary)"
+          >
             <summary class="cursor-pointer text-sm font-medium" style="color: var(--text-primary)">
               文件列表（{{ selectedInfo.files.length }}）
             </summary>
@@ -460,7 +587,10 @@
             </div>
           </details>
 
-          <div class="rounded-xl border p-4" style="border-color: var(--border-primary); background: var(--bg-secondary)">
+          <div
+            class="rounded-xl border p-4"
+            style="border-color: var(--border-primary); background: var(--bg-secondary)"
+          >
             <div class="mb-2 text-sm font-medium" style="color: var(--text-primary)">最近操作</div>
             <div v-if="recentActions.length === 0" class="text-xs" style="color: var(--text-muted)">
               暂无最近操作记录
@@ -484,23 +614,6 @@
     </section>
   </div>
 </template>
-
-<style scoped>
-  .health-healthy {
-    background: var(--color-success-bg);
-    color: var(--color-success);
-  }
-
-  .health-unhealthy {
-    background: var(--color-danger-bg);
-    color: var(--color-danger);
-  }
-
-  :deep(button:hover),
-  :deep(a:hover) {
-    background-color: var(--bg-secondary);
-  }
-</style>
 
 <script setup lang="ts">
   import { onMounted, ref, watch } from 'vue';
@@ -957,3 +1070,20 @@
     }
   });
 </script>
+
+<style scoped>
+  .health-healthy {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+  }
+
+  .health-unhealthy {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+  }
+
+  :deep(button:hover),
+  :deep(a:hover) {
+    background-color: var(--bg-secondary);
+  }
+</style>

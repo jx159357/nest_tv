@@ -20,7 +20,11 @@
       <section
         v-if="hasUnsavedChanges"
         class="rounded-xl border px-4 py-3 text-sm"
-        style="border-color: var(--color-warning-border); background: var(--color-warning-bg); color: var(--color-warning)"
+        style="
+          border-color: var(--color-warning-border);
+          background: var(--color-warning-bg);
+          color: var(--color-warning);
+        "
       >
         你有尚未保存的更改。离开页面或刷新前，建议先保存。
       </section>
@@ -56,7 +60,11 @@
                 v-model="form.nickname"
                 type="text"
                 class="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
-                style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)"
+                style="
+                  border-color: var(--border-primary);
+                  background: var(--bg-secondary);
+                  color: var(--text-primary);
+                "
                 placeholder="给自己一个更容易识别的昵称"
               />
             </label>
@@ -67,7 +75,11 @@
                 v-model="form.phone"
                 type="text"
                 class="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
-                style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)"
+                style="
+                  border-color: var(--border-primary);
+                  background: var(--bg-secondary);
+                  color: var(--text-primary);
+                "
                 placeholder="用于找回或联系（选填）"
               />
             </label>
@@ -78,12 +90,19 @@
                 v-model="form.avatar"
                 type="text"
                 class="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
-                style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)"
+                style="
+                  border-color: var(--border-primary);
+                  background: var(--bg-secondary);
+                  color: var(--text-primary);
+                "
                 placeholder="https://example.com/avatar.png"
               />
             </label>
 
-            <div class="rounded-2xl border p-4" style="border-color: var(--border-primary); background: var(--bg-secondary)">
+            <div
+              class="rounded-2xl border p-4"
+              style="border-color: var(--border-primary); background: var(--bg-secondary)"
+            >
               <div class="text-sm font-medium" style="color: var(--text-secondary)">头像预览</div>
               <div class="mt-3 flex items-center gap-4">
                 <div
@@ -183,7 +202,9 @@
 
             <div>
               <div class="flex items-center justify-between gap-3">
-                <div class="text-sm font-medium" style="color: var(--text-secondary)">偏好关键词</div>
+                <div class="text-sm font-medium" style="color: var(--text-secondary)">
+                  偏好关键词
+                </div>
                 <button
                   v-if="recentSearches.length > 0"
                   type="button"
@@ -198,7 +219,11 @@
                 v-model="keywordInput"
                 type="text"
                 class="mt-3 w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
-                style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)"
+                style="
+                  border-color: var(--border-primary);
+                  background: var(--bg-secondary);
+                  color: var(--text-primary);
+                "
                 placeholder="输入关键词，用逗号分隔，例如：沙丘, 科幻, 悬疑"
               />
               <div v-if="recentSearches.length > 0" class="mt-3 flex flex-wrap gap-2">
@@ -252,7 +277,11 @@
               v-model="passwordForm.oldPassword"
               type="password"
               class="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
-              style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)"
+              style="
+                border-color: var(--border-primary);
+                background: var(--bg-secondary);
+                color: var(--text-primary);
+              "
               autocomplete="current-password"
             />
           </label>
@@ -263,7 +292,11 @@
               v-model="passwordForm.newPassword"
               type="password"
               class="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
-              style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)"
+              style="
+                border-color: var(--border-primary);
+                background: var(--bg-secondary);
+                color: var(--text-primary);
+              "
               autocomplete="new-password"
             />
           </label>
@@ -274,7 +307,11 @@
               v-model="passwordForm.confirmPassword"
               type="password"
               class="w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
-              style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)"
+              style="
+                border-color: var(--border-primary);
+                background: var(--bg-secondary);
+                color: var(--text-primary);
+              "
               autocomplete="new-password"
             />
           </label>
@@ -309,48 +346,6 @@
     </div>
   </div>
 </template>
-
-<style scoped>
-  .tag-selected {
-    background: rgba(99, 102, 241, 0.12);
-    color: var(--color-brand-primary-light);
-  }
-
-  .tag-success {
-    background: var(--color-success-bg);
-    color: var(--color-success);
-  }
-
-  .tag-danger {
-    background: var(--color-danger-bg);
-    color: var(--color-danger);
-  }
-
-  .tag-default {
-    background: var(--bg-tertiary);
-    color: var(--text-muted);
-  }
-
-  .tag-default:hover {
-    background: var(--bg-secondary);
-  }
-
-  .freshness-selected {
-    border-color: var(--border-focus);
-    background: rgba(99, 102, 241, 0.1);
-    color: var(--color-brand-primary-light);
-  }
-
-  .freshness-default {
-    border-color: var(--border-primary);
-    background: var(--bg-secondary);
-    color: var(--text-muted);
-  }
-
-  .freshness-default:hover {
-    background: var(--bg-tertiary);
-  }
-</style>
 
 <script setup lang="ts">
   import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
@@ -668,3 +663,45 @@
     window.removeEventListener('beforeunload', handleBeforeUnload);
   });
 </script>
+
+<style scoped>
+  .tag-selected {
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--color-brand-primary-light);
+  }
+
+  .tag-success {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+  }
+
+  .tag-danger {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+  }
+
+  .tag-default {
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+  }
+
+  .tag-default:hover {
+    background: var(--bg-secondary);
+  }
+
+  .freshness-selected {
+    border-color: var(--border-focus);
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--color-brand-primary-light);
+  }
+
+  .freshness-default {
+    border-color: var(--border-primary);
+    background: var(--bg-secondary);
+    color: var(--text-muted);
+  }
+
+  .freshness-default:hover {
+    background: var(--bg-tertiary);
+  }
+</style>

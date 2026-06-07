@@ -72,7 +72,9 @@ describe('MainLayout', () => {
     await wrapper.get('.main-header__user-btn').trigger('click');
     await flushPromises();
 
-    const logoutButton = wrapper.findAll('button').find(button => button.text().includes('退出登录'));
+    const logoutButton = wrapper
+      .findAll('button')
+      .find(button => button.text().includes('退出登录'));
 
     expect(logoutButton).toBeTruthy();
     await logoutButton!.trigger('click');

@@ -1,4 +1,4 @@
-import ApiClient from './index';
+import ApiClient from './http';
 import type { MediaResource } from '@/types/media';
 
 export interface RecommendationProfilePreference {

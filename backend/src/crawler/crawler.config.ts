@@ -87,11 +87,11 @@ export const CRAWLER_TARGETS: CrawlerTarget[] = [
     },
     listingUrls: [
       // 电影分类
-      'https://dytt001.com/html/page-5.html',  // 动作
-      'https://dytt001.com/html/page-6.html',  // 喜剧
-      'https://dytt001.com/html/page-7.html',  // 爱情
-      'https://dytt001.com/html/page-8.html',  // 科幻
-      'https://dytt001.com/html/page-9.html',  // 恐怖
+      'https://dytt001.com/html/page-5.html', // 动作
+      'https://dytt001.com/html/page-6.html', // 喜剧
+      'https://dytt001.com/html/page-7.html', // 爱情
+      'https://dytt001.com/html/page-8.html', // 科幻
+      'https://dytt001.com/html/page-9.html', // 恐怖
       'https://dytt001.com/html/page-10.html', // 剧情
       'https://dytt001.com/html/page-11.html', // 战争
       // 电视剧分类
@@ -104,8 +104,8 @@ export const CRAWLER_TARGETS: CrawlerTarget[] = [
       'https://dytt001.com/html/page-18.html', // 外剧
       'https://dytt001.com/html/page-19.html', // 泰剧
       // 其他分类
-      'https://dytt001.com/html/page-3.html',  // 综艺
-      'https://dytt001.com/html/page-4.html',  // 动漫
+      'https://dytt001.com/html/page-3.html', // 综艺
+      'https://dytt001.com/html/page-4.html', // 动漫
       'https://dytt001.com/html/page-22.html', // 纪录片
       'https://dytt001.com/html/page-27.html', // 短剧
       // 今日更新和排行榜

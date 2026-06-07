@@ -41,16 +41,10 @@
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-3">
             <span class="src-text-primary text-sm font-medium">{{ script.name }}</span>
-            <code class="src-code rounded px-2 py-0.5 text-xs">{{
-              script.key
-            }}</code>
+            <code class="src-code rounded px-2 py-0.5 text-xs">{{ script.key }}</code>
             <span
               class="rounded-full px-2 py-0.5 text-xs font-medium"
-              :class="
-                script.enabled
-                  ? 'src-badge-success'
-                  : 'src-badge-muted'
-              "
+              :class="script.enabled ? 'src-badge-success' : 'src-badge-muted'"
             >
               {{ script.enabled ? '已启用' : '已禁用' }}
             </span>
@@ -138,19 +132,13 @@
                 </div>
               </div>
 
-              <div
-                class="src-test-panel mt-4 flex-1 overflow-auto rounded-lg border p-3"
-              >
+              <div class="src-test-panel mt-4 flex-1 overflow-auto rounded-lg border p-3">
                 <h3 class="src-text-muted mb-2 text-xs font-medium">测试结果</h3>
                 <div v-if="testResult">
                   <div class="flex items-center gap-2">
                     <span
                       class="rounded-full px-2 py-0.5 text-xs"
-                      :class="
-                        testResult.ok
-                          ? 'src-badge-success'
-                          : 'src-badge-error'
-                      "
+                      :class="testResult.ok ? 'src-badge-success' : 'src-badge-error'"
                     >
                       {{ testResult.ok ? '成功' : '失败' }}
                     </span>

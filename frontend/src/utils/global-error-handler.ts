@@ -37,11 +37,14 @@ export class GlobalErrorHandler {
     let message = defaultMessage;
     let statusCode = 500;
 
-    if (error.response) {
+    if (error.response || typeof error.status === 'number') {
       // 服务器响应错误
-      statusCode = error.response.status;
-      const data = error.response.data;
+      statusCode = error.response?.status ?? error.status;
+      if (error.message) {
+        message = error.message;
+      }
 
+      const data = error.response?.data;
       if (data && data.message) {
         message = data.message;
       } else if (data && data.error) {
@@ -100,7 +103,7 @@ export class GlobalErrorHandler {
     }
 
     // 特殊错误处理（登录页面不触发自动跳转）
-    if (statusCode === 401 && !window.location.pathname.includes('/login')) {
+    if (statusCode === 401 && !silent && !window.location.pathname.includes('/login')) {
       this.handleUnauthorizedError();
     }
 

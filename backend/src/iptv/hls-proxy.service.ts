@@ -285,10 +285,13 @@ export class HlsProxyService implements OnModuleDestroy {
         }
 
         if (trimmed.startsWith('#')) {
-          return line.replace(/(URI=)(["']?)([^"',\s]+)(["']?)/g, (_match, prefix, open, uri, close) => {
-            const resolved = this.resolveUrl(String(uri), basePath, base);
-            return `${prefix}${open}${resolved}${close}`;
-          });
+          return line.replace(
+            /(URI=)(["']?)([^"',\s]+)(["']?)/g,
+            (_match, prefix, open, uri, close) => {
+              const resolved = this.resolveUrl(String(uri), basePath, base);
+              return `${prefix}${open}${resolved}${close}`;
+            },
+          );
         }
 
         return this.resolveUrl(trimmed, basePath, base);

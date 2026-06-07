@@ -181,10 +181,7 @@
       </div>
     </div>
 
-    <div
-      v-if="showExceptionBanner"
-      class="dt-alert-error rounded-xl border px-4 py-3 text-sm"
-    >
+    <div v-if="showExceptionBanner" class="dt-alert-error rounded-xl border px-4 py-3 text-sm">
       <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           当前结果中有 {{ failedCount }} 条异常 / 取消任务，建议切换到"异常优先"或直接筛选异常任务。
@@ -291,8 +288,12 @@
                     <div class="mt-1 text-xs dt-text-muted">
                       {{ task.sourceLabel || '未标记来源' }}
                     </div>
-                    <div class="dt-text-tertiary mt-1 max-w-md break-all text-xs">{{ task.url }}</div>
-                    <div v-if="task.error" class="dt-text-error-light mt-2 text-xs">{{ task.error }}</div>
+                    <div class="dt-text-tertiary mt-1 max-w-md break-all text-xs">
+                      {{ task.url }}
+                    </div>
+                    <div v-if="task.error" class="dt-text-error-light mt-2 text-xs">
+                      {{ task.error }}
+                    </div>
                     <button
                       class="dt-detail-btn task-detail-toggle mt-3 rounded-lg border px-3 py-1.5 text-xs font-medium"
                       @click="toggleTaskDetails(task.id)"
@@ -451,7 +452,9 @@
                               :key="item.key"
                               class="dt-metadata-box rounded-lg border px-3 py-2"
                             >
-                              <div class="dt-detail-label text-xs font-medium uppercase tracking-wide">
+                              <div
+                                class="dt-detail-label text-xs font-medium uppercase tracking-wide"
+                              >
                                 {{ item.key }}
                               </div>
                               <div class="mt-1 break-all">{{ item.value }}</div>

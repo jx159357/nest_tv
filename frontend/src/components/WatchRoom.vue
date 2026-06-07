@@ -103,12 +103,18 @@
 
 <script setup lang="ts">
   import { ref, onMounted, onUnmounted, nextTick } from 'vue';
-  import socketIOClient from 'socket.io-client';
   import { useAuthStore } from '@/stores/auth';
-
-  const io = socketIOClient;
-  type Socket = ReturnType<typeof io>;
   import { notifyError, notifyInfo } from '@/composables/useModal';
+
+  type SocketClient = typeof import('socket.io-client')['default'];
+  type Socket = ReturnType<SocketClient>;
+
+  let socketClientLoader: Promise<SocketClient> | null = null;
+
+  const loadSocketClient = (): Promise<SocketClient> => {
+    socketClientLoader ??= import('socket.io-client').then(module => module.default);
+    return socketClientLoader;
+  };
 
   interface RoomUser {
     userId: string;
@@ -169,10 +175,18 @@
   const joinRoomId = ref('');
 
   const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+  let disposed = false;
+  let socketConnectionVersion = 0;
 
-  const connectSocket = () => {
+  const connectSocket = async (): Promise<void> => {
+    const version = ++socketConnectionVersion;
     const token = authStore.token || localStorage.getItem('token');
     if (!token) return;
+
+    const io = await loadSocketClient();
+    if (disposed || version !== socketConnectionVersion || socket.value) {
+      return;
+    }
 
     socket.value = io(`${BASE_URL}/watch-room`, {
       auth: { token },
@@ -231,6 +245,7 @@
   };
 
   const disconnectSocket = () => {
+    socketConnectionVersion++;
     socket.value?.disconnect();
     socket.value = null;
   };
@@ -254,7 +269,7 @@
 
   const createRoom = async () => {
     if (!socket.value) {
-      connectSocket();
+      await connectSocket();
     }
 
     try {
@@ -276,17 +291,13 @@
       }
 
       const created = (await response.json()) as { roomId: string };
-      joinRoom(created.roomId, '房间已创建，分享房间号邀请朋友加入吧');
+      await joinRoom(created.roomId, '房间已创建，分享房间号邀请朋友加入吧');
     } catch (error) {
       notifyError('创建房间失败', error instanceof Error ? error.message : '请稍后重试');
     }
   };
 
-  const applyJoinedRoom = (
-    roomId: string,
-    response: JoinRoomResponse,
-    message: string,
-  ) => {
+  const applyJoinedRoom = (roomId: string, response: JoinRoomResponse, message: string) => {
     if (response.success && response.room) {
       currentRoomId.value = roomId;
       isInRoom.value = true;
@@ -306,13 +317,13 @@
   const joinRoomById = () => {
     const id = joinRoomId.value.trim();
     if (!id) return;
-    joinRoom(id, '已加入房间');
+    void joinRoom(id, '已加入房间');
     joinRoomId.value = '';
   };
 
-  const joinRoom = (roomId: string, joinedMessage = '已加入房间') => {
+  const joinRoom = async (roomId: string, joinedMessage = '已加入房间') => {
     if (!socket.value) {
-      connectSocket();
+      await connectSocket();
     }
 
     socket.value?.emit(
@@ -375,6 +386,7 @@
   });
 
   onUnmounted(() => {
+    disposed = true;
     disconnectSocket();
   });
 </script>

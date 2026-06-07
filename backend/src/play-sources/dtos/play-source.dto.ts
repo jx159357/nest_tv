@@ -1,6 +1,6 @@
-import { IsNumber, IsOptional, IsString, IsBoolean, IsEnum, IsUrl, Min } from 'class-validator';
+import { IsNumber, IsOptional, IsString, IsBoolean, IsEnum, IsUrl, Min, IsDate } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { PlaySourceType } from '../../entities/play-source.entity';
+import { PlaySourceType, PlaySourceStatus } from '../../entities/play-source.entity';
 
 export class CreatePlaySourceDto {
   @ApiProperty({
@@ -21,9 +21,29 @@ export class CreatePlaySourceDto {
   @ApiProperty({
     description: '播放源名称',
     example: '高清在线播放',
+    required: false,
   })
+  @IsOptional()
   @IsString({ message: '播放源名称必须是字符串' })
-  name: string;
+  name?: string;
+
+  @ApiProperty({
+    description: '来源名称',
+    example: '天堂影院',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: '来源名称必须是字符串' })
+  sourceName?: string;
+
+  @ApiProperty({
+    description: '剧集号',
+    example: 1,
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber({}, { message: '剧集号必须是数字' })
+  episodeNumber?: number;
 
   @ApiProperty({
     description: '播放URL',
@@ -143,4 +163,21 @@ export class UpdatePlaySourceDto {
   @IsOptional()
   @IsBoolean({ message: '启用状态必须是布尔值' })
   isActive?: boolean;
+
+  @ApiProperty({
+    description: '播放源状态',
+    enum: PlaySourceStatus,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(PlaySourceStatus, { message: '播放源状态无效' })
+  status?: PlaySourceStatus;
+
+  @ApiProperty({
+    description: '最后检查时间',
+    required: false,
+  })
+  @IsOptional()
+  @IsDate({ message: '最后检查时间格式无效' })
+  lastCheckedAt?: Date;
 }

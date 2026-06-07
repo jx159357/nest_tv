@@ -4,75 +4,63 @@
  */
 
 let CACHE_VERSION = 'v1';
-let CACHE_NAME = `nest-tv-${CACHE_VERSION}`;
 let STATIC_CACHE = `nest-tv-static-${CACHE_VERSION}`;
 let DYNAMIC_CACHE = `nest-tv-dynamic-${CACHE_VERSION}`;
 let API_CACHE = `nest-tv-api-${CACHE_VERSION}`;
 
 // 需要预缓存的静态资源
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/offline.html',
-];
+const STATIC_ASSETS = ['/', '/index.html', '/offline.html'];
 
 // API缓存策略配置
 const API_CACHE_CONFIG = {
   // 长缓存（1天）
-  long: [
-    '/api/media/categories',
-    '/api/media/genres',
-  ],
+  long: ['/api/media/categories', '/api/media/genres'],
   // 中等缓存（1小时）
-  medium: [
-    '/api/media/list',
-    '/api/media/search',
-  ],
+  medium: ['/api/media/list', '/api/media/search'],
   // 短缓存（5分钟）
-  short: [
-    '/api/user/profile',
-    '/api/watch-history',
-  ],
+  short: ['/api/user/profile', '/api/watch-history'],
   // 不缓存
-  noCache: [
-    '/api/auth/login',
-    '/api/auth/register',
-    '/api/auth/refresh',
-  ],
+  noCache: ['/api/auth/login', '/api/auth/register', '/api/auth/refresh'],
 };
 
 // 安装事件 - 预缓存静态资源
-self.addEventListener('install', (event) => {
+self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(STATIC_CACHE)
-      .then((cache) => {
+    caches
+      .open(STATIC_CACHE)
+      .then(cache => {
         console.log('[SW] Pre-caching static assets');
         return cache.addAll(STATIC_ASSETS);
       })
-      .then(() => self.skipWaiting())
+      .then(() => self.skipWaiting()),
   );
 });
 
 // 激活事件 - 清理旧缓存
-self.addEventListener('activate', (event) => {
+self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== STATIC_CACHE && 
-              cacheName !== DYNAMIC_CACHE && 
-              cacheName !== API_CACHE) {
-            console.log('[SW] Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
+    caches
+      .keys()
+      .then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            if (
+              cacheName !== STATIC_CACHE &&
+              cacheName !== DYNAMIC_CACHE &&
+              cacheName !== API_CACHE
+            ) {
+              console.log('[SW] Deleting old cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+          }),
+        );
+      })
+      .then(() => self.clients.claim()),
   );
 });
 
 // 请求拦截 - 实现缓存策略
-self.addEventListener('fetch', (event) => {
+self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
 
@@ -105,8 +93,19 @@ self.addEventListener('fetch', (event) => {
 // 判断是否为静态资源
 function isStaticAsset(pathname) {
   const staticExtensions = [
-    '.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg',
-    '.woff', '.woff2', '.ttf', '.eot', '.ico', '.webp',
+    '.js',
+    '.css',
+    '.png',
+    '.jpg',
+    '.jpeg',
+    '.gif',
+    '.svg',
+    '.woff',
+    '.woff2',
+    '.ttf',
+    '.eot',
+    '.ico',
+    '.webp',
   ];
   return staticExtensions.some(ext => pathname.endsWith(ext));
 }
@@ -142,7 +141,7 @@ async function handleApiRequest(request) {
     // 检查缓存是否过期
     const cachedTime = new Date(cachedResponse.headers.get('sw-cached-time')).getTime();
     const now = Date.now();
-    
+
     if (now - cachedTime < cacheTime) {
       // 缓存有效，同时更新缓存（后台更新策略）
       event.waitUntil(updateCache(request));
@@ -244,7 +243,7 @@ async function updateCache(request) {
 }
 
 // 监听消息 - 清理缓存 / 跳过等待
-self.addEventListener('message', (event) => {
+self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
     return;
@@ -252,7 +251,6 @@ self.addEventListener('message', (event) => {
 
   if (event.data && event.data.type === 'SET_VERSION') {
     CACHE_VERSION = event.data.version || CACHE_VERSION;
-    CACHE_NAME = `nest-tv-${CACHE_VERSION}`;
     STATIC_CACHE = `nest-tv-static-${CACHE_VERSION}`;
     DYNAMIC_CACHE = `nest-tv-dynamic-${CACHE_VERSION}`;
     API_CACHE = `nest-tv-api-${CACHE_VERSION}`;
@@ -261,23 +259,26 @@ self.addEventListener('message', (event) => {
 
   if (event.data && event.data.type === 'CLEAR_CACHE') {
     event.waitUntil(
-      caches.keys().then((cacheNames) => {
-        return Promise.all(
-          cacheNames.map((cacheName) => {
-            return caches.delete(cacheName);
-          })
-        );
-      }).then(() => {
-        // 通知所有客户端缓存已清理
-        self.clients.matchAll().then((clients) => {
-          clients.forEach((client) => {
-            client.postMessage({
-              type: 'CACHE_CLEARED',
-              timestamp: Date.now(),
+      caches
+        .keys()
+        .then(cacheNames => {
+          return Promise.all(
+            cacheNames.map(cacheName => {
+              return caches.delete(cacheName);
+            }),
+          );
+        })
+        .then(() => {
+          // 通知所有客户端缓存已清理
+          self.clients.matchAll().then(clients => {
+            clients.forEach(client => {
+              client.postMessage({
+                type: 'CACHE_CLEARED',
+                timestamp: Date.now(),
+              });
             });
           });
-        });
-      })
+        }),
     );
   }
 
@@ -285,15 +286,15 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'PRECACHE') {
     const { urls } = event.data;
     event.waitUntil(
-      caches.open(DYNAMIC_CACHE).then((cache) => {
+      caches.open(DYNAMIC_CACHE).then(cache => {
         return cache.addAll(urls);
-      })
+      }),
     );
   }
 });
 
 // 后台同步 - 用于离线操作
-self.addEventListener('sync', (event) => {
+self.addEventListener('sync', event => {
   if (event.tag === 'sync-watch-history') {
     event.waitUntil(syncWatchHistory());
   }
@@ -306,7 +307,7 @@ async function syncWatchHistory() {
 }
 
 // 推送通知
-self.addEventListener('push', (event) => {
+self.addEventListener('push', event => {
   const options = {
     body: event.data ? event.data.text() : 'No payload',
     icon: '/vite.svg',
@@ -318,15 +319,11 @@ self.addEventListener('push', (event) => {
     },
   };
 
-  event.waitUntil(
-    self.registration.showNotification('Nest TV', options)
-  );
+  event.waitUntil(self.registration.showNotification('Nest TV', options));
 });
 
 // 通知点击处理
-self.addEventListener('notificationclick', (event) => {
+self.addEventListener('notificationclick', event => {
   event.notification.close();
-  event.waitUntil(
-    clients.openWindow('/')
-  );
+  event.waitUntil(self.clients.openWindow('/'));
 });

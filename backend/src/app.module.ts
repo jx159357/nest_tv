@@ -46,12 +46,6 @@ import { Danmaku } from './danmaku/entities/danmaku.entity';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
-interface MysqlTypeCastField {
-  type: string;
-  length: number;
-  string(): string | null;
-}
-
 function getBooleanConfig(
   configService: ConfigService,
   key: string,
@@ -80,7 +74,6 @@ function getBooleanConfig(
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        const dbDebug = getBooleanConfig(configService, 'DB_DEBUG', false);
         const dbLogging = getBooleanConfig(configService, 'DB_LOGGING', false);
 
         return {
@@ -109,9 +102,8 @@ function getBooleanConfig(
             CrawlerTarget,
           ], // 所有实体类
 
-          // 连接池优化配置（生产环境增强）
+          // 连接池优化配置（仅使用 mysql2 pool 支持的选项）
           extra: {
-            // 基础连接池设置 - 支持更大并发
             connectionLimit: Math.max(
               parseInt(configService.get<string>('DB_POOL_MIN', '5')),
               Math.min(
@@ -121,58 +113,19 @@ function getBooleanConfig(
                 ),
               ),
             ),
-            acquireTimeout: parseInt(configService.get<string>('DB_ACQUIRE_TIMEOUT', '60000')),
-            timeout: parseInt(configService.get<string>('DB_QUERY_TIMEOUT', '60000')),
-
-            // 高级连接池设置 - 增强生产环境性能
             queueLimit: parseInt(configService.get<string>('DB_QUEUE_LIMIT', '30')),
             waitForConnections: true,
             connectTimeout: parseInt(
               configService.get<string>('DB_CONNECTION_CHECK_TIMEOUT', '30000'),
               10,
             ),
-
-            // SSL配置（安全连接）
             ssl: configService.get<boolean>('DB_SSL', false)
               ? { rejectUnauthorized: false }
               : false,
-
-            // 字符集和时区配置
             charset: 'utf8mb4',
             timezone: '+00:00',
-
-            // 连接复用和安全设置
-            multipleStatements: false,
-            namedPlaceholders: true,
-
-            // 数据类型和性能配置
-            bigNumberStrings: false,
-            dateStrings: false,
-            debug: dbDebug,
-
-            // 性能优化设置
-            supportBigNumbers: true,
-            typeCast: (field: MysqlTypeCastField, next: () => unknown): unknown => {
-              if (field.type === 'TINY' && field.length === 1) {
-                return field.string() === '1';
-              }
-              return next();
-            },
-
-            // 连接保活设置
             enableKeepAlive: true,
-            keepAliveInitialDelay: 10000, // 保活初始延迟10秒
-
-            // 重连配置 - 增强重连机制
-            reconnect: true,
-            idleTimeout: 60000, // 空闲超时60秒
-
-            // 连接检测配置
-            socketTimeout: 180000, // Socket超时3分钟
-
-            // 错误恢复配置
-            poolPing: true, // 启用连接池健康检查
-            poolPingInterval: 30000, // 每30秒检查一次连接
+            keepAliveInitialDelay: 10000,
           },
 
           // 事务和连接管理

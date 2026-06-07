@@ -9,11 +9,17 @@
       <div class="rounded-lg shadow-sm p-6 mb-6" style="background: var(--bg-card)">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label class="block text-sm font-medium mb-1" style="color: var(--text-secondary)">观看状态</label>
+            <label class="block text-sm font-medium mb-1" style="color: var(--text-secondary)"
+              >观看状态</label
+            >
             <select
               v-model="filters.isCompleted"
               class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)"
+              style="
+                border-color: var(--border-primary);
+                background: var(--bg-secondary);
+                color: var(--text-primary);
+              "
             >
               <option value="">全部</option>
               <option :value="true">已看完</option>
@@ -22,11 +28,17 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium mb-1" style="color: var(--text-secondary)">排序方式</label>
+            <label class="block text-sm font-medium mb-1" style="color: var(--text-secondary)"
+              >排序方式</label
+            >
             <select
               v-model="filters.sortBy"
               class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)"
+              style="
+                border-color: var(--border-primary);
+                background: var(--bg-secondary);
+                color: var(--text-primary);
+              "
             >
               <option value="updatedAt">最近观看</option>
               <option value="createdAt">添加时间</option>
@@ -35,11 +47,17 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium mb-1" style="color: var(--text-secondary)">排序顺序</label>
+            <label class="block text-sm font-medium mb-1" style="color: var(--text-secondary)"
+              >排序顺序</label
+            >
             <select
               v-model="filters.sortOrder"
               class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              style="border-color: var(--border-primary); background: var(--bg-secondary); color: var(--text-primary)"
+              style="
+                border-color: var(--border-primary);
+                background: var(--bg-secondary);
+                color: var(--text-primary);
+              "
             >
               <option value="DESC">降序</option>
               <option value="ASC">升序</option>
@@ -133,7 +151,9 @@
                       <div class="text-sm font-medium" style="color: var(--text-primary)">
                         {{ item.mediaResource.title }}
                       </div>
-                      <div class="text-sm" style="color: var(--text-muted)">{{ item.mediaResource.type }}</div>
+                      <div class="text-sm" style="color: var(--text-muted)">
+                        {{ item.mediaResource.type }}
+                      </div>
                     </div>
                   </div>
                 </td>
@@ -147,7 +167,9 @@
                       :style="{ width: calculateProgress(item) + '%' }"
                     ></div>
                   </div>
-                  <div class="text-xs mt-1" style="color: var(--text-muted)">{{ calculateProgress(item) }}%</div>
+                  <div class="text-xs mt-1" style="color: var(--text-muted)">
+                    {{ calculateProgress(item) }}%
+                  </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span
@@ -164,10 +186,7 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div class="flex space-x-2">
-                    <button
-                      class="wh-action-continue"
-                      @click="continueWatching(item)"
-                    >
+                    <button class="wh-action-continue" @click="continueWatching(item)">
                       继续观看
                     </button>
                     <button
@@ -207,10 +226,7 @@
           <button
             v-for="page in getPageNumbers()"
             :key="page"
-            :class="[
-              'wh-page-btn',
-              page === pagination.page ? 'wh-page-btn--active' : '',
-            ]"
+            :class="['wh-page-btn', page === pagination.page ? 'wh-page-btn--active' : '']"
             @click="typeof page === 'number' ? applyFilters(page) : undefined"
           >
             {{ page }}
@@ -227,69 +243,6 @@
     </main>
   </div>
 </template>
-
-<style scoped>
-  .wh-history-row {
-    border-bottom: 1px solid var(--border-primary);
-  }
-
-  .wh-progress-fill {
-    background: var(--color-brand-primary);
-  }
-
-  .wh-status-completed {
-    background: var(--color-success-bg);
-    color: var(--color-success);
-  }
-
-  .wh-status-watching {
-    background: var(--color-warning-bg);
-    color: var(--color-warning);
-  }
-
-  .wh-action-continue {
-    color: var(--color-brand-primary);
-  }
-
-  .wh-action-continue:hover {
-    color: var(--color-brand-primary-light);
-  }
-
-  .wh-action-delete {
-    color: var(--color-danger);
-  }
-
-  .wh-action-delete:hover {
-    opacity: 0.8;
-  }
-
-  .wh-page-btn {
-    padding: 0.25rem 0.75rem;
-    border: 1px solid var(--border-primary);
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-    background: transparent;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .wh-page-btn:hover:not(:disabled) {
-    background: var(--bg-secondary);
-  }
-
-  .wh-page-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .wh-page-btn--active {
-    border-color: var(--color-brand-primary);
-    background: rgba(99, 102, 241, 0.12);
-    color: var(--color-brand-primary-light);
-  }
-</style>
 
 <script setup>
   import { ref, watch } from 'vue';
@@ -525,3 +478,66 @@
     { immediate: true },
   );
 </script>
+
+<style scoped>
+  .wh-history-row {
+    border-bottom: 1px solid var(--border-primary);
+  }
+
+  .wh-progress-fill {
+    background: var(--color-brand-primary);
+  }
+
+  .wh-status-completed {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+  }
+
+  .wh-status-watching {
+    background: var(--color-warning-bg);
+    color: var(--color-warning);
+  }
+
+  .wh-action-continue {
+    color: var(--color-brand-primary);
+  }
+
+  .wh-action-continue:hover {
+    color: var(--color-brand-primary-light);
+  }
+
+  .wh-action-delete {
+    color: var(--color-danger);
+  }
+
+  .wh-action-delete:hover {
+    opacity: 0.8;
+  }
+
+  .wh-page-btn {
+    padding: 0.25rem 0.75rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .wh-page-btn:hover:not(:disabled) {
+    background: var(--bg-secondary);
+  }
+
+  .wh-page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .wh-page-btn--active {
+    border-color: var(--color-brand-primary);
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--color-brand-primary-light);
+  }
+</style>

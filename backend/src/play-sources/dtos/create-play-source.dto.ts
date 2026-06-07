@@ -6,6 +6,7 @@ import {
   IsNumber,
   IsBoolean,
   IsUrl,
+  IsDate,
 } from 'class-validator';
 import { PlaySourceType, PlaySourceStatus } from '../../entities/play-source.entity';
 import { ApiProperty } from '@nestjs/swagger';
@@ -77,6 +78,16 @@ export class CreatePlaySourceDto {
   @IsOptional()
   @IsNumber()
   episodeNumber?: number;
+
+  @ApiProperty({ description: '最后检查时间', required: false })
+  @IsOptional()
+  @IsDate()
+  lastCheckedAt?: Date;
+
+  @ApiProperty({ description: '是否启用', required: false, default: true })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 
   @ApiProperty({ description: '关联的影视资源ID' })
   @IsNumber()

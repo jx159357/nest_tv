@@ -1,4 +1,4 @@
-import ApiClient from './index';
+import ApiClient from './http';
 import type { DownloadTask } from '@/types/advanced';
 
 export interface DownloadTaskRecord {

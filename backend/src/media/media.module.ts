@@ -19,12 +19,14 @@ import { SearchHistory } from '../entities/search-history.entity';
 import { User } from '../entities/user.entity';
 import { CommonModule } from '../common/common.module';
 import { TorrentModule } from '../torrent/torrent.module';
+import { PlaySourceModule } from '../play-sources/play-source.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([MediaResource, PlaySource, WatchHistory, SearchHistory, User]),
     CommonModule,
     TorrentModule,
+    PlaySourceModule,
   ],
   controllers: [MediaResourceController, AdvancedSearchController],
   providers: [MediaResourceService, AdvancedSearchService],

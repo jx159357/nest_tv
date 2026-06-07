@@ -128,7 +128,9 @@
             />
             <button class="home-search__button" type="submit">搜索</button>
             <div
-              v-if="showHomeSearchMenu && (searchSuggestions.length > 0 || recentSearches.length > 0)"
+              v-if="
+                showHomeSearchMenu && (searchSuggestions.length > 0 || recentSearches.length > 0)
+              "
               class="home-search__menu"
             >
               <div v-if="searchSuggestions.length > 0" class="home-search__menu-group">
@@ -604,10 +606,34 @@
 
 <style scoped>
   .home-view {
+    --home-floating-bg: rgba(255, 255, 255, 0.92);
+    --home-floating-border: rgba(15, 23, 42, 0.1);
+    --home-floating-shadow: 0 18px 48px rgba(15, 23, 42, 0.12);
+    --home-menu-bg: rgba(255, 255, 255, 0.98);
+    --home-card-bg: rgba(255, 255, 255, 0.82);
+    --home-card-hover-shadow: 0 18px 42px rgba(15, 23, 42, 0.12);
+    --home-offline-bg: linear-gradient(135deg, #ffffff 0%, #eef2f7 100%);
+    --home-offline-title: var(--text-primary);
+    --home-offline-desc: var(--text-secondary);
     min-height: 100vh;
     background: transparent;
     color: var(--text-primary);
     padding-bottom: 36px;
+  }
+
+  :global([data-theme='dark'] .home-view),
+  :global(.dark .home-view) {
+    --home-floating-bg: rgba(8, 9, 13, 0.86);
+    --home-floating-border: rgba(255, 255, 255, 0.1);
+    --home-floating-shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
+    --home-menu-bg: rgba(10, 11, 16, 0.98);
+    --home-card-bg: rgba(255, 255, 255, 0.045);
+    --home-card-hover-shadow: 0 18px 42px rgba(0, 0, 0, 0.3);
+    --home-offline-bg:
+      linear-gradient(90deg, rgba(5, 6, 9, 0.96), rgba(5, 6, 9, 0.68)),
+      var(--bg-cinema-soft);
+    --home-offline-title: var(--text-inverse);
+    --home-offline-desc: rgba(226, 232, 240, 0.76);
   }
 
   /* 轮播区域 */
@@ -624,11 +650,11 @@
     grid-template-columns: minmax(170px, 250px) minmax(320px, 1fr) auto;
     align-items: center;
     gap: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--home-floating-border);
     border-radius: 8px;
-    background: rgba(8, 9, 13, 0.86);
+    background: var(--home-floating-bg);
     padding: 12px;
-    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
+    box-shadow: var(--home-floating-shadow);
     backdrop-filter: blur(18px) saturate(125%);
   }
 
@@ -666,7 +692,7 @@
     padding: 0 112px 0 46px;
     border: 1px solid var(--border-primary);
     border-radius: var(--radius-control);
-    background: rgba(255, 255, 255, 0.055);
+    background: var(--surface-control);
     color: var(--text-primary);
     font-size: 15px;
     transition: all var(--transition-fast);
@@ -708,7 +734,7 @@
     padding: 12px;
     border: 1px solid var(--border-primary);
     border-radius: var(--panel-radius);
-    background: rgba(10, 11, 16, 0.98);
+    background: var(--home-menu-bg);
     box-shadow: var(--shadow-popover);
   }
 
@@ -785,11 +811,8 @@
     align-items: center;
     border: 1px solid var(--border-primary);
     border-radius: var(--panel-radius);
-    background:
-      linear-gradient(90deg, rgba(5, 6, 9, 0.96), rgba(5, 6, 9, 0.68)),
-      radial-gradient(circle at 78% 22%, rgba(229, 9, 20, 0.24), transparent 32%),
-      var(--bg-cinema-soft);
-    box-shadow: var(--shadow-cinema);
+    background: var(--home-offline-bg);
+    box-shadow: var(--shadow-lg);
     overflow: hidden;
   }
 
@@ -804,21 +827,21 @@
     padding: 5px 12px;
     border-radius: 6px;
     background: var(--color-brand-primary);
-    color: white;
+    color: var(--text-inverse);
     font-size: 12px;
     font-weight: 700;
   }
 
   .home-offline-hero__title {
     margin: 0;
-    color: white;
+    color: var(--home-offline-title);
     font-size: 34px;
     line-height: 1.2;
   }
 
   .home-offline-hero__desc {
     margin: 14px 0 22px;
-    color: rgba(226, 232, 240, 0.76);
+    color: var(--home-offline-desc);
     font-size: 14px;
     line-height: 1.7;
   }
@@ -827,7 +850,7 @@
     padding: 11px 20px;
     border-radius: 8px;
     background: var(--color-brand-primary);
-    color: white;
+    color: var(--text-inverse);
     font-size: 14px;
     font-weight: 700;
     transition: all var(--transition-fast);
@@ -899,7 +922,7 @@
     display: grid;
     grid-template-columns: 132px 1fr;
     min-height: 82px;
-    background: rgba(255, 255, 255, 0.045);
+    background: var(--home-card-bg);
     border-radius: 8px;
     overflow: hidden;
     cursor: pointer;
@@ -909,7 +932,7 @@
 
   .continue-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--home-card-hover-shadow);
     border-color: var(--color-brand-border);
   }
 
@@ -1028,7 +1051,7 @@
   }
 
   .media-row--rail::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--border-secondary);
     border-radius: 999px;
   }
 
@@ -1255,7 +1278,7 @@
     .home-search__content {
       grid-template-columns: 1fr;
       gap: 12px;
-      background: rgba(8, 9, 13, 0.72);
+      background: var(--home-floating-bg);
     }
 
     .home-search__quick {

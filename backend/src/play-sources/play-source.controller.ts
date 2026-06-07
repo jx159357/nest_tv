@@ -6,6 +6,7 @@ import {
   Patch,
   Delete,
   Param,
+  ParseIntPipe,
   Body,
   Query,
   UseGuards,
@@ -21,7 +22,10 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { PlaySourceService } from './play-source.service';
+import { MacCmsResolverService } from './mac-cms-resolver.service';
+import { PlaySourceHealthService } from './play-source-health.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Public } from '../auth/public.decorator';
 import { CreatePlaySourceDto, UpdatePlaySourceDto } from './dtos/play-source.dto';
 import { PlaySourceQueryDto } from './dtos/play-source-query.dto';
 import { PlaySourceStatus } from '../entities/play-source.entity';
@@ -31,7 +35,11 @@ import { PlaySourceStatus } from '../entities/play-source.entity';
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class PlaySourceController {
-  constructor(private readonly playSourceService: PlaySourceService) {}
+  constructor(
+    private readonly playSourceService: PlaySourceService,
+    private readonly macCmsResolver: MacCmsResolverService,
+    private readonly healthService: PlaySourceHealthService,
+  ) {}
 
   /**
    * 获取播放源列表（支持筛选和分页）
@@ -183,7 +191,7 @@ export class PlaySourceController {
     example: 1,
     required: true,
   })
-  async findById(@Param('id') id: number) {
+  async findById(@Param('id', ParseIntPipe) id: number) {
     return this.playSourceService.findById(id);
   }
 
@@ -208,7 +216,10 @@ export class PlaySourceController {
   @ApiResponse({ status: 404, description: '播放源不存在' })
   @ApiParam({ name: 'id', description: '播放源ID' })
   @UsePipes(new ValidationPipe({ transform: true }))
-  async update(@Param('id') id: number, @Body() updatePlaySourceDto: UpdatePlaySourceDto) {
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updatePlaySourceDto: UpdatePlaySourceDto,
+  ) {
     return this.playSourceService.update(id, updatePlaySourceDto);
   }
 
@@ -220,7 +231,7 @@ export class PlaySourceController {
   @ApiResponse({ status: 200, description: '删除成功' })
   @ApiResponse({ status: 404, description: '播放源不存在' })
   @ApiParam({ name: 'id', description: '播放源ID' })
-  async remove(@Param('id') id: number) {
+  async remove(@Param('id', ParseIntPipe) id: number) {
     await this.playSourceService.remove(id);
     return { message: '删除成功' };
   }
@@ -234,8 +245,20 @@ export class PlaySourceController {
   @ApiResponse({ status: 200, description: '验证成功' })
   @ApiResponse({ status: 404, description: '播放源不存在' })
   @ApiParam({ name: 'id', description: '播放源ID' })
-  async validate(@Param('id') id: number) {
+  async validate(@Param('id', ParseIntPipe) id: number) {
     return this.playSourceService.validate(id);
+  }
+
+  /**
+   * 从原始播放页刷新播放源
+   */
+  @Patch(':id/refresh')
+  @ApiOperation({ summary: '从原始播放页刷新播放源' })
+  @ApiResponse({ status: 200, description: '刷新完成' })
+  @ApiResponse({ status: 404, description: '播放源不存在' })
+  @ApiParam({ name: 'id', description: '播放源ID' })
+  async refresh(@Param('id', ParseIntPipe) id: number) {
+    return this.playSourceService.refreshFromOrigin(id);
   }
 
   /**
@@ -246,7 +269,7 @@ export class PlaySourceController {
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 404, description: '播放源不存在' })
   @ApiParam({ name: 'mediaId', description: '媒体资源ID' })
-  async getBestPlaySource(@Param('mediaId') mediaId: number) {
+  async getBestPlaySource(@Param('mediaId', ParseIntPipe) mediaId: number) {
     return this.playSourceService.getBestPlaySource(mediaId);
   }
 
@@ -257,7 +280,70 @@ export class PlaySourceController {
   @ApiOperation({ summary: '获取媒体资源的播放源列表' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiParam({ name: 'mediaId', description: '媒体资源ID' })
-  async getByMediaResource(@Param('mediaId') mediaId: number) {
+  async getByMediaResource(@Param('mediaId', ParseIntPipe) mediaId: number) {
     return this.playSourceService.getByMediaResource(mediaId);
+  }
+
+  /**
+   * 媒体级刷新 - 刷新该媒体下所有失效播放源
+   */
+  @Post('media/:mediaId/refresh')
+  @ApiOperation({ summary: '媒体级刷新播放源' })
+  @ApiResponse({ status: 200, description: '刷新完成' })
+  @ApiParam({ name: 'mediaId', description: '媒体资源ID' })
+  async refreshMediaSources(@Param('mediaId', ParseIntPipe) mediaId: number) {
+    return this.playSourceService.refreshMediaSources(mediaId);
+  }
+
+  /**
+   * 通过 MacCMS 资源站 API 实时解析播放地址
+   */
+  @Post('resolve')
+  @Public()
+  @ApiOperation({
+    summary: '实时解析播放地址',
+    description: '通过 MacCMS 资源站 API 根据标题实时获取 m3u8 播放地址',
+  })
+  @ApiResponse({ status: 200, description: '解析成功' })
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async resolveFromCms(
+    @Body() body: { title: string; episodeNumber?: number },
+  ) {
+    const episodes = await this.macCmsResolver.resolveByTitle(
+      body.title,
+      body.episodeNumber,
+    );
+    return { episodes };
+  }
+
+  /**
+   * 获取播放源健康状态统计
+   */
+  @Get('health/stats')
+  @ApiOperation({ summary: '获取播放源健康状态统计' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getHealthStats() {
+    return this.healthService.getHealthStats();
+  }
+
+  /**
+   * 手动触发播放源健康检查
+   */
+  @Post('health/check')
+  @ApiOperation({ summary: '手动触发播放源健康检查' })
+  @ApiResponse({ status: 200, description: '检查完成' })
+  async triggerHealthCheck() {
+    return this.healthService.validateAndReplace(100);
+  }
+
+  /**
+   * 手动触发过期播放源清理
+   */
+  @Post('health/cleanup')
+  @ApiOperation({ summary: '手动触发过期播放源清理' })
+  @ApiResponse({ status: 200, description: '清理完成' })
+  async triggerCleanup() {
+    const cleaned = await this.healthService.cleanupExpiredSources(30);
+    return { cleaned };
   }
 }

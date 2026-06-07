@@ -4,12 +4,14 @@ import { Like, Repository } from 'typeorm';
 import { MediaResource } from '../entities/media-resource.entity';
 import { User } from '../entities/user.entity';
 import { PlaySource } from '../entities/play-source.entity';
+import { WatchHistory } from '../entities/watch-history.entity';
 import { CreateMediaResourceDto } from './dtos/create-media-resource.dto';
 import { UpdateMediaResourceDto } from './dtos/update-media-resource.dto';
 import { MediaResourceQueryDto } from './dtos/media-resource-query.dto';
 import { CacheService } from '../common/cache/cache.service';
 import { Cacheable, CacheEvict } from '../common/decorators/cache.decorator';
 import { comparePlaySources } from '../play-sources/play-source-ranking.util';
+import { PlaySourceService } from '../play-sources/play-source.service';
 
 interface MediaStatisticsRow {
   total: string;
@@ -67,7 +69,10 @@ export class MediaResourceService {
     private userRepository: Repository<User>,
     @InjectRepository(PlaySource)
     private playSourceRepository: Repository<PlaySource>,
+    @InjectRepository(WatchHistory)
+    private watchHistoryRepository: Repository<WatchHistory>,
     private readonly cacheService: CacheService,
+    private readonly playSourceService: PlaySourceService,
   ) {}
 
   private normalizeText(value?: string | null): string {
@@ -261,31 +266,106 @@ export class MediaResourceService {
   /**
    * 根据ID获取影视资源
    */
-  async findById(id: number): Promise<MediaResource> {
+  async findById(id: number): Promise<MediaResource & { sourceFreshness?: string }> {
     const mediaResource = await this.mediaResourceRepository.findOne({
       where: { id },
-      relations: ['watchHistory', 'playSources'],
+      relations: ['watchHistory'],
     });
 
     if (!mediaResource) {
       throw new NotFoundException(`影视资源ID ${id} 不存在`);
     }
 
-    if (Array.isArray(mediaResource.playSources)) {
-      const now = new Date();
-      const sorted = [...mediaResource.playSources].sort((left, right) =>
-        comparePlaySources(left, right, now),
-      );
-      const seen = new Set<string>();
-      mediaResource.playSources = sorted.filter(s => {
-        if (!s.url) return false;
-        if (seen.has(s.url)) return false;
-        seen.add(s.url);
-        return true;
+    try {
+      const result = await this.playSourceService.getPlayableSources(id);
+      mediaResource.playSources = result.sources;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      (mediaResource as any).sourceFreshness = result.freshness;
+    } catch {
+      mediaResource.playSources = await this.playSourceRepository.find({
+        where: { mediaResourceId: id, isActive: true },
+        order: { priority: 'ASC', updatedAt: 'DESC' },
       });
     }
 
     return mediaResource;
+  }
+
+  async getPlayDetail(id: number, userId?: number) {
+    const media = await this.mediaResourceRepository.findOne({ where: { id } });
+    if (!media) {
+      throw new NotFoundException(`影视资源ID ${id} 不存在`);
+    }
+
+    let playSources: PlaySource[] = [];
+    let sourceFreshness: 'fresh' | 'stale' | 'refreshing' | 'empty' = 'empty';
+    try {
+      const result = await this.playSourceService.getPlayableSources(id);
+      playSources = result.sources;
+      sourceFreshness = result.freshness;
+    } catch {
+      playSources = await this.playSourceRepository.find({
+        where: { mediaResourceId: id, isActive: true },
+        order: { priority: 'ASC', updatedAt: 'DESC' },
+      });
+    }
+
+    const sourceGroupMap = new Map<string, PlaySource[]>();
+    for (const source of playSources) {
+      const key = source.sourceName || source.providerName || '默认线路';
+      const group = sourceGroupMap.get(key) ?? [];
+      group.push(source);
+      sourceGroupMap.set(key, group);
+    }
+
+    const sourceGroups = [...sourceGroupMap.entries()].map(([name, sources]) => {
+      const sorted = sources.sort((a, b) => (a.episodeNumber ?? 0) - (b.episodeNumber ?? 0));
+      return {
+        name,
+        episodes: sorted.map(s => ({
+          id: s.id,
+          episodeNumber: s.episodeNumber,
+          url: s.url,
+          name: s.name || (s.episodeNumber ? `第${s.episodeNumber}集` : '播放'),
+          resolution: s.resolution,
+          format: s.format,
+          status: s.status,
+          isAds: s.isAds,
+        })),
+      };
+    });
+
+    let watchHistory: { currentTime: number; duration: number; episodeNumber?: number } | null = null;
+    if (userId) {
+      const wh = await this.watchHistoryRepository.findOne({
+        where: { userId, mediaResourceId: id },
+      });
+      if (wh) {
+        watchHistory = {
+          currentTime: wh.currentTime ?? 0,
+          duration: wh.duration ?? 0,
+          episodeNumber: wh.episodeNumber,
+        };
+      }
+    }
+
+    return {
+      id: media.id,
+      title: media.title,
+      description: media.description,
+      type: media.type,
+      poster: media.poster,
+      backdrop: media.backdrop,
+      rating: media.rating,
+      genres: media.genres,
+      quality: media.quality,
+      releaseDate: media.releaseDate,
+      episodeCount: media.episodeCount,
+      sourceGroups,
+      sourceFreshness,
+      downloadUrls: media.downloadUrls ?? [],
+      watchHistory,
+    };
   }
 
   /**

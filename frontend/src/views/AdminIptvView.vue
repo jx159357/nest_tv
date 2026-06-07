@@ -40,15 +40,9 @@
     <!-- 操作按钮区 -->
     <div class="actions-bar">
       <div class="action-group">
-        <button class="btn btn-primary" @click="showImportDialog = true">
-          导入频道
-        </button>
-        <button class="btn btn-secondary" @click="exportM3U">
-          导出M3U
-        </button>
-        <button class="btn btn-secondary" @click="exportTxt">
-          导出TXT
-        </button>
+        <button class="btn btn-primary" @click="showImportDialog = true">导入频道</button>
+        <button class="btn btn-secondary" @click="exportM3U">导出M3U</button>
+        <button class="btn btn-secondary" @click="exportTxt">导出TXT</button>
       </div>
       <div class="action-group">
         <button class="btn btn-success" :disabled="collecting" @click="collectSources">
@@ -57,9 +51,7 @@
         <button class="btn btn-warning" :disabled="testing" @click="testAllQuality">
           {{ testing ? '测试中...' : '质量测试' }}
         </button>
-        <button class="btn btn-info" @click="matchLogos">
-          匹配台标
-        </button>
+        <button class="btn btn-info" @click="matchLogos">匹配台标</button>
       </div>
     </div>
 
@@ -437,8 +429,7 @@
   const loadChannels = async () => {
     try {
       pageError.value = '';
-      const isActive =
-        activeFilter.value === 'all' ? undefined : activeFilter.value === 'active';
+      const isActive = activeFilter.value === 'all' ? undefined : activeFilter.value === 'active';
       const res = await iptvApi.getChannels({
         page: currentPage.value,
         limit: 20,

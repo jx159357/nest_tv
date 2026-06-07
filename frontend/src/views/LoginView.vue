@@ -4,9 +4,7 @@
       <section class="login-hero">
         <span class="login-badge">Nest TV 账号中心</span>
         <div>
-          <h1 class="login-hero-title">
-            登录后继续你的收藏、搜索与推荐链路
-          </h1>
+          <h1 class="login-hero-title">登录后继续你的收藏、搜索与推荐链路</h1>
           <p class="login-hero-desc">
             使用账号登录后，可同步搜索历史、收藏反馈、推荐画像和个人偏好设置，让体验在多次访问间保持连续。
           </p>
@@ -14,21 +12,15 @@
         <div class="login-features">
           <div class="login-feature-card">
             <div class="login-feature-label">同步收藏</div>
-            <div class="login-feature-text">
-              收藏结果即时反馈，并可回到高亮定位的收藏页。
-            </div>
+            <div class="login-feature-text">收藏结果即时反馈，并可回到高亮定位的收藏页。</div>
           </div>
           <div class="login-feature-card">
             <div class="login-feature-label">搜索画像</div>
-            <div class="login-feature-text">
-              登录后搜索会沉淀到服务端历史，并参与推荐生成。
-            </div>
+            <div class="login-feature-text">登录后搜索会沉淀到服务端历史，并参与推荐生成。</div>
           </div>
           <div class="login-feature-card">
             <div class="login-feature-label">偏好设置</div>
-            <div class="login-feature-text">
-              登录后可维护资料、推荐偏好和密码安全信息。
-            </div>
+            <div class="login-feature-text">登录后可维护资料、推荐偏好和密码安全信息。</div>
           </div>
         </div>
       </section>
@@ -73,11 +65,7 @@
             />
           </label>
 
-          <button
-            type="submit"
-            :disabled="authStore.isLoading"
-            class="login-submit"
-          >
+          <button type="submit" :disabled="authStore.isLoading" class="login-submit">
             {{ authStore.isLoading ? '登录中...' : '登录' }}
           </button>
         </form>
@@ -132,9 +120,7 @@
 <style scoped>
   .login-page {
     min-height: 100vh;
-    background:
-      linear-gradient(180deg, rgba(229, 9, 20, 0.12), transparent 32%),
-      var(--bg-page);
+    background: linear-gradient(180deg, rgba(229, 9, 20, 0.12), transparent 32%), var(--bg-page);
     color: var(--text-primary);
     padding: 48px 16px;
     display: flex;
@@ -288,7 +274,11 @@
     width: 100%;
     padding: 12px;
     border-radius: 8px;
-    background: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-primary-dark));
+    background: linear-gradient(
+      135deg,
+      var(--color-brand-primary),
+      var(--color-brand-primary-dark)
+    );
     color: white;
     font-size: 14px;
     font-weight: 600;

@@ -1,4 +1,4 @@
-import ApiClient from './index';
+import ApiClient from './http';
 import { buildApiUrl } from './url';
 
 export interface IPTVChannel {

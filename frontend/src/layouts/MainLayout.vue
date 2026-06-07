@@ -13,11 +13,7 @@
 
         <!-- 导航菜单 -->
         <nav class="main-header__nav">
-          <router-link
-            to="/"
-            class="main-header__nav-item"
-            :class="{ active: route.path === '/' }"
-          >
+          <router-link to="/" class="main-header__nav-item" :class="{ active: route.path === '/' }">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
               <polyline points="9 22 9 12 15 12 15 22" />
@@ -85,6 +81,7 @@
           <button
             class="main-header__icon-btn"
             :title="isDark ? '切换到浅色模式' : '切换到暗色模式'"
+            :aria-label="isDark ? '切换到浅色模式' : '切换到暗色模式'"
             @click="toggleTheme"
           >
             <svg
@@ -326,6 +323,7 @@
   import { ref, computed, onMounted, onUnmounted } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { useAuthStore } from '@/stores/auth';
+  import { useTheme } from '@/composables/useTheme';
 
   const router = useRouter();
   const route = useRoute();
@@ -333,7 +331,7 @@
 
   const searchQuery = ref('');
   const showUserMenu = ref(false);
-  const isDark = ref(document.documentElement.classList.contains('dark'));
+  const { isDark, toggleTheme } = useTheme();
 
   const currentYear = new Date().getFullYear();
 
@@ -346,12 +344,6 @@
     const name = authStore.user?.nickname || authStore.user?.username || '';
     return name.charAt(0).toUpperCase();
   });
-
-  const toggleTheme = () => {
-    isDark.value = !isDark.value;
-    document.documentElement.classList.toggle('dark', isDark.value);
-    localStorage.setItem('nest-tv-theme', isDark.value ? 'dark' : 'light');
-  };
 
   const handleSearch = () => {
     if (searchQuery.value.trim()) {
@@ -378,14 +370,6 @@
 
   onMounted(() => {
     document.addEventListener('click', handleClickOutside);
-    const savedTheme = localStorage.getItem('nest-tv-theme');
-    if (savedTheme === 'dark') {
-      isDark.value = true;
-      document.documentElement.classList.add('dark');
-    } else if (savedTheme === 'light') {
-      isDark.value = false;
-      document.documentElement.classList.remove('dark');
-    }
   });
 
   onUnmounted(() => {
@@ -398,7 +382,7 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    background: var(--cinema-gradient);
+    background: var(--app-shell-bg);
     color: var(--text-primary);
   }
 
@@ -406,10 +390,10 @@
     position: sticky;
     top: 0;
     z-index: 100;
-    background: rgba(5, 6, 9, 0.9);
+    background: var(--app-header-bg);
     backdrop-filter: blur(18px) saturate(135%);
     border-bottom: 1px solid var(--border-primary);
-    box-shadow: none;
+    box-shadow: var(--app-header-shadow);
   }
 
   .main-header__container {
@@ -543,7 +527,7 @@
     padding: 0 16px 0 40px;
     border: 1px solid var(--border-primary);
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.045);
+    background: var(--surface-control);
     font-size: 14px;
     color: var(--text-primary);
     outline: none;
@@ -552,7 +536,7 @@
 
   .main-header__search-input:focus {
     border-color: var(--border-focus);
-    background: var(--bg-card-elevated);
+    background: var(--surface-card-hover);
     box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.16);
   }
 
@@ -669,7 +653,7 @@
     text-decoration: none;
     font-size: 14px;
     font-weight: 500;
-    color: var(--text-link-hover);
+    color: var(--text-link);
     background: transparent;
     border: 1px solid rgba(229, 9, 20, 0.3);
     transition: all 0.2s;
@@ -701,11 +685,12 @@
   }
 
   .main-footer {
-    background: #06070a;
+    background: var(--app-footer-bg);
     color: var(--text-muted);
     padding: 40px 0;
     margin-top: auto;
-    border-top: 1px solid var(--border-primary);
+    border-top: 1px solid var(--app-footer-border);
+    box-shadow: var(--app-footer-shadow);
   }
 
   .main-footer__container {

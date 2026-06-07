@@ -192,6 +192,14 @@ export class DanmakuService {
     return Math.floor(parsed);
   }
 
+  private normalizePositiveInteger(value?: number): number | undefined {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return undefined;
+    }
+    return Math.floor(parsed);
+  }
+
   private normalizeSort(sort?: 'ASC' | 'DESC'): 'ASC' | 'DESC' {
     return sort === 'ASC' ? 'ASC' : 'DESC';
   }
@@ -795,6 +803,7 @@ export class DanmakuService {
   }): Promise<DanmakuSuggestionRecord[]> {
     const { videoId, mediaResourceId, type = 'popular', limit = 10 } = options;
     const safeLimit = this.normalizeLimit(limit, 10);
+    const safeMediaResourceId = this.normalizePositiveInteger(mediaResourceId);
 
     const queryBuilder = this.danmakuRepository
       .createQueryBuilder('danmaku')
@@ -814,8 +823,10 @@ export class DanmakuService {
       queryBuilder.andWhere('danmaku.videoId = :videoId', { videoId });
     }
 
-    if (mediaResourceId) {
-      queryBuilder.andWhere('danmaku.mediaResourceId = :mediaResourceId', { mediaResourceId });
+    if (safeMediaResourceId) {
+      queryBuilder.andWhere('danmaku.mediaResourceId = :mediaResourceId', {
+        mediaResourceId: safeMediaResourceId,
+      });
     }
 
     if (type === 'recent') {

@@ -22,7 +22,10 @@ import {
 import { CrawlerService } from './crawler.service';
 import type { CrawledData, CrawlWebsiteResult } from './crawler.service';
 import { CrawlerSchedulerService } from '../scheduler/crawler-scheduler.service';
-import type { ManualCrawlResponse, CrawlerStatusResponse } from '../scheduler/crawler-scheduler.service';
+import type {
+  ManualCrawlResponse,
+  CrawlerStatusResponse,
+} from '../scheduler/crawler-scheduler.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { MediaResourceService } from '../media/media-resource.service';
@@ -419,7 +422,9 @@ export class CrawlerController {
    */
   @Get('test-connection')
   async testConnection(@Query('targetName') targetName: string) {
-    const target = (await this.crawlerService.getAvailableTargets()).find(t => t.name === targetName);
+    const target = (await this.crawlerService.getAvailableTargets()).find(
+      t => t.name === targetName,
+    );
 
     if (!target) {
       return {

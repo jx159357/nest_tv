@@ -12,18 +12,6 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Nest TV - 在线影视观看</title>
 
-    <!-- DNS预解析和预连接 -->
-    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
-    <link rel="dns-prefetch" href="//cdn.jsdelivr.net" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
-    <!-- 开发环境关键CSS；生产构建由 Vite 注入资源 -->
-    <link rel="stylesheet" href="/src/style.css" />
-
-    <!-- 性能优化提示 -->
-    <link rel="modulepreload" href="/src/main.ts" />
-
     <!-- PWA相关 -->
     <meta name="description" content="Nest TV - 高清在线影视观看平台" />
     <meta name="keywords" content="视频, 电影, 电视剧, 在线观看, 流媒体" />
@@ -43,46 +31,28 @@
   </head>
   <body>
     <script>
-      (function() {
-        var t = localStorage.getItem('nest-tv-theme');
-        if (t !== 'light') document.documentElement.classList.add('dark');
+      (function () {
+        try {
+          var savedTheme = localStorage.getItem('nest-tv-theme');
+          var theme = savedTheme === 'light' ? 'light' : 'dark';
+          var root = document.documentElement;
+          var themeColor = document.querySelector('meta[name="theme-color"]');
+
+          root.classList.toggle('dark', theme === 'dark');
+          root.dataset.theme = theme;
+          root.style.colorScheme = theme;
+
+          if (themeColor) {
+            themeColor.setAttribute('content', theme === 'dark' ? '#08090d' : '#ffffff');
+          }
+        } catch (e) {
+          document.documentElement.classList.add('dark');
+          document.documentElement.dataset.theme = 'dark';
+          document.documentElement.style.colorScheme = 'dark';
+        }
       })();
     </script>
     <div id="app"></div>
-
-    <!-- 关键渲染路径优化 -->
-    <script>
-      // 预加载关键资源
-      if ('requestIdleCallback' in window) {
-        requestIdleCallback(() => {
-          // 预加载路由组件
-          const routes = ['/', '/media', '/watch', '/recommendations'];
-          routes.forEach(route => {
-            const link = document.createElement('link');
-            link.rel = 'prefetch';
-            link.href = route;
-            document.head.appendChild(link);
-          });
-        });
-      }
-
-      // 性能监控
-      if ('performance' in window && 'PerformanceObserver' in window) {
-        try {
-          const observer = new PerformanceObserver((list) => {
-            for (const entry of list.getEntries()) {
-              if (entry.entryType === 'largest-contentful-paint') {
-                console.debug('[Performance] LCP:', entry.startTime);
-              }
-            }
-          });
-          observer.observe({ entryTypes: ['largest-contentful-paint'] });
-        } catch (e) {
-          // 静默失败
-        }
-      }
-    </script>
-
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

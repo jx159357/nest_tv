@@ -96,8 +96,7 @@ export class AdvancedSearchService {
     }
 
     // 构建查询
-    const queryBuilder = this.mediaResourceRepository
-      .createQueryBuilder('mediaResource');
+    const queryBuilder = this.mediaResourceRepository.createQueryBuilder('mediaResource');
 
     // 基础条件：只搜索活跃的资源
     if (!includeInactive) {
@@ -129,7 +128,9 @@ export class AdvancedSearchService {
     // 类型标签筛选
     if (genres.length > 0) {
       genres.forEach((genre, index) => {
-        queryBuilder.andWhere(`mediaResource.genres LIKE :genre${index}`, { [`genre${index}`]: `%${genre}%` });
+        queryBuilder.andWhere(`mediaResource.genres LIKE :genre${index}`, {
+          [`genre${index}`]: `%${genre}%`,
+        });
       });
     }
 
@@ -447,10 +448,7 @@ export class AdvancedSearchService {
       case 'relevance':
         if (keyword.trim()) {
           queryBuilder
-            .addOrderBy(
-              'CASE WHEN mediaResource.title LIKE :exactKeyword THEN 1 ELSE 2 END',
-              'ASC',
-            )
+            .addOrderBy('CASE WHEN mediaResource.title LIKE :exactKeyword THEN 1 ELSE 2 END', 'ASC')
             .setParameter('exactKeyword', `%${keyword.trim()}%`)
             .addOrderBy('mediaResource.rating', order);
         } else {

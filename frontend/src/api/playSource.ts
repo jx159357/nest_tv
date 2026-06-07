@@ -1,4 +1,4 @@
-import ApiClient from './index';
+import ApiClient from './http';
 import type { PlaySource, PlaySourceQueryParams } from '@/types/media';
 
 export interface PlaySourceListResponse {
@@ -47,6 +47,16 @@ export const playSourceApi = {
     return ApiClient.get<PlaySource[]>(`/play-sources/media/${mediaId}`);
   },
 
+  // 媒体级刷新 - 刷新该媒体下所有失效播放源
+  refreshMediaPlaySources: (mediaId: string) => {
+    return ApiClient.post<{
+      refreshed: number;
+      valid: PlaySource[];
+      invalid: Array<{ id: number; oldUrl: string; reason: string }>;
+      best: PlaySource | null;
+    }>(`/play-sources/media/${mediaId}/refresh`);
+  },
+
   // 添加播放源
   createPlaySource: (data: any) => {
     return ApiClient.post<PlaySource>('/play-sources', data);
@@ -66,6 +76,25 @@ export const playSourceApi = {
   testPlaySource: (id: string) => {
     return ApiClient.patch<{ isValid: boolean; message: string; details: Record<string, unknown> }>(
       `/play-sources/${id}/validate`,
+    );
+  },
+
+  // 单条刷新 - 从原始播放页重新解析 URL
+  refreshPlaySource: (id: string) => {
+    return ApiClient.patch<{
+      refreshed: boolean;
+      oldUrl: string;
+      newUrl?: string;
+      message: string;
+      playSource?: PlaySource;
+    }>(`/play-sources/${id}/refresh`);
+  },
+
+  // 通过 MacCMS 资源站 API 实时解析播放地址
+  resolveFromCms: (title: string, episodeNumber?: number) => {
+    return ApiClient.post<{ episodes: { episode: string; url: string; sourceName: string }[] }>(
+      '/play-sources/resolve',
+      { title, episodeNumber },
     );
   },
 };

@@ -111,9 +111,7 @@
           </table>
         </div>
 
-        <div
-          class="pagination-footer flex items-center justify-between border-t px-4 py-3 text-sm"
-        >
+        <div class="pagination-footer flex items-center justify-between border-t px-4 py-3 text-sm">
           <span>共 {{ total }} 条</span>
           <div class="flex items-center gap-3">
             <button
@@ -270,70 +268,70 @@
 </script>
 
 <style scoped>
-.text-primary {
-  color: var(--text-primary);
-}
+  .text-primary {
+    color: var(--text-primary);
+  }
 
-.text-secondary {
-  color: var(--text-secondary);
-}
+  .text-secondary {
+    color: var(--text-secondary);
+  }
 
-.text-muted {
-  color: var(--text-muted);
-}
+  .text-muted {
+    color: var(--text-muted);
+  }
 
-.text-tertiary {
-  color: var(--text-tertiary);
-}
+  .text-tertiary {
+    color: var(--text-tertiary);
+  }
 
-.text-error {
-  color: var(--color-error-light);
-}
+  .text-error {
+    color: var(--color-error-light);
+  }
 
-.select-field {
-  border-color: var(--border-primary);
-  background-color: var(--bg-secondary);
-  color: var(--text-secondary);
-}
+  .select-field {
+    border-color: var(--border-primary);
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+  }
 
-.btn-primary {
-  background-color: var(--color-brand-primary);
-  color: #fff;
-  transition: background-color 0.2s;
-}
+  .btn-primary {
+    background-color: var(--color-brand-primary);
+    color: #fff;
+    transition: background-color 0.2s;
+  }
 
-.btn-primary:hover {
-  filter: brightness(0.9);
-}
+  .btn-primary:hover {
+    filter: brightness(0.9);
+  }
 
-.stat-card {
-  border-color: var(--border-primary);
-  background-color: var(--bg-tertiary);
-}
+  .stat-card {
+    border-color: var(--border-primary);
+    background-color: var(--bg-tertiary);
+  }
 
-.bg-subtle {
-  background-color: var(--bg-secondary);
-}
+  .bg-subtle {
+    background-color: var(--bg-secondary);
+  }
 
-.table-divider {
-  border-color: var(--border-primary);
-}
+  .table-divider {
+    border-color: var(--border-primary);
+  }
 
-.progress-track {
-  background-color: var(--border-primary);
-}
+  .progress-track {
+    background-color: var(--border-primary);
+  }
 
-.progress-bar {
-  background-color: var(--color-success, #10b981);
-}
+  .progress-bar {
+    background-color: var(--color-success, #10b981);
+  }
 
-.pagination-footer {
-  border-color: var(--border-primary);
-  color: var(--text-muted);
-}
+  .pagination-footer {
+    border-color: var(--border-primary);
+    color: var(--text-muted);
+  }
 
-.pagination-btn {
-  border-color: var(--border-primary);
-  color: var(--text-muted);
-}
+  .pagination-btn {
+    border-color: var(--border-primary);
+    color: var(--text-muted);
+  }
 </style>

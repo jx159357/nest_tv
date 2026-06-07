@@ -1,4 +1,4 @@
-import ApiClient from './index';
+import ApiClient from './http';
 import type { LoginCredentials, RegisterUserData, AuthResponse, User } from '@/types/user';
 
 export const authApi = {
@@ -9,7 +9,7 @@ export const authApi = {
 
   // 刷新令牌
   refreshToken: (refreshToken: string) => {
-    return ApiClient.post<AuthResponse>('/auth/refresh', { refreshToken });
+    return ApiClient.post<AuthResponse>('/auth/refresh', { refreshToken }, { silent: true });
   },
 
   // 用户注册
@@ -19,7 +19,7 @@ export const authApi = {
 
   // 获取用户信息
   getProfile: () => {
-    return ApiClient.get<User>('/users/profile', undefined, false); // 不使用缓存
+    return ApiClient.get<User>('/users/profile', { silent: true }, false); // 不使用缓存
   },
 
   // 更新用户信息

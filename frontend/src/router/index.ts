@@ -46,7 +46,14 @@ const AdminIptvView = () => import('../views/AdminIptvView.vue');
 const NotFoundView = () => import('../views/NotFoundView.vue');
 
 // 公开路由名称列表 - 这些路由无需登录即可访问
-const PUBLIC_ROUTE_NAMES = ['home', 'media-detail', 'watch', 'iptv', 'recommendations', 'categories'];
+const PUBLIC_ROUTE_NAMES = [
+  'home',
+  'media-detail',
+  'watch',
+  'iptv',
+  'recommendations',
+  'categories',
+];
 
 const routes: RouteRecordRaw[] = [
   // ==================== 主布局路由 - 观影功能 ====================

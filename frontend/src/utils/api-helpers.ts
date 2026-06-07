@@ -44,7 +44,7 @@ export class ApiErrorHandler {
     };
 
     // 处理特定错误状态码
-    if (error.response && error.response.status === 401) {
+    if (error.response && error.response.status === 401 && !apiError.silent) {
       // 调试信息
       if (process.env.NODE_ENV === 'development') {
         log.warn('ApiHelpers', 'Authentication failed, clearing token and redirecting to login');

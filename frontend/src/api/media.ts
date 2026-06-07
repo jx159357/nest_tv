@@ -1,4 +1,4 @@
-import ApiClient from './index';
+import ApiClient from './http';
 import { apiCacheManager } from '@/utils/api-cache';
 import type { PaginatedResponse } from '@/types/api';
 import type { MediaResource, MediaQueryParams } from '@/types/media';
@@ -91,7 +91,7 @@ export const mediaApi = {
   getFavoriteStatus: (mediaId: string) => {
     return ApiClient.get<{ isFavorited: boolean }>(
       `/media/${mediaId}/favorites/status`,
-      undefined,
+      { silent: true },
       false,
     );
   },
@@ -128,7 +128,11 @@ export const mediaApi = {
   },
 
   getSources: () => {
-    return ApiClient.get<Array<{ name: string; count: number }>>('/media/sources', undefined, false);
+    return ApiClient.get<Array<{ name: string; count: number }>>(
+      '/media/sources',
+      undefined,
+      false,
+    );
   },
 
   deduplicateMedia: () =>

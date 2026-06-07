@@ -109,9 +109,7 @@
           </table>
         </div>
 
-        <div
-          class="pagination-bar flex items-center justify-between border-t px-4 py-3 text-sm"
-        >
+        <div class="pagination-bar flex items-center justify-between border-t px-4 py-3 text-sm">
           <span>共 {{ total }} 条</span>
           <div class="flex items-center gap-3">
             <button

@@ -1,23 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node -e \"\nconst fs = require(''fs'');\nconst content = fs.readFileSync(''node_modules/typeorm/repository/Repository.js'', ''utf8'');\nconst lines = content.split(''\\n'');\n// Find the metadata getter\nfor (let i = 0; i < lines.length; i++) {\n  if (lines[i].includes(''get metadata'') || lines[i].includes(''_metadata'')) {\n    console.log((i+1) + '': '' + lines[i]);\n  }\n}\n\")",
-      "Bash(taskkill /F /PID 25452)",
-      "Bash(taskkill //F //PID 25452)",
-      "Bash(curl -s -X POST \"http://localhost:3334/iptv/logos/init\")",
-      "Bash(curl -s -X POST \"http://localhost:3334/auth/login\" -H \"Content-Type: application/json\" -d '{\"\"username\"\":\"\"admin\"\",\"\"password\"\":\"\"admin123\"\"}')",
-      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwic3ViIjoxMiwiZW1haWwiOiJhZG1pbkBuZXN0LXR2LmxvY2FsIiwicm9sZSI6InN1cGVyQWRtaW4iLCJpYXQiOjE3Nzk1NTIyNjYsImp0aSI6Im1waWpoMHB0LTk1ZTNkNzljMjczYzJlNmMxZTY2ZmQ4NTUxZjhlNjY0IiwiZXhwIjoxNzc5NTU1ODY2LCJhdWQiOiJuZXN0LXR2LWNsaWVudCIsImlzcyI6Im5lc3QtdHYtc2VydmVyIn0.8Z2nhpAyqkseyssXKWMBrpPvvHHzIqxpgq1PnqzbswI\")",
-      "Bash(curl -s -X POST \"http://localhost:3334/iptv/logos/init\" -H \"Authorization: Bearer $TOKEN\")",
-      "Bash(curl -s \"http://localhost:3334/iptv/logos\")",
-      "Bash(curl -s \"http://localhost:3334/iptv/logos/stats\")",
-      "Bash(curl -s \"http://localhost:3334/iptv/logos/search/央视\")",
-      "Bash(curl -s \"http://localhost:3334/iptv\")",
-      "Bash(curl -s \"http://localhost:3334/iptv/stats\")",
-      "Bash(curl -s \"http://localhost:3334/iptv/logos/search/CCTV\")",
-      "Bash(curl -s \"http://localhost:3334/iptv/groups/list\")",
-      "mcp__sequential-thinking__sequentialthinking",
-      "Bash(npm install compression @types/compression --save)",
-      "Bash(npm run build)"
+      "Bash(npx jest --passWithNoTests)",
+      "Bash(npx jest --testPathPattern=\"download-tasks.service.spec\" --passWithNoTests)",
+      "Bash(npx jest --testPathPattern=\"download-tasks.service.spec\" --passWithNoTests --verbose)",
+      "Bash(npx jest --testPathPatterns=\"download-tasks.service.spec\" --passWithNoTests)",
+      "Bash(npx jest --testPathPatterns=\"admin.service.spec\" --passWithNoTests)",
+      "Bash(npx jest --testPathPattern=\"admin.service.spec\" --passWithNoTests)",
+      "Bash(npx jest --testPathPatterns=\"(admin|download-tasks).service.spec\" --passWithNoTests)"
     ],
     "deny": [],
     "ask": []

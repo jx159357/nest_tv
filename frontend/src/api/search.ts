@@ -1,4 +1,4 @@
-import ApiClient from './index';
+import ApiClient from './http';
 
 export interface SearchSuggestionItem {
   text: string;

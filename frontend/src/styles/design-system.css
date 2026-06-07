@@ -4,16 +4,18 @@
  */
 
 :root {
+  color-scheme: light;
+
   /* ===== 品牌色 - Netflix 风格红色 ===== */
-  --color-brand-primary: #e50914;
-  --color-brand-primary-light: #ff3d47;
-  --color-brand-primary-dark: #b20710;
+  --color-brand-primary: #d80d1f;
+  --color-brand-primary-light: #e11d2e;
+  --color-brand-primary-dark: #a70713;
   --color-brand-secondary: #f59e0b;
   --color-brand-secondary-light: #fbbf24;
   --color-brand-secondary-dark: #d97706;
-  --color-brand-accent: #e50914;
-  --color-brand-accent-light: #ff6b6b;
-  --color-brand-glow: rgba(229, 9, 20, 0.36);
+  --color-brand-accent: #d80d1f;
+  --color-brand-accent-light: #f43f5e;
+  --color-brand-glow: rgba(216, 13, 31, 0.24);
 
   /* ===== 功能色 ===== */
   --color-success: #10b981;
@@ -46,18 +48,23 @@
 
   /* ===== 背景色（浅色模式） ===== */
   --bg-primary: #ffffff;
-  --bg-secondary: #f8fafc;
-  --bg-tertiary: #f1f5f9;
-  --bg-page: #f7f8fb;
+  --bg-secondary: #f6f8fb;
+  --bg-tertiary: #e9eef5;
+  --bg-page: #f2f5f9;
   --bg-card: #ffffff;
   --bg-card-elevated: #ffffff;
   --bg-panel: #ffffff;
   --bg-overlay: rgba(0, 0, 0, 0.5);
-  --bg-header: rgba(255, 255, 255, 0.86);
+  --bg-header: rgba(255, 255, 255, 0.9);
   --bg-cinema: #0a0b0f;
   --bg-cinema-soft: #11131a;
-  --bg-page-gradient: radial-gradient(circle at 16% 0%, rgba(229, 9, 20, 0.11), transparent 28%),
-    var(--bg-page);
+  --bg-page-gradient: linear-gradient(180deg, #ffffff 0%, #f6f8fb 42%, #eef2f7 100%);
+  --app-shell-bg: linear-gradient(180deg, #ffffff 0%, #f6f8fb 44%, #edf2f7 100%);
+  --app-header-bg: rgba(255, 255, 255, 0.88);
+  --app-header-shadow: 0 1px 0 rgba(15, 23, 42, 0.04), 0 14px 36px rgba(15, 23, 42, 0.08);
+  --app-footer-bg: #ffffff;
+  --app-footer-border: rgba(15, 23, 42, 0.08);
+  --app-footer-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   --surface-page: var(--bg-page);
   --surface-panel: var(--bg-panel);
   --surface-card: var(--bg-card);
@@ -66,27 +73,27 @@
   --surface-control-hover: var(--surface-hover);
 
   /* ===== 文本色（浅色模式） ===== */
-  --text-primary: #1e293b;
-  --text-secondary: #475569;
+  --text-primary: #111827;
+  --text-secondary: #374151;
   --text-tertiary: #64748b;
-  --text-muted: #94a3b8;
+  --text-muted: #7b8796;
   --text-inverse: #ffffff;
-  --text-link: #e50914;
-  --text-link-hover: #b20710;
+  --text-link: #d80d1f;
+  --text-link-hover: #a70713;
 
   /* ===== 边框色（浅色模式） ===== */
-  --border-primary: #e2e8f0;
-  --border-secondary: #cbd5e1;
-  --border-focus: #e50914;
+  --border-primary: rgba(15, 23, 42, 0.1);
+  --border-secondary: rgba(15, 23, 42, 0.18);
+  --border-focus: #d80d1f;
   --border-error: #ef4444;
   --border-subtle: rgba(15, 23, 42, 0.08);
 
   /* ===== 阴影 ===== */
   --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 8px 22px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 14px 34px rgba(15, 23, 42, 0.1);
+  --shadow-xl: 0 24px 56px rgba(15, 23, 42, 0.12);
   --shadow-cinema: 0 28px 70px rgba(0, 0, 0, 0.38);
   --shadow-focus: 0 0 0 3px rgba(229, 9, 20, 0.16);
 
@@ -118,7 +125,9 @@
   --spacing-24: 6rem;
 
   /* ===== 字体 ===== */
-  --font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family-sans:
+    'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
   --font-family-mono: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
 
   --font-size-xs: 0.75rem;
@@ -172,14 +181,14 @@
   --glass-medium: rgba(255, 255, 255, 0.15);
   --glass-heavy: rgba(255, 255, 255, 0.2);
 
-  --surface-hover: rgba(0, 0, 0, 0.05);
-  --surface-active: rgba(0, 0, 0, 0.1);
+  --surface-hover: rgba(15, 23, 42, 0.07);
+  --surface-active: rgba(15, 23, 42, 0.11);
   --surface-raised: rgba(255, 255, 255, 0.9);
-  --surface-muted: rgba(15, 23, 42, 0.04);
+  --surface-muted: rgba(15, 23, 42, 0.055);
 
   /* ===== 功能色半透明 ===== */
-  --color-brand-overlay: rgba(229, 9, 20, 0.1);
-  --color-brand-border: rgba(229, 9, 20, 0.2);
+  --color-brand-overlay: rgba(216, 13, 31, 0.1);
+  --color-brand-border: rgba(216, 13, 31, 0.22);
   --color-success-overlay: rgba(16, 185, 129, 0.1);
   --color-success-border: rgba(16, 185, 129, 0.2);
   --color-error-overlay: rgba(239, 68, 68, 0.1);
@@ -210,15 +219,16 @@
   --table-row-height: 48px;
   --dialog-width-md: 640px;
   --state-panel-min-height: 180px;
-  --cinema-gradient: radial-gradient(circle at 18% 0%, rgba(229, 9, 20, 0.18), transparent 30%),
+  --cinema-gradient:
+    radial-gradient(circle at 18% 0%, rgba(229, 9, 20, 0.18), transparent 30%),
     linear-gradient(180deg, #0a0b0f 0%, #10131a 46%, #0a0b0f 100%);
   --cinema-overlay-strong: rgba(5, 6, 9, 0.92);
   --cinema-overlay-medium: rgba(5, 6, 9, 0.68);
   --cinema-overlay-soft: rgba(5, 6, 9, 0.28);
 
   /* ===== 管理后台 ===== */
-  --admin-bg-page: #f5f7fb;
-  --admin-bg-shell: #ffffff;
+  --admin-bg-page: #eef2f7;
+  --admin-bg-shell: rgba(255, 255, 255, 0.94);
   --admin-bg-sidebar: #10131a;
   --admin-bg-sidebar-hover: rgba(255, 255, 255, 0.07);
   --admin-bg-card: #ffffff;
@@ -227,11 +237,18 @@
   --admin-text-muted: #6b7280;
   --admin-sidebar-text: #d1d5db;
   --admin-sidebar-muted: #7f8794;
-  --admin-border: rgba(15, 23, 42, 0.08);
-  --admin-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+  --admin-border: rgba(15, 23, 42, 0.1);
+  --admin-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+  --admin-scrollbar-thumb: rgba(15, 23, 42, 0.18);
+  --admin-scrollbar-thumb-hover: rgba(15, 23, 42, 0.28);
 
   /* ===== 状态样式 ===== */
-  --state-loading-bg: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+  --state-loading-bg: linear-gradient(
+    90deg,
+    var(--bg-tertiary) 25%,
+    var(--bg-secondary) 50%,
+    var(--bg-tertiary) 75%
+  );
   --state-empty-bg: var(--surface-muted);
   --state-error-bg: var(--color-error-overlay);
   --state-error-border: var(--color-error-border);
@@ -244,8 +261,10 @@
 }
 
 /* ===== 暗色主题 ===== */
-[data-theme="dark"],
+[data-theme='dark'],
 .dark {
+  color-scheme: dark;
+
   --color-gray-50: #0a0f1a;
   --color-gray-100: #141a2a;
   --color-gray-200: #1e293b;
@@ -257,6 +276,13 @@
   --color-gray-800: #e2e8f0;
   --color-gray-900: #f8fafc;
 
+  --color-brand-primary: #e50914;
+  --color-brand-primary-light: #ff3d47;
+  --color-brand-primary-dark: #b20710;
+  --color-brand-accent: #e50914;
+  --color-brand-accent-light: #ff6b6b;
+  --color-brand-glow: rgba(229, 9, 20, 0.36);
+
   --bg-page: #08090d;
   --bg-primary: #10131a;
   --bg-secondary: #151922;
@@ -267,6 +293,13 @@
   --bg-overlay: rgba(0, 0, 0, 0.7);
   --bg-player: #000000;
   --bg-header: rgba(8, 9, 13, 0.82);
+  --bg-page-gradient: var(--cinema-gradient);
+  --app-shell-bg: var(--cinema-gradient);
+  --app-header-bg: rgba(5, 6, 9, 0.9);
+  --app-header-shadow: none;
+  --app-footer-bg: #06070a;
+  --app-footer-border: var(--border-primary);
+  --app-footer-shadow: none;
 
   --text-primary: #e2e8f0;
   --text-secondary: #cbd5e1;
@@ -316,6 +349,8 @@
   --admin-sidebar-muted: #7c8491;
   --admin-border: rgba(255, 255, 255, 0.08);
   --admin-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+  --admin-scrollbar-thumb: rgba(255, 255, 255, 0.15);
+  --admin-scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
 }
 
 /* ===== 全局滚动条 ===== */

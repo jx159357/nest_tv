@@ -7,6 +7,7 @@ import {
   ManyToOne,
   Index,
 } from 'typeorm';
+import { createHash } from 'crypto';
 import { User } from './user.entity';
 import { MediaResource } from './media-resource.entity';
 
@@ -34,7 +35,21 @@ export enum DownloadTaskHandler {
 @Index('idx_download_task_user_client', ['userId', 'clientId'], { unique: true })
 @Index('idx_download_task_user_status', ['userId', 'status'])
 @Index('idx_download_task_user_updated', ['userId', 'updatedAt'])
+@Index('idx_download_task_dedup_key', ['dedupKey'])
 export class DownloadTask {
+  static computeDedupKey(type: DownloadTaskType, url?: string): string {
+    const raw = url ?? '';
+    if (type === DownloadTaskType.MAGNET) {
+      const match = raw.trim().match(/(?:\?|&)xt=urn:btih:([^&]+)/i);
+      if (match?.[1]) {
+        return `magnet:${decodeURIComponent(match[1]).trim().toLowerCase()}`;
+      }
+    }
+    const normalized = raw.trim();
+    if (!normalized) return '';
+    const hash = createHash('sha256').update(`${type}:${normalized}`).digest('hex').slice(0, 32);
+    return `task:${type}:${hash}`;
+  }
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -109,4 +124,7 @@ export class DownloadTask {
 
   @Column({ nullable: true })
   mediaResourceId?: number | null;
+
+  @Column({ length: 200, nullable: true, default: '' })
+  dedupKey: string;
 }

@@ -1,4 +1,4 @@
-import ApiClient from './index';
+import ApiClient from './http';
 import type { MediaResource, PlaySource } from '@/types/media';
 import type { User } from '@/types/user';
 
@@ -292,8 +292,7 @@ export const adminApi = {
 
   // ==================== 数据源管理 ====================
 
-  getCrawlerTargets: () =>
-    ApiClient.get<AdminCrawlerTarget[]>('/admin/crawler-targets', {}, false),
+  getCrawlerTargets: () => ApiClient.get<AdminCrawlerTarget[]>('/admin/crawler-targets', {}, false),
 
   getActiveCrawlerTarget: () =>
     ApiClient.get<AdminCrawlerTarget | null>('/admin/crawler-targets/active', {}, false),
@@ -307,8 +306,7 @@ export const adminApi = {
   updateCrawlerTarget: (id: number, data: Partial<AdminCrawlerTarget>) =>
     ApiClient.patch<AdminCrawlerTarget>(`/admin/crawler-targets/${id}`, data),
 
-  deleteCrawlerTarget: (id: number) =>
-    ApiClient.delete<void>(`/admin/crawler-targets/${id}`),
+  deleteCrawlerTarget: (id: number) => ApiClient.delete<void>(`/admin/crawler-targets/${id}`),
 
   activateCrawlerTarget: (id: number) =>
     ApiClient.post<AdminCrawlerTarget>(`/admin/crawler-targets/${id}/activate`),

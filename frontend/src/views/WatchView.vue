@@ -77,8 +77,20 @@
 
           <div class="play-source-panel">
             <div class="panel-header">
-              <h2>播放源</h2>
+              <h2>
+                播放源
+                <span v-if="sourceFreshnessBadge" :class="['freshness-badge', `freshness--${media?.sourceFreshness}`]">
+                  {{ sourceFreshnessBadge }}
+                </span>
+              </h2>
               <div class="panel-actions">
+                <button
+                  class="btn-test-all"
+                  :disabled="isRefreshingSource"
+                  @click="manualRefreshSource"
+                >
+                  {{ isRefreshingSource ? '刷新中...' : '刷新源' }}
+                </button>
                 <button class="btn-test-all" :disabled="isTestingAll" @click="testAllSources">
                   {{ isTestingAll ? '测试中...' : '测速' }}
                 </button>
@@ -306,7 +318,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onMounted, onUnmounted, ref } from 'vue';
+  import { computed, defineAsyncComponent, onMounted, onUnmounted, ref } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { useMediaStore } from '@/stores/media';
   import { useAuthStore } from '@/stores/auth';
@@ -314,12 +326,24 @@
   import { watchHistoryApi } from '@/api/watchHistory';
   import { notifyError, notifyInfo, notifySuccess } from '@/composables/useModal';
   import ArtPlayerWrapper from '@/components/ArtPlayerWrapper.vue';
-  import DanmakuPlayer from '@/components/DanmakuPlayer.vue';
-  import WatchRoom from '@/components/WatchRoom.vue';
-  import PlayerGestureControl from '@/components/PlayerGestureControl.vue';
   import { batchTestSources, getSourceScore, type SourceTestResult } from '@/utils/source-test';
+  import { playSourceApi } from '@/api/playSource';
   import { log } from '@/utils/logger';
   import type { MediaResource, PlaySource } from '@/types/media';
+
+  const DanmakuPlayer = defineAsyncComponent(() =>
+    import('@/components/DanmakuPlayer.vue').then(module => module.default),
+  );
+  const WatchRoom = defineAsyncComponent(() =>
+    import('@/components/WatchRoom.vue').then(module => module.default),
+  );
+  const PlayerGestureControl = defineAsyncComponent(
+    () => import('@/components/PlayerGestureControl.vue').then(module => module.default),
+  );
+
+  interface WatchRoomExpose {
+    sendSync: (currentTime: number, playing: boolean) => void;
+  }
 
   const route = useRoute();
   const router = useRouter();
@@ -331,7 +355,7 @@
   const currentPlaySource = ref<PlaySource | null>(null);
   const currentEpisode = ref(1);
   const playerWrapperRef = ref<HTMLElement | null>(null);
-  const watchRoomRef = ref<InstanceType<typeof WatchRoom> | null>(null);
+  const watchRoomRef = ref<WatchRoomExpose | null>(null);
   const currentPlayer = ref<any>(null);
   const episodePage = ref(1);
   const EPISODES_PER_PAGE = 50;
@@ -344,12 +368,17 @@
   const favoriteMessage = ref('');
 
   const testResults = ref<Map<number, SourceTestResult>>(new Map());
+  const failedPlaySourceIds = ref<Set<number>>(new Set());
+  const mediaRefreshAttempted = ref(false);
+  const cmsResolveAttempted = ref(false);
   const isTestingAll = ref(false);
+  const isRefreshingSource = ref(false);
   const videoElement = ref<HTMLVideoElement | null>(null);
   const showResumeTip = ref(false);
   const isMobile = ref(false);
   const isApplyingRoomSync = ref(false);
   const lastRoomSyncSentAt = ref(0);
+  const macCmsEpisodes = ref<Array<{ episode: string; url: string; sourceName: string }>>([]);
 
   const checkMobile = () => {
     isMobile.value = window.innerWidth <= 768 || 'ontouchstart' in window;
@@ -442,6 +471,16 @@
       currentPlaySource.value?.url?.startsWith('magnet:'),
   );
 
+  const sourceFreshnessBadge = computed(() => {
+    switch (media.value?.sourceFreshness) {
+      case 'fresh': return null;
+      case 'stale': return '线路可能过期';
+      case 'refreshing': return '正在刷新线路';
+      case 'empty': return '暂无线路';
+      default: return null;
+    }
+  });
+
   const episodePagination = computed(() => {
     const total = media.value?.episodeCount || 0;
     if (total <= EPISODES_PER_PAGE) {
@@ -479,6 +518,178 @@
     }
   };
 
+  const selectBestInitialSource = (sources: PlaySource[]): PlaySource => {
+    const candidates = sources.filter(s => s.url && s.isActive !== false && s.status !== 'error');
+    if (candidates.length === 0) return sources[0];
+
+    const activeFresh = candidates.filter(s => s.status === 'active' && s.lastCheckedAt);
+    if (activeFresh.length > 0) {
+      activeFresh.sort(
+        (a, b) => new Date(b.lastCheckedAt!).getTime() - new Date(a.lastCheckedAt!).getTime(),
+      );
+      return activeFresh[0];
+    }
+
+    return candidates[0];
+  };
+
+  const inferSourceFormat = (url: string): string => {
+    const normalized = url.toLowerCase();
+    if (normalized.includes('.m3u8') || normalized.includes('m3u8')) return 'm3u8';
+    if (normalized.includes('.mp4')) return 'mp4';
+    if (normalized.startsWith('magnet:')) return 'magnet';
+    return 'online';
+  };
+
+  const buildDownloadUrlPlaySources = (mediaData: MediaResource): PlaySource[] => {
+    const urls = Array.isArray(mediaData.downloadUrls) ? mediaData.downloadUrls.filter(Boolean) : [];
+
+    return urls.map((url, index) => {
+      const format = inferSourceFormat(url);
+      return {
+        id: -(index + 1),
+        url,
+        sourceName: `下载地址 ${index + 1}`,
+        type: format === 'magnet' ? 'magnet' : format === 'm3u8' ? 'stream' : 'online',
+        status: 'active',
+        resolution: mediaData.quality,
+        format,
+        priority: index + 1,
+        isAds: false,
+        isActive: true,
+        playCount: 0,
+        downloadUrls: [url],
+        episodeNumber: currentEpisode.value,
+        mediaResourceId: mediaData.id,
+        createdAt: mediaData.createdAt,
+        updatedAt: mediaData.updatedAt,
+      } as unknown as PlaySource;
+    });
+  };
+
+  const resolveFromMacCms = async (): Promise<PlaySource | null> => {
+    if (!media.value?.title) return null;
+    isRefreshingSource.value = true;
+    try {
+      const result = await playSourceApi.resolveFromCms(
+        media.value.title,
+        currentEpisode.value > 1 ? currentEpisode.value : undefined,
+      );
+      if (result.episodes && result.episodes.length > 0) {
+        macCmsEpisodes.value = result.episodes;
+        const targetEpisode = currentEpisode.value;
+        const matchedEp = result.episodes.find(e => {
+          const match = e.episode.match(/(\d+)/);
+          return match ? parseInt(match[1], 10) === targetEpisode : false;
+        });
+        const ep = matchedEp || result.episodes[0];
+        return {
+          id: Date.now(),
+          url: ep.url,
+          sourceName: ep.sourceName || 'MacCMS实时解析',
+          type: 'online',
+          status: 'active',
+          isActive: true,
+          episodeNumber: targetEpisode,
+        } as unknown as PlaySource;
+      }
+    } catch (error) {
+      log.error('WatchView', 'MacCMS 实时解析失败:', error);
+    } finally {
+      isRefreshingSource.value = false;
+    }
+    return null;
+  };
+
+  const updateSourceInList = (updated: PlaySource) => {
+    if (!media.value?.playSources) return;
+    const idx = media.value.playSources.findIndex(s => s.id === updated.id);
+    if (idx >= 0) {
+      media.value.playSources[idx] = updated;
+    }
+  };
+
+  const manualRefreshSource = async () => {
+    if (!media.value?.id) return;
+    failedPlaySourceIds.value.clear();
+    mediaRefreshAttempted.value = false;
+    cmsResolveAttempted.value = false;
+    isRefreshingSource.value = true;
+    const canPersistSource = Boolean(authStore.token || localStorage.getItem('token'));
+
+    try {
+      if (canPersistSource && currentPlaySource.value?.id && currentPlaySource.value.id > 0) {
+        try {
+          const singleResult = await playSourceApi.refreshPlaySource(
+            String(currentPlaySource.value.id),
+          );
+          if (singleResult.refreshed && singleResult.playSource) {
+            currentPlaySource.value = singleResult.playSource as unknown as PlaySource;
+            updateSourceInList(singleResult.playSource as unknown as PlaySource);
+            notifySuccess('播放源已刷新', singleResult.message || '已从原始页面获取新地址');
+            return;
+          }
+        } catch (e) {
+          log.warn('WatchView', '单条刷新失败，尝试媒体级刷新:', e);
+        }
+      }
+
+      if (canPersistSource) {
+        const result = await playSourceApi.refreshMediaPlaySources(String(media.value.id));
+        if (result.best) {
+          media.value.playSources = result.valid;
+          currentPlaySource.value = result.best as unknown as PlaySource;
+          notifySuccess(
+            '播放源已刷新',
+            `已刷新 ${result.refreshed} 个源，${result.valid.length} 个可用`,
+          );
+          return;
+        }
+      }
+    } catch (error) {
+      log.error('WatchView', '刷新失败:', error);
+    } finally {
+      isRefreshingSource.value = false;
+    }
+
+    const cmsSource = await resolveFromMacCms();
+    if (cmsSource) {
+      if (!canPersistSource) {
+        currentPlaySource.value = cmsSource;
+        if (media.value.playSources) {
+          media.value.playSources.push(cmsSource);
+        }
+        notifySuccess('播放源已刷新', `已通过实时解析切换到 ${cmsSource.sourceName || '解析源'}`);
+        return;
+      }
+
+      try {
+        const saved = await playSourceApi.createPlaySource({
+          mediaResourceId: media.value.id,
+          type: 'online',
+          url: cmsSource.url,
+          sourceName: cmsSource.sourceName,
+          episodeNumber: currentEpisode.value,
+          priority: 1,
+          isActive: true,
+        });
+        currentPlaySource.value = saved as unknown as PlaySource;
+        if (media.value.playSources) {
+          media.value.playSources.push(saved as unknown as PlaySource);
+        }
+        notifySuccess('播放源已刷新', `已通过实时解析获取新源并入库`);
+        return;
+      } catch (error) {
+        log.error('WatchView', 'MacCMS 源入库失败:', error);
+        currentPlaySource.value = cmsSource;
+        notifySuccess('播放源已刷新', `已通过实时解析切换到 ${cmsSource.sourceName || '解析源'}`);
+        return;
+      }
+    }
+
+    notifyError('刷新失败', '未能找到可用的播放源。');
+  };
+
   const loadMedia = async () => {
     const mediaId = parseInt(route.params.id as string);
     loading.value = true;
@@ -488,9 +699,28 @@
     try {
       const mediaData = await mediaStore.fetchMediaDetail(mediaId);
       media.value = mediaData;
+      failedPlaySourceIds.value = new Set();
+      mediaRefreshAttempted.value = false;
+      cmsResolveAttempted.value = false;
 
       if (mediaData.playSources && mediaData.playSources.length > 0) {
-        currentPlaySource.value = mediaData.playSources[0];
+        currentPlaySource.value = selectBestInitialSource(mediaData.playSources);
+      } else {
+        const cmsSource = await resolveFromMacCms();
+        if (cmsSource) {
+          mediaData.playSources = [cmsSource];
+          currentPlaySource.value = cmsSource;
+        } else {
+          const fallbackPlaySources = buildDownloadUrlPlaySources(mediaData);
+          mediaData.playSources = fallbackPlaySources;
+          if (fallbackPlaySources.length > 0) {
+            currentPlaySource.value = selectBestInitialSource(fallbackPlaySources);
+          }
+        }
+      }
+
+      if (macCmsEpisodes.value.length > 0 && !mediaData.episodeCount) {
+        mediaData.episodeCount = macCmsEpisodes.value.length;
       }
 
       const timeParam = Array.isArray(route.query.time) ? route.query.time[0] : route.query.time;
@@ -549,8 +779,113 @@
     void saveWatchProgress(duration, true, duration);
   };
 
-  const onPlayerError = (error: string) => {
+  const onPlayerError = async (error: string) => {
     log.error('WatchView', '播放器错误:', error);
+    const failedSource = currentPlaySource.value;
+    if (!failedSource || !media.value?.playSources?.length) return;
+
+    failedPlaySourceIds.value.add(failedSource.id);
+    const canPersistSource = Boolean(authStore.token || localStorage.getItem('token'));
+
+    // Step 1: Try refreshing the current source from origin play page
+    if (canPersistSource && failedSource.id > 0) {
+      try {
+        const singleResult = await playSourceApi.refreshPlaySource(String(failedSource.id));
+        if (singleResult.refreshed && singleResult.playSource) {
+          currentPlaySource.value = singleResult.playSource as unknown as PlaySource;
+          updateSourceInList(singleResult.playSource as unknown as PlaySource);
+          notifyInfo('播放源已刷新', singleResult.message || '已从原始页面获取新地址');
+          return;
+        }
+      } catch (e) {
+        log.warn('WatchView', '单条刷新失败，尝试其他本地源:', e);
+      }
+    }
+
+    // Step 2: Try other local sources
+    const candidates = media.value.playSources.filter(source => {
+      if (!source.url || failedPlaySourceIds.value.has(source.id)) return false;
+      if (source.isActive === false || source.status === 'error') return false;
+      return source.episodeNumber === failedSource.episodeNumber;
+    });
+
+    const nextSource =
+      candidates.find(source => source.id !== failedSource.id) ||
+      media.value.playSources.find(source => {
+        if (!source.url || failedPlaySourceIds.value.has(source.id)) return false;
+        if (source.isActive === false || source.status === 'error') return false;
+        return source.id !== failedSource.id;
+      });
+
+    if (nextSource) {
+      notifyInfo('播放源不可用', `已切换到 ${nextSource.sourceName || `播放源 ${nextSource.id}`}`);
+      currentPlaySource.value = nextSource;
+      return;
+    }
+
+    // Step 3: Media-level refresh
+    if (canPersistSource && !mediaRefreshAttempted.value) {
+      mediaRefreshAttempted.value = true;
+      notifyInfo('本地播放源均不可用', '正在尝试媒体级刷新...');
+      try {
+        const result = await playSourceApi.refreshMediaPlaySources(String(media.value.id));
+        if (result.best) {
+          media.value.playSources = result.valid;
+          currentPlaySource.value = result.best as unknown as PlaySource;
+          notifyInfo(
+            '已找到可用播放源',
+            `已刷新并切换到 ${result.best.sourceName || `播放源 ${result.best.id}`}`,
+          );
+          return;
+        }
+      } catch (e) {
+        log.error('WatchView', '媒体级刷新失败:', e);
+      }
+    }
+
+    // Step 4: MacCMS resolve + persist
+    if (cmsResolveAttempted.value) {
+      notifyError('播放失败', '所有播放源均不可用，请尝试重新爬取资源。');
+      return;
+    }
+    cmsResolveAttempted.value = true;
+    notifyInfo('本地无可用源', '正在尝试实时解析播放地址...');
+    const cmsSource = await resolveFromMacCms();
+    if (cmsSource) {
+      if (!canPersistSource) {
+        currentPlaySource.value = cmsSource;
+        if (media.value.playSources) {
+          media.value.playSources.push(cmsSource);
+        }
+        notifyInfo('已解析到播放地址', `已切换到 ${cmsSource.sourceName || '实时解析源'}`);
+        return;
+      }
+
+      try {
+        const saved = await playSourceApi.createPlaySource({
+          mediaResourceId: media.value.id,
+          type: 'online',
+          url: cmsSource.url,
+          sourceName: cmsSource.sourceName,
+          episodeNumber: currentEpisode.value,
+          priority: 1,
+          isActive: true,
+        });
+        currentPlaySource.value = saved as unknown as PlaySource;
+        if (media.value.playSources) {
+          media.value.playSources.push(saved as unknown as PlaySource);
+        }
+        notifyInfo('已解析到播放地址', `已通过实时解析获取新源并入库`);
+        return;
+      } catch (saveError) {
+        log.error('WatchView', 'MacCMS 源入库失败:', saveError);
+        currentPlaySource.value = cmsSource;
+        notifyInfo('已解析到播放地址', `已切换到 ${cmsSource.sourceName || '实时解析源'}`);
+        return;
+      }
+    }
+
+    notifyError('播放失败', '所有播放源均不可用，请尝试重新爬取资源。');
   };
 
   const toggleFullscreen = () => {
@@ -604,16 +939,46 @@
   };
 
   const selectPlaySource = (playSource: any) => {
+    failedPlaySourceIds.value.delete(playSource.id);
     currentPlaySource.value = playSource;
   };
 
-  const selectEpisode = (episode: number) => {
+  const selectEpisode = async (episode: number) => {
     currentEpisode.value = episode;
+    failedPlaySourceIds.value.clear();
+    mediaRefreshAttempted.value = false;
+    cmsResolveAttempted.value = false;
     const episodePlaySources = media.value?.playSources?.filter(
       (ps: any) => ps.episodeNumber === episode,
     );
     if (episodePlaySources && episodePlaySources.length > 0) {
       selectPlaySource(episodePlaySources[0]);
+      return;
+    }
+
+    const cmsEp = macCmsEpisodes.value.find(e => {
+      const match = e.episode.match(/(\d+)/);
+      return match ? parseInt(match[1], 10) === episode : false;
+    });
+    if (cmsEp) {
+      const source = {
+        id: Date.now(),
+        url: cmsEp.url,
+        sourceName: cmsEp.sourceName || 'MacCMS实时解析',
+        type: 'online',
+        status: 'active',
+        isActive: true,
+        episodeNumber: episode,
+      } as unknown as PlaySource;
+      selectPlaySource(source);
+      return;
+    }
+
+    if (media.value?.title) {
+      const cmsSource = await resolveFromMacCms();
+      if (cmsSource) {
+        selectPlaySource(cmsSource);
+      }
     }
   };
 
@@ -705,6 +1070,11 @@
     downloadMessage.value = `已加入下载任务：${task.fileName}`;
   };
 
+  const getCurrentPlayerTime = (): number => {
+    const video = videoElement.value;
+    return video && Number.isFinite(video.currentTime) ? video.currentTime : 0;
+  };
+
   let saveInterval: ReturnType<typeof setInterval>;
   onMounted(() => {
     checkMobile();
@@ -712,12 +1082,18 @@
     void loadMedia();
 
     saveInterval = setInterval(() => {
-      void saveWatchProgress(0, true);
+      const currentTime = getCurrentPlayerTime();
+      if (currentTime > 0) {
+        void saveWatchProgress(currentTime, true);
+      }
     }, 30000);
   });
 
   onUnmounted(() => {
-    void saveWatchProgress(0, true);
+    const currentTime = getCurrentPlayerTime();
+    if (currentTime > 0) {
+      void saveWatchProgress(currentTime, true);
+    }
     clearInterval(saveInterval);
     window.removeEventListener('resize', checkMobile);
   });
@@ -981,6 +1357,32 @@
   .panel-header h2 {
     font-size: 18px;
     font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .freshness-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+
+  .freshness--stale {
+    background: rgba(251, 191, 36, 0.15);
+    color: var(--color-warning-light);
+  }
+
+  .freshness--refreshing {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+  }
+
+  .freshness--empty {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--color-error);
   }
 
   .panel-actions {

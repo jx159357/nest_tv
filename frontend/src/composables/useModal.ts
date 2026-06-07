@@ -122,7 +122,9 @@ export const showNotification = (options: {
   message: string;
   duration?: number;
 }) => {
-  const exists = notifications.value.some(n => n.type === options.type && n.message === options.message);
+  const exists = notifications.value.some(
+    n => n.type === options.type && n.message === options.message,
+  );
   if (exists) return;
 
   const id = ++notificationId;

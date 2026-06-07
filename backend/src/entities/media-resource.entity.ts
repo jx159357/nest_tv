@@ -79,7 +79,7 @@ export class MediaResource {
   @Column({ type: 'enum', enum: MediaType })
   type: MediaType; // 影视类型
 
-  @Column({ length: 100, nullable: true })
+  @Column({ length: 500, nullable: true })
   director?: string; // 导演
 
   @Column({ type: 'text', nullable: true })

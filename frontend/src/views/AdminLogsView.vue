@@ -97,14 +97,18 @@
         @click="setActionFilter(action === 'retry' ? '' : 'retry')"
       >
         <div class="logs-card-label text-sm">retry 动作</div>
-        <div class="logs-card-value--success mt-2 text-2xl font-semibold">{{ retryActionCount }}</div>
+        <div class="logs-card-value--success mt-2 text-2xl font-semibold">
+          {{ retryActionCount }}
+        </div>
       </button>
       <button
         class="logs-card logs-card--clickable rounded-lg border p-4 text-left shadow-xl transition"
         @click="setActionFilter(action === 'cancel' ? '' : 'cancel')"
       >
         <div class="logs-card-label text-sm">cancel 动作</div>
-        <div class="logs-card-value--error mt-2 text-2xl font-semibold">{{ cancelActionCount }}</div>
+        <div class="logs-card-value--error mt-2 text-2xl font-semibold">
+          {{ cancelActionCount }}
+        </div>
       </button>
       <button
         class="logs-card logs-card--clickable rounded-lg border p-4 text-left shadow-xl transition"
@@ -120,33 +124,21 @@
     <div class="flex flex-wrap gap-2">
       <button
         class="logs-chip rounded-full border px-3 py-1 text-xs font-medium transition"
-        :class="
-          resource === 'download_task'
-            ? 'logs-chip--active-brand'
-            : 'logs-chip--default'
-        "
+        :class="resource === 'download_task' ? 'logs-chip--active-brand' : 'logs-chip--default'"
         @click="setResourceFilter(resource === 'download_task' ? '' : 'download_task')"
       >
         下载任务日志
       </button>
       <button
         class="logs-chip rounded-full border px-3 py-1 text-xs font-medium transition"
-        :class="
-          action === 'retry'
-            ? 'logs-chip--active-success'
-            : 'logs-chip--default'
-        "
+        :class="action === 'retry' ? 'logs-chip--active-success' : 'logs-chip--default'"
         @click="setActionFilter(action === 'retry' ? '' : 'retry')"
       >
         retry 动作
       </button>
       <button
         class="logs-chip rounded-full border px-3 py-1 text-xs font-medium transition"
-        :class="
-          action === 'cancel'
-            ? 'logs-chip--active-error'
-            : 'logs-chip--default'
-        "
+        :class="action === 'cancel' ? 'logs-chip--active-error' : 'logs-chip--default'"
         @click="setActionFilter(action === 'cancel' ? '' : 'cancel')"
       >
         cancel 动作
@@ -172,28 +164,44 @@
           <table class="logs-table min-w-full">
             <thead class="logs-table-thead">
               <tr>
-                <th class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th
+                  class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                >
                   时间
                 </th>
-                <th class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th
+                  class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                >
                   操作
                 </th>
-                <th class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th
+                  class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                >
                   资源
                 </th>
-                <th class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th
+                  class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                >
                   状态
                 </th>
-                <th class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th
+                  class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                >
                   角色
                 </th>
-                <th class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th
+                  class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                >
                   用户
                 </th>
-                <th class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th
+                  class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                >
                   说明
                 </th>
-                <th class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th
+                  class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                >
                   详情
                 </th>
               </tr>
@@ -251,7 +259,9 @@
                         </div>
                         <div v-else class="logs-detail-text mt-2 space-y-2 text-sm">
                           <div v-for="item in metadataEntries(log)" :key="`${log.id}-${item.key}`">
-                            <div class="logs-detail-label text-xs font-medium uppercase tracking-wide">
+                            <div
+                              class="logs-detail-label text-xs font-medium uppercase tracking-wide"
+                            >
                               {{ item.key }}
                             </div>
                             <div class="mt-1 break-all">{{ item.value }}</div>
@@ -267,7 +277,9 @@
                         </div>
                         <div v-else class="logs-detail-text mt-2 space-y-2 text-sm">
                           <div>
-                            <div class="logs-detail-label text-xs font-medium uppercase tracking-wide">
+                            <div
+                              class="logs-detail-label text-xs font-medium uppercase tracking-wide"
+                            >
                               Method / URL
                             </div>
                             <div class="mt-1 break-all">
@@ -275,13 +287,17 @@
                             </div>
                           </div>
                           <div>
-                            <div class="logs-detail-label text-xs font-medium uppercase tracking-wide">
+                            <div
+                              class="logs-detail-label text-xs font-medium uppercase tracking-wide"
+                            >
                               IP
                             </div>
                             <div class="mt-1 break-all">{{ log.requestInfo.ip || '—' }}</div>
                           </div>
                           <div>
-                            <div class="logs-detail-label text-xs font-medium uppercase tracking-wide">
+                            <div
+                              class="logs-detail-label text-xs font-medium uppercase tracking-wide"
+                            >
                               User Agent
                             </div>
                             <div class="mt-1 break-all">{{ log.requestInfo.userAgent || '—' }}</div>
@@ -292,7 +308,9 @@
                         v-if="downloadTaskLogTarget(log)"
                         class="logs-download-panel rounded-xl border px-4 py-3 lg:col-span-2"
                       >
-                        <div class="logs-download-label text-xs font-medium uppercase tracking-wide">
+                        <div
+                          class="logs-download-label text-xs font-medium uppercase tracking-wide"
+                        >
                           关联下载任务
                         </div>
                         <div class="logs-detail-text mt-2 text-sm">
@@ -313,9 +331,7 @@
           </table>
         </div>
 
-        <div
-          class="logs-pagination flex items-center justify-between border-t px-4 py-3 text-sm"
-        >
+        <div class="logs-pagination flex items-center justify-between border-t px-4 py-3 text-sm">
           <span>共 {{ total }} 条</span>
           <div class="flex items-center gap-3">
             <button

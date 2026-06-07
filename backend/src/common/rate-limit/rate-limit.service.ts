@@ -279,7 +279,7 @@ export class RateLimitService {
     const pattern = `${this.defaultOptions.keyPrefix}*`;
 
     try {
-      const keys = await this.redis.keys(pattern);
+      const keys = await this.scanKeys(pattern);
 
       let cleaned = 0;
       for (const key of keys) {
@@ -384,5 +384,24 @@ export class RateLimitService {
 
   private toNumber(value: unknown): number {
     return typeof value === 'number' ? value : Number(value) || 0;
+  }
+
+  private async scanKeys(pattern: string): Promise<string[]> {
+    const keys: string[] = [];
+    let cursor = '0';
+
+    do {
+      const [nextCursor, batch] = await this.redis.scan(
+        cursor,
+        'MATCH',
+        pattern,
+        'COUNT',
+        100,
+      );
+      cursor = nextCursor;
+      keys.push(...batch);
+    } while (cursor !== '0');
+
+    return keys;
   }
 }

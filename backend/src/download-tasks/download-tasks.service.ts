@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import {
   DownloadTask,
   DownloadTaskStatus,
@@ -20,91 +20,150 @@ export class DownloadTasksService {
   async findMine(userId: number, queryDto: DownloadTaskQueryDto) {
     const { page = 1, limit = 100, status, type, mediaResourceId, search } = queryDto;
 
-    const queryBuilder = this.downloadTaskRepository
+    const subQuery = this.downloadTaskRepository
+      .createQueryBuilder('dt')
+      .select('MAX(dt.id)', 'maxId')
+      .where('dt.userId = :userId', { userId })
+      .groupBy('dt.dedupKey');
+
+    const mainQb = this.downloadTaskRepository
       .createQueryBuilder('downloadTask')
+      .innerJoin(`(${subQuery.getQuery()})`, 'latest', 'downloadTask.id = latest.maxId')
       .leftJoinAndSelect('downloadTask.mediaResource', 'mediaResource')
-      .where('downloadTask.userId = :userId', { userId });
+      .setParameters(subQuery.getParameters());
 
     if (status) {
-      queryBuilder.andWhere('downloadTask.status = :status', { status });
+      mainQb.andWhere('downloadTask.status = :status', { status });
     }
-
     if (type) {
-      queryBuilder.andWhere('downloadTask.type = :type', { type });
+      mainQb.andWhere('downloadTask.type = :type', { type });
     }
-
     if (mediaResourceId) {
-      queryBuilder.andWhere('downloadTask.mediaResourceId = :mediaResourceId', { mediaResourceId });
+      mainQb.andWhere('downloadTask.mediaResourceId = :mediaResourceId', { mediaResourceId });
     }
-
     if (search?.trim()) {
-      queryBuilder.andWhere(
-        `(
-          downloadTask.fileName LIKE :search OR
-          downloadTask.sourceLabel LIKE :search OR
-          downloadTask.url LIKE :search
-        )`,
+      mainQb.andWhere(
+        `(downloadTask.fileName LIKE :search OR downloadTask.sourceLabel LIKE :search OR downloadTask.url LIKE :search)`,
         { search: `%${search.trim()}%` },
       );
     }
 
-    queryBuilder.orderBy('downloadTask.updatedAt', 'DESC');
+    const countQb = this.downloadTaskRepository
+      .createQueryBuilder('downloadTask')
+      .innerJoin(`(${subQuery.getQuery()})`, 'latest', 'downloadTask.id = latest.maxId')
+      .setParameters(subQuery.getParameters());
 
-    const dedupedTasks = this.dedupeTasks(await queryBuilder.getMany());
-    const total = dedupedTasks.length;
-    const pagination = {
-      page: total > 0 ? Math.min(Number(page), Math.ceil(total / limit)) : 1,
-      limit: Number(limit),
-      totalPages: Math.ceil(total / limit),
-    };
-    const offset = (pagination.page - 1) * pagination.limit;
-    const data = dedupedTasks.slice(offset, offset + pagination.limit);
+    if (status) countQb.andWhere('downloadTask.status = :status', { status });
+    if (type) countQb.andWhere('downloadTask.type = :type', { type });
+    if (mediaResourceId) countQb.andWhere('downloadTask.mediaResourceId = :mediaResourceId', { mediaResourceId });
+    if (search?.trim()) {
+      countQb.andWhere(
+        `(downloadTask.fileName LIKE :search OR downloadTask.sourceLabel LIKE :search OR downloadTask.url LIKE :search)`,
+        { search: `%${search.trim()}%` },
+      );
+    }
+
+    const total = await countQb.getCount();
+    const safePage = total > 0 ? Math.min(Number(page), Math.ceil(total / limit)) : 1;
+    const offset = (safePage - 1) * limit;
+
+    const dataQb = this.downloadTaskRepository
+      .createQueryBuilder('downloadTask')
+      .innerJoin(`(${subQuery.getQuery()})`, 'latest', 'downloadTask.id = latest.maxId')
+      .leftJoinAndSelect('downloadTask.mediaResource', 'mediaResource')
+      .setParameters(subQuery.getParameters());
+
+    if (status) dataQb.andWhere('downloadTask.status = :status', { status });
+    if (type) dataQb.andWhere('downloadTask.type = :type', { type });
+    if (mediaResourceId) dataQb.andWhere('downloadTask.mediaResourceId = :mediaResourceId', { mediaResourceId });
+    if (search?.trim()) {
+      dataQb.andWhere(
+        `(downloadTask.fileName LIKE :search OR downloadTask.sourceLabel LIKE :search OR downloadTask.url LIKE :search)`,
+        { search: `%${search.trim()}%` },
+      );
+    }
+
+    const data = await dataQb
+      .orderBy('downloadTask.updatedAt', 'DESC')
+      .skip(offset)
+      .take(limit)
+      .getMany();
 
     return {
       data,
       total,
-      page: pagination.page,
-      limit: pagination.limit,
-      totalPages: pagination.totalPages,
+      page: safePage,
+      limit: Number(limit),
+      totalPages: Math.ceil(total / limit),
     };
   }
 
   async getMineStats(userId: number) {
-    const tasks = this.dedupeTasks(await this.downloadTaskRepository.find({ where: { userId } }));
+    const subQb = this.downloadTaskRepository
+      .createQueryBuilder('dt')
+      .select('MAX(dt.id)', 'maxId')
+      .where('dt.userId = :userId', { userId })
+      .groupBy('dt.dedupKey');
+
+    const row = await this.downloadTaskRepository
+      .createQueryBuilder('t')
+      .innerJoin(`(${subQb.getQuery()})`, 'latest', 't.id = latest.maxId')
+      .setParameters(subQb.getParameters())
+      .select([
+        'COUNT(*) AS total',
+        `SUM(CASE WHEN t.status IN ('pending','downloading') THEN 1 ELSE 0 END) AS active`,
+        `SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END) AS completed`,
+        `SUM(CASE WHEN t.status IN ('error','cancelled') THEN 1 ELSE 0 END) AS failed`,
+      ])
+      .getRawOne();
 
     return {
-      total: tasks.length,
-      active: tasks.filter(task =>
-        [DownloadTaskStatus.PENDING, DownloadTaskStatus.DOWNLOADING].includes(task.status),
-      ).length,
-      completed: tasks.filter(task => task.status === DownloadTaskStatus.COMPLETED).length,
-      failed: tasks.filter(task =>
-        [DownloadTaskStatus.ERROR, DownloadTaskStatus.CANCELLED].includes(task.status),
-      ).length,
+      total: Number(row?.total ?? 0),
+      active: Number(row?.active ?? 0),
+      completed: Number(row?.completed ?? 0),
+      failed: Number(row?.failed ?? 0),
     };
   }
 
   async upsertMine(userId: number, dto: CreateDownloadTaskDto): Promise<DownloadTask> {
-    const existingTaskByClientId = await this.downloadTaskRepository.findOne({
+    const dedupKey = DownloadTask.computeDedupKey(
+      dto.type ?? this.inferTaskType(dto),
+      dto.url,
+    );
+
+    let existingTask = await this.downloadTaskRepository.findOne({
       where: { userId, clientId: dto.clientId },
     });
-    const existingMagnetTasks = await this.findExistingMagnetTasksByHash(userId, dto);
 
-    const existingTask = existingTaskByClientId ?? existingMagnetTasks[0] ?? null;
+    if (!existingTask && dedupKey) {
+      existingTask = await this.downloadTaskRepository.findOne({
+        where: { userId, dedupKey },
+        order: { updatedAt: 'DESC' },
+      });
+      if (existingTask) {
+        const dupes = await this.downloadTaskRepository.find({
+          where: { userId, dedupKey },
+          select: ['id'],
+        });
+        const ids = dupes.map(d => d.id).filter(id => id !== existingTask!.id);
+        if (ids.length > 0) {
+          await this.downloadTaskRepository.delete(ids);
+        }
+      }
+    }
 
     if (existingTask) {
       Object.assign(existingTask, this.normalizePayload(dto));
+      existingTask.dedupKey = dedupKey;
       existingTask.userId = userId;
-      const savedTask = await this.downloadTaskRepository.save(existingTask);
-      await this.cleanupDuplicateMagnetTasks(savedTask, existingMagnetTasks);
-      return savedTask;
+      return this.downloadTaskRepository.save(existingTask);
     }
 
     const task = this.downloadTaskRepository.create({
       ...this.normalizePayload(dto),
       userId,
+      dedupKey,
     });
-
     return this.downloadTaskRepository.save(task);
   }
 
@@ -120,16 +179,17 @@ export class DownloadTasksService {
 
   async removeMine(userId: number, clientId: string): Promise<void> {
     const task = await this.findOneByClientId(userId, clientId);
-    const duplicateMagnetTasks = await this.findExistingMagnetTasksByHash(userId, {
-      url: task.url,
-      type: task.type,
-    });
 
-    const duplicateIds = duplicateMagnetTasks.filter(item => item.id).map(item => item.id);
-
-    if (duplicateIds.length > 0) {
-      await this.downloadTaskRepository.delete(duplicateIds);
-      return;
+    if (task.dedupKey) {
+      const dupes = await this.downloadTaskRepository.find({
+        where: { userId, dedupKey: task.dedupKey },
+        select: ['id'],
+      });
+      const ids = dupes.map(d => d.id);
+      if (ids.length > 0) {
+        await this.downloadTaskRepository.delete(ids);
+        return;
+      }
     }
 
     await this.downloadTaskRepository.remove(task);
@@ -159,47 +219,12 @@ export class DownloadTasksService {
     return task;
   }
 
-  private async findExistingMagnetTasksByHash(
-    userId: number,
-    dto: Pick<CreateDownloadTaskDto, 'url' | 'type'>,
-  ): Promise<DownloadTask[]> {
-    const taskType = this.inferTaskType(dto);
-    const infoHash = this.extractMagnetInfoHash(dto.url);
-
-    if (taskType !== DownloadTaskType.MAGNET || !infoHash) {
-      return [];
-    }
-
-    const tasks = await this.downloadTaskRepository.find({
-      where: { userId, type: DownloadTaskType.MAGNET },
-    });
-
-    return tasks
-      .filter(task => this.extractMagnetInfoHash(task.url) === infoHash)
-      .sort((left, right) => this.getTaskTimestamp(right) - this.getTaskTimestamp(left));
-  }
-
-  private async cleanupDuplicateMagnetTasks(
-    keeperTask: DownloadTask,
-    matchingTasks: DownloadTask[],
-  ): Promise<void> {
-    const duplicateIds = matchingTasks
-      .filter(task => task.id && task.id !== keeperTask.id)
-      .map(task => task.id);
-
-    if (duplicateIds.length === 0) {
-      return;
-    }
-
-    await this.downloadTaskRepository.delete(duplicateIds);
-  }
-
   private inferTaskType(dto: Pick<CreateDownloadTaskDto, 'url' | 'type'>): DownloadTaskType {
     if (dto.type) {
       return dto.type;
     }
 
-    const normalizedUrl = dto.url.trim().toLowerCase();
+    const normalizedUrl = (dto.url ?? '').trim().toLowerCase();
     if (normalizedUrl.startsWith('magnet:')) {
       return DownloadTaskType.MAGNET;
     }
@@ -220,78 +245,30 @@ export class DownloadTasksService {
     return decodeURIComponent(magnetMatch[1]).trim().toLowerCase();
   }
 
-  private buildTaskDedupKey(task: Pick<DownloadTask, 'id' | 'type' | 'url'>): string {
-    if (task.type === DownloadTaskType.MAGNET) {
-      const infoHash = this.extractMagnetInfoHash(task.url);
-      if (infoHash) {
-        return `magnet:${infoHash}`;
-      }
-    }
-
-    return `task:${task.id}`;
-  }
-
-  private getTaskTimestamp(task: Partial<DownloadTask>): number {
-    if (!task.updatedAt) {
-      return 0;
-    }
-
-    const value =
-      task.updatedAt instanceof Date
-        ? task.updatedAt.getTime()
-        : new Date(task.updatedAt).getTime();
-    return Number.isFinite(value) ? value : 0;
-  }
-
-  private dedupeTasks(tasks: DownloadTask[]): DownloadTask[] {
-    const taskMap = new Map<string, DownloadTask>();
-
-    tasks.forEach(task => {
-      const dedupKey = this.buildTaskDedupKey(task);
-      const existingTask = taskMap.get(dedupKey);
-      if (!existingTask || this.getTaskTimestamp(existingTask) <= this.getTaskTimestamp(task)) {
-        taskMap.set(dedupKey, task);
-      }
-    });
-
-    return [...taskMap.values()].sort(
-      (left, right) => this.getTaskTimestamp(right) - this.getTaskTimestamp(left),
-    );
-  }
-
   private async clearMineByVisibleStatuses(
     userId: number,
     statuses: DownloadTaskStatus[],
   ): Promise<{ deleted: number }> {
-    const tasks = await this.downloadTaskRepository.find({ where: { userId } });
-    const taskGroups = new Map<string, DownloadTask[]>();
+    const subQb = this.downloadTaskRepository
+      .createQueryBuilder('dt')
+      .select('MAX(dt.id)', 'maxId')
+      .where('dt.userId = :userId', { userId })
+      .groupBy('dt.dedupKey');
 
-    tasks.forEach(task => {
-      const dedupKey = this.buildTaskDedupKey(task);
-      const group = taskGroups.get(dedupKey) ?? [];
-      group.push(task);
-      taskGroups.set(dedupKey, group);
-    });
+    const latestIds = await this.downloadTaskRepository
+      .createQueryBuilder('t')
+      .innerJoin(`(${subQb.getQuery()})`, 'latest', 't.id = latest.maxId')
+      .setParameters(subQb.getParameters())
+      .select('t.id')
+      .where('t.status IN (:...statuses)', { statuses })
+      .getMany();
 
-    const idsToDelete = [...taskGroups.values()].flatMap(group => {
-      const latestTask = group.reduce((currentLatest, nextTask) =>
-        this.getTaskTimestamp(currentLatest) >= this.getTaskTimestamp(nextTask)
-          ? currentLatest
-          : nextTask,
-      );
-
-      if (!statuses.includes(latestTask.status)) {
-        return [];
-      }
-
-      return group.map(task => task.id).filter((id): id is number => typeof id === 'number');
-    });
-
-    if (idsToDelete.length === 0) {
+    if (latestIds.length === 0) {
       return { deleted: 0 };
     }
 
-    const result = await this.downloadTaskRepository.delete(idsToDelete);
+    const ids = latestIds.map(t => t.id);
+    const result = await this.downloadTaskRepository.delete(ids);
     return { deleted: result.affected || 0 };
   }
 
@@ -302,6 +279,9 @@ export class DownloadTasksService {
         ? Math.max(0, Math.min(100, Math.round(dto.progress)))
         : dto.progress;
 
+    const taskType = dto.type ?? this.inferTaskType(dto as Pick<CreateDownloadTaskDto, 'url' | 'type'>);
+    const dedupKey = DownloadTask.computeDedupKey(taskType, dto.url ?? '');
+
     return {
       ...dto,
       progress: nextStatus === DownloadTaskStatus.COMPLETED ? 100 : normalizedProgress,
@@ -310,6 +290,7 @@ export class DownloadTasksService {
           ? dto.completedAt || new Date()
           : dto.completedAt,
       lastLaunchedAt: dto.lastLaunchedAt,
+      dedupKey: dedupKey || (dto as Record<string, unknown>).dedupKey || '',
     };
   }
 }

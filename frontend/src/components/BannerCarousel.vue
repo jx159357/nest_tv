@@ -15,10 +15,7 @@
         class="carousel-slide"
         :class="{ active: index === currentIndex }"
       >
-        <div
-          class="slide-bg"
-          :class="{ 'slide-bg-placeholder': !hasHeroImage(item, index) }"
-        >
+        <div class="slide-bg" :class="{ 'slide-bg-placeholder': !hasHeroImage(item, index) }">
           <img
             v-if="hasHeroImage(item, index)"
             :src="item.backdrop || item.poster"
@@ -332,7 +329,12 @@
     inset: 0;
     background:
       linear-gradient(to top, rgba(5, 6, 9, 0.94) 0%, rgba(5, 6, 9, 0.18) 52%),
-      linear-gradient(to right, rgba(5, 6, 9, 0.98) 0%, rgba(5, 6, 9, 0.66) 42%, rgba(5, 6, 9, 0.16) 100%);
+      linear-gradient(
+        to right,
+        rgba(5, 6, 9, 0.98) 0%,
+        rgba(5, 6, 9, 0.66) 42%,
+        rgba(5, 6, 9, 0.16) 100%
+      );
   }
 
   .slide-content {
@@ -415,7 +417,7 @@
     background: rgba(255, 255, 255, 0.1);
     border-radius: 5px;
     font-size: 12px;
-    color: var(--text-tertiary);
+    color: rgba(226, 232, 240, 0.78);
   }
 
   .slide-actions {
@@ -456,7 +458,7 @@
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
-    color: var(--text-primary);
+    color: var(--text-inverse);
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;

@@ -1,6 +1,4 @@
 import { ref, onUnmounted, onMounted } from 'vue';
-import io from 'socket.io-client';
-type Socket = any;
 import { useAuthStore } from '@/stores/auth';
 import { log } from '@/utils/logger';
 import type {
@@ -12,6 +10,15 @@ import type {
 } from '@/types/danmaku';
 
 type DanmakuEventListener = (...args: any[]) => void;
+type SocketClient = typeof import('socket.io-client')['default'];
+type Socket = ReturnType<SocketClient>;
+
+let socketClientLoader: Promise<SocketClient> | null = null;
+
+const loadSocketClient = (): Promise<SocketClient> => {
+  socketClientLoader ??= import('socket.io-client').then(module => module.default);
+  return socketClientLoader;
+};
 
 export type { DanmakuMessage, RoomInfo, HeartbeatResponse, DanmakuSettings, DanmakuServiceConfig };
 
@@ -22,6 +29,7 @@ export class DanmakuWebSocketService {
   private isConnected = ref(false);
   private roomId = ref('');
   private userId = ref('');
+  private connectionVersion = 0;
 
   // 事件监听器
   private listeners = new Map<string, Set<DanmakuEventListener>>();
@@ -39,8 +47,10 @@ export class DanmakuWebSocketService {
   constructor(private authStore: any) {}
 
   // 连接WebSocket
-  connect(videoId: string, userId: string) {
+  async connect(videoId: string, userId: string) {
     try {
+      const version = ++this.connectionVersion;
+
       if (this.socket) {
         this.socket.disconnect();
         this.socket = null;
@@ -60,6 +70,11 @@ export class DanmakuWebSocketService {
         maxQueueSize: this.options.maxQueueSize,
         maxReconnectAttempts: 5,
       };
+
+      const io = await loadSocketClient();
+      if (version !== this.connectionVersion) {
+        return;
+      }
 
       this.socket = io(config.serverUrl, {
         auth: {
@@ -137,19 +152,30 @@ export class DanmakuWebSocketService {
     });
 
     // 接收通过HTTP创建的弹幕广播
-    this.socket.on('danmaku-created', (data: { danmakuId: number; videoId: string; userId: number; text: string; color: string; type: string; timestamp: number }) => {
-      const message: DanmakuMessage = {
-        id: String(data.danmakuId),
-        userId: String(data.userId),
-        videoId: data.videoId,
-        text: data.text,
-        color: data.color,
-        type: data.type as DanmakuMessage['type'],
-        priority: 1,
-        timestamp: data.timestamp,
-      };
-      this.emit('danmaku-message', message);
-    });
+    this.socket.on(
+      'danmaku-created',
+      (data: {
+        danmakuId: number;
+        videoId: string;
+        userId: number;
+        text: string;
+        color: string;
+        type: string;
+        timestamp: number;
+      }) => {
+        const message: DanmakuMessage = {
+          id: String(data.danmakuId),
+          userId: String(data.userId),
+          videoId: data.videoId,
+          text: data.text,
+          color: data.color,
+          type: data.type as DanmakuMessage['type'],
+          priority: 1,
+          timestamp: data.timestamp,
+        };
+        this.emit('danmaku-message', message);
+      },
+    );
 
     // 接收系统消息
     this.socket.on('system-message', (message: DanmakuMessage) => {
@@ -302,6 +328,8 @@ export class DanmakuWebSocketService {
 
   // 断开连接
   disconnect() {
+    this.connectionVersion++;
+
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
@@ -352,7 +380,7 @@ export function useDanmakuWebSocket(videoId: string) {
   // 连接管理
   const connect = () => {
     if (authStore.user?.id && videoId) {
-      service.connect(videoId, authStore.user.id.toString());
+      void service.connect(videoId, authStore.user.id.toString());
     }
   };
 

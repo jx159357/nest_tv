@@ -279,6 +279,15 @@ export class MediaResourceController {
     return { isFavorited };
   }
 
+  @Get(':id/play-detail')
+  @Public()
+  @ApiOperation({ summary: '获取播放详情', description: '返回媒体信息、线路分组、剧集列表、下载链接' })
+  @ApiParam({ name: 'id', description: '影视资源ID' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getPlayDetail(@Param('id', ParseIntPipe) id: number) {
+    return this.mediaResourceService.getPlayDetail(id);
+  }
+
   /**
    * 根据ID获取影视资源
    */

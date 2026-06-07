@@ -77,9 +77,7 @@
           <span v-if="media.quality" class="media-card__meta-pill media-card__meta-pill--quality">
             {{ qualityLabel }}
           </span>
-          <span v-if="sourceCount > 0" class="media-card__meta-pill">
-            {{ sourceCount }}源
-          </span>
+          <span v-if="sourceCount > 0" class="media-card__meta-pill"> {{ sourceCount }}源 </span>
           <span v-if="showViewCount && media.viewCount" class="media-card__views">
             {{ formattedViewCount }}次
           </span>
@@ -311,7 +309,6 @@
     );
 
     observer.value.observe(target);
-
 
     fallbackTimer = setTimeout(() => {
       if (!shouldLoadImage.value) {

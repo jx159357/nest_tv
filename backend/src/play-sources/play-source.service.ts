@@ -27,8 +27,29 @@ interface PlaySourceDuplicateGroup {
   >;
 }
 
+export interface PlaySourceOriginInfo {
+  originSite?: string;
+  originDetailUrl?: string;
+  originPlayPageUrl?: string;
+  originSourceId?: string;
+  episodeNumber?: number;
+  resolvedAt?: string;
+}
+
+export interface PlaySourceRefreshResult {
+  refreshed: boolean;
+  oldUrl: string;
+  newUrl?: string;
+  message: string;
+  playSource?: PlaySource;
+}
+
 @Injectable()
 export class PlaySourceService {
+  private readonly FRESHNESS_MS = 6 * 60 * 60 * 1000;
+  private readonly STALE_MS = 24 * 60 * 60 * 1000;
+  private readonly refreshLocks = new Map<number, Promise<void>>();
+
   constructor(
     @InjectRepository(PlaySource)
     private playSourceRepository: Repository<PlaySource>,
@@ -107,6 +128,21 @@ export class PlaySourceService {
     });
 
     if (existing) {
+      existing.isActive = true;
+      existing.status = PlaySourceStatus.ACTIVE;
+      existing.type = createPlaySourceDto.type;
+      existing.priority = createPlaySourceDto.priority ?? existing.priority;
+      existing.sourceName = createPlaySourceDto.sourceName ?? existing.sourceName;
+      existing.resolution = createPlaySourceDto.resolution ?? existing.resolution;
+      existing.format = createPlaySourceDto.format ?? existing.format;
+      existing.description = createPlaySourceDto.description ?? existing.description;
+      existing.episodeNumber = createPlaySourceDto.episodeNumber ?? existing.episodeNumber;
+      existing.lastCheckedAt = undefined;
+      existing.validationInfo = {
+        ...(this.isRecord(existing.validationInfo) ? existing.validationInfo : {}),
+        reactivatedAt: new Date().toISOString(),
+      };
+      await this.playSourceRepository.save(existing);
       return existing;
     }
 
@@ -213,6 +249,96 @@ export class PlaySourceService {
     return this.playSourceRepository.save(playSource);
   }
 
+  async updateOriginInfo(id: number, origin: PlaySourceOriginInfo): Promise<PlaySource> {
+    const playSource = await this.findById(id);
+    playSource.validationInfo = {
+      ...(this.isRecord(playSource.validationInfo) ? playSource.validationInfo : {}),
+      origin: {
+        ...(this.isRecord(playSource.validationInfo?.origin)
+          ? playSource.validationInfo.origin
+          : {}),
+        ...origin,
+      },
+    };
+    return this.playSourceRepository.save(playSource);
+  }
+
+  async refreshResolvedUrl(
+    id: number,
+    url: string,
+    origin: PlaySourceOriginInfo,
+  ): Promise<PlaySource> {
+    const playSource = await this.findById(id);
+    const previousUrl = playSource.url;
+
+    playSource.url = this.normalizeUrl(url);
+    playSource.type = this.inferTypeFromUrl(playSource.url);
+    playSource.status = PlaySourceStatus.ACTIVE;
+    playSource.isActive = true;
+    playSource.lastCheckedAt = undefined;
+    playSource.validationInfo = {
+      ...(this.isRecord(playSource.validationInfo) ? playSource.validationInfo : {}),
+      origin: {
+        ...(this.isRecord(playSource.validationInfo?.origin)
+          ? playSource.validationInfo.origin
+          : {}),
+        ...origin,
+      },
+      previousUrl,
+      refreshedAt: new Date().toISOString(),
+    };
+
+    return this.playSourceRepository.save(playSource);
+  }
+
+  async refreshFromOrigin(id: number): Promise<PlaySourceRefreshResult> {
+    const playSource = await this.findById(id);
+    const origin = this.extractOriginInfo(playSource);
+    const oldUrl = playSource.url;
+
+    if (!origin.originPlayPageUrl) {
+      return {
+        refreshed: false,
+        oldUrl,
+        message: '播放源没有保存原始播放页，无法按单条源刷新。需要重新爬取详情页或列表页。',
+      };
+    }
+
+    const resolvedUrl = await this.resolveDytt001PlayPageUrl(origin.originPlayPageUrl);
+    if (!resolvedUrl) {
+      return {
+        refreshed: false,
+        oldUrl,
+        message: '原始播放页未解析到可用播放 URL。',
+      };
+    }
+
+    if (this.normalizeUrl(resolvedUrl) === this.normalizeUrl(oldUrl)) {
+      const validation = await this.validatePlaySource(playSource);
+      return {
+        refreshed: validation.isValid,
+        oldUrl,
+        newUrl: resolvedUrl,
+        message: validation.isValid ? '播放源仍然有效。' : validation.message,
+        playSource,
+      };
+    }
+
+    const updated = await this.refreshResolvedUrl(id, resolvedUrl, {
+      ...origin,
+      resolvedAt: new Date().toISOString(),
+    });
+    const validation = await this.validatePlaySource(updated);
+
+    return {
+      refreshed: validation.isValid,
+      oldUrl,
+      newUrl: resolvedUrl,
+      message: validation.isValid ? '播放源已刷新。' : validation.message,
+      playSource: updated,
+    };
+  }
+
   async remove(id: number): Promise<void> {
     const playSource = await this.findById(id);
     await this.playSourceRepository.remove(playSource);
@@ -306,6 +432,137 @@ export class PlaySourceService {
     return this.deduplicateByUrl(sorted);
   }
 
+  async getPlayableSources(mediaResourceId: number): Promise<{
+    sources: PlaySource[];
+    freshness: 'fresh' | 'stale' | 'refreshing' | 'empty';
+  }> {
+    const sources = await this.playSourceRepository.find({
+      where: {
+        mediaResourceId,
+        isActive: true,
+      },
+    });
+
+    const activeSources = sources.filter(s => s.status === PlaySourceStatus.ACTIVE);
+    if (activeSources.length === 0) {
+      this.triggerBackgroundRefresh(mediaResourceId);
+      return { sources: [], freshness: 'empty' };
+    }
+
+    const now = Date.now();
+    const fresh = activeSources.filter(s => {
+      if (!s.lastCheckedAt) return false;
+      return now - new Date(s.lastCheckedAt).getTime() < this.FRESHNESS_MS;
+    });
+
+    if (fresh.length > 0) {
+      return {
+        sources: this.deduplicateByUrl(this.sortPlaySources(fresh)),
+        freshness: 'fresh',
+      };
+    }
+
+    const hasRecent = activeSources.some(s => {
+      if (!s.lastCheckedAt) return false;
+      return now - new Date(s.lastCheckedAt).getTime() < this.STALE_MS;
+    });
+
+    this.triggerBackgroundRefresh(mediaResourceId);
+
+    return {
+      sources: this.deduplicateByUrl(this.sortPlaySources(activeSources)),
+      freshness: hasRecent ? 'stale' : 'refreshing',
+    };
+  }
+
+  private triggerBackgroundRefresh(mediaResourceId: number): void {
+    if (this.refreshLocks.has(mediaResourceId)) return;
+
+    const promise = this.refreshMediaSources(mediaResourceId, { limit: 5 })
+      .then(() => undefined)
+      .catch(() => undefined)
+      .finally(() => {
+        this.refreshLocks.delete(mediaResourceId);
+      });
+    this.refreshLocks.set(mediaResourceId, promise);
+  }
+
+  async getSourceFreshness(mediaResourceId: number): Promise<'fresh' | 'stale' | 'refreshing' | 'empty'> {
+    if (this.refreshLocks.has(mediaResourceId)) return 'refreshing';
+
+    const sources = await this.playSourceRepository.find({
+      where: { mediaResourceId, isActive: true },
+    });
+    const active = sources.filter(s => s.status === PlaySourceStatus.ACTIVE);
+    if (active.length === 0) return 'empty';
+
+    const now = Date.now();
+    const hasFresh = active.some(s => {
+      if (!s.lastCheckedAt) return false;
+      return now - new Date(s.lastCheckedAt).getTime() < this.FRESHNESS_MS;
+    });
+    if (hasFresh) return 'fresh';
+
+    return 'stale';
+  }
+
+  async refreshMediaSources(
+    mediaResourceId: number,
+    options?: { limit?: number },
+  ): Promise<{
+    refreshed: number;
+    valid: PlaySource[];
+    invalid: Array<{ id: number; oldUrl: string; reason: string }>;
+    best: PlaySource | null;
+  }> {
+    const limit = options?.limit ?? 5;
+    const sources = await this.playSourceRepository.find({
+      where: { mediaResourceId },
+    });
+
+    const sorted = this.sortPlaySources(sources).slice(0, limit);
+    const valid: PlaySource[] = [];
+    const invalid: Array<{ id: number; oldUrl: string; reason: string }> = [];
+
+    for (const source of sorted) {
+      try {
+        let refreshed = source;
+        const origin = this.extractOriginInfo(source);
+
+        if (origin.originPlayPageUrl) {
+          const newUrl = await this.resolveDytt001PlayPageUrl(origin.originPlayPageUrl);
+          if (newUrl && this.normalizeUrl(newUrl) !== this.normalizeUrl(source.url)) {
+            refreshed = await this.refreshResolvedUrl(source.id, newUrl, {
+              ...origin,
+              resolvedAt: new Date().toISOString(),
+            });
+          }
+        }
+
+        const validation = await this.validatePlaySource(refreshed);
+        if (validation.isValid) {
+          valid.push(refreshed);
+        } else {
+          invalid.push({ id: source.id, oldUrl: source.url, reason: validation.message });
+        }
+      } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : String(error);
+        source.status = PlaySourceStatus.ERROR;
+        source.isActive = false;
+        source.lastCheckedAt = new Date();
+        await this.playSourceRepository.save(source);
+        invalid.push({ id: source.id, oldUrl: source.url, reason: msg });
+      }
+    }
+
+    return {
+      refreshed: valid.length + invalid.length,
+      valid: this.deduplicateByUrl(this.sortPlaySources(valid)),
+      invalid,
+      best: valid.length > 0 ? this.sortPlaySources(valid)[0] : null,
+    };
+  }
+
   private deduplicateByUrl(sources: PlaySource[]): PlaySource[] {
     const seen = new Set<string>();
     return sources.filter(s => {
@@ -371,12 +628,16 @@ export class PlaySourceService {
 
   private async validatePlaySource(playSource: PlaySource): Promise<PlaySourceValidationResult> {
     const result = await this.checkPlaySourceAvailability(playSource);
+    const existingOrigin = this.isRecord(playSource.validationInfo?.origin)
+      ? playSource.validationInfo.origin
+      : undefined;
 
     playSource.status = result.isValid ? PlaySourceStatus.ACTIVE : PlaySourceStatus.ERROR;
     playSource.isActive = result.isValid;
     playSource.lastCheckedAt = new Date();
     playSource.validationInfo = {
       ...result.validationInfo,
+      ...(existingOrigin ? { origin: existingOrigin } : {}),
       checkedAt: playSource.lastCheckedAt.toISOString(),
     };
 
@@ -751,6 +1012,61 @@ export class PlaySourceService {
     return request?.res?.responseUrl;
   }
 
+  private extractOriginInfo(playSource: PlaySource): PlaySourceOriginInfo {
+    const validationInfo = this.isRecord(playSource.validationInfo)
+      ? playSource.validationInfo
+      : {};
+    const origin = this.isRecord(validationInfo.origin) ? validationInfo.origin : {};
+
+    return {
+      originSite: typeof origin.originSite === 'string' ? origin.originSite : undefined,
+      originDetailUrl:
+        typeof origin.originDetailUrl === 'string' ? origin.originDetailUrl : undefined,
+      originPlayPageUrl:
+        typeof origin.originPlayPageUrl === 'string' ? origin.originPlayPageUrl : undefined,
+      originSourceId: typeof origin.originSourceId === 'string' ? origin.originSourceId : undefined,
+      episodeNumber:
+        typeof origin.episodeNumber === 'number' ? origin.episodeNumber : playSource.episodeNumber,
+      resolvedAt: typeof origin.resolvedAt === 'string' ? origin.resolvedAt : undefined,
+    };
+  }
+
+  private async resolveDytt001PlayPageUrl(playPageUrl: string): Promise<string | null> {
+    const response = await axios.get<string>(playPageUrl, {
+      timeout: 12000,
+      headers: this.buildProbeHeaders(),
+      responseType: 'text',
+      maxRedirects: 5,
+      validateStatus: status => status >= 200 && status < 500,
+    });
+
+    if (response.status >= 400 || typeof response.data !== 'string') {
+      return null;
+    }
+
+    const playerMatch = response.data.match(/"url"\s*:\s*"(https?:[^"]+\.m3u8[^"]*)"/);
+    if (playerMatch) {
+      return this.decodeJsonString(playerMatch[1]);
+    }
+
+    const anyUrlMatch = response.data.match(/"url"\s*:\s*"(https?:[^"]+)"/);
+    return anyUrlMatch ? this.decodeJsonString(anyUrlMatch[1]) : null;
+  }
+
+  private decodeJsonString(value: string): string {
+    try {
+      return value
+        .replace(/\\\//g, '/')
+        .replace(/\\u([0-9a-fA-F]{4})/g, (_match: string, hex: string) =>
+          String.fromCharCode(parseInt(hex, 16)),
+        )
+        .replace(/\\\\/g, '\\')
+        .replace(/\\"/g, '"');
+    } catch {
+      return value;
+    }
+  }
+
   private isRecord(value: unknown): value is Record<string, unknown> {
     return value !== null && typeof value === 'object' && !Array.isArray(value);
   }
@@ -762,6 +1078,28 @@ export class PlaySourceService {
 
   private normalizeUrl(url?: string): string {
     return String(url || '').trim();
+  }
+
+  private inferTypeFromUrl(url: string): PlaySourceType {
+    const normalizedUrl = url.toLowerCase();
+
+    if (normalizedUrl.startsWith('magnet:')) {
+      return PlaySourceType.MAGNET;
+    }
+
+    if (
+      normalizedUrl.startsWith('ftp:') ||
+      normalizedUrl.startsWith('thunder:') ||
+      normalizedUrl.startsWith('ed2k:')
+    ) {
+      return PlaySourceType.DOWNLOAD;
+    }
+
+    if (normalizedUrl.includes('.m3u8') || normalizedUrl.startsWith('rtmp')) {
+      return PlaySourceType.STREAM;
+    }
+
+    return PlaySourceType.ONLINE;
   }
 
   private toPlaySourcePreview(

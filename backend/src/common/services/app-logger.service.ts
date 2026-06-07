@@ -8,8 +8,9 @@ import { RequestLogInfo, ResponseLogInfo } from '../../middleware/request-loggin
 @Injectable()
 export class AppLoggerService {
   private readonly logger: Logger;
-  private requestLogEnabled: boolean = true;
-  private responseLogEnabled: boolean = true;
+  private requestLogEnabled: boolean = process.env.LOG_REQUEST_ENABLED === 'true';
+  private responseLogEnabled: boolean = process.env.LOG_RESPONSE_ENABLED !== 'false';
+  private responseSuccessLogEnabled: boolean = process.env.LOG_RESPONSE_SUCCESS_ENABLED === 'true';
   private errorLogEnabled: boolean = true;
   private contextStore: Map<string, LogContext> = new Map();
 
@@ -119,7 +120,7 @@ export class AppLoggerService {
 
     if (info.statusCode >= 400) {
       this.logger.warn(logMessage, context);
-    } else {
+    } else if (this.responseSuccessLogEnabled) {
       this.logger.log(logMessage, context);
     }
   }

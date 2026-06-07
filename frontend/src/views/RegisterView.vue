@@ -4,9 +4,7 @@
       <section class="register-hero">
         <span class="register-badge">创建 Nest TV 账号</span>
         <div>
-          <h1 class="register-hero-title">
-            注册后开始沉淀你的专属观看与推荐体验
-          </h1>
+          <h1 class="register-hero-title">注册后开始沉淀你的专属观看与推荐体验</h1>
           <p class="register-hero-desc">
             注册完成后，你的收藏、搜索历史、偏好设置与推荐画像都会围绕这个账号持续积累，方便后续跨会话继续使用。
           </p>
@@ -94,11 +92,7 @@
             </label>
           </div>
 
-          <button
-            type="submit"
-            :disabled="authStore.isLoading || success"
-            class="register-submit"
-          >
+          <button type="submit" :disabled="authStore.isLoading || success" class="register-submit">
             {{ authStore.isLoading ? '注册中...' : success ? '即将跳转...' : '注册' }}
           </button>
         </form>
@@ -336,7 +330,11 @@
     width: 100%;
     padding: 12px;
     border-radius: 12px;
-    background: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-primary-dark));
+    background: linear-gradient(
+      135deg,
+      var(--color-brand-primary),
+      var(--color-brand-primary-dark)
+    );
     color: white;
     font-size: 14px;
     font-weight: 600;

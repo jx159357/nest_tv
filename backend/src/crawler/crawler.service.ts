@@ -1,14 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, {
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosResponse,
+  type RawAxiosResponseHeaders,
+} from 'axios';
 import * as cheerio from 'cheerio';
 import * as iconv from 'iconv-lite';
 import { CRAWLER_TARGETS, CRAWLER_CONFIG, CRAWLER_RULES } from './crawler.config';
 import { MediaResourceService } from '../media/media-resource.service';
 import { PlaySourceService } from '../play-sources/play-source.service';
 import { MediaType, MediaQuality } from '../entities/media-resource.entity';
-import { PlaySourceType } from '../entities/play-source.entity';
+import { PlaySourceType, PlaySourceStatus } from '../entities/play-source.entity';
+import type { PlaySourceOriginInfo } from '../play-sources/play-source.service';
 import { CrawlerTarget as CrawlerTargetEntity } from '../entities/crawler-target.entity';
 import { AppLoggerService } from '../common/services/app-logger.service';
 import { ProxyPoolService } from '../common/services/proxy-pool.service';
@@ -75,7 +81,7 @@ export interface CrawledData {
   source: string;
   downloadUrls?: string[];
   episodeCount?: number;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export interface CrawlWebsiteResult {
@@ -89,6 +95,7 @@ export interface CrawlWebsiteResult {
 export class CrawlerService {
   private readonly logger = new Logger(CrawlerService.name);
   private readonly httpClient: AxiosInstance;
+  private readonly verboseCrawlerLogs = process.env.CRAWLER_VERBOSE_LOGS === 'true';
   private readonly cache: Map<string, { data: CrawledData; timestamp: number }> = new Map();
   private readonly inFlightCrawls: Map<string, Promise<CrawlWebsiteResult>> = new Map();
   private readonly proxySettings: CrawlerProxySettings | undefined = (
@@ -128,16 +135,20 @@ export class CrawlerService {
               config.proxy = this.createProxyConfig(proxy);
               config.headers.set('X-Proxy-Source', proxy.source);
               config.headers.set('X-Proxy-ID', proxy.id);
-              this.logger.log(
-                `使用代理 ${proxy.id} (${proxy.host}:${proxy.port}) 请求: ${config.url}`,
-              );
+              if (this.verboseCrawlerLogs) {
+                this.logger.log(
+                  `使用代理 ${proxy.id} (${proxy.host}:${proxy.port}) 请求: ${config.url}`,
+                );
+              }
             } else {
               this.logger.warn(`没有可用的代理进行请求: ${config.url}`);
             }
           }
         }
 
-        this.logger.log(`请求URL: ${config.url}`);
+        if (this.verboseCrawlerLogs) {
+          this.logger.log(`请求URL: ${config.url}`);
+        }
         return config;
       },
       (error: unknown) => {
@@ -150,10 +161,12 @@ export class CrawlerService {
     // 设置响应拦截器
     this.httpClient.interceptors.response.use(
       response => {
-        this.appLogger.log(
-          `响应状态: ${response.status} - ${response.config.url}`,
-          'CRAWLER_RESPONSE',
-        );
+        if (this.verboseCrawlerLogs) {
+          this.appLogger.log(
+            `响应状态: ${response.status} - ${response.config.url}`,
+            'CRAWLER_RESPONSE',
+          );
+        }
         return response;
       },
       (error: unknown) => {
@@ -322,7 +335,9 @@ export class CrawlerService {
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        this.appLogger.log(`尝试请求 (尝试 ${attempt}/${maxRetries}): ${url}`, 'CRAWLER_FETCH');
+        if (this.verboseCrawlerLogs) {
+          this.appLogger.log(`尝试请求 (尝试 ${attempt}/${maxRetries}): ${url}`, 'CRAWLER_FETCH');
+        }
 
         const response = await this.httpClient.get<Buffer>(url, {
           responseType: 'arraybuffer',
@@ -330,19 +345,23 @@ export class CrawlerService {
           ...options,
         });
 
-        this.appLogger.log(`请求成功: ${url} - 状态: ${response.status}`, 'CRAWLER_SUCCESS');
+        if (this.verboseCrawlerLogs) {
+          this.appLogger.log(`请求成功: ${url} - 状态: ${response.status}`, 'CRAWLER_SUCCESS');
+        }
         return response;
       } catch (error: unknown) {
         lastError = this.toError(error);
         const shouldRetry = this.shouldRetryRequest(error);
 
-        this.appLogger.logExternalServiceError(
-          'Crawler HTTP Client',
-          `Fetch Attempt ${attempt}/${maxRetries}`,
-          lastError,
-          url,
-          requestId,
-        );
+        if (attempt === maxRetries || !shouldRetry) {
+          this.appLogger.logExternalServiceError(
+            'Crawler HTTP Client',
+            `Fetch Attempt ${attempt}/${maxRetries}`,
+            lastError,
+            url,
+            requestId,
+          );
+        }
 
         if (attempt < maxRetries && shouldRetry) {
           // 指数退避
@@ -379,7 +398,14 @@ export class CrawlerService {
     const buf = Buffer.from(response.data);
 
     // 1. 从 Content-Type 头检测 charset
-    const contentType = response.headers['content-type'] || '';
+    const headers = response.headers as RawAxiosResponseHeaders;
+    const contentTypeHeader = headers['content-type'] || headers['Content-Type'] || '';
+    const contentType =
+      typeof contentTypeHeader === 'string'
+        ? contentTypeHeader
+        : Array.isArray(contentTypeHeader) && typeof contentTypeHeader[0] === 'string'
+          ? contentTypeHeader[0]
+          : '';
     const charsetMatch = contentType.match(/charset=([^\s;]+)/i);
     let charset = charsetMatch ? charsetMatch[1].toLowerCase() : '';
 
@@ -757,12 +783,12 @@ export class CrawlerService {
 
     paragraphs.each((_, el) => {
       const text = $(el).text().trim();
-      if (text.includes('◎导　　演')) {
-        director = text.replace(/◎导　　演[　\s]*/g, '').trim();
-      } else if (text.includes('◎演　　员')) {
-        actors = text.replace(/◎演　　员[　\s]*/g, '').trim();
-      } else if (text.includes('◎类　　别')) {
-        const genreText = text.replace(/◎类　　别[　\s]*/g, '').trim();
+      if (text.includes('◎导') && text.includes('演')) {
+        director = text.replace(/◎导[\u3000\s]*演[\u3000\s]*/g, '').trim();
+      } else if (text.includes('◎演') && text.includes('员')) {
+        actors = text.replace(/◎演[\u3000\s]*员[\u3000\s]*/g, '').trim();
+      } else if (text.includes('◎类') && text.includes('别')) {
+        const genreText = text.replace(/◎类[\u3000\s]*别[\u3000\s]*/g, '').trim();
         genres = genreText
           .split(/[,，、/]/)
           .map(g => g.trim())
@@ -815,6 +841,7 @@ export class CrawlerService {
     // 访问每个来源的第一个播放页获取 m3u8 源
     const downloadUrls: string[] = [];
     const sourceNames: string[] = [];
+    const sourceOrigins: PlaySourceOriginInfo[] = [];
     const sourcesToFetch = Array.from(sourceMap.entries()).slice(0, 5); // 最多5个来源
 
     for (const [sourceId, urls] of sourcesToFetch) {
@@ -830,6 +857,14 @@ export class CrawlerService {
           if (!downloadUrls.includes(m3u8Url)) {
             downloadUrls.push(m3u8Url);
             sourceNames.push(`源${sourceId}`);
+            sourceOrigins.push({
+              originSite: target.name,
+              originDetailUrl: url,
+              originPlayPageUrl: playPageUrl,
+              originSourceId: sourceId,
+              episodeNumber: this.extractDytt001EpisodeNumber(playPageUrl),
+              resolvedAt: new Date().toISOString(),
+            });
           }
         } else {
           // 也尝试匹配其他格式的视频源
@@ -839,6 +874,14 @@ export class CrawlerService {
             if (!downloadUrls.includes(videoUrl)) {
               downloadUrls.push(videoUrl);
               sourceNames.push(`源${sourceId}`);
+              sourceOrigins.push({
+                originSite: target.name,
+                originDetailUrl: url,
+                originPlayPageUrl: playPageUrl,
+                originSourceId: sourceId,
+                episodeNumber: this.extractDytt001EpisodeNumber(playPageUrl),
+                resolvedAt: new Date().toISOString(),
+              });
             }
           }
         }
@@ -870,8 +913,19 @@ export class CrawlerService {
         website: target.name,
         playUrls: allPlayUrls,
         sourceNames,
+        sourceOrigins,
       },
     };
+  }
+
+  private extractDytt001EpisodeNumber(playPageUrl: string): number | undefined {
+    const match = playPageUrl.match(/\/play\/\d+-\d+-(\d+)\.html/);
+    if (!match) {
+      return undefined;
+    }
+
+    const episodeNumber = parseInt(match[1], 10);
+    return Number.isFinite(episodeNumber) ? episodeNumber : undefined;
   }
 
   /**
@@ -1188,7 +1242,8 @@ export class CrawlerService {
           results.push(result.value.data);
         } else {
           failedCount++;
-          const reason = result.status === 'rejected' ? result.reason : result.value;
+          const reason: unknown =
+            result.status === 'rejected' ? (result.reason as unknown) : result.value;
           this.logger.warn(
             `批量爬取失败 [${batch[index]}]: ${reason instanceof Error ? reason.message : String(reason)}`,
           );
@@ -1686,10 +1741,23 @@ export class CrawlerService {
     let skipped = 0;
 
     // 从 metadata 获取来源名称列表
-    const sourceNames = Array.isArray(data.metadata?.sourceNames) ? data.metadata.sourceNames : [];
+    const sourceNames = this.normalizeStringArray(data.metadata?.sourceNames);
+    const sourceOrigins = this.normalizePlaySourceOrigins(data.metadata?.sourceOrigins);
 
     for (const [index, url] of urls.entries()) {
       if (existingUrls.has(url)) {
+        const existingSource = existingSources.find(sourceItem => sourceItem.url === url);
+        const origin = sourceOrigins[index];
+        if (existingSource) {
+          await this.playSourceService.update(existingSource.id, {
+            lastCheckedAt: new Date(),
+            status: PlaySourceStatus.ACTIVE,
+            isActive: true,
+          });
+          if (origin) {
+            await this.playSourceService.updateOriginInfo(existingSource.id, origin);
+          }
+        }
         skipped++;
         continue;
       }
@@ -1697,13 +1765,17 @@ export class CrawlerService {
       // 使用真实来源名称，如果没有则使用默认格式
       const sourceName = sourceNames[index] || `${source}源 ${index + 1}`;
 
-      await this.playSourceService.create({
+      const playSource = await this.playSourceService.create({
         mediaResourceId,
         type: this.inferPlaySourceType(url),
         url,
         priority: index + 1,
         sourceName,
       });
+      const origin = sourceOrigins[index];
+      if (origin) {
+        await this.playSourceService.updateOriginInfo(playSource.id, origin);
+      }
 
       created++;
     }
@@ -1731,6 +1803,46 @@ export class CrawlerService {
     }
 
     return PlaySourceType.ONLINE;
+  }
+
+  private normalizeStringArray(value: unknown): string[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value.filter((item): item is string => typeof item === 'string' && item.length > 0);
+  }
+
+  private normalizePlaySourceOrigins(value: unknown): PlaySourceOriginInfo[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .map(item => this.normalizePlaySourceOrigin(item))
+      .filter((item): item is PlaySourceOriginInfo => Boolean(item));
+  }
+
+  private normalizePlaySourceOrigin(value: unknown): PlaySourceOriginInfo | undefined {
+    if (!this.isRecord(value)) {
+      return undefined;
+    }
+
+    const origin: PlaySourceOriginInfo = {
+      originSite: typeof value.originSite === 'string' ? value.originSite : undefined,
+      originDetailUrl:
+        typeof value.originDetailUrl === 'string' ? value.originDetailUrl : undefined,
+      originPlayPageUrl:
+        typeof value.originPlayPageUrl === 'string' ? value.originPlayPageUrl : undefined,
+      originSourceId: typeof value.originSourceId === 'string' ? value.originSourceId : undefined,
+      episodeNumber:
+        typeof value.episodeNumber === 'number' && Number.isFinite(value.episodeNumber)
+          ? value.episodeNumber
+          : undefined,
+      resolvedAt: typeof value.resolvedAt === 'string' ? value.resolvedAt : undefined,
+    };
+
+    return Object.values(origin).some(item => item !== undefined) ? origin : undefined;
   }
 
   /**
@@ -1775,7 +1887,9 @@ export class CrawlerService {
     try {
       return str
         .replace(/\\\//g, '/')
-        .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+        .replace(/\\u([0-9a-fA-F]{4})/g, (_match: string, hex: string) =>
+          String.fromCharCode(parseInt(hex, 16)),
+        )
         .replace(/\\\\/g, '\\')
         .replace(/\\"/g, '"');
     } catch {
@@ -1785,5 +1899,9 @@ export class CrawlerService {
 
   private toError(error: unknown): Error {
     return error instanceof Error ? error : new Error(String(error));
+  }
+
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
   }
 }

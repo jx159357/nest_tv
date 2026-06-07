@@ -72,4 +72,3 @@ export interface DanmakuServiceConfig {
   maxQueueSize: number;
   maxReconnectAttempts: number;
 }
-

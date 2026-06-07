@@ -1,4 +1,4 @@
-import ApiClient from './index';
+import ApiClient from './http';
 
 export interface DanmakuRealtimeRoomInfo {
   videoId: string;
@@ -90,10 +90,18 @@ export interface DanmakuRecord {
 
 export const danmakuApi = {
   getRoomInfo: (videoId: string) =>
-    ApiClient.get<DanmakuRealtimeRoomInfo>(`/danmaku/realtime/rooms/${videoId}`, undefined, false),
+    ApiClient.get<DanmakuRealtimeRoomInfo>(
+      `/danmaku/realtime/rooms/${videoId}`,
+      { silent: true },
+      false,
+    ),
 
   getFilterRules: () =>
-    ApiClient.get<DanmakuFilterRulesSnapshot>('/danmaku/filter/rules', undefined, false),
+    ApiClient.get<DanmakuFilterRulesSnapshot>(
+      '/danmaku/filter/rules',
+      { silent: true },
+      false,
+    ),
 
   updateFilterRules: (payload: {
     sensitiveWords?: string[];
@@ -135,7 +143,12 @@ export const danmakuApi = {
     mediaResourceId?: number;
     type?: 'popular' | 'recent' | 'relevant';
     limit?: number;
-  }) => ApiClient.get<DanmakuSuggestionsResponse>('/danmaku/suggestions', { params }, false),
+  }) =>
+    ApiClient.get<DanmakuSuggestionsResponse>(
+      '/danmaku/suggestions',
+      { params, silent: true },
+      false,
+    ),
 
   sendDanmaku: (payload: DanmakuCreatePayload) =>
     ApiClient.post<DanmakuRecord>('/danmaku', payload),

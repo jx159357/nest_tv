@@ -11,7 +11,6 @@ import { WatchHistory } from '../entities/watch-history.entity';
 import {
   DownloadTask,
   DownloadTaskStatus,
-  DownloadTaskType,
 } from '../entities/download-task.entity';
 import { CrawlerTarget } from '../entities/crawler-target.entity';
 import {
@@ -61,83 +60,29 @@ export class AdminService {
     };
   }
 
-  private extractMagnetInfoHash(url: string): string | null {
-    const magnetMatch = url.trim().match(/(?:\?|&)xt=urn:btih:([^&]+)/i);
-    if (!magnetMatch?.[1]) {
-      return null;
+  private buildDedupSubQuery(userId?: number) {
+    const sub = this.downloadTaskRepository
+      .createQueryBuilder('dt')
+      .select('MAX(dt.id)', 'maxId')
+      .groupBy('dt.dedupKey');
+    if (userId) {
+      sub.where('dt.userId = :userId', { userId });
     }
-
-    return decodeURIComponent(magnetMatch[1]).trim().toLowerCase();
+    return sub;
   }
 
-  private buildDownloadTaskDedupKey(task: Pick<DownloadTask, 'id' | 'type' | 'url'>): string {
-    if (task.type === DownloadTaskType.MAGNET) {
-      const infoHash = this.extractMagnetInfoHash(task.url);
-      if (infoHash) {
-        return `magnet:${infoHash}`;
-      }
+  private async cleanupDuplicateTasks(keeperTask: DownloadTask): Promise<void> {
+    if (!keeperTask.dedupKey || !keeperTask.userId) {
+      return;
     }
-
-    return `task:${task.id}`;
-  }
-
-  private getDownloadTaskTimestamp(task: Partial<DownloadTask>): number {
-    if (!task.updatedAt) {
-      return 0;
-    }
-
-    const value =
-      task.updatedAt instanceof Date
-        ? task.updatedAt.getTime()
-        : new Date(task.updatedAt).getTime();
-    return Number.isFinite(value) ? value : 0;
-  }
-
-  private dedupeDownloadTasks(tasks: DownloadTask[]): DownloadTask[] {
-    const taskMap = new Map<string, DownloadTask>();
-
-    tasks.forEach(task => {
-      const dedupKey = this.buildDownloadTaskDedupKey(task);
-      const existingTask = taskMap.get(dedupKey);
-      if (
-        !existingTask ||
-        this.getDownloadTaskTimestamp(existingTask) <= this.getDownloadTaskTimestamp(task)
-      ) {
-        taskMap.set(dedupKey, task);
-      }
+    const dupes = await this.downloadTaskRepository.find({
+      where: { userId: keeperTask.userId, dedupKey: keeperTask.dedupKey },
+      select: ['id'],
     });
-
-    return [...taskMap.values()].sort(
-      (left, right) => this.getDownloadTaskTimestamp(right) - this.getDownloadTaskTimestamp(left),
-    );
-  }
-
-  private async cleanupDuplicateMagnetTasks(keeperTask: DownloadTask): Promise<void> {
-    if (keeperTask.type !== DownloadTaskType.MAGNET || !keeperTask.userId) {
-      return;
+    const ids = dupes.map(d => d.id).filter(id => id !== keeperTask.id);
+    if (ids.length > 0) {
+      await this.downloadTaskRepository.delete(ids);
     }
-
-    const keeperHash = this.extractMagnetInfoHash(keeperTask.url);
-    if (!keeperHash) {
-      return;
-    }
-
-    const tasks = await this.downloadTaskRepository.find({
-      where: { userId: keeperTask.userId, type: DownloadTaskType.MAGNET },
-    });
-
-    const duplicateIds = tasks
-      .filter(
-        task => task.id !== keeperTask.id && this.extractMagnetInfoHash(task.url) === keeperHash,
-      )
-      .map(task => task.id)
-      .filter((id): id is number => typeof id === 'number');
-
-    if (duplicateIds.length === 0) {
-      return;
-    }
-
-    await this.downloadTaskRepository.delete(duplicateIds);
   }
 
   constructor(
@@ -439,64 +384,49 @@ export class AdminService {
     const normalizedClientId = this.normalizeOptionalText(clientId);
     const normalizedHash = this.normalizeOptionalText(hash)?.toLowerCase();
 
-    const queryBuilder = this.downloadTaskRepository
-      .createQueryBuilder('downloadTask')
-      .leftJoinAndSelect('downloadTask.user', 'user')
-      .leftJoinAndSelect('downloadTask.mediaResource', 'mediaResource');
+    const dedupSub = this.buildDedupSubQuery(safeUserId);
+    const idQuery = this.downloadTaskRepository
+      .createQueryBuilder('dt')
+      .innerJoin(`(${dedupSub.getQuery()})`, 'latest', 'dt.id = latest.maxId')
+      .setParameters(dedupSub.getParameters())
+      .select('dt.id');
 
-    if (safeUserId) {
-      queryBuilder.andWhere('downloadTask.userId = :userId', { userId: safeUserId });
-    }
-
-    if (safeMediaResourceId) {
-      queryBuilder.andWhere('downloadTask.mediaResourceId = :mediaResourceId', {
-        mediaResourceId: safeMediaResourceId,
-      });
-    }
-
-    if (safeTaskId) {
-      queryBuilder.andWhere('downloadTask.id = :taskId', { taskId: safeTaskId });
-    }
-
-    if (normalizedClientId) {
-      queryBuilder.andWhere('downloadTask.clientId = :clientId', { clientId: normalizedClientId });
-    }
-
-    if (normalizedStatus) {
-      queryBuilder.andWhere('downloadTask.status = :status', { status: normalizedStatus });
-    }
-
-    if (normalizedType) {
-      queryBuilder.andWhere('downloadTask.type = :type', { type: normalizedType });
-    }
+    if (safeUserId) idQuery.andWhere('dt.userId = :userId', { userId: safeUserId });
+    if (safeMediaResourceId) idQuery.andWhere('dt.mediaResourceId = :mediaResourceId', { mediaResourceId: safeMediaResourceId });
+    if (safeTaskId) idQuery.andWhere('dt.id = :taskId', { taskId: safeTaskId });
+    if (normalizedClientId) idQuery.andWhere('dt.clientId = :clientId', { clientId: normalizedClientId });
+    if (normalizedStatus) idQuery.andWhere('dt.status = :status', { status: normalizedStatus });
+    if (normalizedType) idQuery.andWhere('dt.type = :type', { type: normalizedType });
+    if (normalizedHash) idQuery.andWhere('dt.dedupKey LIKE :hashPattern', { hashPattern: `%${normalizedHash}%` });
 
     if (normalizedSearch) {
-      queryBuilder.andWhere(
-        `(
-          downloadTask.clientId LIKE :search
-          OR downloadTask.fileName LIKE :search
-          OR downloadTask.sourceLabel LIKE :search
-          OR downloadTask.url LIKE :search
-          OR user.username LIKE :search
-          OR user.email LIKE :search
-          OR mediaResource.title LIKE :search
-        )`,
-        { search: `%${normalizedSearch}%` },
-      );
+      idQuery
+        .leftJoin('dt.user', 'u')
+        .leftJoin('dt.mediaResource', 'm')
+        .andWhere(
+          `(dt.clientId LIKE :search OR dt.fileName LIKE :search OR dt.sourceLabel LIKE :search OR dt.url LIKE :search OR u.username LIKE :search OR u.email LIKE :search OR m.title LIKE :search)`,
+          { search: `%${normalizedSearch}%` },
+        );
     }
 
-    const dedupedTasks = this.dedupeDownloadTasks(
-      await queryBuilder.orderBy('downloadTask.updatedAt', 'DESC').getMany(),
-    ).filter(task => {
-      if (!normalizedHash) {
-        return true;
-      }
-
-      return this.extractMagnetInfoHash(task.url) === normalizedHash;
-    });
-    const total = dedupedTasks.length;
+    const total = await idQuery.getCount();
     const pagination = this.resolvePagination(total, safePage, safeLimit);
-    const data = dedupedTasks.slice(pagination.offset, pagination.offset + pagination.limit);
+    const pageIds = (await idQuery
+      .orderBy('dt.updatedAt', 'DESC')
+      .skip(pagination.offset)
+      .take(pagination.limit)
+      .getMany()).map(t => t.id);
+
+    let data: DownloadTask[] = [];
+    if (pageIds.length > 0) {
+      data = await this.downloadTaskRepository
+        .createQueryBuilder('downloadTask')
+        .leftJoinAndSelect('downloadTask.user', 'user')
+        .leftJoinAndSelect('downloadTask.mediaResource', 'mediaResource')
+        .where('downloadTask.id IN (:...pageIds)', { pageIds })
+        .orderBy('downloadTask.updatedAt', 'DESC')
+        .getMany();
+    }
 
     return {
       data,
@@ -535,8 +465,9 @@ export class AdminService {
       task.error = task.error || '管理员手动取消';
     }
 
+    task.dedupKey = DownloadTask.computeDedupKey(task.type, task.url);
     const savedTask = await this.downloadTaskRepository.save(task);
-    await this.cleanupDuplicateMagnetTasks(savedTask);
+    await this.cleanupDuplicateTasks(savedTask);
 
     await this.logAction(
       actionDto.action,
@@ -544,9 +475,7 @@ export class AdminService {
       {
         downloadTaskId: savedTask.id,
         clientId: savedTask.clientId,
-        ...(savedTask.type === DownloadTaskType.MAGNET
-          ? { infoHash: this.extractMagnetInfoHash(savedTask.url) }
-          : {}),
+        dedupKey: savedTask.dedupKey || undefined,
         status: savedTask.status,
       },
       1,
@@ -883,36 +812,41 @@ export class AdminService {
     recentActivity: AdminLog[];
   }> {
     try {
+      const dedupSub = this.buildDedupSubQuery();
+      const downloadStatsQb = this.downloadTaskRepository
+        .createQueryBuilder('t')
+        .innerJoin(`(${dedupSub.getQuery()})`, 'latest', 't.id = latest.maxId')
+        .setParameters(dedupSub.getParameters())
+        .select([
+          'COUNT(*) AS downloadTaskCount',
+          `SUM(CASE WHEN t.status IN ('pending','downloading') THEN 1 ELSE 0 END) AS activeDownloadTaskCount`,
+          `SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END) AS completedDownloadTaskCount`,
+          `SUM(CASE WHEN t.status IN ('error','cancelled') THEN 1 ELSE 0 END) AS failedDownloadTaskCount`,
+        ]);
+
       const [
         userCount,
         mediaCount,
         playSourceCount,
         watchHistoryCount,
-        downloadTasks,
+        downloadStats,
         recentActivity,
       ] = await Promise.all([
         this.userRepository.count(),
-        this.userRepository.manager.count('media_resource', {}),
-        this.userRepository.manager.count('play_source', {}),
-        this.userRepository.manager.count('watch_history', {}),
-        this.downloadTaskRepository.find(),
+        this.mediaResourceRepository.count(),
+        this.playSourceRepository.count(),
+        this.watchHistoryRepository.count(),
+        downloadStatsQb.getRawOne(),
         this.adminLogRepository.find({
           order: { createdAt: 'DESC' },
           take: 10,
         }),
       ]);
 
-      const dedupedDownloadTasks = this.dedupeDownloadTasks(downloadTasks);
-      const downloadTaskCount = dedupedDownloadTasks.length;
-      const activeDownloadTaskCount = dedupedDownloadTasks.filter(task =>
-        [DownloadTaskStatus.PENDING, DownloadTaskStatus.DOWNLOADING].includes(task.status),
-      ).length;
-      const completedDownloadTaskCount = dedupedDownloadTasks.filter(
-        task => task.status === DownloadTaskStatus.COMPLETED,
-      ).length;
-      const failedDownloadTaskCount = dedupedDownloadTasks.filter(task =>
-        [DownloadTaskStatus.ERROR, DownloadTaskStatus.CANCELLED].includes(task.status),
-      ).length;
+      const downloadTaskCount = Number(downloadStats?.downloadTaskCount ?? 0);
+      const activeDownloadTaskCount = Number(downloadStats?.activeDownloadTaskCount ?? 0);
+      const completedDownloadTaskCount = Number(downloadStats?.completedDownloadTaskCount ?? 0);
+      const failedDownloadTaskCount = Number(downloadStats?.failedDownloadTaskCount ?? 0);
 
       return {
         userCount,

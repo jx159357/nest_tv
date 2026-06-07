@@ -112,7 +112,7 @@ export class IPTVChannel {
 
     // 响应时间扣分（超过3秒开始扣分）
     if (this.responseTime > 3000) {
-      score -= Math.min(30, (this.responseTime - 3000) / 1000 * 5);
+      score -= Math.min(30, ((this.responseTime - 3000) / 1000) * 5);
     }
 
     // 连续失败扣分

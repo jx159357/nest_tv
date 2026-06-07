@@ -345,6 +345,22 @@ describe('DanmakuService', () => {
     expect(result[0]?.score).toBeGreaterThan(result[1]?.score || 0);
   });
 
+  it('ignores invalid mediaResourceId when building danmaku suggestions', async () => {
+    danmakuRepository.createQueryBuilder.mockReturnValue(trendQueryBuilder);
+    trendQueryBuilder.getMany.mockResolvedValue([]);
+
+    await service.getSuggestions({
+      type: 'relevant',
+      limit: 5,
+      mediaResourceId: Number.NaN,
+    });
+
+    expect(trendQueryBuilder.andWhere).not.toHaveBeenCalledWith(
+      'danmaku.mediaResourceId = :mediaResourceId',
+      expect.anything(),
+    );
+  });
+
   it('lists reported danmaku sorted by report count and latest report time', async () => {
     danmakuRepository.find.mockResolvedValue([
       {

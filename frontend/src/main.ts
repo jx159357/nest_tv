@@ -5,12 +5,15 @@ import 'virtual:uno.css';
 import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
-import { i18n } from './i18n';
+import { i18n, initializeI18nLocale } from './i18n';
 import { useAuthStore } from './stores/auth';
 import { initPreloadService } from './utils/preload-service';
 import { PerformanceService } from './services/performance.service';
 import { log } from './utils/logger';
 import { getAppVersion } from './utils/version';
+import { initializeTheme } from './composables/useTheme';
+
+initializeTheme();
 
 // 注册Service Worker
 const registerServiceWorker = async () => {
@@ -64,6 +67,8 @@ const bootstrap = async () => {
   const authStore = useAuthStore(pinia);
   await authStore.initAuth();
 
+  await initializeI18nLocale();
+
   app.use(i18n);
   app.use(router);
 
@@ -83,7 +88,7 @@ const bootstrap = async () => {
     optimization: {
       lazyLoad: true,
       preLoad: true,
-      cache: true,
+      cache: false,
       compress: true,
     },
   });

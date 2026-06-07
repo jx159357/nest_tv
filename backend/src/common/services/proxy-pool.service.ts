@@ -22,6 +22,12 @@ interface AxiosProxyConfig {
   };
 }
 
+interface ProviderCooldownState {
+  consecutiveFailures: number;
+  cooldownUntil: number;
+  lastError: string;
+}
+
 @Injectable()
 export class ProxyPoolService {
   private readonly logger = new Logger(ProxyPoolService.name);
@@ -32,6 +38,9 @@ export class ProxyPoolService {
   private httpClient: AxiosInstance;
   private validationTimer: NodeJS.Timeout | null = null;
   private config: ProxyPoolConfig;
+  private readonly providerCooldown = new Map<string, ProviderCooldownState>();
+  private static readonly MAX_PROVIDER_FAILURES = 3;
+  private static readonly PROVIDER_COOLDOWN_MS = 30 * 60 * 1000;
 
   constructor(
     private readonly configService: ConfigService,
@@ -469,8 +478,44 @@ export class ProxyPoolService {
     this.logger.log(`添加代理提供商: ${provider.name}`);
   }
 
+  private isProviderInCooldown(name: string): boolean {
+    const state = this.providerCooldown.get(name);
+    if (!state || state.cooldownUntil <= 0) return false;
+    if (Date.now() >= state.cooldownUntil) {
+      state.cooldownUntil = 0;
+      state.consecutiveFailures = 0;
+      this.logger.log(`代理提供商 ${name} 冷却期结束，恢复尝试`);
+      return false;
+    }
+    return true;
+  }
+
+  private recordProviderSuccess(name: string): void {
+    const state = this.providerCooldown.get(name);
+    if (state) {
+      state.consecutiveFailures = 0;
+      state.cooldownUntil = 0;
+    }
+  }
+
+  private recordProviderFailure(name: string, error: string): void {
+    let state = this.providerCooldown.get(name);
+    if (!state) {
+      state = { consecutiveFailures: 0, cooldownUntil: 0, lastError: '' };
+      this.providerCooldown.set(name, state);
+    }
+    state.consecutiveFailures++;
+    state.lastError = error;
+    if (state.consecutiveFailures >= ProxyPoolService.MAX_PROVIDER_FAILURES) {
+      state.cooldownUntil = Date.now() + ProxyPoolService.PROVIDER_COOLDOWN_MS;
+      this.logger.warn(
+        `代理提供商 ${name} 连续失败 ${state.consecutiveFailures} 次，进入冷却期 ${ProxyPoolService.PROVIDER_COOLDOWN_MS / 60000} 分钟`,
+      );
+    }
+  }
+
   /**
-   * 从提供商获取代理
+   * 从提供商获取代理（带熔断降级）
    */
   async fetchProxiesFromProviders(): Promise<number> {
     if (!this.config.enabled) {
@@ -484,20 +529,18 @@ export class ProxyPoolService {
         continue;
       }
 
+      if (this.isProviderInCooldown(provider.name)) {
+        continue;
+      }
+
       try {
         const proxies = await provider.fetchProxies();
         const result = await this.addProxies(proxies);
         totalFetched += result.success;
-
-        this.logger.log(
-          `从 ${provider.name} 获取代理: 成功 ${result.success}, 失败 ${result.failed}`,
-        );
+        this.recordProviderSuccess(provider.name);
       } catch (error: unknown) {
-        this.appLogger.error(
-          '从提供商获取代理失败',
-          'ProxyPoolService',
-          error instanceof Error ? error.message : '未知错误',
-        );
+        const msg = error instanceof Error ? error.message : '未知错误';
+        this.recordProviderFailure(provider.name, msg);
       }
     }
 

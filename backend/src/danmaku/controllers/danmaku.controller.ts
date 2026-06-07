@@ -715,8 +715,8 @@ export class DanmakuController {
     };
   }
 
-  // 根据ID获取弹幕。放在静态路由之后，避免吞掉 /popular、/stats 等路径。
-  @Get(':id')
+  // 根据ID获取弹幕。避免单段动态路由吞掉 /suggestions、/stats 等静态路径。
+  @Get('detail/:id')
   @ApiOperation({ summary: '获取弹幕详情', description: '根据弹幕ID获取详细信息' })
   @ApiResponse({ status: 200, description: '弹幕详情', type: Danmaku })
   async getDanmakuById(@Param('id', ParseIntPipe) id: number): Promise<Danmaku | null> {

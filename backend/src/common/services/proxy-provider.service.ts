@@ -311,10 +311,22 @@ export class XiaoHuanProxyProvider extends BaseFreeProxyProvider implements Prox
 /**
  * 代理提供商管理服务
  */
+interface ProviderHealthState {
+  consecutiveFailures: number;
+  cooldownUntil: number;
+  lastError: string;
+  lastAttemptAt: number;
+  totalFetchAttempts: number;
+  totalFetchFailures: number;
+}
+
 @Injectable()
 export class ProxyProviderService {
   private readonly logger = new Logger(ProxyProviderService.name);
   private providers: Map<string, ProxyProvider> = new Map();
+  private readonly healthState = new Map<string, ProviderHealthState>();
+  private static readonly MAX_CONSECUTIVE_FAILURES = 3;
+  private static readonly COOLDOWN_MS = 30 * 60 * 1000;
 
   constructor(
     private readonly kuaiDailiProvider: KuaiDailiFreeProvider,
@@ -395,20 +407,77 @@ export class ProxyProviderService {
   }
 
   /**
-   * 从所有活跃提供商获取代理
+   * 检查提供商是否在冷却期
+   */
+  private isInCooldown(name: string): boolean {
+    const state = this.healthState.get(name);
+    if (!state) return false;
+    if (state.cooldownUntil <= 0) return false;
+    if (Date.now() >= state.cooldownUntil) {
+      state.cooldownUntil = 0;
+      state.consecutiveFailures = 0;
+      this.logger.log(`${name} 冷却期结束，恢复尝试`);
+      return false;
+    }
+    return true;
+  }
+
+  private recordFetchSuccess(name: string): void {
+    const state = this.healthState.get(name);
+    if (state) {
+      state.consecutiveFailures = 0;
+      state.cooldownUntil = 0;
+    }
+  }
+
+  private recordFetchFailure(name: string, error: string): void {
+    let state = this.healthState.get(name);
+    if (!state) {
+      state = {
+        consecutiveFailures: 0,
+        cooldownUntil: 0,
+        lastError: '',
+        lastAttemptAt: 0,
+        totalFetchAttempts: 0,
+        totalFetchFailures: 0,
+      };
+      this.healthState.set(name, state);
+    }
+    state.consecutiveFailures++;
+    state.lastError = error;
+    state.lastAttemptAt = Date.now();
+    state.totalFetchAttempts++;
+    state.totalFetchFailures++;
+
+    if (state.consecutiveFailures >= ProxyProviderService.MAX_CONSECUTIVE_FAILURES) {
+      state.cooldownUntil = Date.now() + ProxyProviderService.COOLDOWN_MS;
+      this.logger.warn(
+        `${name} 连续失败 ${state.consecutiveFailures} 次，进入冷却期 ${ProxyProviderService.COOLDOWN_MS / 60000} 分钟: ${error}`,
+      );
+    }
+  }
+
+  /**
+   * 从所有活跃提供商获取代理（带熔断降级）
    */
   async fetchAllProxies(): Promise<{ [provider: string]: ProxyInfo[] }> {
     const result: { [provider: string]: ProxyInfo[] } = {};
     const activeProviders = this.getActiveProviders();
 
     for (const provider of activeProviders) {
+      if (this.isInCooldown(provider.name)) {
+        result[provider.name] = [];
+        continue;
+      }
+
       try {
-        this.logger.log(`从 ${provider.name} 获取代理...`);
         const proxies = await provider.fetchProxies();
         result[provider.name] = proxies;
+        this.recordFetchSuccess(provider.name);
         this.logger.log(`从 ${provider.name} 获取到 ${proxies.length} 个代理`);
       } catch (error: unknown) {
-        this.logger.error(`从 ${provider.name} 获取代理失败: ${this.getErrorMessage(error)}`);
+        const msg = this.getErrorMessage(error);
+        this.recordFetchFailure(provider.name, msg);
         result[provider.name] = [];
       }
     }
@@ -419,11 +488,38 @@ export class ProxyProviderService {
   /**
    * 获取提供商统计信息
    */
-  getProviderStats(): { name: string; active: boolean; priority: number }[] {
-    return Array.from(this.providers.values()).map(provider => ({
-      name: provider.name,
-      active: provider.isActive,
-      priority: provider.priority,
-    }));
+  getProviderStats(): {
+    name: string;
+    active: boolean;
+    priority: number;
+    inCooldown: boolean;
+    consecutiveFailures: number;
+    lastError: string;
+  }[] {
+    return Array.from(this.providers.values()).map(provider => {
+      const state = this.healthState.get(provider.name);
+      return {
+        name: provider.name,
+        active: provider.isActive,
+        priority: provider.priority,
+        inCooldown: this.isInCooldown(provider.name),
+        consecutiveFailures: state?.consecutiveFailures ?? 0,
+        lastError: state?.lastError ?? '',
+      };
+    });
+  }
+
+  /**
+   * 手动重置提供商冷却状态
+   */
+  resetProviderCooldown(name: string): boolean {
+    const state = this.healthState.get(name);
+    if (state) {
+      state.consecutiveFailures = 0;
+      state.cooldownUntil = 0;
+      this.logger.log(`手动重置 ${name} 冷却状态`);
+      return true;
+    }
+    return false;
   }
 }

@@ -3,8 +3,11 @@ backend/node_modules/
 frontend/node_modules/
 backend/dist/
 frontend/dist/
+dist/
 coverage/
 *.log
+*.err.log
+.tmp-*.log
 *.tsbuildinfo
 .env
 .env.local
@@ -13,9 +16,12 @@ coverage/
 backend/.env
 frontend/.env
 .omc/
+.playwright-mcp/
+frontend/.vite/
 backend/logs/
 backend/uploads/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 claude/settings.local.json
+.claude/settings.local.json

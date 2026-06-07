@@ -766,7 +766,7 @@ export class IPTVService {
       res.send(Buffer.from(response.data));
     } catch (error) {
       const err = this.toError(error);
-      const axiosErr = error as any;
+      const axiosErr = error;
       const statusCode = axiosErr?.response?.status;
       this.logger.error(`代理图片失败: ${url} (状态码: ${statusCode || 'N/A'})`, err.message);
       throw new HttpException('代理图片失败', HttpStatus.BAD_GATEWAY);
@@ -850,5 +850,4 @@ export class IPTVService {
       qualityScore: channel.qualityScore,
     };
   }
-
 }

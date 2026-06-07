@@ -54,17 +54,43 @@ export default defineConfig({
         },
         entryFileNames: 'assets/js/[name]-[hash].js',
         assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
-        manualChunks: {
-          // 核心框架库
-          vendor: ['vue', 'vue-router', 'pinia'],
-          // UI组件库
-          ui: ['element-plus'],
-          // 工具库
-          utils: ['axios', '@vueuse/core'],
-          // 通信库
-          communication: ['socket.io-client'],
-          // 国际化
-          i18n: ['vue-i18n'],
+        manualChunks: id => {
+          const normalizedId = id.replace(/\\/g, '/');
+          if (!normalizedId.includes('/node_modules/')) return;
+
+          if (
+            normalizedId.includes('/node_modules/vue/') ||
+            normalizedId.includes('/node_modules/vue-router/') ||
+            normalizedId.includes('/node_modules/pinia/')
+          ) {
+            return 'vendor';
+          }
+
+          if (
+            normalizedId.includes('/node_modules/axios/') ||
+            normalizedId.includes('/node_modules/@vueuse/')
+          ) {
+            return 'utils';
+          }
+
+          if (normalizedId.includes('/node_modules/socket.io-client/')) {
+            return 'communication';
+          }
+
+          if (normalizedId.includes('/node_modules/vue-i18n/')) {
+            return 'i18n';
+          }
+
+          if (
+            normalizedId.includes('/node_modules/artplayer/') ||
+            normalizedId.includes('/node_modules/option-validator/')
+          ) {
+            return 'player-art';
+          }
+
+          if (normalizedId.includes('/node_modules/hls.js/')) {
+            return 'player-hls';
+          }
         },
       },
     },
@@ -73,7 +99,7 @@ export default defineConfig({
     reportCompressedSize: false,
   },
   optimizeDeps: {
-    include: ['vue', 'vue-router', 'pinia', 'axios', 'element-plus', '@vueuse/core'],
+    include: ['vue', 'vue-router', 'pinia', 'axios', '@vueuse/core'],
     force: true,
   },
   // 静态资源处理

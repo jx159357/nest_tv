@@ -43,16 +43,29 @@ class APICacheManager {
   private generateKey(config: CachedAxiosRequestConfig): string {
     const { url, method, params, data } = config;
     const normalizedUrl = (url || '').replace(/\/$/, ''); // 移除尾部斜杠
+    const normalizedMethod = (method?.toUpperCase() || 'GET').trim();
 
     // 基于URL、方法、参数和数据生成唯一key
     const keyObj = {
       url: normalizedUrl,
-      method: method?.toLowerCase() || 'get',
+      method: normalizedMethod,
       params: params ? JSON.stringify(params) : '',
       data: data ? JSON.stringify(data) : '',
     };
 
-    return btoa(JSON.stringify(keyObj));
+    return `${normalizedMethod}:${normalizedUrl}:${encodeURIComponent(JSON.stringify(keyObj))}`;
+  }
+
+  private resolveKey(config: CachedAxiosRequestConfig, cacheConfig: CacheConfig): string {
+    if (cacheConfig.key) {
+      if (/^[A-Z]+:/.test(cacheConfig.key)) {
+        return cacheConfig.key;
+      }
+      const method = (config.method?.toUpperCase() || 'GET').trim();
+      return `${method}:${cacheConfig.key}`;
+    }
+
+    return this.generateKey(config);
   }
 
   /**
@@ -167,7 +180,8 @@ class APICacheManager {
     config: CachedAxiosRequestConfig,
   ): Promise<CachedAxiosRequestConfig> {
     // 只缓存GET请求，除非显式配置
-    if (config.method?.toLowerCase() !== 'get' && !config.cacheConfig?.enabled) {
+    const method = config.method?.toLowerCase() || 'get';
+    if (method !== 'get' && config.cacheConfig?.enabled !== true) {
       return config;
     }
 
@@ -180,7 +194,7 @@ class APICacheManager {
       return config;
     }
 
-    const key = cacheConfig.key || this.generateKey(config);
+    const key = this.resolveKey(config, cacheConfig);
     const cachedData = this.getCache(key);
 
     if (cachedData) {
@@ -197,6 +211,27 @@ class APICacheManager {
   /**
    * 响应拦截器
    */
+  public responseSuccessInterceptor<T = any>(response: AxiosResponse<T>): AxiosResponse<T> {
+    const config = response.config as CachedAxiosRequestConfig;
+    const method = config.method?.toLowerCase() || 'get';
+    if (method !== 'get' && config.cacheConfig?.enabled !== true) {
+      return response;
+    }
+
+    const cacheConfig = config.cacheConfig || {};
+    if (cacheConfig.enabled === false) {
+      return response;
+    }
+
+    if (response.status >= 200 && response.status < 300 && !isHtmlFallback(response.data)) {
+      const key = this.resolveKey(config, cacheConfig);
+      const ttl = cacheConfig.ttl || 300000;
+      this.setCache(key, response.data, ttl);
+    }
+
+    return response;
+  }
+
   public async responseInterceptor(error: any): Promise<any> {
     if (!error?.__cacheHit) {
       throw error;
@@ -205,7 +240,7 @@ class APICacheManager {
     // 如果是缓存命中，构造响应对象
     const config = error.config as CachedAxiosRequestConfig;
     const cacheConfig = config.cacheConfig || {};
-    const key = cacheConfig.key || this.generateKey(config);
+    const key = this.resolveKey(config, cacheConfig);
     const cachedData = this.getCache(key);
 
     if (cachedData) {
@@ -459,7 +494,7 @@ export const setupCacheInterceptors = (instance: AxiosInstance): void => {
 
   // 响应拦截器
   instance.interceptors.response.use(
-    response => response,
+    response => apiCacheManager.responseSuccessInterceptor(response),
     async error => {
       try {
         return await apiCacheManager.responseInterceptor(error);

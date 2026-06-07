@@ -555,7 +555,9 @@
   .filter-form {
     display: grid;
     flex: 1;
-    grid-template-columns: minmax(220px, 1.3fr) minmax(160px, 0.9fr) minmax(100px, 0.55fr) minmax(100px, 0.55fr) auto;
+    grid-template-columns:
+      minmax(220px, 1.3fr) minmax(160px, 0.9fr) minmax(100px, 0.55fr) minmax(100px, 0.55fr)
+      auto;
     gap: 10px;
     min-width: 0;
     margin-bottom: 0;

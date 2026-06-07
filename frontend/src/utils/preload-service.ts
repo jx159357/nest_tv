@@ -1,4 +1,4 @@
-import type { Router } from 'vue-router';
+import type { RouteLocationResolved, Router } from 'vue-router';
 import { log } from '@/utils/logger';
 
 export interface RouteMeta {
@@ -59,6 +59,11 @@ export class PreloadService {
     }
   }
 
+  unobservePreloadLink(element: HTMLElement) {
+    this.observer?.unobserve(element);
+    delete element.dataset.route;
+  }
+
   /**
    * 预加载指定路由
    */
@@ -68,13 +73,19 @@ export class PreloadService {
       return;
     }
 
-    const route = this.router.resolve({ name: routeName });
+    let route: RouteLocationResolved;
+    try {
+      route = this.router.resolve({ name: routeName });
+    } catch {
+      return;
+    }
+
     if (!route.matched.length) {
       return;
     }
 
     // 检查路由是否支持预加载
-    const meta = route.matched[0].meta as RouteMeta;
+    const meta = route.meta as RouteMeta;
     if (!meta?.preload) {
       return;
     }
@@ -82,46 +93,52 @@ export class PreloadService {
     this.preloadQueue.add(routeName);
 
     try {
-      // 模拟用户空闲时预加载
-      if ('requestIdleCallback' in window) {
-        await new Promise<void>(resolve => {
-          window.requestIdleCallback(async () => {
-            await this.doPreload(route);
-            resolve();
-          });
-        });
-      } else {
-        // 回退方案：延迟预加载
-        setTimeout(() => this.doPreload(route), 100);
-      }
+      await this.schedulePreload(route);
+      this.preloadedRoutes.add(routeName);
     } catch (error) {
       log.warn('PreloadService', `预加载路由 ${routeName} 失败:`, error);
+    } finally {
       this.preloadQueue.delete(routeName);
     }
+  }
+
+  private async schedulePreload(route: RouteLocationResolved): Promise<void> {
+    if ('requestIdleCallback' in window) {
+      await new Promise<void>((resolve, reject) => {
+        window.requestIdleCallback(
+          () => {
+            this.doPreload(route).then(resolve, reject);
+          },
+          { timeout: 3000 },
+        );
+      });
+      return;
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      window.setTimeout(() => {
+        this.doPreload(route).then(resolve, reject);
+      }, 100);
+    });
   }
 
   /**
    * 执行预加载
    */
-  private async doPreload(route: { matched: any[] }): Promise<void> {
-    try {
-      // 触发动态导入
-      const components = route.matched.map(matched => {
-        return matched.components?.default || matched.components;
-      });
+  private async doPreload(route: RouteLocationResolved): Promise<void> {
+    const components = route.matched.flatMap(matched => {
+      return matched.components ? Object.values(matched.components) : [];
+    });
 
-      // 等待所有组件加载完成
-      await Promise.all(
-        components.filter(Boolean).map(component => {
-          if (typeof component === 'function') {
-            return component();
-          }
-          return Promise.resolve(component);
-        }),
-      );
-    } catch (error) {
-      log.warn('PreloadService', '路由预加载失败:', error);
-    }
+    await Promise.all(
+      components.map(component => {
+        if (typeof component === 'function') {
+          const loadComponent = component as () => Promise<unknown> | unknown;
+          return loadComponent();
+        }
+        return Promise.resolve(component);
+      }),
+    );
   }
 
   /**
@@ -143,8 +160,8 @@ export class PreloadService {
    * 根据用户行为智能预加载
    */
   initSmartPreload(): void {
-    // 仅预加载核心路由（首页、详情页、观看页）
-    const coreRoutes = ['home', 'media-detail', 'watch', 'recommendations'];
+    // 仅预加载无需动态参数的高频公开路由
+    const coreRoutes = ['recommendations', 'categories'];
 
     // 页面加载完成后预加载核心路由
     window.addEventListener('load', () => {
@@ -196,8 +213,8 @@ export class PreloadService {
     document.addEventListener(
       'touchstart',
       () => {
-        // 仅预加载首页和推荐页
-        ['home', 'recommendations'].forEach(routeName => {
+        // 触摸设备只预加载最轻的推荐页
+        ['recommendations'].forEach(routeName => {
           if (this.shouldPreload(routeName)) {
             this.preloadRoute(routeName).catch(() => {
               // 静默失败
@@ -213,7 +230,7 @@ export class PreloadService {
    * 判断是否应该预加载指定路由
    */
   private shouldPreload(routeName: string): boolean {
-    const coreRoutes = ['home', 'media-detail', 'watch', 'recommendations'];
+    const coreRoutes = ['recommendations', 'categories'];
     if (!coreRoutes.includes(routeName)) {
       return false;
     }
@@ -223,7 +240,7 @@ export class PreloadService {
       if (!route.matched.length) {
         return false;
       }
-      const meta = route.matched[0].meta as RouteMeta;
+      const meta = route.meta as RouteMeta;
       return !!meta?.preload;
     } catch {
       return false;
@@ -290,7 +307,7 @@ export const vPreload = {
   unmounted(el: HTMLElement) {
     const preloadService = getPreloadService();
     if (preloadService) {
-      (preloadService as any).observer?.unobserve(el);
+      preloadService.unobservePreloadLink(el);
     }
   },
 };

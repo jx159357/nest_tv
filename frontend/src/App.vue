@@ -22,17 +22,7 @@
     }
   };
 
-  const initTheme = () => {
-    const saved = localStorage.getItem('nest-tv-theme');
-    if (saved === 'light') {
-      document.documentElement.classList.remove('dark');
-    } else {
-      document.documentElement.classList.add('dark');
-    }
-  };
-
   onMounted(() => {
-    initTheme();
     initializeApp();
   });
 </script>
@@ -68,7 +58,7 @@
 <style>
   #app-root {
     min-height: 100vh;
-    background: var(--bg-page);
+    background: var(--bg-page-gradient);
     color: var(--text-primary);
   }
 

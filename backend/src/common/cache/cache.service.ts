@@ -1,5 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import Redis from 'ioredis';
+import { REDIS_CLIENT } from '../constants/redis.constants';
 
 interface MemoryCacheItem<T> {
   value: T;
@@ -8,8 +9,6 @@ interface MemoryCacheItem<T> {
 }
 
 type RedisInfoStats = Record<string, string>;
-
-export const REDIS_CLIENT = 'REDIS_CLIENT';
 
 export interface CacheOptions {
   ttl?: number; // 缓存时间（秒）
@@ -120,7 +119,7 @@ export class CacheService {
     const fullPattern = `${prefix}${pattern}`;
 
     try {
-      const keys = await this.redis.keys(fullPattern);
+      const keys = await this.scanKeys(fullPattern);
       if (keys.length === 0) {
         this.logger.debug(`未找到匹配的缓存: ${fullPattern}`);
         return 0;
@@ -451,6 +450,25 @@ export class CacheService {
 
   private deserialize<T>(value: string): T {
     return JSON.parse(value) as T;
+  }
+
+  private async scanKeys(pattern: string): Promise<string[]> {
+    const keys: string[] = [];
+    let cursor = '0';
+
+    do {
+      const [nextCursor, batch] = await this.redis.scan(
+        cursor,
+        'MATCH',
+        pattern,
+        'COUNT',
+        100,
+      );
+      cursor = nextCursor;
+      keys.push(...batch);
+    } while (cursor !== '0');
+
+    return keys;
   }
 
   /**

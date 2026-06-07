@@ -7,17 +7,16 @@
           <p class="mt-2 text-sm" style="color: var(--text-muted)">
             统一查看来自详情页、播放页和磁力页的下载任务。浏览器或本地客户端下载会接管真实下载进度。
           </p>
-          <p v-if="downloadsStore.lastRemoteSyncAt" class="mt-2 text-xs" style="color: var(--text-muted)">
+          <p
+            v-if="downloadsStore.lastRemoteSyncAt"
+            class="mt-2 text-xs"
+            style="color: var(--text-muted)"
+          >
             最近同步：{{ formatDateTime(downloadsStore.lastRemoteSyncAt) }}
           </p>
         </div>
         <div class="flex flex-wrap gap-3">
-          <RouterLink
-            to="/torrent"
-            class="dl-btn-secondary"
-          >
-            去磁力资源
-          </RouterLink>
+          <RouterLink to="/torrent" class="dl-btn-secondary"> 去磁力资源 </RouterLink>
           <button
             class="dl-btn-secondary disabled:cursor-not-allowed disabled:opacity-50"
             :disabled="downloadsStore.isSyncingRemote"
@@ -52,7 +51,9 @@
       <div class="grid gap-4 md:grid-cols-3">
         <section class="dl-card">
           <div class="text-sm" style="color: var(--text-muted)">全部任务</div>
-          <div class="mt-3 text-3xl font-semibold" style="color: var(--text-primary)">{{ tasks.length }}</div>
+          <div class="mt-3 text-3xl font-semibold" style="color: var(--text-primary)">
+            {{ tasks.length }}
+          </div>
           <div class="mt-2 text-xs" style="color: var(--text-muted)">按最近操作时间排序</div>
         </section>
         <section class="dl-card">
@@ -60,14 +61,18 @@
           <div class="mt-3 text-3xl font-semibold" style="color: var(--color-info)">
             {{ downloadsStore.activeCount }}
           </div>
-          <div class="mt-2 text-xs" style="color: var(--text-muted)">支持登录后多端同步任务记录</div>
+          <div class="mt-2 text-xs" style="color: var(--text-muted)">
+            支持登录后多端同步任务记录
+          </div>
         </section>
         <section class="dl-card">
           <div class="text-sm" style="color: var(--text-muted)">已完成 / 已中断</div>
           <div class="mt-3 text-3xl font-semibold" style="color: var(--color-success)">
             {{ downloadsStore.completedCount }} / {{ downloadsStore.failedCount }}
           </div>
-          <div class="mt-2 text-xs" style="color: var(--text-muted)">完成可清理，异常任务可重试</div>
+          <div class="mt-2 text-xs" style="color: var(--text-muted)">
+            完成可清理，异常任务可重试
+          </div>
         </section>
       </div>
 
@@ -75,7 +80,9 @@
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 class="text-base font-semibold" style="color: var(--text-primary)">任务筛选</h2>
-            <p class="mt-1 text-sm" style="color: var(--text-muted)">按状态或关键词快速收窄当前任务列表。</p>
+            <p class="mt-1 text-sm" style="color: var(--text-muted)">
+              按状态或关键词快速收窄当前任务列表。
+            </p>
           </div>
           <div class="flex flex-col gap-3 lg:w-[32rem] lg:flex-row">
             <label class="block flex-1">
@@ -106,11 +113,7 @@
             v-for="option in filterOptions"
             :key="option.value"
             class="rounded-full px-3 py-1.5 text-sm font-medium transition"
-            :class="
-              selectedFilter === option.value
-                ? 'dl-filter-active'
-                : 'dl-filter-default'
-            "
+            :class="selectedFilter === option.value ? 'dl-filter-active' : 'dl-filter-default'"
             @click="selectedFilter = option.value"
           >
             {{ option.label }}
@@ -122,11 +125,7 @@
             v-for="option in typeOptions"
             :key="option.value"
             class="rounded-full px-3 py-1.5 text-sm font-medium transition"
-            :class="
-              selectedType === option.value
-                ? 'dl-type-active'
-                : 'dl-type-default'
-            "
+            :class="selectedType === option.value ? 'dl-type-active' : 'dl-type-default'"
             @click="selectedType = option.value"
           >
             {{ option.label }}
@@ -138,22 +137,24 @@
           class="mt-3 flex flex-wrap items-center gap-2 text-xs"
           style="color: var(--color-brand-primary-light)"
         >
-          <span class="rounded-full px-3 py-1.5 font-medium" style="background: rgba(99, 102, 241, 0.12)">
+          <span
+            class="rounded-full px-3 py-1.5 font-medium"
+            style="background: rgba(99, 102, 241, 0.12)"
+          >
             已锁定磁力 Hash：{{ selectedHash }}
           </span>
-          <button
-            class="dl-btn-hash-unlock"
-            @click="selectedHash = ''"
-          >
-            取消 Hash 锁定
-          </button>
+          <button class="dl-btn-hash-unlock" @click="selectedHash = ''">取消 Hash 锁定</button>
         </div>
       </section>
 
       <div
         v-if="actionMessage"
         class="rounded-2xl border px-4 py-3 text-sm"
-        style="border-color: var(--color-info-border, var(--border-primary)); background: var(--color-info-bg, rgba(59, 130, 246, 0.1)); color: var(--color-info)"
+        style="
+          border-color: var(--color-info-border, var(--border-primary));
+          background: var(--color-info-bg, rgba(59, 130, 246, 0.1));
+          color: var(--color-info);
+        "
       >
         {{ actionMessage }}
       </div>
@@ -169,23 +170,15 @@
         >
           ⬇️
         </div>
-        <h2 class="mt-4 text-xl font-semibold" style="color: var(--text-primary)">还没有下载任务</h2>
+        <h2 class="mt-4 text-xl font-semibold" style="color: var(--text-primary)">
+          还没有下载任务
+        </h2>
         <p class="mt-2 text-sm" style="color: var(--text-muted)">
           可以在影视详情、播放页或磁力资源页把链接加入任务列表，再回来统一处理。
         </p>
         <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
-          <RouterLink
-            to="/"
-            class="dl-btn-primary"
-          >
-            浏览内容
-          </RouterLink>
-          <RouterLink
-            to="/torrent"
-            class="dl-btn-secondary"
-          >
-            浏览磁力资源
-          </RouterLink>
+          <RouterLink to="/" class="dl-btn-primary"> 浏览内容 </RouterLink>
+          <RouterLink to="/torrent" class="dl-btn-secondary"> 浏览磁力资源 </RouterLink>
         </div>
       </section>
 
@@ -200,38 +193,41 @@
         >
           🔎
         </div>
-        <h2 class="mt-4 text-xl font-semibold" style="color: var(--text-primary)">当前筛选下没有任务</h2>
-        <p class="mt-2 text-sm" style="color: var(--text-muted)">可以切换状态筛选，或清空关键词后再看完整列表。</p>
-        <button
-          class="dl-btn-secondary mt-6"
-          @click="resetFilters"
-        >
-          清空筛选
-        </button>
+        <h2 class="mt-4 text-xl font-semibold" style="color: var(--text-primary)">
+          当前筛选下没有任务
+        </h2>
+        <p class="mt-2 text-sm" style="color: var(--text-muted)">
+          可以切换状态筛选，或清空关键词后再看完整列表。
+        </p>
+        <button class="dl-btn-secondary mt-6" @click="resetFilters">清空筛选</button>
       </section>
 
       <div v-else class="space-y-4">
-        <article
-          v-for="task in filteredTasks"
-          :key="task.id"
-          class="dl-card"
-        >
+        <article v-for="task in filteredTasks" :key="task.id" class="dl-card">
           <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-2">
-                <h2 class="truncate text-lg font-semibold" style="color: var(--text-primary)">{{ task.fileName }}</h2>
+                <h2 class="truncate text-lg font-semibold" style="color: var(--text-primary)">
+                  {{ task.fileName }}
+                </h2>
                 <span
                   :class="statusClass(task.status)"
                   class="rounded-full px-2.5 py-1 text-xs font-medium"
                 >
                   {{ statusText(task.status) }}
                 </span>
-                <span class="rounded-full px-2.5 py-1 text-xs" style="background: var(--bg-tertiary); color: var(--text-secondary)">
+                <span
+                  class="rounded-full px-2.5 py-1 text-xs"
+                  style="background: var(--bg-tertiary); color: var(--text-secondary)"
+                >
                   {{ typeText(task.type) }}
                 </span>
               </div>
 
-              <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs" style="color: var(--text-muted)">
+              <div
+                class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs"
+                style="color: var(--text-muted)"
+              >
                 <span>来源：{{ task.sourceLabel || '未标记来源' }}</span>
                 <span v-if="task.mediaResourceId">关联媒体：#{{ task.mediaResourceId }}</span>
                 <span>创建：{{ formatDateTime(task.createdAt) }}</span>
@@ -243,11 +239,17 @@
               </div>
 
               <div class="mt-4 rounded-xl p-3" style="background: var(--bg-secondary)">
-                <div class="flex items-center justify-between text-xs" style="color: var(--text-muted)">
+                <div
+                  class="flex items-center justify-between text-xs"
+                  style="color: var(--text-muted)"
+                >
                   <span>任务进度</span>
                   <span>{{ displayProgress(task) }}%</span>
                 </div>
-                <div class="mt-2 h-2 overflow-hidden rounded-full" style="background: var(--bg-tertiary)">
+                <div
+                  class="mt-2 h-2 overflow-hidden rounded-full"
+                  style="background: var(--bg-tertiary)"
+                >
                   <div
                     class="h-full rounded-full dl-progress-fill transition-all"
                     :style="{ width: `${displayProgress(task)}%` }"
@@ -260,7 +262,11 @@
 
               <div
                 class="mt-3 break-all rounded-xl border px-3 py-2 text-xs"
-                style="border-color: var(--border-primary); background: var(--bg-card); color: var(--text-muted)"
+                style="
+                  border-color: var(--border-primary);
+                  background: var(--bg-card);
+                  color: var(--text-muted);
+                "
               >
                 {{ task.url }}
               </div>
@@ -268,7 +274,11 @@
               <div
                 v-if="task.error"
                 class="mt-3 rounded-xl border px-3 py-2 text-xs"
-                style="border-color: var(--color-danger-border); background: var(--color-danger-bg); color: var(--color-danger)"
+                style="
+                  border-color: var(--color-danger-border);
+                  background: var(--color-danger-bg);
+                  color: var(--color-danger);
+                "
               >
                 {{ task.error }}
               </div>
@@ -301,13 +311,7 @@
               >
                 {{ task.status === 'pending' ? '开始下载' : '继续 / 重试' }}
               </button>
-              <button
-                v-else
-                class="dl-btn-primary"
-                @click="startTask(task.id)"
-              >
-                重新打开
-              </button>
+              <button v-else class="dl-btn-primary" @click="startTask(task.id)">重新打开</button>
               <button
                 v-if="task.status === 'downloading'"
                 class="dl-btn-secondary"
@@ -322,12 +326,7 @@
               >
                 标记完成
               </button>
-              <button
-                class="dl-btn-secondary"
-                @click="copyTaskUrl(task.url)"
-              >
-                复制链接
-              </button>
+              <button class="dl-btn-secondary" @click="copyTaskUrl(task.url)">复制链接</button>
               <button
                 v-if="task.status !== 'completed'"
                 class="dl-btn-danger"
@@ -335,12 +334,7 @@
               >
                 取消任务
               </button>
-              <button
-                class="dl-btn-secondary"
-                @click="removeTask(task.id)"
-              >
-                移除记录
-              </button>
+              <button class="dl-btn-secondary" @click="removeTask(task.id)">移除记录</button>
             </div>
           </div>
         </article>

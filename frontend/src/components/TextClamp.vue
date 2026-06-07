@@ -22,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+  import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 
   interface Props {
     text: string;
@@ -55,7 +55,9 @@
     collapse: [];
     clamped: [value: boolean];
     resize: [rect: DOMRect];
-    clampComplete: [data: { isClamped: boolean; originalText: string; clampedText: string; maxLines: number }];
+    clampComplete: [
+      data: { isClamped: boolean; originalText: string; clampedText: string; maxLines: number },
+    ];
   }>();
 
   const wrapperRef = ref<HTMLDivElement>();
@@ -65,6 +67,24 @@
   const isClamped = ref(false);
   let resizeObserver: ResizeObserver | null = null;
   let resizeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const init = () => {
+    if (props.disabled) {
+      displayContent.value = props.text || '';
+      isClamped.value = false;
+      emit('clamped', false);
+      return;
+    }
+
+    if (!props.text || props.text.trim() === '') {
+      displayContent.value = '';
+      isClamped.value = false;
+      emit('clamped', false);
+      return;
+    }
+
+    calculateClamp();
+  };
 
   watch(
     () => props.modelValue,
@@ -103,24 +123,6 @@
     () => props.showButton,
     () => init(),
   );
-
-  const init = () => {
-    if (props.disabled) {
-      displayContent.value = props.text || '';
-      isClamped.value = false;
-      emit('clamped', false);
-      return;
-    }
-
-    if (!props.text || props.text.trim() === '') {
-      displayContent.value = '';
-      isClamped.value = false;
-      emit('clamped', false);
-      return;
-    }
-
-    calculateClamp();
-  };
 
   const initResizeObserver = () => {
     if (!window.ResizeObserver || props.disabled) return;

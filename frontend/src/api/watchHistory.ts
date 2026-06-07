@@ -1,4 +1,4 @@
-import api from './index';
+import api from './http';
 import type { PaginatedResponse } from '@/types/api';
 import type { MediaResource } from '@/types/media';
 

@@ -54,6 +54,15 @@ vi.mock('@/api/watchHistory', () => ({
   watchHistoryApi,
 }));
 
+vi.mock('@/api/playSource', () => ({
+  playSourceApi: {
+    refreshPlaySource: vi.fn().mockResolvedValue({ refreshed: false }),
+    resolveFromCms: vi.fn().mockResolvedValue({ episodes: [] }),
+    refreshMediaPlaySources: vi.fn().mockResolvedValue({ best: null, valid: [], refreshed: 0 }),
+    createPlaySource: vi.fn(),
+  },
+}));
+
 vi.mock('@/components/ArtPlayerWrapper.vue', () => ({
   default: {
     props: ['src', 'title', 'poster', 'autoplay', 'currentTime'],
@@ -197,5 +206,61 @@ describe('WatchView', () => {
     const danmakuPlayer = wrapper.get('.danmaku-player-stub');
     expect(danmakuPlayer.attributes('data-video-id')).toBe('9');
     expect(danmakuPlayer.attributes('data-media-resource-id')).toBe('9');
+  });
+
+  it('switches to the next available source after a player error', async () => {
+    mediaStore.fetchMediaDetail.mockResolvedValueOnce({
+      id: 9,
+      title: 'Demo Movie',
+      description: 'Example description',
+      duration: 3600,
+      rating: 8.6,
+      poster: '',
+      genres: [],
+      source: 'demo',
+      playSources: [
+        {
+          id: 1,
+          url: 'https://example.com/broken.m3u8',
+          sourceName: 'Broken Source',
+          resolution: '1080p',
+          format: 'm3u8',
+          type: 'stream',
+          status: 'active',
+          isActive: true,
+          episodeNumber: 1,
+        },
+        {
+          id: 2,
+          url: 'https://example.com/backup.m3u8',
+          sourceName: 'Backup Source',
+          resolution: '1080p',
+          format: 'm3u8',
+          type: 'stream',
+          status: 'active',
+          isActive: true,
+          episodeNumber: 1,
+        },
+      ],
+    });
+
+    const wrapper = mount(WatchView, {
+      global: {
+        stubs: { RouterLink: true },
+      },
+    });
+    await flushPromises();
+
+    expect(wrapper.get('.art-player-wrapper-stub').attributes('data-src')).toBe(
+      'https://example.com/broken.m3u8',
+    );
+
+    await wrapper.getComponent({ name: 'ArtPlayerWrapper' }).vm.$emit('error', 'HLS 404');
+    await flushPromises();
+
+    expect(wrapper.get('.art-player-wrapper-stub').attributes('data-src')).toBe(
+      'https://example.com/backup.m3u8',
+    );
+    expect(wrapper.text()).toContain('当前：Backup Source');
   });
 });

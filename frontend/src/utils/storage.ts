@@ -58,4 +58,3 @@ export const nextLocalStorage = {
     this.removeItem(key);
   },
 };
-

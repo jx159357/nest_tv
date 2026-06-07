@@ -4,12 +4,14 @@ import {
   SubscribeMessage,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
   ConnectedSocket,
   MessageBody,
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
+import { ROOM_LIFECYCLE } from '../common/constants/room-lifecycle.constants';
 
 interface DanmakuRoom {
   users: Map<string, { userId: string; joinedAt: number }>;
@@ -33,15 +35,23 @@ interface DanmakuMessage {
   cors: { origin: '*' },
   namespace: '/danmaku',
 })
-export class DanmakuGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class DanmakuGateway
+  implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit
+{
   private readonly logger = new Logger(DanmakuGateway.name);
   private readonly rooms = new Map<string, DanmakuRoom>();
   private readonly clientRooms = new Map<string, string>();
+  private readonly cleanupTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
   @WebSocketServer()
   server!: Server;
 
   constructor(private readonly jwtService: JwtService) {}
+
+  afterInit(): void {
+    setInterval(() => this.sweepStaleRooms(), ROOM_LIFECYCLE.STALE_SWEEP_INTERVAL_MS);
+    this.logger.log('弹幕房间定时清理已启动');
+  }
 
   async handleConnection(client: Socket): Promise<void> {
     try {
@@ -91,6 +101,9 @@ export class DanmakuGateway implements OnGatewayConnection, OnGatewayDisconnect 
   ): void {
     const { videoId, userId } = data;
     const room = this.getOrCreateRoom(videoId);
+    if (!room) return;
+
+    this.cancelPendingCleanup(videoId);
 
     room.users.set(userId, { userId, joinedAt: Date.now() });
     this.clientRooms.set(client.id, videoId);
@@ -128,6 +141,8 @@ export class DanmakuGateway implements OnGatewayConnection, OnGatewayDisconnect 
     }
 
     const room = this.getOrCreateRoom(videoId);
+    if (!room) return;
+
     room.messageCount += 1;
     room.lastActivity = new Date();
 
@@ -165,6 +180,14 @@ export class DanmakuGateway implements OnGatewayConnection, OnGatewayDisconnect 
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { userId: string; timestamp: number },
   ): void {
+    const videoId = client.data?.videoId;
+    if (videoId) {
+      const room = this.rooms.get(videoId);
+      if (room) {
+        room.lastActivity = new Date();
+      }
+    }
+
     client.emit('heartbeat-response', {
       userId: data.userId,
       timestamp: Date.now(),
@@ -172,7 +195,14 @@ export class DanmakuGateway implements OnGatewayConnection, OnGatewayDisconnect 
     });
   }
 
-  sendDanmaku(message: { videoId: string; userId: number; danmakuId: number; text?: string; color?: string; type?: string }): void {
+  sendDanmaku(message: {
+    videoId: string;
+    userId: number;
+    danmakuId: number;
+    text?: string;
+    color?: string;
+    type?: string;
+  }): void {
     this.logger.log(`发送弹幕通知: ${JSON.stringify(message)}`);
     if (this.server && message.videoId) {
       this.server.to(message.videoId).emit('danmaku-created', {
@@ -219,10 +249,15 @@ export class DanmakuGateway implements OnGatewayConnection, OnGatewayDisconnect 
     };
   }
 
-  private getOrCreateRoom(videoId: string): DanmakuRoom {
+  private getOrCreateRoom(videoId: string): DanmakuRoom | null {
     const existingRoom = this.rooms.get(videoId);
     if (existingRoom) {
       return existingRoom;
+    }
+
+    if (this.rooms.size >= ROOM_LIFECYCLE.MAX_DANMAKU_ROOMS) {
+      this.logger.warn(`弹幕房间数量已达上限 ${ROOM_LIFECYCLE.MAX_DANMAKU_ROOMS}，拒绝创建新房间`);
+      return null;
     }
 
     const nextRoom: DanmakuRoom = {
@@ -240,24 +275,12 @@ export class DanmakuGateway implements OnGatewayConnection, OnGatewayDisconnect 
 
     room.users.delete(userId);
     client.leave(videoId);
+    this.clientRooms.delete(client.id);
 
     this.logger.log(`用户 ${userId} 离开弹幕房间 ${videoId}`);
 
     if (room.users.size === 0) {
-      if (room.messageCount === 0) {
-        this.rooms.delete(videoId);
-      } else {
-        setTimeout(
-          () => {
-            const currentRoom = this.rooms.get(videoId);
-            if (currentRoom && currentRoom.users.size === 0) {
-              this.rooms.delete(videoId);
-              this.logger.log(`清理空闲弹幕房间: ${videoId}`);
-            }
-          },
-          5 * 60 * 1000,
-        );
-      }
+      this.scheduleRoomCleanup(videoId);
     } else {
       this.server.to(videoId).emit('room-info', {
         videoId,
@@ -270,21 +293,77 @@ export class DanmakuGateway implements OnGatewayConnection, OnGatewayDisconnect 
     }
   }
 
-  private generateMessageId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  private scheduleRoomCleanup(videoId: string): void {
+    this.cancelPendingCleanup(videoId);
+
+    const room = this.rooms.get(videoId);
+    if (!room) return;
+
+    if (room.messageCount === 0) {
+      this.rooms.delete(videoId);
+      this.cleanupTimeouts.delete(videoId);
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      this.cleanupTimeouts.delete(videoId);
+      const currentRoom = this.rooms.get(videoId);
+      if (currentRoom && currentRoom.users.size === 0) {
+        this.rooms.delete(videoId);
+        this.logger.log(`清理空闲弹幕房间: ${videoId}`);
+      }
+    }, ROOM_LIFECYCLE.DANMAKU_EMPTY_TTL_MS);
+
+    this.cleanupTimeouts.set(videoId, timeout);
+  }
+
+  private cancelPendingCleanup(videoId: string): void {
+    const existing = this.cleanupTimeouts.get(videoId);
+    if (existing) {
+      clearTimeout(existing);
+      this.cleanupTimeouts.delete(videoId);
+    }
+  }
+
+  private sweepStaleRooms(): void {
+    const now = Date.now();
+    let cleaned = 0;
+
+    for (const [videoId, room] of this.rooms.entries()) {
+      if (room.users.size > 0) continue;
+
+      const lastActive = room.lastActivity?.getTime() ?? 0;
+      const age = now - lastActive;
+
+      if (age > ROOM_LIFECYCLE.STALE_ROOM_THRESHOLD_MS) {
+        this.cancelPendingCleanup(videoId);
+        this.rooms.delete(videoId);
+        cleaned++;
+      }
+    }
+
+    if (cleaned > 0) {
+      this.logger.log(`定时清理过期弹幕房间: ${cleaned} 个`);
+    }
   }
 
   disconnect(videoId?: string, userId?: string): void {
     if (videoId && userId) {
       const room = this.rooms.get(videoId);
-      room?.users.delete(userId);
-      if (room && room.users.size === 0 && room.messageCount === 0) {
-        this.rooms.delete(videoId);
+      if (room) {
+        room.users.delete(userId);
+        if (room.users.size === 0) {
+          this.scheduleRoomCleanup(videoId);
+        }
       }
       this.logger.log(`用户 ${userId} 已断开视频 ${videoId} 的弹幕连接`);
       return;
     }
 
     this.logger.log('弹幕连接已断开');
+  }
+
+  private generateMessageId(): string {
+    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 }

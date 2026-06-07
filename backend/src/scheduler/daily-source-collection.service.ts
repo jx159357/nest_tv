@@ -6,11 +6,13 @@ import {
   DataCollectionService,
 } from '../data-collection/data-collection.service';
 import { PlaySourceService } from '../play-sources/play-source.service';
+import { PlaySourceHealthService } from '../play-sources/play-source-health.service';
 
 export interface DailySourceValidationSummary {
   checked: number;
   active: number;
   inactive: number;
+  replaced?: number;
 }
 
 export interface DailySourceCollectionRunSummary {
@@ -93,6 +95,7 @@ export class DailySourceCollectionService {
   constructor(
     private readonly dataCollectionService: DataCollectionService,
     private readonly playSourceService: PlaySourceService,
+    private readonly healthService: PlaySourceHealthService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -338,9 +341,15 @@ export class DailySourceCollectionService {
         }
       }
 
-      const validationSummary = await this.playSourceService.validateRecentSources(
+      const healthCheckResult = await this.healthService.validateAndReplace(
         this.getValidationLimit(),
       );
+      const validationSummary = {
+        checked: healthCheckResult.checked,
+        active: healthCheckResult.active,
+        inactive: healthCheckResult.inactive,
+        replaced: healthCheckResult.replaced,
+      };
 
       const durationMs = Date.now() - startedAt.getTime();
 

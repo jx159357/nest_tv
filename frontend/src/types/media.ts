@@ -20,6 +20,7 @@ export interface MediaResource {
   downloadUrls?: string[];
   duration?: number;
   playSources?: PlaySource[];
+  sourceFreshness?: 'fresh' | 'stale' | 'refreshing' | 'empty';
   createdAt: Date;
   updatedAt: Date;
 }

@@ -75,9 +75,7 @@ export class CrawlerSchedulerService {
 
       // 为每个目标执行爬取任务
       for (const target of targets) {
-        const listingUrls = target.listingUrls?.length
-          ? target.listingUrls
-          : [target.baseUrl];
+        const listingUrls = target.listingUrls?.length ? target.listingUrls : [target.baseUrl];
 
         for (const listingUrl of listingUrls) {
           try {
@@ -150,13 +148,12 @@ export class CrawlerSchedulerService {
   /**
    * 爬取指定目标的列表页并提取详情页数据，然后保存到数据库
    */
-  private async crawlTargetWithTimeout(targetName: string, listingUrl: string): Promise<CrawlTaskResult> {
+  private async crawlTargetWithTimeout(
+    targetName: string,
+    listingUrl: string,
+  ): Promise<CrawlTaskResult> {
     try {
-      const result = await this.crawlerService.crawlListingPage(
-        targetName,
-        listingUrl,
-        20,
-      );
+      const result = await this.crawlerService.crawlListingPage(targetName, listingUrl, 20);
 
       let savedCount = 0;
       const saveErrors: string[] = [];

@@ -3,7 +3,9 @@
     <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
       <div>
         <h1 class="page-title text-2xl font-bold">角色权限管理</h1>
-        <p class="page-description mt-2">维护后台角色、权限字典，以及角色与权限码之间的分配关系。</p>
+        <p class="page-description mt-2">
+          维护后台角色、权限字典，以及角色与权限码之间的分配关系。
+        </p>
       </div>
       <div class="flex flex-wrap gap-3">
         <button
@@ -72,9 +74,7 @@
       </div>
 
       <div v-if="pageError" class="px-6 pt-4">
-        <div
-          class="notice-box notice-error rounded-xl px-4 py-3 text-sm"
-        >
+        <div class="notice-box notice-error rounded-xl px-4 py-3 text-sm">
           {{ pageError }}
         </div>
       </div>
@@ -132,9 +132,7 @@
                   {{ role.description || '暂无描述' }}
                 </td>
                 <td class="cell-text px-4 py-4 text-sm">
-                  <div class="cell-primary font-medium">
-                    {{ role.permissions?.length || 0 }} 项
-                  </div>
+                  <div class="cell-primary font-medium">{{ role.permissions?.length || 0 }} 项</div>
                   <div class="mt-2 flex flex-wrap gap-2">
                     <span
                       v-for="code in getRolePermissionPreview(role)"
@@ -158,12 +156,7 @@
                 </td>
                 <td class="cell-text px-4 py-4 text-sm">{{ formatDate(role.updatedAt) }}</td>
                 <td class="px-4 py-4 text-right text-sm font-medium">
-                  <button
-                    class="action-brand mr-3"
-                    @click="openEditRole(role)"
-                  >
-                    编辑
-                  </button>
+                  <button class="action-brand mr-3" @click="openEditRole(role)">编辑</button>
                   <button
                     :class="role.isActive ? 'action-warning' : 'action-success'"
                     @click="toggleRoleStatus(role)"
@@ -246,10 +239,7 @@
                   {{ formatDate(permission.updatedAt) }}
                 </td>
                 <td class="px-4 py-4 text-right text-sm font-medium">
-                  <button
-                    class="action-brand mr-3"
-                    @click="openEditPermission(permission)"
-                  >
+                  <button class="action-brand mr-3" @click="openEditPermission(permission)">
                     编辑
                   </button>
                   <button
@@ -314,11 +304,7 @@
           <p class="form-hint mt-1 text-xs">按住 Ctrl / Cmd 可多选。</p>
         </div>
         <label class="form-check flex items-center gap-2 text-sm">
-          <input
-            v-model="roleForm.isActive"
-            type="checkbox"
-            class="form-checkbox rounded"
-          />
+          <input v-model="roleForm.isActive" type="checkbox" class="form-checkbox rounded" />
           保存后保持角色为启用状态
         </label>
         <div class="modal-footer flex justify-end gap-3 pt-4">
@@ -414,11 +400,7 @@
           </div>
         </div>
         <label class="form-check flex items-center gap-2 text-sm">
-          <input
-            v-model="permissionForm.isActive"
-            type="checkbox"
-            class="form-checkbox rounded"
-          />
+          <input v-model="permissionForm.isActive" type="checkbox" class="form-checkbox rounded" />
           保存后保持权限为启用状态
         </label>
         <div class="modal-footer flex justify-end gap-3 pt-4">
@@ -763,17 +745,11 @@
   };
 
   const getTabClass = (tab: TabKey) => {
-    return [
-      'tab-btn',
-      activeTab.value === tab ? 'tab-active' : 'tab-inactive',
-    ];
+    return ['tab-btn', activeTab.value === tab ? 'tab-active' : 'tab-inactive'];
   };
 
   const getStatusClass = (isActive: boolean) => {
-    return [
-      'status-badge',
-      isActive ? 'status-active' : 'status-inactive',
-    ];
+    return ['status-badge', isActive ? 'status-active' : 'status-inactive'];
   };
 
   onMounted(() => {

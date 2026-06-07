@@ -41,6 +41,33 @@
           <h1 class="admin-layout__page-title">{{ currentPageTitle }}</h1>
         </div>
         <div class="admin-layout__header-right">
+          <button
+            class="admin-layout__theme-btn"
+            :title="isDark ? '切换到浅色模式' : '切换到暗色模式'"
+            :aria-label="isDark ? '切换到浅色模式' : '切换到暗色模式'"
+            @click="toggleTheme"
+          >
+            <svg
+              v-if="isDark"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          </button>
           <router-link to="/" class="admin-layout__home-btn">
             <span>←</span>
             <span>返回首页</span>
@@ -58,10 +85,12 @@
   import { computed, ref } from 'vue';
   import { RouterView, useRoute, useRouter } from 'vue-router';
   import { useAuthStore } from '@/stores/auth';
+  import { useTheme } from '@/composables/useTheme';
 
   const route = useRoute();
   const router = useRouter();
   const authStore = useAuthStore();
+  const { isDark, toggleTheme } = useTheme();
 
   const sidebarOpen = ref(true);
 
@@ -107,8 +136,7 @@
     display: flex;
     min-height: 100vh;
     background:
-      linear-gradient(180deg, rgba(15, 23, 42, 0.03), transparent 180px),
-      var(--admin-bg-page);
+      linear-gradient(180deg, rgba(216, 13, 31, 0.04), transparent 180px), var(--admin-bg-page);
     color: var(--admin-text-primary);
   }
 
@@ -123,19 +151,18 @@
   }
 
   .admin-layout ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--admin-scrollbar-thumb);
     border-radius: 3px;
   }
 
   .admin-layout ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--admin-scrollbar-thumb-hover);
   }
 
   .admin-layout__sidebar {
     width: 248px;
     background:
-      linear-gradient(180deg, rgba(229, 9, 20, 0.08), transparent 220px),
-      var(--admin-bg-sidebar);
+      linear-gradient(180deg, rgba(229, 9, 20, 0.08), transparent 220px), var(--admin-bg-sidebar);
     color: var(--admin-sidebar-text);
     transition: all 0.3s ease;
     border-right: 1px solid var(--admin-border);
@@ -309,6 +336,34 @@
     font-size: 12px;
     text-decoration: none;
     transition: all 0.2s;
+  }
+
+  .admin-layout__theme-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--admin-border);
+    border-radius: 7px;
+    background: var(--surface-muted);
+    color: var(--admin-text-muted);
+    cursor: pointer;
+    transition:
+      background var(--transition-fast),
+      border-color var(--transition-fast),
+      color var(--transition-fast);
+  }
+
+  .admin-layout__theme-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .admin-layout__theme-btn:hover {
+    border-color: var(--border-secondary);
+    background: var(--surface-hover);
+    color: var(--admin-text-primary);
   }
 
   .admin-layout__home-btn:hover {
