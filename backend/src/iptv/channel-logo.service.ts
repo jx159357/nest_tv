@@ -1,6 +1,8 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import axios from 'axios';
+import { CacheService } from '../common/cache/cache.service';
+import { Cacheable, CacheEvict } from '../common/decorators/cache.decorator';
 
 export interface LogoMatchResult {
   channelId: number;
@@ -227,21 +229,42 @@ function parseAliases(raw: unknown): string[] {
   return [];
 }
 
+function toStringValue(raw: unknown): string {
+  if (raw === null || raw === undefined) return '';
+  if (typeof raw === 'string') return raw;
+  if (
+    typeof raw === 'number' ||
+    typeof raw === 'boolean' ||
+    typeof raw === 'bigint' ||
+    typeof raw === 'symbol'
+  ) {
+    return raw.toString();
+  }
+  if (raw instanceof Date) return raw.toISOString();
+
+  return JSON.stringify(raw) ?? '';
+}
+
+function toNullableString(raw: unknown): string | null {
+  const value = toStringValue(raw).trim();
+  return value || null;
+}
+
 function mapRow(row: Record<string, unknown>): LogoData {
   return {
     id: Number(row.id),
-    name: String(row.name),
-    url: String(row.url),
-    category: row.category ? String(row.category) : null,
-    country: row.country ? String(row.country) : null,
-    region: row.region ? String(row.region) : null,
+    name: toStringValue(row.name),
+    url: toStringValue(row.url),
+    category: toNullableString(row.category),
+    country: toNullableString(row.country),
+    region: toNullableString(row.region),
     isVerified: Boolean(row.isVerified),
     isActive: Boolean(row.isActive),
     usageCount: Number(row.usageCount),
-    source: row.source ? String(row.source) : null,
+    source: toNullableString(row.source),
     aliases: parseAliases(row.aliases),
-    createdAt: String(row.createdAt || ''),
-    updatedAt: String(row.updatedAt || ''),
+    createdAt: toStringValue(row.createdAt),
+    updatedAt: toStringValue(row.updatedAt),
   };
 }
 
@@ -249,7 +272,10 @@ function mapRow(row: Record<string, unknown>): LogoData {
 export class ChannelLogoService {
   private readonly logger = new Logger(ChannelLogoService.name);
 
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly cacheService: CacheService,
+  ) {}
 
   async initPresetLogos(): Promise<number> {
     let count = 0;
@@ -279,6 +305,10 @@ export class ChannelLogoService {
     return count;
   }
 
+  @Cacheable({
+    keyGenerator: (...args: unknown[]) => `logo:all:${args[0] || 'all'}`,
+    ttl: 1800,
+  })
   async findAll(category?: string): Promise<LogoData[]> {
     let sql = 'SELECT * FROM channel_logos WHERE isActive = 1';
     const params: unknown[] = [];
@@ -299,12 +329,13 @@ export class ChannelLogoService {
     return rows.map(mapRow);
   }
 
+  @CacheEvict({ all: true, key: 'logo:*' })
   async create(data: Record<string, unknown>): Promise<LogoData> {
-    const name = String(data.name || '');
-    const url = String(data.url || '');
-    const category = data.category ? String(data.category) : null;
+    const name = toStringValue(data.name);
+    const url = toStringValue(data.url);
+    const category = toNullableString(data.category);
     const aliases = Array.isArray(data.aliases) ? JSON.stringify(data.aliases) : '[]';
-    const source = data.source ? String(data.source) : null;
+    const source = toNullableString(data.source);
     const result = await this.dataSource.query<{ insertId: number }>(
       'INSERT INTO channel_logos (name, url, category, aliases, isVerified, isActive, usageCount, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [name, url, category, aliases, false, true, 0, source],
@@ -316,6 +347,7 @@ export class ChannelLogoService {
     return mapRow(rows[0]);
   }
 
+  @CacheEvict({ all: true, key: 'logo:*' })
   async update(id: number, data: Record<string, unknown>): Promise<LogoData> {
     const existing = await this.dataSource.query<Record<string, unknown>[]>(
       'SELECT * FROM channel_logos WHERE id = ?',
@@ -349,6 +381,7 @@ export class ChannelLogoService {
     return mapRow(rows[0]);
   }
 
+  @CacheEvict({ all: true, key: 'logo:*' })
   async remove(id: number): Promise<void> {
     const existing = await this.dataSource.query<Record<string, unknown>[]>(
       'SELECT * FROM channel_logos WHERE id = ?',
@@ -429,6 +462,7 @@ export class ChannelLogoService {
       .trim();
   }
 
+  @Cacheable({ key: 'logo:stats', ttl: 1800 })
   async getStats(): Promise<{
     totalLogos: number;
     verifiedLogos: number;
@@ -479,16 +513,17 @@ export class ChannelLogoService {
     let verified = 0;
     let failed = 0;
     for (const logo of logos) {
-      const isValid = await this.verifyLogoUrl(String(logo.url));
+      const logoData = mapRow(logo);
+      const isValid = await this.verifyLogoUrl(logoData.url);
       await this.dataSource.query('UPDATE channel_logos SET isVerified = ? WHERE id = ?', [
         isValid,
-        logo.id,
+        logoData.id,
       ]);
       if (isValid) {
         verified++;
       } else {
         failed++;
-        this.logger.warn(`台标验证失败: ${logo.name} (${logo.url})`);
+        this.logger.warn(`台标验证失败: ${logoData.name} (${logoData.url})`);
       }
     }
     return { verified, failed };

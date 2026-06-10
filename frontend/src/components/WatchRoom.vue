@@ -106,7 +106,7 @@
   import { useAuthStore } from '@/stores/auth';
   import { notifyError, notifyInfo } from '@/composables/useModal';
 
-  type SocketClient = typeof import('socket.io-client')['default'];
+  type SocketClient = (typeof import('socket.io-client'))['default'];
   type Socket = ReturnType<SocketClient>;
 
   let socketClientLoader: Promise<SocketClient> | null = null;

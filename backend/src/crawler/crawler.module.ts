@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CrawlerService } from './crawler.service';
 import { CrawlerSchedulerService } from '../scheduler/crawler-scheduler.service';

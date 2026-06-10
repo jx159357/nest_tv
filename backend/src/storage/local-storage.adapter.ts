@@ -56,8 +56,8 @@ export class LocalStorageAdapter extends StorageAdapter {
     }
   }
 
-  async getUrl(key: string): Promise<string> {
-    return this.getPublicUrl(key);
+  getUrl(key: string): Promise<string> {
+    return Promise.resolve(this.getPublicUrl(key));
   }
 
   async list(prefix?: string): Promise<StorageFile[]> {

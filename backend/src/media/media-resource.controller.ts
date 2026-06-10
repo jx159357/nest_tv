@@ -33,6 +33,7 @@ import {
   MediaDetailResponseDto,
   ErrorResponse,
 } from './dtos/media-resource-response.dto';
+import { MediaResourceQueryDto } from './dtos/media-resource-query.dto';
 
 @ApiTags('影视资源管理')
 @Controller('media')
@@ -51,95 +52,22 @@ export class MediaResourceController {
     description: '支持分页、搜索、分类筛选、评分范围、日期范围等多种筛选条件的影视资源列表查询',
   })
   @RateLimit({
-    windowMs: 15 * 60 * 1000, // 15分钟
-    maxRequests: 100, // 最多100次请求
+    windowMs: 15 * 60 * 1000,
+    maxRequests: 100,
   })
-  @ApiQuery({ name: 'page', description: '页码，从1开始', example: 1 })
-  @ApiQuery({ name: 'pageSize', description: '每页数量，默认10条，最大100条', example: 10 })
-  @ApiQuery({ name: 'search', description: '搜索关键词，支持标题和描述模糊搜索', required: false })
-  @ApiQuery({
-    name: 'type',
-    description: '影视类型',
-    example: 'movie',
-    enum: ['movie', 'tv', 'variety', 'documentary'],
-  })
-  @ApiQuery({
-    name: 'quality',
-    description: '视频质量',
-    example: '1080p',
-    enum: ['1080p', '720p', '480p', '360p'],
-  })
-  @ApiQuery({ name: 'minRating', description: '最低评分', example: 6.0, required: false })
-  @ApiQuery({ name: 'maxRating', description: '最高评分', example: 10.0, required: false })
-  @ApiQuery({ name: 'tags', description: '影视标签，多个标签用逗号分隔', required: false })
-  @ApiQuery({ name: 'startDate', description: '开始日期，格式：YYYY-MM-DD', required: false })
-  @ApiQuery({ name: 'endDate', description: '结束日期，格式：YYYY-MM-DD', required: false })
   @ApiResponse({
     status: 200,
     description: '获取成功',
     type: MediaListResponseDto,
-    example: {
-      data: [
-        {
-          id: 1,
-          title: '复仇者联盟4',
-          description: '经典的超级英雄电影',
-          type: 'movie',
-          quality: '1080p',
-          rating: 8.7,
-          tags: ['动作', '科幻'],
-          coverUrl: 'https://cdn.streaming-platform.com/media/cover-movie1.jpg',
-          playUrl: 'https://cdn.streaming-platform.com/media/movie1-1080p.mp4',
-          duration: 8820,
-          isActive: true,
-          createdAt: '2024-01-01T00:00:00.000Z',
-          updatedAt: '2024-01-01T00:00:00.000Z',
-        },
-      ],
-      page: 1,
-      pageSize: 10,
-      total: 100,
-      totalPages: 10,
-      hasNext: true,
-      hasPrevious: false,
-    },
   })
   @ApiResponse({
     status: 400,
     description: '请求参数错误',
     type: ErrorResponse,
-    example: {
-      statusCode: 400,
-      message: 'Validation failed',
-      errors: ['page must be greater than 0', 'pageSize must not be greater than 100'],
-    },
   })
   @ApiResponse({ status: 401, description: '未授权', type: ErrorResponse })
-  async findAll(
-    @Query('page') page: number = 1,
-    @Query('pageSize') pageSize: number = 10,
-    @Query('search') search?: string,
-    @Query('type') type?: string,
-    @Query('quality') quality?: string,
-    @Query('minRating') minRating?: number,
-    @Query('maxRating') maxRating?: number,
-    @Query('tags') tags?: string,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-  ) {
-    const queryDto = {
-      page,
-      pageSize,
-      search,
-      type,
-      quality,
-      minRating,
-      maxRating,
-      tags: tags ? tags : undefined,
-      startDate: startDate ? new Date(startDate) : undefined,
-      endDate: endDate ? new Date(endDate) : undefined,
-    };
-
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  async findAll(@Query() queryDto: MediaResourceQueryDto) {
     return this.mediaResourceService.findAll(queryDto);
   }
 
@@ -281,7 +209,10 @@ export class MediaResourceController {
 
   @Get(':id/play-detail')
   @Public()
-  @ApiOperation({ summary: '获取播放详情', description: '返回媒体信息、线路分组、剧集列表、下载链接' })
+  @ApiOperation({
+    summary: '获取播放详情',
+    description: '返回媒体信息、线路分组、剧集列表、下载链接',
+  })
   @ApiParam({ name: 'id', description: '影视资源ID' })
   @ApiResponse({ status: 200, description: '获取成功' })
   async getPlayDetail(@Param('id', ParseIntPipe) id: number) {
@@ -576,6 +507,6 @@ export class MediaResourceController {
   @ApiParam({ name: 'id', description: '影视资源ID' })
   async incrementViews(@Param('id', ParseIntPipe) id: number) {
     await this.mediaResourceService.incrementViews(id);
-    return { message: '增加观看次数成功' };
+    return { success: true, message: '增加观看次数成功' };
   }
 }

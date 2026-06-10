@@ -306,13 +306,8 @@ export class PlaySourceController {
   })
   @ApiResponse({ status: 200, description: '解析成功' })
   @UsePipes(new ValidationPipe({ transform: true }))
-  async resolveFromCms(
-    @Body() body: { title: string; episodeNumber?: number },
-  ) {
-    const episodes = await this.macCmsResolver.resolveByTitle(
-      body.title,
-      body.episodeNumber,
-    );
+  async resolveFromCms(@Body() body: { title: string; episodeNumber?: number }) {
+    const episodes = await this.macCmsResolver.resolveByTitle(body.title, body.episodeNumber);
     return { episodes };
   }
 

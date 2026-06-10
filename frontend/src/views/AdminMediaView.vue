@@ -357,4 +357,11 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
+  @media (max-width: 768px) {
+    .admin-btn-primary {
+      width: 100%;
+      min-height: var(--touch-target);
+    }
+  }
 </style>

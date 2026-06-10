@@ -364,14 +364,18 @@ export class DanmakuService {
   }
 
   // 更新弹幕
-  async update(id: number, updateDto: DanmakuUpdateDto): Promise<Danmaku | null> {
+  async update(id: number, updateDto: DanmakuUpdateDto, userId?: number): Promise<Danmaku | null> {
     const danmaku = await this.findById(id);
     if (!danmaku) {
       this.logger.warn(`弹幕未找到: ${id}`);
       return null;
     }
 
-    // 如果更新文本，重新分析内容
+    if (userId && danmaku.userId !== userId) {
+      this.logger.warn(`用户 ${userId} 无权限修改弹幕 ${id}`);
+      return null;
+    }
+
     if (updateDto.text) {
       updateDto.text = this.filterText(updateDto.text);
       danmaku.filters = this.analyzeContent(updateDto.text);

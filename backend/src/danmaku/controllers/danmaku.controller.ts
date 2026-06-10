@@ -37,6 +37,7 @@ import { DanmakuModerationAction, ModerateDanmakuDto } from '../dtos/moderate-da
 import { UpdateDanmakuFilterRulesDto } from '../dtos/update-danmaku-filter-rules.dto';
 import { DanmakuGateway } from '../../gateway/danmaku.gateway';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { Public } from '../../auth/public.decorator';
 import { AdminRoleGuard } from '../../admin/admin-role.guard';
 import { AdminService } from '../../admin/admin.service';
 import {
@@ -304,6 +305,7 @@ export class DanmakuController {
 
   // 导入弹幕数据
   @Post('import')
+  @UseGuards(AdminRoleGuard)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '导入弹幕数据', description: '批量导入弹幕数据' })
   async importDanmakuData(
@@ -462,6 +464,7 @@ export class DanmakuController {
 
   // 获取弹幕实时统计（WebSocket房间信息）
   @Get('realtime/rooms/:videoId')
+  @Public()
   @ApiOperation({ summary: '实时房间信息', description: '获取指定视频的WebSocket弹幕房间信息' })
   async getRealtimeRoomInfo(
     @Param('videoId') videoId: string,
@@ -482,6 +485,7 @@ export class DanmakuController {
 
   // 获取弹幕建议（基于历史数据）
   @Get('suggestions')
+  @Public()
   @ApiOperation({ summary: '弹幕建议', description: '基于历史弹幕数据获取发送建议' })
   async getDanmakuSuggestions(
     @Query() query: DanmakuSuggestionsQueryDto,
@@ -730,8 +734,9 @@ export class DanmakuController {
   async updateDanmaku(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDto: Partial<CreateDanmakuDto>,
+    @User() user: CurrentUser,
   ): Promise<Danmaku | null> {
-    return await this.danmakuService.update(id, updateDto);
+    return await this.danmakuService.update(id, updateDto, user.id);
   }
 
   // 删除弹幕（软删除）

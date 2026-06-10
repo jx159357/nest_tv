@@ -487,7 +487,9 @@ export class PlaySourceService {
     this.refreshLocks.set(mediaResourceId, promise);
   }
 
-  async getSourceFreshness(mediaResourceId: number): Promise<'fresh' | 'stale' | 'refreshing' | 'empty'> {
+  async getSourceFreshness(
+    mediaResourceId: number,
+  ): Promise<'fresh' | 'stale' | 'refreshing' | 'empty'> {
     if (this.refreshLocks.has(mediaResourceId)) return 'refreshing';
 
     const sources = await this.playSourceRepository.find({

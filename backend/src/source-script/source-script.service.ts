@@ -165,7 +165,9 @@ export class SourceScriptService {
     if (cached && cached.version === version) return cached.factory;
 
     const wrappedCode = `"use strict"; return (${code});`;
-    const factory = new Function('require', wrappedCode) as (require: NodeRequire) => ScriptModule;
+    const factory = vm.compileFunction(wrappedCode, ['require']) as (
+      require: NodeRequire,
+    ) => ScriptModule;
 
     if (this.compileCache.size >= COMPILE_CACHE_MAX) {
       const firstKey = this.compileCache.keys().next().value;

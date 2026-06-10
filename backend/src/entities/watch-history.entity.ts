@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  Index,
 } from 'typeorm';
 import { User } from './user.entity';
 import { MediaResource } from './media-resource.entity';
@@ -14,6 +15,9 @@ import { MediaResource } from './media-resource.entity';
  * 用于记录用户的观看历史和进度
  */
 @Entity('watch_history')
+@Index('idx_wh_user', ['userId'])
+@Index('idx_wh_user_media', ['userId', 'mediaResourceId'], { unique: true })
+@Index('idx_wh_user_completed_updated', ['userId', 'isCompleted', 'updatedAt'])
 export class WatchHistory {
   @PrimaryGeneratedColumn()
   id: number; // 观看记录ID，自增主键

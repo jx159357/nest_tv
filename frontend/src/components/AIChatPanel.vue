@@ -59,6 +59,7 @@
 
 <script setup lang="ts">
   import { ref, nextTick, watch } from 'vue';
+  import DOMPurify from 'dompurify';
 
   interface Props {
     visible: boolean;
@@ -113,7 +114,7 @@
   };
 
   const renderMarkdown = (text: string): string => {
-    return text
+    const html = text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
@@ -121,6 +122,7 @@
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       .replace(/`(.*?)`/g, '<code>$1</code>')
       .replace(/\n/g, '<br>');
+    return DOMPurify.sanitize(html);
   };
 
   const autoResize = (e: Event) => {
@@ -224,15 +226,17 @@
     position: fixed;
     inset: 0;
     z-index: 9000;
-    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px))
+      max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+    background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(4px);
   }
 
   .ai-panel {
-    width: 90vw;
+    width: min(520px, 100%);
     max-width: 520px;
     height: 80vh;
     max-height: 680px;
@@ -509,11 +513,19 @@
   }
 
   @media (max-width: 640px) {
+    .ai-overlay {
+      align-items: stretch;
+      padding: 0;
+    }
+
     .ai-panel {
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
+      max-width: none;
       max-height: none;
       border-radius: 0;
+      border-right: 0;
+      border-left: 0;
     }
   }
 </style>

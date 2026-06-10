@@ -1,6 +1,7 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, BadRequestException } from '@nestjs/common';
 import axios, { AxiosResponse } from 'axios';
 import type { Response } from 'express';
+import { validateProxyUrl } from '../common/utils/ssrf-guard.util';
 
 interface HlsSegment {
   url: string;
@@ -23,6 +24,7 @@ interface ProxyOptions {
   maxRetries?: number;
   timeout?: number;
   followRedirects?: boolean;
+  range?: string;
 }
 
 const DEFAULT_OPTIONS: ProxyOptions = {
@@ -54,6 +56,10 @@ export class HlsProxyService implements OnModuleDestroy {
     }
   }
 
+  private static readonly MAX_M3U8_BYTES = 2 * 1024 * 1024;
+  private static readonly MAX_SEGMENT_BYTES = 50 * 1024 * 1024;
+  private static readonly MAX_KEY_BYTES = 64 * 1024;
+
   /**
    * 代理HLS流请求
    */
@@ -61,9 +67,14 @@ export class HlsProxyService implements OnModuleDestroy {
     const opts = { ...DEFAULT_OPTIONS, ...options };
     const decodedUrl = this.decodeUnicodeUrl(url);
 
+    const check = validateProxyUrl(decodedUrl);
+    if (!check.ok) {
+      throw new BadRequestException(`URL 不合法: ${check.reason}`);
+    }
+
     try {
       // 检查缓存
-      if (opts.enableCache) {
+      if (opts.enableCache && !opts.range) {
         const cached = this.getFromCache(decodedUrl);
         if (cached) {
           this.sendResponse(res, cached.data, cached.contentType);
@@ -71,10 +82,15 @@ export class HlsProxyService implements OnModuleDestroy {
         }
       }
 
-      // 获取远程内容
-      const response = await this.fetchWithRetry(decodedUrl, opts);
+      const maxBytes = this.isM3u8Url(decodedUrl)
+        ? HlsProxyService.MAX_M3U8_BYTES
+        : HlsProxyService.MAX_SEGMENT_BYTES;
+      const response = await this.fetchWithRetry(decodedUrl, opts, maxBytes);
+      const responseHeaders = response.headers as Record<string, unknown>;
 
-      const contentType = (response.headers['content-type'] || '').toLowerCase();
+      const contentType = (
+        this.getHeaderValue(responseHeaders, 'content-type') || ''
+      ).toLowerCase();
       const data = Buffer.isBuffer(response.data) ? response.data : Buffer.from(response.data);
 
       // 判断是否是M3U8内容
@@ -86,18 +102,18 @@ export class HlsProxyService implements OnModuleDestroy {
         const rewrittenBuffer = Buffer.from(rewritten, 'utf-8');
 
         // 缓存M3U8（短时间）
-        if (opts.enableCache) {
+        if (opts.enableCache && !opts.range) {
           this.setCache(decodedUrl, rewrittenBuffer, 'application/vnd.apple.mpegurl', 10);
         }
 
         this.sendResponse(res, rewrittenBuffer, 'application/vnd.apple.mpegurl');
       } else {
         // 普通流内容（.ts分片等）
-        if (opts.enableCache) {
+        if (opts.enableCache && !opts.range) {
           this.setCache(decodedUrl, data, contentType || 'video/mp2t', opts.cacheTtl || 60);
         }
 
-        this.sendResponse(res, data, contentType || 'video/mp2t');
+        this.sendResponse(res, data, contentType || 'video/mp2t', response.status, responseHeaders);
       }
     } catch (error: unknown) {
       this.handleProxyError(error, decodedUrl, res);
@@ -110,17 +126,24 @@ export class HlsProxyService implements OnModuleDestroy {
   async proxyKeyRequest(url: string, res: Response): Promise<void> {
     const decodedUrl = this.decodeUnicodeUrl(url);
 
+    const check = validateProxyUrl(decodedUrl);
+    if (!check.ok) {
+      throw new BadRequestException(`URL 不合法: ${check.reason}`);
+    }
+
     try {
-      const response = await axios.get(decodedUrl, {
+      const response = await axios.get<Buffer | ArrayBuffer>(decodedUrl, {
         responseType: 'arraybuffer',
         timeout: 15000,
+        maxContentLength: HlsProxyService.MAX_KEY_BYTES,
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
           Referer: this.getReferer(decodedUrl),
         },
       });
 
-      this.sendResponse(res, Buffer.from(response.data), 'application/octet-stream');
+      const data = Buffer.isBuffer(response.data) ? response.data : Buffer.from(response.data);
+      this.sendResponse(res, data, 'application/octet-stream');
     } catch {
       this.logger.error(`代理密钥请求失败: ${decodedUrl}`);
       res.status(502).json({ error: '代理密钥请求失败' });
@@ -302,20 +325,31 @@ export class HlsProxyService implements OnModuleDestroy {
   /**
    * 带重试的请求
    */
-  private async fetchWithRetry(url: string, options: ProxyOptions): Promise<AxiosResponse> {
+  private isM3u8Url(url: string): boolean {
+    const lower = url.toLowerCase();
+    return lower.includes('.m3u8') || lower.includes('m3u');
+  }
+
+  private async fetchWithRetry(
+    url: string,
+    options: ProxyOptions,
+    maxBytes?: number,
+  ): Promise<AxiosResponse<Buffer | ArrayBuffer>> {
     let lastError: Error | null = null;
     const maxRetries = options.maxRetries || 3;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        const response = await axios.get(url, {
+        const response = await axios.get<Buffer | ArrayBuffer>(url, {
           responseType: 'arraybuffer',
           timeout: options.timeout || 30000,
           maxRedirects: options.followRedirects ? 5 : 0,
+          ...(maxBytes ? { maxContentLength: maxBytes, maxBodyLength: maxBytes } : {}),
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             Referer: this.getReferer(url),
             Accept: '*/*',
+            ...(options.range ? { Range: options.range } : {}),
           },
           validateStatus: status => status >= 200 && status < 400,
         });
@@ -350,24 +384,53 @@ export class HlsProxyService implements OnModuleDestroy {
   /**
    * 发送响应
    */
-  private sendResponse(res: Response, data: Buffer, contentType: string): void {
-    res.set({
+  private sendResponse(
+    res: Response,
+    data: Buffer,
+    contentType: string,
+    statusCode = 200,
+    upstreamHeaders?: Record<string, unknown>,
+  ): void {
+    const headers: Record<string, string> = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Range',
       'Content-Type': contentType,
       'Content-Length': data.length.toString(),
       'Cache-Control': 'no-cache',
-    });
+    };
+
+    const contentRange = this.getHeaderValue(upstreamHeaders, 'content-range');
+    const acceptRanges = this.getHeaderValue(upstreamHeaders, 'accept-ranges');
+
+    if (contentRange) {
+      headers['Content-Range'] = contentRange;
+    }
+    if (acceptRanges) {
+      headers['Accept-Ranges'] = acceptRanges;
+    } else if (statusCode === 206) {
+      headers['Accept-Ranges'] = 'bytes';
+    }
+
+    res.status(statusCode);
+    res.set(headers);
     res.end(data);
+  }
+
+  private getHeaderValue(headers: Record<string, unknown> | undefined, key: string): string | null {
+    if (!headers) return null;
+    const value = headers[key] ?? headers[key.toLowerCase()];
+    if (Array.isArray(value)) {
+      return value.join(', ');
+    }
+    return typeof value === 'string' ? value : null;
   }
 
   /**
    * 处理代理错误
    */
   private handleProxyError(error: unknown, url: string, res: Response): void {
-    const axiosErr = error as any;
-    const statusCode = axiosErr?.response?.status;
+    const statusCode = this.getErrorStatus(error);
     const message = error instanceof Error ? error.message : '未知错误';
 
     this.logger.error(`代理请求失败: ${url} (状态码: ${statusCode || 'N/A'})`, message);
@@ -394,12 +457,26 @@ export class HlsProxyService implements OnModuleDestroy {
     }
   }
 
+  private getErrorStatus(error: unknown): number | undefined {
+    if (!error || typeof error !== 'object') {
+      return undefined;
+    }
+
+    const response = (error as { response?: unknown }).response;
+    if (!response || typeof response !== 'object') {
+      return undefined;
+    }
+
+    const status = (response as { status?: unknown }).status;
+    return typeof status === 'number' ? status : undefined;
+  }
+
   /**
    * 解码Unicode URL
    */
   private decodeUnicodeUrl(url: string): string {
     try {
-      return url.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
+      return url.replace(/\\u([0-9a-fA-F]{4})/g, (_match: string, hex: string) =>
         String.fromCharCode(parseInt(hex, 16)),
       );
     } catch {

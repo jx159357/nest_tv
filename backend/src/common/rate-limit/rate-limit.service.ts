@@ -391,13 +391,7 @@ export class RateLimitService {
     let cursor = '0';
 
     do {
-      const [nextCursor, batch] = await this.redis.scan(
-        cursor,
-        'MATCH',
-        pattern,
-        'COUNT',
-        100,
-      );
+      const [nextCursor, batch] = await this.redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
       cursor = nextCursor;
       keys.push(...batch);
     } while (cursor !== '0');

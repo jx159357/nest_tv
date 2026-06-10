@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { MediaResourceService } from '../media/media-resource.service';
 import { MediaQuality, MediaType } from '../entities/media-resource.entity';
 import { PlaySourceService } from '../play-sources/play-source.service';
-import { PlaySourceType, PlaySourceStatus } from '../entities/play-source.entity';
+import { PlaySourceType } from '../entities/play-source.entity';
 import { User } from '../entities/user.entity';
 import { Logger } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';

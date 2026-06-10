@@ -1,7 +1,7 @@
 <template>
-  <div class="main-layout">
+  <div class="main-layout" :class="{ 'main-layout--immersive': hideShellChrome }">
     <!-- 顶部导航栏 -->
-    <header class="main-header">
+    <header v-if="!hideShellChrome" class="main-header">
       <div class="main-header__container">
         <!-- Logo -->
         <router-link to="/" class="main-header__logo">
@@ -79,13 +79,25 @@
         <div class="main-header__actions">
           <!-- 主题切换 -->
           <button
-            class="main-header__icon-btn"
-            :title="isDark ? '切换到浅色模式' : '切换到暗色模式'"
-            :aria-label="isDark ? '切换到浅色模式' : '切换到暗色模式'"
+            class="main-header__icon-btn main-header__theme-btn"
+            :class="{ 'main-header__icon-btn--system': isSystemTheme }"
+            :title="themeToggleLabel"
+            :aria-label="themeToggleLabel"
             @click="toggleTheme"
           >
             <svg
-              v-if="isDark"
+              v-if="isSystemTheme"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <rect x="3" y="4" width="18" height="12" rx="2" />
+              <path d="M8 20h8" />
+              <path d="M12 16v4" />
+            </svg>
+            <svg
+              v-else-if="isDark"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -129,7 +141,7 @@
           </router-link>
 
           <!-- 搜索框 -->
-          <div class="main-header__search">
+          <div class="main-header__search" role="search">
             <svg
               class="main-header__search-icon"
               viewBox="0 0 24 24"
@@ -144,7 +156,11 @@
               v-model="searchQuery"
               type="text"
               class="main-header__search-input"
+              aria-label="搜索影视内容"
+              autocomplete="off"
+              enterkeyhint="search"
               placeholder="搜索影视、电视剧..."
+              @keydown.esc="searchQuery = ''"
               @keyup.enter="handleSearch"
             />
           </div>
@@ -237,15 +253,17 @@
 
     <!-- 主内容区 -->
     <main class="main-content">
-      <RouterView v-slot="{ Component, route }">
-        <Transition name="page-fade" mode="out-in">
-          <component :is="Component" :key="route.path" />
-        </Transition>
+      <RouterView v-slot="{ Component }">
+        <KeepAlive :include="['HomeView', 'IPTVView']">
+          <Transition name="page-fade" mode="out-in">
+            <component :is="Component" :key="pageTransitionKey" />
+          </Transition>
+        </KeepAlive>
       </RouterView>
     </main>
 
     <!-- 底部页脚 -->
-    <footer class="main-footer">
+    <footer v-if="!hideShellChrome" class="main-footer">
       <div class="main-footer__container">
         <div class="main-footer__brand">
           <span class="main-footer__logo">Nest TV</span>
@@ -263,7 +281,7 @@
     </footer>
 
     <!-- 移动端底部导航 -->
-    <nav class="mobile-nav">
+    <nav v-if="!hideShellChrome" class="mobile-nav">
       <router-link to="/" class="mobile-nav__item" :class="{ active: route.path === '/' }">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -331,9 +349,25 @@
 
   const searchQuery = ref('');
   const showUserMenu = ref(false);
-  const { isDark, toggleTheme } = useTheme();
+  const { theme, isDark, isSystemTheme, toggleTheme } = useTheme();
 
   const currentYear = new Date().getFullYear();
+
+  const themeToggleLabel = computed(() => {
+    if (theme.value === 'dark') return '当前深色模式，切换到浅色模式';
+    if (theme.value === 'light') return '当前浅色模式，切换到跟随系统';
+    return '当前跟随系统，切换到深色模式';
+  });
+
+  const pageTransitionKey = computed(() => {
+    if (route.name === 'media-detail' || route.name === 'watch') {
+      return `${String(route.name)}:${String(route.params.id ?? '')}`;
+    }
+
+    return String(route.name ?? route.path);
+  });
+
+  const hideShellChrome = computed(() => route.meta?.immersive === true);
 
   const isAdmin = computed(() => {
     const role = authStore.user?.role;
@@ -399,8 +433,8 @@
   .main-header__container {
     max-width: var(--content-max-width);
     margin: 0 auto;
-    padding: 0 28px;
-    height: 56px;
+    padding: 0 var(--page-gutter);
+    height: var(--app-header-height);
     display: flex;
     align-items: center;
     gap: 20px;
@@ -444,7 +478,7 @@
     display: flex;
     align-items: center;
     gap: 7px;
-    min-height: 32px;
+    min-height: 36px;
     padding: 0 12px;
     border-radius: 8px;
     text-decoration: none;
@@ -464,6 +498,16 @@
     color: var(--text-primary);
   }
 
+  .main-header__nav-item:focus-visible,
+  .main-header__icon-btn:focus-visible,
+  .main-header__user-btn:focus-visible,
+  .main-header__login-btn:focus-visible,
+  .main-header__register-btn:focus-visible,
+  .mobile-nav__item:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+  }
+
   .main-header__nav-item.active {
     background: rgba(229, 9, 20, 0.16);
     color: var(--color-brand-primary-light);
@@ -481,8 +525,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border-radius: 8px;
     background: var(--surface-muted);
     color: var(--text-muted);
@@ -504,6 +548,13 @@
     color: var(--text-primary);
   }
 
+  .main-header__icon-btn--system {
+    color: var(--color-brand-primary-light);
+    box-shadow:
+      inset 0 0 0 1px var(--color-brand-border),
+      0 0 0 3px var(--color-brand-overlay);
+  }
+
   .main-header__search {
     position: relative;
     width: clamp(220px, 24vw, 340px);
@@ -523,7 +574,7 @@
 
   .main-header__search-input {
     width: 100%;
-    height: 34px;
+    height: 38px;
     padding: 0 16px 0 40px;
     border: 1px solid var(--border-primary);
     border-radius: 8px;
@@ -602,7 +653,8 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 12px 16px;
+    min-height: var(--touch-target);
+    padding: 0 16px;
     text-decoration: none;
     color: var(--text-primary);
     font-size: 14px;
@@ -648,7 +700,10 @@
   }
 
   .main-header__login-btn {
-    padding: 8px 20px;
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 20px;
     border-radius: 8px;
     text-decoration: none;
     font-size: 14px;
@@ -665,7 +720,10 @@
   }
 
   .main-header__register-btn {
-    padding: 8px 20px;
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 20px;
     border-radius: 8px;
     text-decoration: none;
     font-size: 14px;
@@ -682,6 +740,11 @@
 
   .main-content {
     flex: 1;
+    min-width: 0;
+  }
+
+  .main-layout--immersive {
+    background: var(--bg-page);
   }
 
   .main-footer {
@@ -749,18 +812,18 @@
   .page-fade-enter-active,
   .page-fade-leave-active {
     transition:
-      opacity 0.2s ease,
-      transform 0.2s ease;
+      opacity 0.18s ease,
+      transform 0.18s ease;
   }
 
   .page-fade-enter-from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(6px);
   }
 
   .page-fade-leave-to {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateY(-4px);
   }
 
   .dropdown-enter-active,
@@ -800,15 +863,20 @@
     backdrop-filter: blur(20px);
     border-top: 1px solid var(--border-primary);
     z-index: 100;
-    padding: 6px 0 env(safe-area-inset-bottom, 0);
+    padding: 6px 0 calc(6px + env(safe-area-inset-bottom, 0));
+    box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.16);
   }
 
   .mobile-nav__item {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 2px;
-    padding: 6px 0;
+    justify-content: center;
+    min-width: var(--touch-target);
+    min-height: var(--touch-target);
+    padding: 5px 0;
     text-decoration: none;
     color: var(--text-muted);
     font-size: 10px;
@@ -824,11 +892,21 @@
     color: var(--color-brand-primary);
   }
 
+  .mobile-nav__item.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    width: 18px;
+    height: 2px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+
   @media (max-width: 768px) {
     .main-header__container {
-      padding: 0 16px;
+      padding: 0 var(--page-gutter);
       gap: 12px;
-      height: 54px;
+      height: var(--app-header-height);
     }
 
     .main-header__nav {
@@ -836,11 +914,11 @@
     }
 
     .main-header__search {
-      width: min(48vw, 220px);
-      flex-shrink: 1;
+      flex: 1 1 auto;
+      width: auto;
     }
 
-    .main-header__icon-btn,
+    .main-header__icon-btn:not(.main-header__theme-btn),
     .main-header__auth {
       display: none;
     }
@@ -854,7 +932,11 @@
     }
 
     .main-content {
-      padding-bottom: 60px;
+      padding-bottom: calc(64px + env(safe-area-inset-bottom, 0));
+    }
+
+    .main-layout--immersive .main-content {
+      padding-bottom: 0;
     }
 
     .mobile-nav {
@@ -869,7 +951,7 @@
     }
 
     .main-header__search {
-      width: calc(100vw - 88px);
+      width: auto;
     }
   }
 </style>

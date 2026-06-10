@@ -35,9 +35,7 @@ interface DanmakuMessage {
   cors: { origin: '*' },
   namespace: '/danmaku',
 })
-export class DanmakuGateway
-  implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit
-{
+export class DanmakuGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
   private readonly logger = new Logger(DanmakuGateway.name);
   private readonly rooms = new Map<string, DanmakuRoom>();
   private readonly clientRooms = new Map<string, string>();
@@ -53,7 +51,7 @@ export class DanmakuGateway
     this.logger.log('弹幕房间定时清理已启动');
   }
 
-  async handleConnection(client: Socket): Promise<void> {
+  handleConnection(client: Socket): void {
     try {
       const token = client.handshake.auth?.token;
       const videoId = client.handshake.auth?.videoId;

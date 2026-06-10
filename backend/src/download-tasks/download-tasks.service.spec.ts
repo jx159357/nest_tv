@@ -23,7 +23,9 @@ describe('DownloadTasksService', () => {
     getParameters: jest.fn().mockReturnValue({}),
     getMany: jest.fn().mockResolvedValue([]),
     getCount: jest.fn().mockResolvedValue(0),
-    getRawOne: jest.fn().mockResolvedValue({ total: '0', active: '0', completed: '0', failed: '0' }),
+    getRawOne: jest
+      .fn()
+      .mockResolvedValue({ total: '0', active: '0', completed: '0', failed: '0' }),
   });
 
   let qbInstances: ReturnType<typeof createMockQb>[];
@@ -52,7 +54,9 @@ describe('DownloadTasksService', () => {
     jest.clearAllMocks();
     qbInstances = [createMockQb(), createMockQb(), createMockQb(), createMockQb()];
     let callIndex = 0;
-    downloadTaskRepository.createQueryBuilder.mockImplementation(() => qbInstances[callIndex++] || createMockQb());
+    downloadTaskRepository.createQueryBuilder.mockImplementation(
+      () => qbInstances[callIndex++] || createMockQb(),
+    );
     downloadTaskRepository.find.mockResolvedValue([]);
     downloadTaskRepository.findOne.mockResolvedValue(null);
     downloadTaskRepository.delete.mockResolvedValue({ affected: 0 });
@@ -241,9 +245,7 @@ describe('DownloadTasksService', () => {
       dedupKey: 'magnet:hash-demo',
     } as DownloadTask;
 
-    downloadTaskRepository.findOne
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(newestTask);
+    downloadTaskRepository.findOne.mockResolvedValueOnce(null).mockResolvedValueOnce(newestTask);
     downloadTaskRepository.find.mockResolvedValue([newestTask, { id: 20 } as DownloadTask]);
     downloadTaskRepository.save.mockImplementation(
       (task: DownloadTask): Promise<DownloadTask> => Promise.resolve(task),

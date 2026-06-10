@@ -1190,11 +1190,11 @@
   }
 
   .ops-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-primary);
-    border-radius: 16px;
+    background: var(--admin-bg-card);
+    border: 1px solid var(--admin-border);
+    border-radius: var(--panel-radius);
     padding: 20px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--admin-shadow);
   }
 
   .ops-card-title {
@@ -1211,17 +1211,17 @@
 
   .ops-loading-box {
     margin-top: 16px;
-    border: 1px dashed var(--border-primary);
+    border: 1px dashed var(--admin-border);
     background: var(--bg-secondary);
-    border-radius: 16px;
+    border-radius: var(--panel-radius);
     padding: 16px;
     font-size: 14px;
     color: var(--text-muted);
   }
 
   .ops-recommendation-box {
-    border-radius: 16px;
-    border: 1px solid var(--border-primary);
+    border-radius: var(--panel-radius);
+    border: 1px solid var(--admin-border);
     background: var(--bg-secondary);
     padding: 16px;
     font-size: 14px;
@@ -1229,7 +1229,7 @@
   }
 
   .ops-attention-box {
-    border-radius: 16px;
+    border-radius: var(--panel-radius);
     border: 1px solid var(--color-warning-border, rgba(245, 158, 11, 0.3));
     background: var(--color-warning-bg, rgba(245, 158, 11, 0.08));
     padding: 16px;
@@ -1255,7 +1255,7 @@
   }
 
   .ops-troubleshoot-box {
-    border-radius: 16px;
+    border-radius: var(--panel-radius);
     border: 1px solid var(--color-warning-border, rgba(245, 158, 11, 0.3));
     background: var(--color-warning-bg, rgba(245, 158, 11, 0.08));
     padding: 16px;
@@ -1264,11 +1264,11 @@
   }
 
   .filter-form {
-    border-radius: 16px;
-    border: 1px solid var(--border-primary);
-    background: var(--bg-card);
+    border-radius: var(--panel-radius);
+    border: 1px solid var(--admin-border);
+    background: var(--admin-bg-card);
     padding: 20px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--admin-shadow);
   }
 
   .filter-label {
@@ -1278,9 +1278,10 @@
   }
 
   .filter-input {
-    border-radius: 12px;
+    min-height: 38px;
+    border-radius: var(--radius-control);
     border: 1px solid var(--border-secondary);
-    padding: 10px 16px;
+    padding: 0 14px;
     font-size: 14px;
     outline: none;
     transition: all 0.2s;
@@ -1297,8 +1298,9 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 12px;
-    padding: 10px 16px;
+    min-height: 38px;
+    border-radius: var(--radius-control);
+    padding: 0 16px;
     font-size: 14px;
     font-weight: 500;
     color: #fff;
@@ -1314,9 +1316,10 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 12px;
+    min-height: 38px;
+    border-radius: var(--radius-control);
     border: 1px solid var(--border-secondary);
-    padding: 10px 16px;
+    padding: 0 16px;
     font-size: 14px;
     font-weight: 500;
     color: var(--text-secondary);
@@ -1380,11 +1383,11 @@
   }
 
   .stat-card {
-    border-radius: 16px;
-    border: 1px solid var(--border-primary);
-    background: var(--bg-card);
+    border-radius: var(--panel-radius);
+    border: 1px solid var(--admin-border);
+    background: var(--admin-bg-card);
     padding: 16px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--admin-shadow);
   }
 
   .stat-card-label {
@@ -1478,10 +1481,10 @@
   }
 
   .table-container {
-    border-radius: 16px;
-    border: 1px solid var(--border-primary);
-    background: var(--bg-card);
-    box-shadow: var(--shadow-sm);
+    border-radius: var(--panel-radius);
+    border: 1px solid var(--admin-border);
+    background: var(--admin-bg-card);
+    box-shadow: var(--admin-shadow);
     overflow: hidden;
   }
 

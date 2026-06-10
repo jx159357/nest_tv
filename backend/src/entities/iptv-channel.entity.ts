@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   ManyToMany,
   JoinTable,
+  Index,
 } from 'typeorm';
 import { MediaResource } from './media-resource.entity';
 
@@ -14,6 +15,8 @@ import { MediaResource } from './media-resource.entity';
  * 用于存储IPTV直播频道信息
  */
 @Entity('iptv_channels')
+@Index('idx_iptv_url', ['url'])
+@Index('idx_iptv_group_active', ['group', 'isActive'])
 export class IPTVChannel {
   @PrimaryGeneratedColumn()
   id: number; // 频道ID，自增主键

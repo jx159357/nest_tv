@@ -1,4 +1,4 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
 import compression from 'compression';
@@ -8,6 +8,7 @@ import { RequestLoggingMiddleware } from './middleware/request-logging.middlewar
 import { PerformanceMonitoringMiddleware } from './middleware/performance-monitoring.middleware';
 import { SecurityHeadersMiddleware } from './middleware/security-headers.middleware';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { AppLoggerService } from './common/services/app-logger.service';
 
 async function bootstrap() {
@@ -139,6 +140,9 @@ async function bootstrap() {
 
   // 应用全局异常过滤器
   app.useGlobalFilters(new GlobalExceptionFilter(appLogger));
+
+  // 应用全局响应转换拦截器
+  app.useGlobalInterceptors(new TransformInterceptor(new Reflector()));
 
   // 应用全局验证管道
   app.useGlobalPipes(

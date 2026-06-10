@@ -1,42 +1,73 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { IsOptional, IsString, IsEnum, IsNumber, Min, Max } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { PageDto } from '../../common/dto/page.dto';
 
-export class MediaResourceQueryDto {
-  @ApiProperty({ description: '页码', default: 1 })
-  page?: number = 1;
-
-  @ApiProperty({ description: '每页数量', default: 10 })
-  pageSize?: number = 10;
-
-  @ApiProperty({ description: '搜索关键词', required: false })
+export class MediaResourceQueryDto extends PageDto {
+  @ApiPropertyOptional({ description: '搜索关键词' })
+  @IsOptional()
+  @IsString()
   search?: string;
 
-  @ApiProperty({ description: '影视类型（可以是单个类型或多个类型）', required: false })
-  type?: string | string[];
+  @ApiPropertyOptional({
+    description: '影视类型',
+    enum: ['movie', 'tv', 'variety', 'documentary'],
+  })
+  @IsOptional()
+  @IsString()
+  type?: string;
 
-  @ApiProperty({ description: '类型标签', required: false })
+  @ApiPropertyOptional({ description: '类型标签' })
+  @IsOptional()
+  @IsString()
   genre?: string;
 
-  @ApiProperty({ description: '最低评分', required: false })
+  @ApiPropertyOptional({ description: '最低评分', minimum: 0, maximum: 10 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(10)
+  @Type(() => Number)
   minRating?: number;
 
-  @ApiProperty({ description: '最高评分', required: false })
+  @ApiPropertyOptional({ description: '最高评分', minimum: 0, maximum: 10 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(10)
+  @Type(() => Number)
   maxRating?: number;
 
-  @ApiProperty({ description: '视频质量（可以是单个质量或多个质量）', required: false })
-  quality?: string | string[];
+  @ApiPropertyOptional({
+    description: '视频质量',
+    enum: ['1080p', '720p', '480p', '360p'],
+  })
+  @IsOptional()
+  @IsString()
+  quality?: string;
 
-  @ApiProperty({ description: '标签（可以是单个标签或逗号分隔的多个标签）', required: false })
-  tags?: string | string[];
+  @ApiPropertyOptional({ description: '标签，多个标签用逗号分隔' })
+  @IsOptional()
+  @IsString()
+  tags?: string;
 
-  @ApiProperty({ description: '开始日期', required: false })
-  startDate?: Date;
+  @ApiPropertyOptional({ description: '开始日期，格式：YYYY-MM-DD' })
+  @IsOptional()
+  @IsString()
+  startDate?: string;
 
-  @ApiProperty({ description: '结束日期', required: false })
-  endDate?: Date;
+  @ApiPropertyOptional({ description: '结束日期，格式：YYYY-MM-DD' })
+  @IsOptional()
+  @IsString()
+  endDate?: string;
 
-  @ApiProperty({ description: '排序字段', default: 'createdAt' })
+  @ApiPropertyOptional({ description: '排序字段', default: 'createdAt' })
+  @IsOptional()
+  @IsString()
   sortBy?: string = 'createdAt';
 
-  @ApiProperty({ description: '排序方式', enum: ['ASC', 'DESC'], default: 'DESC' })
+  @ApiPropertyOptional({ description: '排序方式', enum: ['ASC', 'DESC'], default: 'DESC' })
+  @IsOptional()
+  @IsEnum(['ASC', 'DESC'])
   sortOrder?: 'ASC' | 'DESC' = 'DESC';
 }

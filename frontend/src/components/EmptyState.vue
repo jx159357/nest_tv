@@ -93,7 +93,7 @@
       {{ description }}
     </p>
 
-    <button v-if="action" class="empty-state-action" @click="action.onClick">
+    <button v-if="action" class="empty-state-action" type="button" @click="action.onClick">
       {{ action.text }}
     </button>
   </div>

@@ -156,16 +156,18 @@ export class S3StorageAdapter extends StorageAdapter {
     }
   }
 
-  async getUrl(key: string): Promise<string> {
+  getUrl(key: string): Promise<string> {
     if (this.config.publicUrl) {
-      return `${this.config.publicUrl}/${key}`;
+      return Promise.resolve(`${this.config.publicUrl}/${key}`);
     }
     if (this.config.endpoint) {
       // For S3-compatible services, build URL from the endpoint
       const endpoint = this.config.endpoint.replace(/\/$/, '');
-      return `${endpoint}/${this.config.bucket}/${key}`;
+      return Promise.resolve(`${endpoint}/${this.config.bucket}/${key}`);
     }
-    return `https://${this.config.bucket}.s3.${this.config.region}.amazonaws.com/${key}`;
+    return Promise.resolve(
+      `https://${this.config.bucket}.s3.${this.config.region}.amazonaws.com/${key}`,
+    );
   }
 
   async list(prefix?: string): Promise<StorageFile[]> {

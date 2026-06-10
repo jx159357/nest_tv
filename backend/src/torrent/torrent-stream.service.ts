@@ -76,10 +76,10 @@ export class TorrentStreamService implements OnModuleDestroy, OnModuleInit {
         resolve(info);
       });
 
-      torrent.on('error', (err: any) => {
+      torrent.on('error', (err: unknown) => {
         clearTimeout(timeout);
         torrent.destroy();
-        reject(err);
+        reject(err instanceof Error ? err : new Error(String(err)));
       });
     });
   }
@@ -143,10 +143,10 @@ export class TorrentStreamService implements OnModuleDestroy, OnModuleInit {
         resolve(torrent);
       });
 
-      torrent.on('error', (err: any) => {
+      torrent.on('error', (err: unknown) => {
         clearTimeout(timeout);
         torrent.destroy();
-        reject(err);
+        reject(err instanceof Error ? err : new Error(String(err)));
       });
     });
   }

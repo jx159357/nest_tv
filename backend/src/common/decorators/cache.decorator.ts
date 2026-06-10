@@ -26,8 +26,10 @@ export const Cacheable = (options: CacheableOptions = {}) => {
     ): Promise<unknown> {
       const cacheService = this.cacheService;
 
-      // 简化的缓存键生成
-      const cacheKey = options.key || `${this.constructor.name}.${propertyKey}`;
+      // 缓存键生成：优先 keyGenerator，其次静态 key，最后默认
+      const cacheKey = options.keyGenerator
+        ? options.keyGenerator(...args)
+        : (options.key || `${this.constructor.name}.${propertyKey}`);
 
       // 尝试从多层缓存获取
       const cached: unknown = await cacheService.multiGet<unknown>(cacheKey, options);
@@ -107,8 +109,10 @@ export const CacheRefresh = (options: CacheableOptions = {}) => {
     ): Promise<unknown> {
       const cacheService = this.cacheService;
 
-      // 简化的缓存键生成
-      const cacheKey = options.key || `${this.constructor.name}.${propertyKey}`;
+      // 缓存键生成：优先 keyGenerator，其次静态 key，最后默认
+      const cacheKey = options.keyGenerator
+        ? options.keyGenerator(...args)
+        : (options.key || `${this.constructor.name}.${propertyKey}`);
 
       // 尝试从多层缓存获取
       const cached: unknown = await cacheService.multiGet<unknown>(cacheKey, options);

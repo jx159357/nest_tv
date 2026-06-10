@@ -102,10 +102,7 @@ export class GlobalErrorHandler {
       });
     }
 
-    // 特殊错误处理（登录页面不触发自动跳转）
-    if (statusCode === 401 && !silent && !window.location.pathname.includes('/login')) {
-      this.handleUnauthorizedError();
-    }
+    // 401 由 http.ts 拦截器统一处理（含 token 刷新），此处仅展示通知
 
     return {
       message,

@@ -47,8 +47,8 @@
     <!-- 批量操作栏 -->
     <div v-if="selectedIds.size > 0" class="batch-bar">
       <span class="batch-count">已选择 {{ selectedIds.size }} 个频道</span>
-      <button class="btn-batch-delete" @click="batchDelete">批量删除</button>
-      <button class="btn-batch-cancel" @click="clearSelection">取消选择</button>
+      <button class="btn-batch-delete" type="button" @click="batchDelete">批量删除</button>
+      <button class="btn-batch-cancel" type="button" @click="clearSelection">取消选择</button>
     </div>
 
     <!-- 错误提示 -->
@@ -81,7 +81,7 @@
                 @change="toggleSelect(channel.id)"
               />
             </label>
-            <button class="channel-content" @click="selectChannel(channel.id)">
+            <button class="channel-content" type="button" @click="selectChannel(channel.id)">
               <div class="channel-info">
                 <div class="channel-name-row">
                   <img
@@ -89,7 +89,8 @@
                     :src="getLogoUrl(channel.logo)"
                     :alt="channel.name"
                     class="channel-logo"
-                    @error="($event.target as HTMLImageElement).style.display = 'none'"
+                    loading="lazy"
+                    @error="hideOnError"
                   />
                   <span class="channel-name">{{ channel.name }}</span>
                 </div>
@@ -120,11 +121,16 @@
         </div>
         <!-- 分页 -->
         <div v-if="pagination.totalPages > 1" class="pagination">
-          <button :disabled="pagination.page <= 1" @click="loadChannels(pagination.page - 1)">
+          <button
+            type="button"
+            :disabled="pagination.page <= 1"
+            @click="loadChannels(pagination.page - 1)"
+          >
             上一页
           </button>
           <span>{{ pagination.page }} / {{ pagination.totalPages }}</span>
           <button
+            type="button"
             :disabled="pagination.page >= pagination.totalPages"
             @click="loadChannels(pagination.page + 1)"
           >
@@ -175,6 +181,7 @@
             v-for="ch in stats?.popularChannels || []"
             :key="`pop-${ch.id}`"
             class="mini-item"
+            type="button"
             @click="selectChannel(ch.id)"
           >
             <span>{{ ch.name }}</span>
@@ -188,7 +195,7 @@
     <div v-if="showPlayer && selectedChannel" class="player-section">
       <div class="player-header">
         <span>正在播放：{{ selectedChannel.name }}</span>
-        <button class="btn-close" @click="showPlayer = false">关闭</button>
+        <button class="btn-close" type="button" @click="showPlayer = false">关闭</button>
       </div>
       <div class="player-wrapper">
         <ArtPlayerWrapper
@@ -219,16 +226,19 @@
           <EpgTimeline :channel-id="selectedChannel.id" class="mt-4" />
         </div>
         <div class="detail-actions">
-          <button class="btn-play" @click="showPlayer = true">播放频道</button>
+          <button class="btn-play" type="button" @click="showPlayer = true">播放频道</button>
           <button
             class="btn-validate"
+            type="button"
             :disabled="validatingChannel"
             @click="validateSelectedChannel"
           >
             {{ validatingChannel ? '校验中...' : '校验' }}
           </button>
-          <button class="btn-open" @click="openChannelUrl(selectedChannel.url)">新窗口打开</button>
-          <button class="btn-delete" @click="deleteSingleChannel(selectedChannel.id)">
+          <button class="btn-open" type="button" @click="openChannelUrl(selectedChannel.url)">
+            新窗口打开
+          </button>
+          <button class="btn-delete" type="button" @click="deleteSingleChannel(selectedChannel.id)">
             删除此频道
           </button>
         </div>
@@ -243,6 +253,11 @@
   import ArtPlayerWrapper from '@/components/ArtPlayerWrapper.vue';
   import EpgTimeline from '@/components/EpgTimeline.vue';
   import { log } from '@/utils/logger';
+
+  const hideOnError = (e: Event) => {
+    const el = e.target as HTMLElement | null;
+    if (el) el.style.display = 'none';
+  };
 
   const channels = ref<IPTVChannel[]>([]);
   const groups = ref<string[]>([]);
@@ -510,15 +525,16 @@
 
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 12px;
     margin-bottom: 18px;
   }
   .stat-card {
-    background: rgba(255, 255, 255, 0.045);
+    background: var(--surface-card);
     border-radius: 8px;
     padding: 14px 16px;
     border: 1px solid var(--border-primary);
+    box-shadow: var(--shadow-sm);
   }
   .stat-label {
     font-size: 13px;
@@ -550,7 +566,8 @@
     padding: 12px;
     border: 1px solid var(--border-primary);
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.035);
+    background: var(--surface-card);
+    box-shadow: var(--shadow-sm);
   }
   .filter-form {
     display: grid;
@@ -583,7 +600,7 @@
   }
   .btn-filter,
   .btn-import {
-    min-height: 38px;
+    min-height: var(--control-height-md);
     padding: 0 18px;
     background: var(--color-brand-primary);
     border: none;
@@ -677,7 +694,8 @@
   .detail-section {
     border: 1px solid var(--border-primary);
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.035);
+    background: var(--surface-card);
+    box-shadow: var(--shadow-sm);
   }
   .channel-list-wrapper {
     min-width: 0;
@@ -722,13 +740,13 @@
     gap: 8px;
     min-width: 0;
     padding: 10px;
-    background: rgba(255, 255, 255, 0.035);
+    background: var(--surface-control);
     border: 1px solid var(--border-primary);
     border-radius: 8px;
     transition: all 0.2s;
   }
   .channel-item:hover {
-    background: var(--bg-tertiary);
+    background: var(--surface-hover);
   }
   .channel-item--active {
     border-color: var(--border-focus);
@@ -758,6 +776,24 @@
     padding: 0;
     min-width: 0;
     gap: 12px;
+  }
+
+  .filter-input:focus,
+  .filter-select:focus,
+  .channel-content:focus-visible,
+  .mini-item:focus-visible,
+  .pagination button:focus-visible,
+  .btn-filter:focus-visible,
+  .btn-import:focus-visible,
+  .btn-batch-delete:focus-visible,
+  .btn-batch-cancel:focus-visible,
+  .btn-play:focus-visible,
+  .btn-validate:focus-visible,
+  .btn-open:focus-visible,
+  .btn-delete:focus-visible,
+  .btn-close:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
   }
   .channel-info {
     display: flex;
@@ -901,7 +937,7 @@
     content: '';
     flex: 1;
     height: 1px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--border-primary);
   }
   .import-json-section {
     display: flex;
@@ -913,7 +949,7 @@
     padding: 10px;
     background: var(--bg-card);
     border: 1px solid var(--border-secondary);
-    border-radius: 10px;
+    border-radius: 8px;
     color: var(--text-primary);
     font-size: 12px;
     font-family: monospace;
@@ -946,7 +982,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 10px;
-    background: var(--bg-tertiary);
+    background: var(--surface-control);
     border-radius: 8px;
     margin-bottom: 6px;
     font-size: 13px;
@@ -958,7 +994,7 @@
     text-align: left;
   }
   .mini-item:hover {
-    background: var(--border-primary);
+    background: var(--surface-hover);
   }
   .mini-meta {
     color: var(--text-tertiary);
@@ -968,19 +1004,30 @@
   .player-section {
     margin-bottom: 24px;
     background: var(--bg-player);
-    border-radius: 14px;
+    border-radius: 8px;
     overflow: hidden;
   }
   .player-wrapper {
     position: relative;
     aspect-ratio: 16 / 9;
   }
+  .player-wrapper :deep(.art-player-container) {
+    height: 100%;
+    min-height: 0;
+  }
   .player-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
     padding: 12px 16px;
     font-size: 14px;
+  }
+  .player-header span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .btn-close {
     background: none;
@@ -1001,9 +1048,11 @@
   .detail-content {
     display: flex;
     gap: 24px;
+    min-width: 0;
   }
   .detail-main {
     flex: 1;
+    min-width: 0;
   }
   .detail-name {
     font-size: 20px;
@@ -1012,6 +1061,7 @@
   }
   .detail-tags {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 16px;
   }
@@ -1019,7 +1069,7 @@
     padding: 4px 12px;
     background: rgba(229, 9, 20, 0.1);
     color: var(--text-link-hover);
-    border-radius: 20px;
+    border-radius: var(--badge-radius);
     font-size: 12px;
   }
   .detail-url,
@@ -1042,8 +1092,9 @@
   .btn-play,
   .btn-validate,
   .btn-open {
-    padding: 12px 20px;
-    border-radius: 10px;
+    min-height: var(--touch-target);
+    padding: 0 20px;
+    border-radius: 8px;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
@@ -1077,10 +1128,11 @@
     background: var(--bg-tertiary);
   }
   .btn-delete {
-    padding: 12px 20px;
+    min-height: var(--touch-target);
+    padding: 0 20px;
     background: rgba(239, 68, 68, 0.15);
     border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: 10px;
+    border-radius: 8px;
     color: var(--color-error-light);
     font-size: 14px;
     cursor: pointer;
@@ -1134,7 +1186,7 @@
     }
 
     .stat-card {
-      padding: 10px;
+      padding: 10px 8px;
     }
 
     .stat-label,
@@ -1146,12 +1198,39 @@
       font-size: 18px;
     }
 
-    .filter-form {
-      grid-template-columns: 1fr;
+    .stat-value.text-sm {
+      font-size: 13px;
     }
 
+    .filter-section {
+      gap: 10px;
+      padding: 10px;
+    }
+
+    .filter-form {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .filter-form .filter-input:first-child,
+    .filter-select,
     .btn-filter {
-      grid-column: auto;
+      grid-column: 1 / -1;
+    }
+
+    .filter-input,
+    .filter-select,
+    .btn-filter,
+    .btn-import {
+      min-height: var(--touch-target);
+    }
+
+    .filter-section > .checkbox-label {
+      min-height: var(--touch-target);
+    }
+
+    .content-grid {
+      gap: 12px;
     }
 
     .channel-list-wrapper,
@@ -1167,6 +1246,8 @@
 
     .channel-item {
       align-items: flex-start;
+      gap: 10px;
+      padding: 10px 8px;
     }
 
     .channel-content {
@@ -1177,6 +1258,16 @@
 
     .channel-tags {
       flex-wrap: wrap;
+    }
+
+    .batch-bar {
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .btn-batch-delete,
+    .btn-batch-cancel {
+      min-height: 38px;
     }
 
     .detail-actions {

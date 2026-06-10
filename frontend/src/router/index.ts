@@ -91,6 +91,7 @@ const routes: RouteRecordRaw[] = [
           requiresAuth: false,
           preload: true,
           keepAlive: true,
+          immersive: true,
         },
       },
       {
@@ -437,7 +438,7 @@ const router = createRouter({
 });
 
 // 路由守卫
-router.beforeEach(to => {
+router.beforeEach(async to => {
   const authStore = useAuthStore();
   const requiresAuth = to.matched.some(record => record.meta?.requiresAuth);
   const requiresAdmin = to.matched.some(record => record.meta?.requiresAdmin);
@@ -450,6 +451,10 @@ router.beforeEach(to => {
   // 公开路由无需登录
   if (PUBLIC_ROUTE_NAMES.includes(to.name as string)) {
     return true;
+  }
+
+  if ((requiresAuth || requiresAdmin) && authStore.token && !authStore.user) {
+    await authStore.fetchUserProfile();
   }
 
   // 需要认证的路由

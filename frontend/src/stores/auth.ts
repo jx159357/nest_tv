@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { authApi } from '@/api/auth';
+import { api } from '@/api/http';
 import type { User } from '@/types/user';
 import { log } from '@/utils/logger';
 
@@ -10,6 +11,17 @@ export const useAuthStore = defineStore('auth', () => {
   const refreshTokenValue = ref(localStorage.getItem('refreshToken') || '');
   const isLoading = ref(false);
   const tokenRefreshTimer = ref<number | null>(null);
+
+  const setAuthHeader = (nextToken: string) => {
+    if (nextToken) {
+      api.defaults.headers.common.Authorization = `Bearer ${nextToken}`;
+      return;
+    }
+
+    delete api.defaults.headers.common.Authorization;
+  };
+
+  setAuthHeader(token.value);
 
   const isAuthenticated = computed(() => !!token.value);
   const isAdmin = computed(() => {
@@ -29,6 +41,7 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = userData;
       localStorage.setItem('token', accessToken ?? '');
       localStorage.setItem('refreshToken', refreshToken ?? '');
+      setAuthHeader(token.value);
 
       // 启动token刷新定时器
       startTokenRefreshTimer();
@@ -73,6 +86,7 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null;
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
+    setAuthHeader('');
     stopTokenRefreshTimer();
   };
 
@@ -106,6 +120,7 @@ export const useAuthStore = defineStore('auth', () => {
         refreshTokenValue.value = response.refreshToken ?? '';
         localStorage.setItem('token', response.accessToken ?? '');
         localStorage.setItem('refreshToken', response.refreshToken ?? '');
+        setAuthHeader(token.value);
         return true;
       }
       return false;
@@ -131,6 +146,14 @@ export const useAuthStore = defineStore('auth', () => {
       tokenRefreshTimer.value = null;
     }
   };
+
+  const handleStorageEvent = (e: StorageEvent) => {
+    if (e.key === 'token' && !e.newValue && token.value) {
+      logout();
+    }
+  };
+
+  window.addEventListener('storage', handleStorageEvent);
 
   // 初始化时检查token
   const initAuth = async () => {

@@ -386,6 +386,7 @@
   // 弹幕列表管理
   const danmakuList = ref<DanmakuMessage[]>([]);
   const scrollPositions = new Map<string, number>();
+  const seenDanmakuIds = new Set<string>();
   const topLaneCounter = ref(0);
   const bottomLaneCounter = ref(0);
   const MAX_TOP_LANES = 8;
@@ -424,6 +425,8 @@
     const filtered = getFilteredDanmaku();
     return filtered.slice(-props.maxDanmakuCount);
   });
+
+  const filteredCount = computed(() => danmakuList.value.length - getFilteredDanmaku().length);
 
   // 默认设置
   const initialDefaultSettings: DanmakuSettings = {
@@ -464,12 +467,6 @@
   // 自定义过滤关键词
   const newFilterKeyword = ref('');
   const customFilterKeywords = ref<string[]>([]);
-  const filteredCount = computed(() => {
-    const all = getFilteredDanmaku();
-    const visible = visibleDanmaku.value;
-    return all.length - visible.length;
-  });
-
   const getSessionKey = () => `danmaku_filters_${props.videoId}`;
 
   const resetSessionState = () => {
@@ -615,7 +612,7 @@
   // 事件监听设置
   const handleFullscreenChange = () => {
     if (document.fullscreenElement) {
-      controlsVisible.value = true;
+      controlsVisible.value = false;
     }
   };
 
@@ -691,6 +688,11 @@
   // 弹幕管理
   const addDanmaku = (danmaku: DanmakuMessage) => {
     const id = danmaku.id || `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+    if (seenDanmakuIds.has(id)) {
+      return;
+    }
+
+    seenDanmakuIds.add(id);
     if (danmaku.type === 'scroll') {
       scrollPositions.set(id, Math.random() * 70 + 5);
     } else if (danmaku.type === 'top') {
@@ -708,7 +710,11 @@
 
     // 限制弹幕总数
     if (danmakuList.value.length > props.maxDanmakuCount * 2) {
-      danmakuList.value = danmakuList.value.slice(-props.maxDanmakuCount);
+      const retained = danmakuList.value.slice(-props.maxDanmakuCount);
+      const retainedIds = new Set(retained.map(item => item.id).filter(Boolean) as string[]);
+      seenDanmakuIds.clear();
+      retainedIds.forEach(itemId => seenDanmakuIds.add(itemId));
+      danmakuList.value = retained;
     }
   };
 
@@ -728,7 +734,10 @@
     };
 
     if (isConnected.value) {
-      wsSendDanmaku(basePayload);
+      const sentMessage = wsSendDanmaku(basePayload);
+      if (sentMessage) {
+        addDanmaku(sentMessage);
+      }
       inputText.value = '';
       sendFeedback.value = '弹幕已发送';
       window.setTimeout(() => {
@@ -798,6 +807,11 @@
   };
 
   const loadFilterRules = async () => {
+    if (!authStore.isAdmin) {
+      backendFilterRules.value = null;
+      return;
+    }
+
     try {
       backendFilterRules.value = await danmakuApi.getFilterRules();
     } catch {
@@ -860,14 +874,16 @@
       baseStyle.animation = `danmaku-scroll-lr ${duration}s linear forwards`;
     } else if (danmaku.type === 'top') {
       baseStyle.top = `${lanePos ?? 2}%`;
-      baseStyle.left = '100%';
+      baseStyle.left = '50%';
+      baseStyle.transform = 'translateX(-50%)';
       const duration = Math.max(5, (11 - settings.speed) * 1.2);
-      baseStyle.animation = `danmaku-scroll-lr ${duration}s linear forwards`;
+      baseStyle.animation = `danmaku-fade-in-out ${duration}s ease forwards`;
     } else if (danmaku.type === 'bottom') {
       baseStyle.bottom = `${lanePos ?? 2}%`;
-      baseStyle.left = '100%';
+      baseStyle.left = '50%';
+      baseStyle.transform = 'translateX(-50%)';
       const duration = Math.max(5, (11 - settings.speed) * 1.2);
-      baseStyle.animation = `danmaku-scroll-lr ${duration}s linear forwards`;
+      baseStyle.animation = `danmaku-fade-in-out ${duration}s ease forwards`;
     }
 
     return baseStyle;
@@ -962,6 +978,9 @@
   watch(
     () => props.videoId,
     () => {
+      danmakuList.value = [];
+      scrollPositions.clear();
+      seenDanmakuIds.clear();
       loadSessionFilters();
       void loadHttpRoomInfo();
       void loadFilterRules();
@@ -973,6 +992,11 @@
 
 <style scoped>
   .danmaku-player {
+    --danmaku-edge: clamp(10px, 2.4vw, 18px);
+    --danmaku-controls-bottom: clamp(12px, 5%, 34px);
+    --danmaku-controls-max: 760px;
+    --danmaku-float-top: var(--danmaku-edge);
+    --danmaku-float-left: var(--danmaku-edge);
     position: relative;
     width: 100%;
     height: 100%;
@@ -997,11 +1021,20 @@
 
   .danmaku-item {
     position: absolute;
+    max-width: min(80%, 760px);
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
     user-select: none;
     pointer-events: none;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-    will-change: left, transform, opacity;
+    will-change: transform, opacity;
+  }
+
+  .danmaku-scroll {
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
   }
 
   .danmaku-highlighted {
@@ -1011,26 +1044,36 @@
 
   .danmaku-controls {
     position: absolute;
-    bottom: 60px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
+    right: var(--danmaku-edge);
+    bottom: var(--danmaku-controls-bottom);
+    left: var(--danmaku-edge);
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
     align-items: center;
-    gap: 6px;
+    gap: 6px 8px;
+    width: auto;
+    max-width: min(
+      var(--danmaku-controls-max),
+      calc(100% - var(--danmaku-edge) - var(--danmaku-edge))
+    );
+    max-height: calc(100% - var(--danmaku-edge) - var(--danmaku-controls-bottom));
+    overflow: visible;
+    margin-inline: auto;
     background: rgba(0, 0, 0, 0.75);
-    padding: 6px 10px;
+    padding: 8px 10px;
     border-radius: 8px;
     z-index: 9999;
-    pointer-events: all;
+    pointer-events: none;
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.08);
     opacity: 0;
     transition: opacity 0.3s ease;
-    white-space: nowrap;
+    white-space: normal;
   }
 
   .danmaku-controls.controls-visible {
     opacity: 1;
+    pointer-events: all;
   }
 
   .danmaku-toggle-btn {
@@ -1057,9 +1100,11 @@
   }
 
   .danmaku-input-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) auto;
     align-items: center;
     gap: 6px;
+    min-width: 0;
   }
 
   .danmaku-input {
@@ -1069,7 +1114,8 @@
     padding: 6px 10px;
     border-radius: 4px;
     outline: none;
-    width: 180px;
+    width: 100%;
+    min-width: 0;
     font-size: 13px;
   }
 
@@ -1087,6 +1133,9 @@
     display: flex;
     align-items: center;
     gap: 4px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    min-width: 0;
   }
 
   .color-input {
@@ -1097,6 +1146,7 @@
     cursor: pointer;
     background: none;
     padding: 0;
+    flex-shrink: 0;
   }
 
   .danmaku-type-select {
@@ -1108,6 +1158,7 @@
     outline: none;
     font-size: 12px;
     cursor: pointer;
+    max-width: 96px;
   }
 
   .danmaku-type-select option {
@@ -1162,8 +1213,8 @@
 
   .danmaku-float-toggle {
     position: absolute;
-    bottom: 60px;
-    right: 16px;
+    top: var(--danmaku-float-top);
+    left: var(--danmaku-float-left);
     display: flex;
     align-items: center;
     gap: 4px;
@@ -1172,6 +1223,7 @@
     color: rgba(255, 255, 255, 0.7);
     padding: 5px 10px;
     border-radius: 4px;
+    min-height: 32px;
     cursor: pointer;
     z-index: 9999;
     transition: all 0.2s;
@@ -1206,14 +1258,47 @@
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 12px;
     padding: 16px;
-    min-width: 300px;
-    max-width: 400px;
-    max-height: 50vh;
+    width: min(400px, calc(100% - var(--danmaku-edge) - var(--danmaku-edge)));
+    min-width: 0;
+    max-height: min(68vh, calc(100% - var(--danmaku-edge) - var(--danmaku-edge)));
     overflow-y: auto;
     z-index: 10000;
     backdrop-filter: blur(12px);
     color: var(--text-inverse);
     pointer-events: all;
+  }
+
+  .danmaku-suggestions {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 6px;
+    max-width: 100%;
+    overflow-x: auto;
+    padding-top: 2px;
+    scrollbar-width: thin;
+  }
+
+  .danmaku-suggestion-chip,
+  .danmaku-suggestion-refresh {
+    flex: 0 0 auto;
+    max-width: 180px;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .danmaku-suggestion-chip:hover,
+  .danmaku-suggestion-refresh:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--text-inverse);
   }
 
   .settings-header {
@@ -1380,7 +1465,7 @@
 
   .connection-toast {
     position: absolute;
-    top: 12px;
+    top: var(--danmaku-edge);
     left: 50%;
     transform: translateX(-50%);
     background: rgba(0, 0, 0, 0.8);
@@ -1461,8 +1546,8 @@
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 12px;
     padding: 16px;
-    min-width: 260px;
-    max-width: 320px;
+    width: min(320px, calc(100% - var(--danmaku-edge) - var(--danmaku-edge)));
+    min-width: 0;
     color: var(--text-inverse);
     backdrop-filter: blur(12px);
   }
@@ -1509,20 +1594,57 @@
   }
 
   @media (max-width: 640px) {
+    .danmaku-player {
+      --danmaku-edge: 8px;
+      --danmaku-controls-bottom: 8px;
+    }
+
     .danmaku-controls {
-      bottom: 40px;
       padding: 5px 8px;
+      max-height: calc(100% - var(--danmaku-edge) - var(--danmaku-controls-bottom));
+      overflow-y: auto;
+    }
+
+    .danmaku-input-row {
+      grid-column: 1 / -1;
+      grid-template-columns: 1fr;
     }
 
     .danmaku-input {
-      width: 120px;
       font-size: 12px;
       padding: 5px 8px;
     }
 
+    .danmaku-extra {
+      justify-content: flex-start;
+    }
+
+    .danmaku-type-select {
+      max-width: none;
+    }
+
+    .danmaku-send-btn {
+      flex: 1 1 auto;
+      min-width: 64px;
+    }
+
     .danmaku-settings-panel {
-      min-width: 280px;
-      max-width: 90vw;
+      width: calc(100% - var(--danmaku-edge) - var(--danmaku-edge));
+      max-height: calc(100% - var(--danmaku-edge) - var(--danmaku-edge));
+    }
+  }
+
+  @media (max-width: 420px) {
+    .danmaku-controls {
+      grid-template-columns: auto auto;
+    }
+
+    .danmaku-float-toggle {
+      padding: 6px 8px;
+    }
+
+    .float-label {
+      display: none;
     }
   }
 

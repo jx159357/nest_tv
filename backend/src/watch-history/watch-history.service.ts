@@ -223,19 +223,22 @@ export class WatchHistoryService {
     watching: number;
     totalWatchTime: number;
   }> {
-    const histories = await this.watchHistoryRepository.find({
-      where: { userId },
-    });
+    const stats = await this.watchHistoryRepository
+      .createQueryBuilder('wh')
+      .select('COUNT(*)', 'totalWatched')
+      .addSelect('SUM(CASE WHEN wh.isCompleted = true THEN 1 ELSE 0 END)', 'completed')
+      .addSelect('SUM(wh.currentTime)', 'totalWatchTime')
+      .where('wh.userId = :userId', { userId })
+      .getRawOne<{ totalWatched: string; completed: string; totalWatchTime: string }>();
 
-    const totalWatched = histories.length;
-    const completed = histories.filter(h => h.isCompleted).length;
-    const watching = totalWatched - completed;
-    const totalWatchTime = histories.reduce((sum, h) => sum + (h.currentTime || 0), 0);
+    const totalWatched = parseInt(stats?.totalWatched ?? '0', 10) || 0;
+    const completed = parseInt(stats?.completed ?? '0', 10) || 0;
+    const totalWatchTime = parseFloat(stats?.totalWatchTime ?? '0') || 0;
 
     return {
       totalWatched,
       completed,
-      watching,
+      watching: totalWatched - completed,
       totalWatchTime,
     };
   }

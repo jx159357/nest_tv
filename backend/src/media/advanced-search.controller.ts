@@ -11,7 +11,6 @@ import {
   ValidationPipe,
   HttpStatus,
   HttpException,
-  Res,
   Sse,
 } from '@nestjs/common';
 import {
@@ -22,8 +21,7 @@ import {
   ApiQuery,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import type { Response } from 'express';
-import { Observable, Subscriber } from 'rxjs';
+import { Observable } from 'rxjs';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { GetCurrentUserId } from '../decorators/current-user.decorator';

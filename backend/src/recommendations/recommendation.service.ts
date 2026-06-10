@@ -1,5 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MediaResource } from '../entities/media-resource.entity';
@@ -11,6 +10,7 @@ import {
   RecommendationFreshnessBias,
   type UserRecommendationSettings,
 } from '../users/dtos/user-recommendation-settings.interface';
+import { CacheService } from '../common/cache/cache.service';
 
 interface WeightedPreference {
   key: string;
@@ -50,7 +50,7 @@ export class RecommendationService {
     private readonly searchHistoryRepository: Repository<SearchHistory>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private readonly cacheService: CacheService,
   ) {}
 
   async getPersonalizedRecommendations(
@@ -68,9 +68,8 @@ export class RecommendationService {
     const cacheKey = `personalized_recommendation_items_${userId}_${limit}`;
 
     try {
-      const cached = await this.cacheManager.get<PersonalizedRecommendationItem[]>(cacheKey);
+      const cached = await this.cacheService.multiGet<PersonalizedRecommendationItem[]>(cacheKey);
       if (cached) {
-        this.logger.log(`Cache hit: ${cacheKey}`);
         return cached;
       }
 
@@ -102,7 +101,7 @@ export class RecommendationService {
           reasons: ['你最近观看数据较少，先为你展示站内热门内容'],
         }));
 
-        await this.cacheManager.set(cacheKey, items, 300000);
+        await this.cacheService.multiSet(cacheKey, items, { ttl: 300 });
         return items;
       }
 
@@ -118,15 +117,31 @@ export class RecommendationService {
       const searchKeywordWeights = this.toWeightMap(profile.recentSearchKeywords);
       const excludedGenres = new Set(user?.recommendationSettings?.excludedGenres || []);
 
-      const candidates = await this.mediaResourceRepository.find({
-        where: { isActive: true },
-        order: {
-          rating: 'DESC',
-          viewCount: 'DESC',
-          createdAt: 'DESC',
-        },
-        take: 160,
-      });
+      const candidates = await this.mediaResourceRepository
+        .createQueryBuilder('m')
+        .select([
+          'm.id',
+          'm.title',
+          'm.type',
+          'm.genres',
+          'm.director',
+          'm.actors',
+          'm.rating',
+          'm.viewCount',
+          'm.description',
+          'm.poster',
+          'm.backdrop',
+          'm.releaseDate',
+          'm.quality',
+          'm.isActive',
+          'm.createdAt',
+        ])
+        .where('m.isActive = :active', { active: true })
+        .orderBy('m.rating', 'DESC')
+        .addOrderBy('m.viewCount', 'DESC')
+        .addOrderBy('m.createdAt', 'DESC')
+        .take(160)
+        .getMany();
 
       const items = candidates
         .filter(candidate => !watchedIds.has(candidate.id))
@@ -162,8 +177,7 @@ export class RecommendationService {
         );
 
       const selectedItems = this.applyDiversityLimit(items, limit);
-      await this.cacheManager.set(cacheKey, selectedItems, 300000);
-      this.logger.log(`Cache set: ${cacheKey}`);
+      await this.cacheService.multiSet(cacheKey, selectedItems, { ttl: 300 });
 
       return selectedItems;
     } catch (error: unknown) {
@@ -183,7 +197,7 @@ export class RecommendationService {
     const cacheKey = `recommendation_profile_${userId}`;
 
     try {
-      const cached = await this.cacheManager.get<RecommendationProfile>(cacheKey);
+      const cached = await this.cacheService.multiGet<RecommendationProfile>(cacheKey);
       if (cached) {
         return cached;
       }
@@ -208,7 +222,7 @@ export class RecommendationService {
         searchHistories,
         user?.recommendationSettings,
       );
-      await this.cacheManager.set(cacheKey, profile, 300000);
+      await this.cacheService.multiSet(cacheKey, profile, { ttl: 300 });
       return profile;
     } catch (error: unknown) {
       this.logger.error(
@@ -232,9 +246,8 @@ export class RecommendationService {
     const cacheKey = `trending_recommendations_${limit}`;
 
     try {
-      const cachedRecommendations = await this.cacheManager.get<MediaResource[]>(cacheKey);
+      const cachedRecommendations = await this.cacheService.multiGet<MediaResource[]>(cacheKey);
       if (cachedRecommendations) {
-        this.logger.log(`Cache hit: ${cacheKey}`);
         return cachedRecommendations;
       }
 
@@ -248,8 +261,7 @@ export class RecommendationService {
         take: limit,
       });
 
-      await this.cacheManager.set(cacheKey, trendingMedia, 300000);
-      this.logger.log(`Cache set: ${cacheKey}`);
+      await this.cacheService.multiSet(cacheKey, trendingMedia, { ttl: 300 });
 
       return trendingMedia;
     } catch (error: unknown) {
@@ -264,9 +276,8 @@ export class RecommendationService {
     const cacheKey = `latest_recommendations_${limit}`;
 
     try {
-      const cachedRecommendations = await this.cacheManager.get<MediaResource[]>(cacheKey);
+      const cachedRecommendations = await this.cacheService.multiGet<MediaResource[]>(cacheKey);
       if (cachedRecommendations) {
-        this.logger.log(`Cache hit: ${cacheKey}`);
         return cachedRecommendations;
       }
 
@@ -276,8 +287,7 @@ export class RecommendationService {
         take: limit,
       });
 
-      await this.cacheManager.set(cacheKey, latestMedia, 180000);
-      this.logger.log(`Cache set: ${cacheKey}`);
+      await this.cacheService.multiSet(cacheKey, latestMedia, { ttl: 180 });
 
       return latestMedia;
     } catch (error: unknown) {
@@ -292,9 +302,8 @@ export class RecommendationService {
     const cacheKey = `top_rated_recommendations_${limit}`;
 
     try {
-      const cachedRecommendations = await this.cacheManager.get<MediaResource[]>(cacheKey);
+      const cachedRecommendations = await this.cacheService.multiGet<MediaResource[]>(cacheKey);
       if (cachedRecommendations) {
-        this.logger.log(`Cache hit: ${cacheKey}`);
         return cachedRecommendations;
       }
 
@@ -308,8 +317,7 @@ export class RecommendationService {
         .take(limit)
         .getMany();
 
-      await this.cacheManager.set(cacheKey, topRatedMedia, 600000);
-      this.logger.log(`Cache set: ${cacheKey}`);
+      await this.cacheService.multiSet(cacheKey, topRatedMedia, { ttl: 600 });
 
       return topRatedMedia;
     } catch (error: unknown) {
@@ -322,7 +330,7 @@ export class RecommendationService {
 
   async clearRecommendationsCache(): Promise<void> {
     try {
-      await this.cacheManager.clear();
+      await this.cacheService.clearPattern('recommendation*');
       this.logger.log('Recommendation cache cleared');
     } catch (error: unknown) {
       this.logger.error(

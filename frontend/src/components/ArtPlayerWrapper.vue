@@ -9,8 +9,8 @@
   import { iptvApi } from '@/api/iptv';
   import { log } from '@/utils/logger';
 
-  type ArtplayerConstructor = typeof import('artplayer')['default'];
-  type HlsConstructor = typeof import('hls.js')['default'];
+  type ArtplayerConstructor = (typeof import('artplayer'))['default'];
+  type HlsConstructor = (typeof import('hls.js'))['default'];
 
   let artplayerLoader: Promise<ArtplayerConstructor> | null = null;
   let hlsLoader: Promise<HlsConstructor> | null = null;
@@ -21,7 +21,9 @@
   };
 
   const loadHls = (): Promise<HlsConstructor> => {
-    hlsLoader ??= import('hls.js/light').then(module => module.default as unknown as HlsConstructor);
+    hlsLoader ??= import('hls.js/light').then(
+      module => module.default as unknown as HlsConstructor,
+    );
     return hlsLoader;
   };
 
@@ -54,6 +56,12 @@
   let art: Artplayer | null = null;
   let playerLoadId = 0;
   let hlsLoadId = 0;
+  let hlsStartupTimer: number | null = null;
+  let hlsLoadingGraceTimer: number | null = null;
+  let playbackWatchdogTimer: number | null = null;
+  let cleanupHlsVideoListeners: (() => void) | null = null;
+  const HAVE_METADATA = 1;
+  const HAVE_CURRENT_DATA = 2;
 
   const isHlsUrl = (url: string): boolean => {
     return url.includes('.m3u8') || url.includes('m3u8');
@@ -82,7 +90,37 @@
 
   let hlsInstance: Hls | null = null;
 
+  const clearHlsStartupTimer = () => {
+    if (hlsStartupTimer !== null) {
+      window.clearTimeout(hlsStartupTimer);
+      hlsStartupTimer = null;
+    }
+  };
+
+  const clearHlsLoadingGraceTimer = () => {
+    if (hlsLoadingGraceTimer !== null) {
+      window.clearTimeout(hlsLoadingGraceTimer);
+      hlsLoadingGraceTimer = null;
+    }
+  };
+
+  const clearPlaybackWatchdog = () => {
+    if (playbackWatchdogTimer !== null) {
+      window.clearTimeout(playbackWatchdogTimer);
+      playbackWatchdogTimer = null;
+    }
+  };
+
+  const hidePlayerLoading = (player: Artplayer) => {
+    player.loading.show = false;
+  };
+
   const destroyHls = () => {
+    clearHlsStartupTimer();
+    clearHlsLoadingGraceTimer();
+    cleanupHlsVideoListeners?.();
+    cleanupHlsVideoListeners = null;
+
     if (hlsInstance) {
       hlsInstance.destroy();
       hlsInstance = null;
@@ -113,29 +151,21 @@
     }
 
     if (!Hls.isSupported()) {
-      log.error('ArtPlayer', 'hls.js not supported in this browser');
+      if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = url;
+        video.load();
+        if (props.autoplay) {
+          player.play().catch(() => {});
+        }
+        return;
+      }
+
+      log.error('ArtPlayer', 'HLS is not supported in this browser');
       emit('error', 'HLS is not supported in this browser');
       return;
     }
 
     log.info('ArtPlayer', 'Creating hls.js instance for', url);
-    hlsInstance = new Hls({
-      maxBufferLength: 30,
-      maxMaxBufferLength: 600,
-      startFragPrefetch: true,
-      enableWorker: true,
-    });
-
-    hlsInstance.loadSource(url);
-    hlsInstance.attachMedia(video);
-
-    hlsInstance.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
-      log.info('ArtPlayer', 'MANIFEST_PARSED', { levels: data.levels?.length });
-      if (props.autoplay) {
-        player.play().catch(() => {});
-      }
-    });
-
     let networkErrorRetries = 0;
     let mediaErrorRetries = 0;
     let fatalErrorEmitted = false;
@@ -143,8 +173,67 @@
     const emitFatalError = (message: string) => {
       if (fatalErrorEmitted) return;
       fatalErrorEmitted = true;
+      clearHlsStartupTimer();
       emit('error', message);
     };
+
+    const markMediaReady = () => {
+      if (currentLoadId !== hlsLoadId || art !== player) return;
+      clearHlsStartupTimer();
+      hidePlayerLoading(player);
+    };
+
+    video.addEventListener('loadedmetadata', markMediaReady);
+    video.addEventListener('loadeddata', markMediaReady);
+    video.addEventListener('canplay', markMediaReady);
+    cleanupHlsVideoListeners = () => {
+      video.removeEventListener('loadedmetadata', markMediaReady);
+      video.removeEventListener('loadeddata', markMediaReady);
+      video.removeEventListener('canplay', markMediaReady);
+    };
+
+    hlsStartupTimer = window.setTimeout(() => {
+      if (currentLoadId !== hlsLoadId || art !== player) return;
+      if (!props.autoplay && video.paused) {
+        hidePlayerLoading(player);
+        return;
+      }
+      if (video.readyState < HAVE_METADATA) {
+        emitFatalError('HLS load timeout');
+      }
+    }, 15000);
+
+    hlsLoadingGraceTimer = window.setTimeout(() => {
+      if (currentLoadId !== hlsLoadId || art !== player || props.autoplay) return;
+      if (video.paused && video.readyState < HAVE_METADATA) {
+        hidePlayerLoading(player);
+      }
+    }, 2500);
+
+    hlsInstance = new Hls({
+      autoStartLoad: true,
+      maxBufferLength: 30,
+      maxMaxBufferLength: 600,
+      startFragPrefetch: true,
+      enableWorker: true,
+      manifestLoadingTimeOut: 15000,
+      levelLoadingTimeOut: 15000,
+      fragLoadingTimeOut: 20000,
+    });
+
+    hlsInstance.on(Hls.Events.MEDIA_ATTACHED, () => {
+      if (currentLoadId !== hlsLoadId || art !== player) return;
+      hlsInstance?.loadSource(url);
+      hlsInstance?.startLoad(-1);
+    });
+
+    hlsInstance.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
+      log.info('ArtPlayer', 'MANIFEST_PARSED', { levels: data.levels?.length });
+      hidePlayerLoading(player);
+      if (props.autoplay) {
+        player.play().catch(() => {});
+      }
+    });
 
     const getResponseCode = (data: unknown): number | null => {
       const response = (data as { response?: { code?: number; status?: number } })?.response;
@@ -211,10 +300,30 @@
       }
     });
 
+    hlsInstance.attachMedia(video);
+
     player.on('destroy', () => {
       hlsLoadId++;
       destroyHls();
     });
+  };
+
+  const startPlaybackWatchdog = (player: Artplayer) => {
+    clearPlaybackWatchdog();
+    const video = player.video as HTMLVideoElement | null;
+    const srcAtPlay = props.src;
+
+    if (!video || !isHlsUrl(srcAtPlay) || video.readyState >= HAVE_CURRENT_DATA) {
+      return;
+    }
+
+    hlsInstance?.startLoad(-1);
+    playbackWatchdogTimer = window.setTimeout(() => {
+      if (art !== player || props.src !== srcAtPlay || !video || video.paused) return;
+      if (video.readyState < HAVE_CURRENT_DATA) {
+        emit('error', 'Video playback timeout');
+      }
+    }, 12000);
   };
 
   const initPlayer = async (): Promise<void> => {
@@ -240,7 +349,8 @@
 
     const player = new Artplayer({
       container: artRef.value!,
-      url: isHls ? '' : playableUrl,
+      url: playableUrl,
+      type: isHls ? 'm3u8' : undefined,
       poster: props.poster,
       autoplay: props.autoplay && !isHls,
       autoSize: false,
@@ -261,6 +371,13 @@
       fullscreenWeb: false,
       subtitleOffset: false,
       miniProgressBar: true,
+      customType: isHls
+        ? {
+            m3u8(video: HTMLVideoElement, url: string, nextPlayer: Artplayer) {
+              void setupHls(video, url, nextPlayer);
+            },
+          }
+        : undefined,
     });
     art = player;
 
@@ -273,20 +390,33 @@
 
     player.on('video:timeupdate', () => {
       if (art === player) {
+        clearPlaybackWatchdog();
         emit('timeupdate', player.currentTime, player.duration);
       }
     });
 
     player.on('video:play', () => {
       if (art === player) {
+        startPlaybackWatchdog(player);
         emit('play', player.currentTime);
       }
     });
 
     player.on('video:pause', () => {
       if (art === player) {
+        clearPlaybackWatchdog();
         emit('pause', player.currentTime);
       }
+    });
+
+    player.on('video:loadedmetadata', () => {
+      clearPlaybackWatchdog();
+      hidePlayerLoading(player);
+    });
+
+    player.on('video:canplay', () => {
+      clearPlaybackWatchdog();
+      hidePlayerLoading(player);
     });
 
     player.on('video:seeked', () => {
@@ -304,11 +434,6 @@
       log.error('ArtPlayer', 'video element error', errMsg);
       emit('error', errMsg);
     });
-
-    if (isHls) {
-      const video = player.video as HTMLVideoElement;
-      void setupHls(video, playableUrl, player);
-    }
   };
 
   watch(
@@ -321,8 +446,8 @@
       log.info('ArtPlayer', 'src changed', { newSrc, isHls, playableUrl });
 
       if (isHls) {
-        const video = art.video as HTMLVideoElement;
-        void setupHls(video, playableUrl, art);
+        art.type = 'm3u8';
+        art.url = playableUrl;
       } else {
         hlsLoadId++;
         destroyHls();
@@ -338,6 +463,7 @@
   onUnmounted(() => {
     playerLoadId++;
     hlsLoadId++;
+    clearPlaybackWatchdog();
     destroyHls();
     if (art) {
       art.destroy(false);
@@ -348,16 +474,30 @@
 
 <style scoped>
   .art-player-container {
+    position: relative;
+    display: block;
     width: 100%;
     height: 100%;
     min-height: 300px;
+    overflow: hidden;
+    background: #000;
+  }
+
+  :deep(.artplayer),
+  :deep(.art-video),
+  :deep(video) {
+    width: 100%;
+    height: 100%;
   }
 
   :deep(.art-loading) {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: none;
+    pointer-events: none;
   }
 
   :deep(.art-loading-spinner) {

@@ -8,10 +8,7 @@ import { User } from '../entities/user.entity';
 import { MediaResource } from '../entities/media-resource.entity';
 import { PlaySource } from '../entities/play-source.entity';
 import { WatchHistory } from '../entities/watch-history.entity';
-import {
-  DownloadTask,
-  DownloadTaskStatus,
-} from '../entities/download-task.entity';
+import { DownloadTask, DownloadTaskStatus } from '../entities/download-task.entity';
 import { CrawlerTarget } from '../entities/crawler-target.entity';
 import {
   CreatePermissionDto,
@@ -24,6 +21,13 @@ import {
   type AdminBatchDownloadTaskActionDto,
   type AdminDownloadTaskActionDto,
 } from './dto/admin-download-task-action.dto';
+
+interface DownloadTaskStatsRaw {
+  downloadTaskCount?: string | number | null;
+  activeDownloadTaskCount?: string | number | null;
+  completedDownloadTaskCount?: string | number | null;
+  failedDownloadTaskCount?: string | number | null;
+}
 
 /**
  * 后台管理服务
@@ -389,15 +393,20 @@ export class AdminService {
       .createQueryBuilder('dt')
       .innerJoin(`(${dedupSub.getQuery()})`, 'latest', 'dt.id = latest.maxId')
       .setParameters(dedupSub.getParameters())
-      .select('dt.id');
+      .select('dt.id', 'id');
 
     if (safeUserId) idQuery.andWhere('dt.userId = :userId', { userId: safeUserId });
-    if (safeMediaResourceId) idQuery.andWhere('dt.mediaResourceId = :mediaResourceId', { mediaResourceId: safeMediaResourceId });
+    if (safeMediaResourceId)
+      idQuery.andWhere('dt.mediaResourceId = :mediaResourceId', {
+        mediaResourceId: safeMediaResourceId,
+      });
     if (safeTaskId) idQuery.andWhere('dt.id = :taskId', { taskId: safeTaskId });
-    if (normalizedClientId) idQuery.andWhere('dt.clientId = :clientId', { clientId: normalizedClientId });
+    if (normalizedClientId)
+      idQuery.andWhere('dt.clientId = :clientId', { clientId: normalizedClientId });
     if (normalizedStatus) idQuery.andWhere('dt.status = :status', { status: normalizedStatus });
     if (normalizedType) idQuery.andWhere('dt.type = :type', { type: normalizedType });
-    if (normalizedHash) idQuery.andWhere('dt.dedupKey LIKE :hashPattern', { hashPattern: `%${normalizedHash}%` });
+    if (normalizedHash)
+      idQuery.andWhere('dt.dedupKey LIKE :hashPattern', { hashPattern: `%${normalizedHash}%` });
 
     if (normalizedSearch) {
       idQuery
@@ -411,11 +420,12 @@ export class AdminService {
 
     const total = await idQuery.getCount();
     const pagination = this.resolvePagination(total, safePage, safeLimit);
-    const pageIds = (await idQuery
+    const pageIdRows = await idQuery
       .orderBy('dt.updatedAt', 'DESC')
       .skip(pagination.offset)
       .take(pagination.limit)
-      .getMany()).map(t => t.id);
+      .getRawMany<{ id: number | string }>();
+    const pageIds = pageIdRows.map(row => Number(row.id)).filter(id => Number.isFinite(id));
 
     let data: DownloadTask[] = [];
     if (pageIds.length > 0) {
@@ -836,7 +846,7 @@ export class AdminService {
         this.mediaResourceRepository.count(),
         this.playSourceRepository.count(),
         this.watchHistoryRepository.count(),
-        downloadStatsQb.getRawOne(),
+        downloadStatsQb.getRawOne<DownloadTaskStatsRaw>(),
         this.adminLogRepository.find({
           order: { createdAt: 'DESC' },
           take: 10,

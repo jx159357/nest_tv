@@ -17,7 +17,19 @@ const splitLimitRequestOptions = (params?: MediaQueryParams) => {
   return { query, silent };
 };
 
+export interface HomeBootstrapData {
+  popular: MediaResource[];
+  latest: MediaResource[];
+  topRated: MediaResource[];
+}
+
 export const mediaApi = {
+  getBootstrap: (limit = 8) => {
+    return ApiClient.get<HomeBootstrapData>('/home/bootstrap', {
+      params: { limit },
+      silent: true,
+    });
+  },
   getMediaList: (params?: MediaQueryParams) => {
     const { query, silent } = splitRequestOptions(params);
     return ApiClient.get<PaginatedResponse<MediaResource>>('/media', {

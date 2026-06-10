@@ -57,10 +57,7 @@ const MAC_CMS_SOURCES: MacCmsSource[] = [
 export class MacCmsResolverService {
   private readonly logger = new Logger(MacCmsResolverService.name);
 
-  async resolveByTitle(
-    title: string,
-    episodeNumber?: number,
-  ): Promise<ResolvedEpisode[]> {
+  async resolveByTitle(title: string, episodeNumber?: number): Promise<ResolvedEpisode[]> {
     const results: ResolvedEpisode[] = [];
 
     for (const source of MAC_CMS_SOURCES) {
@@ -126,8 +123,7 @@ export class MacCmsResolverService {
       params: { ac: 'detail', wd: searchTitle },
       timeout: 8000,
       headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
       },
     });
 
@@ -140,8 +136,7 @@ export class MacCmsResolverService {
           params: { ac: 'detail', wd: searchTitle },
           timeout: 8000,
           headers: {
-            'User-Agent':
-              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
           },
         });
         data = response.data;
@@ -209,7 +204,7 @@ export class MacCmsResolverService {
   }
 
   private simplifyTitle(title: string): string | null {
-    let simplified = title
+    const simplified = title
       .replace(/第[一二三四五六七八九十百千\d]+[季部集篇]$/g, '')
       .replace(/Season\s*\d+$/gi, '')
       .replace(/S\d+$/gi, '')
@@ -220,7 +215,12 @@ export class MacCmsResolverService {
 
   private normalizeVideoUrl(url: string): string {
     const lower = url.toLowerCase();
-    if (lower.includes('.m3u8') || lower.includes('.mp4') || lower.includes('.mkv') || lower.includes('.flv')) {
+    if (
+      lower.includes('.m3u8') ||
+      lower.includes('.mp4') ||
+      lower.includes('.mkv') ||
+      lower.includes('.flv')
+    ) {
       return url;
     }
     const parsed = new URL(url);

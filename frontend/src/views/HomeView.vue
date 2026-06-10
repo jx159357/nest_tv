@@ -10,7 +10,7 @@
             <span v-if="searchStreaming" class="streaming-badge">搜索中...</span>
           </p>
         </div>
-        <button class="btn-back" @click="clearSearch">
+        <button class="btn-back" type="button" @click="clearSearch">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
@@ -35,10 +35,11 @@
       <div v-if="torrentResults.length > 0" class="source-group">
         <h3 class="source-title">磁力资源 ({{ torrentResultsTotal }})</h3>
         <div class="torrent-grid">
-          <div
+          <button
             v-for="torrent in torrentResults"
             :key="`torrent-${torrent.infoHash}`"
             class="torrent-card"
+            type="button"
             @click="goToMediaDetail(torrent.mediaResourceId)"
           >
             <div class="torrent-name">{{ torrent.name || torrent.mediaTitle || '未知资源' }}</div>
@@ -46,7 +47,7 @@
               <span v-if="torrent.size">{{ formatSize(torrent.size) }}</span>
               <span v-if="torrent.seeders !== null">做种: {{ torrent.seeders }}</span>
             </div>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -94,7 +95,9 @@
             <p class="home-offline-hero__desc">
               前端已经可用。启动后端服务后，首页会自动加载热门、最新和高分内容。
             </p>
-            <button class="home-offline-hero__button" @click="loadHomeData">重新加载</button>
+            <button class="home-offline-hero__button" type="button" @click="loadHomeData">
+              重新加载
+            </button>
           </div>
         </div>
       </section>
@@ -195,10 +198,11 @@
           </router-link>
         </div>
         <div class="continue-row">
-          <div
+          <button
             v-for="item in continueWatching"
             :key="item.id"
             class="continue-card"
+            type="button"
             @click="goToWatch(item.mediaResourceId, item.currentTime)"
           >
             <div class="continue-card__poster">
@@ -206,6 +210,7 @@
                 :src="item.mediaResource?.poster || '/placeholder.png'"
                 :alt="item.mediaResource?.title"
                 loading="lazy"
+                @error="setPlaceholder"
               />
               <div class="continue-card__progress">
                 <div
@@ -226,7 +231,7 @@
               <h4 class="continue-card__title">{{ item.mediaResource?.title }}</h4>
               <p class="continue-card__meta">观看至 {{ formatTime(item.currentTime) }}</p>
             </div>
-          </div>
+          </button>
         </div>
       </section>
 
@@ -329,6 +334,7 @@
   import BannerCarousel from '@/components/BannerCarousel.vue';
   import { log } from '@/utils/logger';
   import { searchApi } from '@/api/search';
+  import { mediaApi } from '@/api/media';
   import { watchHistoryApi, type WatchHistoryItem } from '@/api/watchHistory';
   import type { SearchSuggestionItem, SseSearchEvent } from '@/api/search';
   import type { MediaResource } from '@/types/media';
@@ -369,6 +375,11 @@
   const homeLoadError = ref<string | null>(null);
 
   let cancelSse: (() => void) | null = null;
+
+  const setPlaceholder = (e: Event) => {
+    const el = e.target as HTMLImageElement | null;
+    if (el) el.src = '/placeholder.png';
+  };
 
   const activeSearchQuery = computed(() => {
     const value = Array.isArray(route.query.q) ? route.query.q[0] : route.query.q;
@@ -481,48 +492,33 @@
     topRatedLoading.value = true;
     homeLoadError.value = null;
 
-    const results = await Promise.allSettled([
-      mediaStore.fetchPopularMedia(8, { silent: true }),
-      mediaStore.fetchLatestMedia(8, { silent: true }),
-      mediaStore.fetchTopRatedMedia(8, 8, { silent: true }),
-    ]);
+    try {
+      const bootstrap = await mediaApi.getBootstrap(8);
+      popularMedia.value = bootstrap.popular ?? [];
+      bannerItems.value = (bootstrap.popular ?? []).slice(0, 5);
+      latestMedia.value = bootstrap.latest ?? [];
+      topRatedMedia.value = bootstrap.topRated ?? [];
+    } catch {
+      log.warn('Home', '聚合接口失败，降级为单独请求');
+      const results = await Promise.allSettled([
+        mediaStore.fetchPopularMedia(8, { silent: true }),
+        mediaStore.fetchLatestMedia(8, { silent: true }),
+        mediaStore.fetchTopRatedMedia(8, 8, { silent: true }),
+      ]);
 
-    const [popularResult, latestResult, topRatedResult] = results;
-    const failedCount = results.filter(result => result.status === 'rejected').length;
+      const [popularResult, latestResult, topRatedResult] = results;
+      const failedCount = results.filter(r => r.status === 'rejected').length;
 
-    if (popularResult.status === 'fulfilled') {
-      popularMedia.value = popularResult.value;
-      bannerItems.value = popularResult.value.slice(0, 5);
-    } else {
-      popularMedia.value = [];
-      bannerItems.value = [];
-      if (!popularResult.reason?.silent) {
-        log.error('Home', '加载热门推荐失败:', popularResult.reason);
+      popularMedia.value = popularResult.status === 'fulfilled' ? popularResult.value : [];
+      bannerItems.value = popularResult.status === 'fulfilled' ? popularResult.value.slice(0, 5) : [];
+      latestMedia.value = latestResult.status === 'fulfilled' ? latestResult.value : [];
+      topRatedMedia.value = topRatedResult.status === 'fulfilled' ? topRatedResult.value : [];
+
+      if (failedCount === results.length) {
+        homeLoadError.value = '内容服务暂时不可用';
+      } else if (failedCount > 0) {
+        homeLoadError.value = '部分内容暂时不可用';
       }
-    }
-
-    if (latestResult.status === 'fulfilled') {
-      latestMedia.value = latestResult.value;
-    } else {
-      latestMedia.value = [];
-      if (!latestResult.reason?.silent) {
-        log.error('Home', '加载最新上线失败:', latestResult.reason);
-      }
-    }
-
-    if (topRatedResult.status === 'fulfilled') {
-      topRatedMedia.value = topRatedResult.value;
-    } else {
-      topRatedMedia.value = [];
-      if (!topRatedResult.reason?.silent) {
-        log.error('Home', '加载高分佳作失败:', topRatedResult.reason);
-      }
-    }
-
-    if (failedCount === results.length) {
-      homeLoadError.value = '内容服务暂时不可用';
-    } else if (failedCount > 0) {
-      homeLoadError.value = '部分内容暂时不可用';
     }
 
     try {
@@ -630,8 +626,7 @@
     --home-card-bg: rgba(255, 255, 255, 0.045);
     --home-card-hover-shadow: 0 18px 42px rgba(0, 0, 0, 0.3);
     --home-offline-bg:
-      linear-gradient(90deg, rgba(5, 6, 9, 0.96), rgba(5, 6, 9, 0.68)),
-      var(--bg-cinema-soft);
+      linear-gradient(90deg, rgba(5, 6, 9, 0.96), rgba(5, 6, 9, 0.68)), var(--bg-cinema-soft);
     --home-offline-title: var(--text-inverse);
     --home-offline-desc: rgba(226, 232, 240, 0.76);
   }
@@ -723,6 +718,17 @@
     box-shadow: 0 10px 28px var(--color-brand-glow);
   }
 
+  .home-search__button:focus-visible,
+  .home-search__menu-item:focus-visible,
+  .home-search__quick a:focus-visible,
+  .btn-back:focus-visible,
+  .home-offline-hero__button:focus-visible,
+  .continue-card:focus-visible,
+  .torrent-card:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+  }
+
   .home-search__menu {
     position: absolute;
     top: calc(100% + 10px);
@@ -736,6 +742,8 @@
     border-radius: var(--panel-radius);
     background: var(--home-menu-bg);
     box-shadow: var(--shadow-popover);
+    max-height: min(420px, calc(100vh - 180px));
+    overflow-y: auto;
   }
 
   .home-search__menu-title {
@@ -775,6 +783,8 @@
   }
 
   .home-search__quick a {
+    display: inline-flex;
+    align-items: center;
     min-height: var(--tag-height);
     padding: 5px 10px;
     border: 1px solid var(--border-primary);
@@ -847,6 +857,7 @@
   }
 
   .home-offline-hero__button {
+    min-height: var(--touch-target);
     padding: 11px 20px;
     border-radius: 8px;
     background: var(--color-brand-primary);
@@ -928,6 +939,9 @@
     cursor: pointer;
     transition: all 0.2s ease;
     border: 1px solid var(--border-primary);
+    color: inherit;
+    text-align: left;
+    width: 100%;
   }
 
   .continue-card:hover {
@@ -1142,8 +1156,15 @@
   }
 
   .empty-row {
+    display: flex;
+    min-height: 128px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--panel-radius);
+    background: var(--state-empty-bg);
     text-align: center;
-    padding: 40px 0;
+    padding: 24px;
     color: var(--text-muted);
     font-size: 14px;
   }
@@ -1245,6 +1266,9 @@
     padding: 14px;
     cursor: pointer;
     transition: all 0.2s;
+    color: inherit;
+    text-align: left;
+    width: 100%;
   }
 
   .torrent-card:hover {
@@ -1283,6 +1307,7 @@
 
     .home-search__quick {
       justify-content: flex-start;
+      min-width: 0;
     }
 
     .continue-row {
@@ -1296,6 +1321,18 @@
 
     .home-search__content {
       padding: 18px;
+    }
+
+    .search-header {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .btn-back {
+      min-height: var(--touch-target);
+      width: 100%;
+      justify-content: center;
     }
 
     .home-search__title {

@@ -8,11 +8,12 @@ import {
   Body,
   Query,
   UseGuards,
+  Req,
   Res,
   ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { IPTVService } from './iptv.service';
 import { StreamQualityTester } from './stream-quality-tester.service';
 import { IptvSourceCollector } from './iptv-source-collector.service';
@@ -238,10 +239,23 @@ export class IPTVController {
   @ApiResponse({ status: 200, description: '流媒体内容' })
   async proxyStream(
     @Query('url') url: string,
-    @Query('cache') cache: boolean = false,
+    @Query('cache') cache: string | boolean = false,
+    @Req() req: Request,
     @Res() res: Response,
-  ) {
-    return this.hlsProxyService.proxyHlsStream(url, res, { enableCache: cache });
+  ): Promise<void> {
+    const rawRange: unknown = req.headers.range;
+    const range = Array.isArray(rawRange)
+      ? typeof rawRange[0] === 'string'
+        ? rawRange[0]
+        : undefined
+      : typeof rawRange === 'string'
+        ? rawRange
+        : undefined;
+
+    return this.hlsProxyService.proxyHlsStream(url, res, {
+      enableCache: this.toBoolean(cache, false),
+      range,
+    });
   }
 
   @Get('key/proxy')
@@ -249,7 +263,7 @@ export class IPTVController {
   @ApiOperation({ summary: '代理AES-128密钥请求' })
   @ApiQuery({ name: 'url', description: '密钥URL', required: true })
   @ApiResponse({ status: 200, description: '密钥内容' })
-  async proxyKey(@Query('url') url: string, @Res() res: Response) {
+  async proxyKey(@Query('url') url: string, @Res() res: Response): Promise<void> {
     return this.hlsProxyService.proxyKeyRequest(url, res);
   }
 
@@ -258,7 +272,7 @@ export class IPTVController {
   @ApiOperation({ summary: '代理图片请求（绕过防盗链）' })
   @ApiQuery({ name: 'url', description: '图片URL', required: true })
   @ApiResponse({ status: 200, description: '图片内容' })
-  async proxyImage(@Query('url') url: string, @Res() res: Response) {
+  async proxyImage(@Query('url') url: string, @Res() res: Response): Promise<void> {
     return this.iptvService.proxyImage(url, res);
   }
 

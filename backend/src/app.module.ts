@@ -27,6 +27,7 @@ import { StorageModule } from './storage/storage.module';
 import { WatchRoomModule } from './watch-room/watch-room.module';
 import { SourceScriptModule } from './source-script/source-script.module';
 import { AiChatModule } from './ai-chat/ai-chat.module';
+import { HomeModule } from './home/home.module';
 import { User } from './entities/user.entity';
 import { MediaResource } from './entities/media-resource.entity';
 import { PlaySource } from './entities/play-source.entity';
@@ -241,6 +242,9 @@ function getBooleanConfig(
 
     // AI 推荐模块 - 智能影片推荐
     AiChatModule,
+
+    // 首页聚合模块 - 首屏数据聚合
+    HomeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

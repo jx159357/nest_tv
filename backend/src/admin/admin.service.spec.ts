@@ -61,9 +61,15 @@ describe('AdminService', () => {
     createQueryBuilder: jest.Mock;
   };
 
-  const mediaResourceRepository = { count: jest.fn() } as unknown as Repository<never> & { count: jest.Mock };
-  const playSourceRepository = { count: jest.fn() } as unknown as Repository<never> & { count: jest.Mock };
-  const watchHistoryRepository = { count: jest.fn() } as unknown as Repository<never> & { count: jest.Mock };
+  const mediaResourceRepository = { count: jest.fn() } as unknown as Repository<never> & {
+    count: jest.Mock;
+  };
+  const playSourceRepository = { count: jest.fn() } as unknown as Repository<never> & {
+    count: jest.Mock;
+  };
+  const watchHistoryRepository = { count: jest.fn() } as unknown as Repository<never> & {
+    count: jest.Mock;
+  };
 
   const downloadTaskRepository = {
     find: jest.fn().mockResolvedValue([]),
@@ -168,16 +174,30 @@ describe('AdminService', () => {
   it('returns paginated admin download tasks with filters', async () => {
     const items = [{ id: 1, clientId: 'task-1' }] as DownloadTask[];
     sharedDtQb.getCount.mockResolvedValue(1);
+    sharedDtQb.getRawMany.mockResolvedValue([{ id: 1 }]);
     sharedDtQb.getMany.mockResolvedValue(items);
 
     const result = await service.getDownloadTasks(
-      1, 10, 'downloading', 'magnet', 8, 15, ' demo ', 'task-21',
+      1,
+      10,
+      'downloading',
+      'magnet',
+      8,
+      15,
+      ' demo ',
+      'task-21',
     );
 
     expect(sharedDtQb.andWhere).toHaveBeenCalledWith('dt.userId = :userId', { userId: 8 });
-    expect(sharedDtQb.andWhere).toHaveBeenCalledWith('dt.mediaResourceId = :mediaResourceId', { mediaResourceId: 15 });
-    expect(sharedDtQb.andWhere).toHaveBeenCalledWith('dt.clientId = :clientId', { clientId: 'task-21' });
-    expect(sharedDtQb.andWhere).toHaveBeenCalledWith('dt.status = :status', { status: 'downloading' });
+    expect(sharedDtQb.andWhere).toHaveBeenCalledWith('dt.mediaResourceId = :mediaResourceId', {
+      mediaResourceId: 15,
+    });
+    expect(sharedDtQb.andWhere).toHaveBeenCalledWith('dt.clientId = :clientId', {
+      clientId: 'task-21',
+    });
+    expect(sharedDtQb.andWhere).toHaveBeenCalledWith('dt.status = :status', {
+      status: 'downloading',
+    });
     expect(sharedDtQb.andWhere).toHaveBeenCalledWith('dt.type = :type', { type: 'magnet' });
     expect(result.data).toEqual(items);
     expect(result.total).toBe(1);
@@ -185,6 +205,7 @@ describe('AdminService', () => {
 
   it('filters admin download tasks by exact magnet hash after dedupe', async () => {
     sharedDtQb.getCount.mockResolvedValue(1);
+    sharedDtQb.getRawMany.mockResolvedValue([{ id: 12 }]);
     sharedDtQb.getMany.mockResolvedValue([
       {
         id: 12,
@@ -196,7 +217,15 @@ describe('AdminService', () => {
     ] as DownloadTask[]);
 
     const result = await service.getDownloadTasks(
-      1, 20, undefined, 'magnet', undefined, undefined, undefined, undefined, 'hash-demo',
+      1,
+      20,
+      undefined,
+      'magnet',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'hash-demo',
     );
 
     expect(sharedDtQb.andWhere).toHaveBeenCalledWith('dt.dedupKey LIKE :hashPattern', {
@@ -208,12 +237,20 @@ describe('AdminService', () => {
 
   it('filters admin download tasks by exact task id', async () => {
     sharedDtQb.getCount.mockResolvedValue(1);
-    sharedDtQb.getMany.mockResolvedValue([
-      { id: 21, clientId: 'task-21' } as DownloadTask,
-    ]);
+    sharedDtQb.getRawMany.mockResolvedValue([{ id: 21 }]);
+    sharedDtQb.getMany.mockResolvedValue([{ id: 21, clientId: 'task-21' } as DownloadTask]);
 
     const result = await service.getDownloadTasks(
-      1, 20, undefined, undefined, undefined, undefined, undefined, undefined, undefined, 21,
+      1,
+      20,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      21,
     );
 
     expect(sharedDtQb.andWhere).toHaveBeenCalledWith('dt.id = :taskId', { taskId: 21 });
@@ -222,12 +259,18 @@ describe('AdminService', () => {
 
   it('filters admin download tasks by exact client id', async () => {
     sharedDtQb.getCount.mockResolvedValue(1);
-    sharedDtQb.getMany.mockResolvedValue([
-      { id: 32, clientId: 'task-21' } as DownloadTask,
-    ]);
+    sharedDtQb.getRawMany.mockResolvedValue([{ id: 32 }]);
+    sharedDtQb.getMany.mockResolvedValue([{ id: 32, clientId: 'task-21' } as DownloadTask]);
 
     const result = await service.getDownloadTasks(
-      1, 20, undefined, undefined, undefined, undefined, undefined, 'task-21',
+      1,
+      20,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'task-21',
     );
 
     expect(sharedDtQb.andWhere).toHaveBeenCalledWith('dt.clientId = :clientId', {
@@ -238,6 +281,7 @@ describe('AdminService', () => {
 
   it('clamps out-of-range admin download-task pages back to the last available page', async () => {
     sharedDtQb.getCount.mockResolvedValue(1);
+    sharedDtQb.getRawMany.mockResolvedValue([{ id: 9 }]);
     sharedDtQb.getMany.mockResolvedValue([{ id: 9, clientId: 'task-9' }] as DownloadTask[]);
 
     const result = await service.getDownloadTasks(5, 2);
@@ -248,6 +292,7 @@ describe('AdminService', () => {
 
   it('deduplicates same-hash magnet tasks in the admin download-task list', async () => {
     sharedDtQb.getCount.mockResolvedValue(1);
+    sharedDtQb.getRawMany.mockResolvedValue([{ id: 12 }]);
     sharedDtQb.getMany.mockResolvedValue([
       {
         id: 12,

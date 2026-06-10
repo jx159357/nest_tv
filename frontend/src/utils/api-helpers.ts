@@ -43,21 +43,7 @@ export class ApiErrorHandler {
       silent: (error.config as any)?.silent === true,
     };
 
-    // 处理特定错误状态码
-    if (error.response && error.response.status === 401 && !apiError.silent) {
-      // 调试信息
-      if (process.env.NODE_ENV === 'development') {
-        log.warn('ApiHelpers', 'Authentication failed, clearing token and redirecting to login');
-      }
-
-      // 未授权，清除本地存储并重定向到登录页
-      localStorage.removeItem('token');
-
-      // 使用更友好的方式重定向，避免直接 location.href
-      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
-      }
-    }
+    // 401 由 http.ts 拦截器统一处理（含 token 刷新），此处不再重复处理
 
     if (error.response && error.response.status === 403) {
       // 禁止访问

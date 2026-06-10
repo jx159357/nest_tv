@@ -41,9 +41,7 @@ interface SerializedRoomState {
   cors: { origin: '*' },
   namespace: '/watch-room',
 })
-export class WatchRoomGateway
-  implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit
-{
+export class WatchRoomGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
   private readonly logger = new Logger(WatchRoomGateway.name);
   private readonly rooms = new Map<string, RoomState>();
   private readonly clientRooms = new Map<string, string>();
@@ -64,7 +62,7 @@ export class WatchRoomGateway
     this.onRoomDestroyed = callback;
   }
 
-  async handleConnection(client: Socket): Promise<void> {
+  handleConnection(client: Socket): void {
     try {
       const token = client.handshake.auth?.token || client.handshake.query?.token;
       if (!token || typeof token !== 'string') {

@@ -19,6 +19,7 @@
           <img
             v-if="hasHeroImage(item, index)"
             :src="item.backdrop || item.poster"
+            :loading="index === currentIndex ? 'eager' : 'lazy'"
             :alt="item.title"
             class="slide-bg-img"
             :class="{ loaded: loadedImages.has(index) }"
@@ -56,13 +57,13 @@
               <span v-if="item.genres?.length" class="meta-genre">{{ item.genres[0] }}</span>
             </div>
             <div class="slide-actions">
-              <button class="btn-play" @click="$emit('play', item)">
+              <button class="btn-play" type="button" @click="$emit('play', item)">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <polygon points="5 3 19 12 5 21 5 3" />
                 </svg>
                 立即观看
               </button>
-              <button class="btn-detail" @click="$emit('detail', item)">
+              <button class="btn-detail" type="button" @click="$emit('detail', item)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10" />
                   <line x1="12" y1="16" x2="12" y2="12" />
@@ -80,12 +81,24 @@
       </div>
     </div>
 
-    <button v-if="items.length > 1" class="carousel-arrow carousel-arrow--prev" @click="prev">
+    <button
+      v-if="items.length > 1"
+      class="carousel-arrow carousel-arrow--prev"
+      type="button"
+      aria-label="上一张"
+      @click="prev"
+    >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <polyline points="15 18 9 12 15 6" />
       </svg>
     </button>
-    <button v-if="items.length > 1" class="carousel-arrow carousel-arrow--next" @click="next">
+    <button
+      v-if="items.length > 1"
+      class="carousel-arrow carousel-arrow--next"
+      type="button"
+      aria-label="下一张"
+      @click="next"
+    >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <polyline points="9 18 15 12 9 6" />
       </svg>
@@ -97,6 +110,8 @@
         :key="index"
         class="indicator"
         :class="{ active: index === currentIndex }"
+        type="button"
+        :aria-label="`切换到第 ${index + 1} 张`"
         @click="goTo(index)"
       >
         <span v-if="index === currentIndex" class="indicator-progress"></span>
@@ -262,10 +277,12 @@
 
 <style scoped>
   .banner-carousel {
+    --carousel-side-gutter: clamp(24px, 5vw, 58px);
+    --carousel-indicator-bottom: clamp(54px, 7vw, 72px);
     position: relative;
     width: 100%;
     aspect-ratio: 21 / 9;
-    min-height: 360px;
+    min-height: 380px;
     max-height: 560px;
     border-radius: var(--panel-radius);
     overflow: hidden;
@@ -344,13 +361,14 @@
     align-items: center;
     justify-content: space-between;
     height: 100%;
-    padding: 54px 58px 70px;
+    padding: 54px 58px 72px;
     gap: 32px;
   }
 
   .slide-info {
     flex: 1;
     max-width: 610px;
+    min-width: 0;
   }
 
   .slide-badge {
@@ -365,7 +383,7 @@
   }
 
   .slide-title {
-    font-size: clamp(30px, 4vw, 46px);
+    font-size: 42px;
     font-weight: 700;
     color: var(--text-inverse);
     line-height: 1.25;
@@ -423,13 +441,15 @@
   .slide-actions {
     display: flex;
     gap: 12px;
+    flex-wrap: wrap;
   }
 
   .btn-play {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 24px;
+    min-height: var(--touch-target);
+    padding: 0 24px;
     background: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-accent));
     border: none;
     border-radius: 8px;
@@ -454,7 +474,8 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 24px;
+    min-height: var(--touch-target);
+    padding: 0 24px;
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
@@ -493,8 +514,8 @@
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: 40px;
-    height: 40px;
+    width: var(--touch-target);
+    height: var(--touch-target);
     background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.12);
@@ -517,6 +538,14 @@
     background: rgba(229, 9, 20, 0.72);
   }
 
+  .btn-play:focus-visible,
+  .btn-detail:focus-visible,
+  .carousel-arrow:focus-visible,
+  .indicator:focus-visible {
+    outline: 2px solid var(--text-inverse);
+    outline-offset: 2px;
+  }
+
   .carousel-arrow svg {
     width: 20px;
     height: 20px;
@@ -532,17 +561,25 @@
 
   .carousel-indicators {
     position: absolute;
-    bottom: 16px;
-    left: 50%;
-    transform: translateX(-50%);
+    bottom: var(--carousel-indicator-bottom);
+    left: var(--carousel-side-gutter);
+    right: var(--carousel-side-gutter);
+    width: fit-content;
+    max-width: calc(100% - var(--carousel-side-gutter) - var(--carousel-side-gutter));
     display: flex;
     gap: 8px;
-    z-index: 5;
+    flex-wrap: wrap;
+    padding: 6px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.22);
+    backdrop-filter: blur(10px);
+    z-index: 6;
   }
 
   .indicator {
-    width: 24px;
-    height: 4px;
+    position: relative;
+    width: 28px;
+    height: 6px;
     border-radius: 2px;
     background: rgba(255, 255, 255, 0.3);
     border: none;
@@ -558,6 +595,8 @@
   }
 
   .indicator-progress {
+    position: absolute;
+    inset: 0 auto 0 0;
     display: block;
     height: 100%;
     background: var(--color-brand-primary);
@@ -574,10 +613,33 @@
     }
   }
 
+  @media (max-width: 1024px) {
+    .banner-carousel {
+      --carousel-side-gutter: 40px;
+      --carousel-indicator-bottom: 52px;
+    }
+
+    .slide-content {
+      padding: 42px 40px 62px;
+      gap: 22px;
+    }
+
+    .slide-title {
+      font-size: 34px;
+    }
+
+    .slide-poster {
+      width: 150px;
+      height: 210px;
+    }
+  }
+
   @media (max-width: 768px) {
     .banner-carousel {
+      --carousel-side-gutter: 24px;
+      --carousel-indicator-bottom: 36px;
       aspect-ratio: 16 / 9;
-      min-height: 250px;
+      min-height: 280px;
       border-radius: var(--panel-radius);
     }
 
@@ -586,7 +648,7 @@
     }
 
     .slide-title {
-      font-size: 22px;
+      font-size: 24px;
     }
 
     .slide-desc {
@@ -604,14 +666,17 @@
 
     .btn-play,
     .btn-detail {
-      padding: 10px 16px;
+      min-height: 40px;
+      padding: 0 16px;
       font-size: 13px;
     }
   }
 
   @media (max-width: 480px) {
     .banner-carousel {
-      min-height: 230px;
+      --carousel-side-gutter: 18px;
+      --carousel-indicator-bottom: 26px;
+      min-height: 300px;
     }
 
     .slide-poster {
@@ -623,7 +688,7 @@
     }
 
     .slide-title {
-      font-size: 20px;
+      font-size: 22px;
     }
 
     .slide-actions {

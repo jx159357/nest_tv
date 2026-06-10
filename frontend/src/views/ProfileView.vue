@@ -280,6 +280,8 @@
                     :src="item.mediaResource.poster"
                     :alt="item.mediaResource.title"
                     class="h-full w-full object-cover"
+                    loading="lazy"
+                    @error="hideOnError"
                   />
                   <span v-else class="text-xs text-slate-500">暂无封面</span>
                 </div>
@@ -355,6 +357,11 @@
 
   const router = useRouter();
   const authStore = useAuthStore();
+
+  const hideOnError = (e: Event) => {
+    const el = e.target as HTMLElement | null;
+    if (el) el.style.display = 'none';
+  };
 
   const userStats = ref<WatchHistoryStats>({
     totalWatched: 0,

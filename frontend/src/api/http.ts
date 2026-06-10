@@ -1,7 +1,9 @@
-import axios from 'axios';
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { RequestInterceptor, RetryHelper } from '@/utils/api-helpers';
 import { GlobalErrorHandler } from '@/utils/global-error-handler';
 import { setupCacheInterceptors, withCache, apiCacheManager } from '@/utils/api-cache';
+import { useAuthStore } from '@/stores/auth';
+import { log } from '@/utils/logger';
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
@@ -14,9 +16,77 @@ export const api = axios.create({
   withCredentials: true,
 });
 
+let isRefreshing = false;
+let pendingQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (error: unknown) => void;
+}> = [];
+
+const processPendingQueue = (token: string | null, error: unknown) => {
+  for (const p of pendingQueue) {
+    if (token) p.resolve(token);
+    else p.reject(error);
+  }
+  pendingQueue = [];
+};
+
+const handle401 = async (error: AxiosError) => {
+  const originalConfig = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+  const silent = (originalConfig as unknown as { silent?: boolean })?.silent;
+
+  if (originalConfig._retry || silent) {
+    return Promise.reject(error);
+  }
+
+  if (isRefreshing) {
+    return new Promise<string>((resolve, reject) => {
+      pendingQueue.push({ resolve, reject });
+    }).then(token => {
+      originalConfig.headers.Authorization = `Bearer ${token}`;
+      originalConfig._retry = true;
+      return api.request(originalConfig);
+    });
+  }
+
+  originalConfig._retry = true;
+  isRefreshing = true;
+
+  try {
+    const authStore = useAuthStore();
+    const refreshed = await authStore.refreshToken();
+    if (refreshed && authStore.token) {
+      processPendingQueue(authStore.token, null);
+      originalConfig.headers.Authorization = `Bearer ${authStore.token}`;
+      return api.request(originalConfig);
+    }
+
+    processPendingQueue(null, error);
+    authStore.logout();
+    if (!window.location.pathname.includes('/login')) {
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  } catch (refreshError) {
+    processPendingQueue(null, refreshError);
+    const authStore = useAuthStore();
+    authStore.logout();
+    if (!window.location.pathname.includes('/login')) {
+      window.location.href = '/login';
+    }
+    return Promise.reject(refreshError);
+  } finally {
+    isRefreshing = false;
+  }
+};
+
 const interceptor = RequestInterceptor.config();
 api.interceptors.request.use(interceptor.onRequest);
-api.interceptors.response.use(interceptor.onResponse, interceptor.onResponseError);
+api.interceptors.response.use(interceptor.onResponse, async (error: AxiosError) => {
+  if (error.response?.status === 401) {
+    return handle401(error);
+  }
+  return interceptor.onResponseError(error);
+});
 
 setupCacheInterceptors(api);
 

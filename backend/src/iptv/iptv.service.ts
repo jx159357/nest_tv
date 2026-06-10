@@ -1,4 +1,4 @@
-import { Injectable, HttpException, HttpStatus, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, NotFoundException, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Like, Repository } from 'typeorm';
 import type { Response } from 'express';
@@ -8,6 +8,7 @@ import { UpdateIPTVChannelDto } from './dto/update-iptv-channel.dto';
 import { IPTVChannelQueryDto } from './dto/iptv-channel-query.dto';
 import axios from 'axios';
 import * as m3u8Parser from 'm3u8-parser';
+import { validateProxyUrl } from '../common/utils/ssrf-guard.util';
 
 interface GroupRow {
   group?: string | null;
@@ -407,11 +408,18 @@ export class IPTVService {
    * 导入M3U播放列表（支持 IPTV #EXTINF 格式和 HLS 格式）
    */
   async importFromM3U(m3uUrl: string, defaultGroup?: string): Promise<IPTVChannel[]> {
+    const urlCheck = validateProxyUrl(m3uUrl);
+    if (!urlCheck.ok) {
+      throw new BadRequestException(`M3U URL 不合法: ${urlCheck.reason}`);
+    }
+
     try {
       this.logger.log(`开始导入M3U播放列表: ${m3uUrl}`);
 
       const response = await axios.get<string>(m3uUrl, {
         timeout: 30000,
+        maxContentLength: 5 * 1024 * 1024,
+        maxBodyLength: 5 * 1024 * 1024,
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         },
@@ -727,10 +735,17 @@ export class IPTVService {
   /**
    * 代理图片请求（绕过防盗链）
    */
-  async proxyImage(url: string, res: Response): Promise<void> {
-    try {
-      const decodedUrl = this.decodeUnicodeUrl(url);
+  private static readonly MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 
+  async proxyImage(url: string, res: Response): Promise<void> {
+    const decodedUrl = this.decodeUnicodeUrl(url);
+
+    const check = validateProxyUrl(decodedUrl);
+    if (!check.ok) {
+      throw new BadRequestException(`URL 不合法: ${check.reason}`);
+    }
+
+    try {
       let referer: string;
       try {
         referer = new URL(decodedUrl).origin + '/';
@@ -742,6 +757,8 @@ export class IPTVService {
         responseType: 'arraybuffer',
         timeout: 15000,
         maxRedirects: 5,
+        maxContentLength: IPTVService.MAX_IMAGE_BYTES,
+        maxBodyLength: IPTVService.MAX_IMAGE_BYTES,
         headers: {
           'User-Agent':
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',

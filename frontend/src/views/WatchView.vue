@@ -20,7 +20,11 @@
 
       <div v-else-if="media" class="watch-layout">
         <section class="player-section">
-          <div ref="playerWrapperRef" class="player-wrapper">
+          <div
+            ref="playerWrapperRef"
+            class="player-wrapper"
+            :class="{ 'player-wrapper--web-fullscreen': isWebFullscreen }"
+          >
             <ArtPlayerWrapper
               v-if="currentPlaySource"
               :src="videoSrc"
@@ -79,7 +83,10 @@
             <div class="panel-header">
               <h2>
                 播放源
-                <span v-if="sourceFreshnessBadge" :class="['freshness-badge', `freshness--${media?.sourceFreshness}`]">
+                <span
+                  v-if="sourceFreshnessBadge"
+                  :class="['freshness-badge', `freshness--${media?.sourceFreshness}`]"
+                >
                   {{ sourceFreshnessBadge }}
                 </span>
               </h2>
@@ -328,6 +335,7 @@
   import ArtPlayerWrapper from '@/components/ArtPlayerWrapper.vue';
   import { batchTestSources, getSourceScore, type SourceTestResult } from '@/utils/source-test';
   import { playSourceApi } from '@/api/playSource';
+  import { buildApiUrl } from '@/api/url';
   import { log } from '@/utils/logger';
   import type { MediaResource, PlaySource } from '@/types/media';
 
@@ -337,8 +345,8 @@
   const WatchRoom = defineAsyncComponent(() =>
     import('@/components/WatchRoom.vue').then(module => module.default),
   );
-  const PlayerGestureControl = defineAsyncComponent(
-    () => import('@/components/PlayerGestureControl.vue').then(module => module.default),
+  const PlayerGestureControl = defineAsyncComponent(() =>
+    import('@/components/PlayerGestureControl.vue').then(module => module.default),
   );
 
   interface WatchRoomExpose {
@@ -376,9 +384,11 @@
   const videoElement = ref<HTMLVideoElement | null>(null);
   const showResumeTip = ref(false);
   const isMobile = ref(false);
+  const isWebFullscreen = ref(false);
   const isApplyingRoomSync = ref(false);
   const lastRoomSyncSentAt = ref(0);
   const macCmsEpisodes = ref<Array<{ episode: string; url: string; sourceName: string }>>([]);
+  let previousBodyOverflow = '';
 
   const checkMobile = () => {
     isMobile.value = window.innerWidth <= 768 || 'ontouchstart' in window;
@@ -473,11 +483,16 @@
 
   const sourceFreshnessBadge = computed(() => {
     switch (media.value?.sourceFreshness) {
-      case 'fresh': return null;
-      case 'stale': return '线路可能过期';
-      case 'refreshing': return '正在刷新线路';
-      case 'empty': return '暂无线路';
-      default: return null;
+      case 'fresh':
+        return null;
+      case 'stale':
+        return '线路可能过期';
+      case 'refreshing':
+        return '正在刷新线路';
+      case 'empty':
+        return '暂无线路';
+      default:
+        return null;
     }
   });
 
@@ -502,7 +517,9 @@
     if (!infoHash) return '';
 
     const token = authStore.token || localStorage.getItem('token') || '';
-    return `/torrent/stream/${infoHash}?magnet=${encodeURIComponent(url)}&token=${token}`;
+    return buildApiUrl(
+      `/torrent/stream/${infoHash}?magnet=${encodeURIComponent(url)}&token=${encodeURIComponent(token)}`,
+    );
   });
 
   const syncFavoriteStatus = async (mediaId: number) => {
@@ -542,7 +559,9 @@
   };
 
   const buildDownloadUrlPlaySources = (mediaData: MediaResource): PlaySource[] => {
-    const urls = Array.isArray(mediaData.downloadUrls) ? mediaData.downloadUrls.filter(Boolean) : [];
+    const urls = Array.isArray(mediaData.downloadUrls)
+      ? mediaData.downloadUrls.filter(Boolean)
+      : [];
 
     return urls.map((url, index) => {
       const format = inferSourceFormat(url);
@@ -888,12 +907,50 @@
     notifyError('播放失败', '所有播放源均不可用，请尝试重新爬取资源。');
   };
 
-  const toggleFullscreen = () => {
-    if (!playerWrapperRef.value) return;
-    if (!document.fullscreenElement) {
-      playerWrapperRef.value.requestFullscreen().catch(() => {});
-    } else {
-      document.exitFullscreen().catch(() => {});
+  const enterWebFullscreen = () => {
+    if (isWebFullscreen.value) return;
+    previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    isWebFullscreen.value = true;
+  };
+
+  const exitWebFullscreen = () => {
+    if (!isWebFullscreen.value) return;
+    document.body.style.overflow = previousBodyOverflow;
+    previousBodyOverflow = '';
+    isWebFullscreen.value = false;
+  };
+
+  const handleFullscreenChange = () => {
+    if (document.fullscreenElement) {
+      exitWebFullscreen();
+    }
+  };
+
+  const handleFullscreenKeydown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape' && isWebFullscreen.value) {
+      exitWebFullscreen();
+    }
+  };
+
+  const toggleFullscreen = async () => {
+    const wrapper = playerWrapperRef.value;
+    if (!wrapper) return;
+
+    if (isWebFullscreen.value) {
+      exitWebFullscreen();
+      return;
+    }
+
+    if (document.fullscreenElement) {
+      await document.exitFullscreen().catch(() => {});
+      return;
+    }
+
+    try {
+      await wrapper.requestFullscreen();
+    } catch {
+      enterWebFullscreen();
     }
   };
 
@@ -1079,6 +1136,8 @@
   onMounted(() => {
     checkMobile();
     window.addEventListener('resize', checkMobile);
+    window.addEventListener('keydown', handleFullscreenKeydown);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
     void loadMedia();
 
     saveInterval = setInterval(() => {
@@ -1096,6 +1155,9 @@
     }
     clearInterval(saveInterval);
     window.removeEventListener('resize', checkMobile);
+    window.removeEventListener('keydown', handleFullscreenKeydown);
+    document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    exitWebFullscreen();
   });
 </script>
 
@@ -1127,7 +1189,7 @@
   .nav-brand {
     font-size: 20px;
     font-weight: 700;
-    color: var(--text-inverse);
+    color: var(--color-brand-primary);
     text-decoration: none;
   }
 
@@ -1204,37 +1266,93 @@
   }
 
   .player-wrapper {
+    --watch-overlay-edge: clamp(10px, 2vw, 18px);
+    --watch-overlay-bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
     position: relative;
     border-radius: 16px;
     overflow: hidden;
     background: var(--bg-player);
     aspect-ratio: 16 / 9;
+    isolation: isolate;
   }
 
-  .player-wrapper:fullscreen {
+  .player-wrapper :deep(.danmaku-player) {
+    --danmaku-edge: var(--watch-overlay-edge);
+    --danmaku-controls-bottom: var(--watch-overlay-bottom);
+  }
+
+  .player-wrapper :deep(.art-player-container),
+  .player-wrapper :deep(.artplayer),
+  .player-wrapper :deep(.art-video),
+  .player-wrapper :deep(video) {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .player-wrapper:fullscreen,
+  .player-wrapper.player-wrapper--web-fullscreen {
+    --watch-overlay-edge: max(
+      16px,
+      env(safe-area-inset-left, 0px),
+      env(safe-area-inset-right, 0px)
+    );
+    --watch-overlay-bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    max-height: none;
     border-radius: 0;
     aspect-ratio: unset;
+    background: #000;
   }
 
-  .player-wrapper:fullscreen .danmaku-overlay {
+  .player-wrapper.player-wrapper--web-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+  }
+
+  .player-wrapper:fullscreen :deep(.art-player-container),
+  .player-wrapper:fullscreen :deep(.artplayer),
+  .player-wrapper:fullscreen :deep(.art-video),
+  .player-wrapper:fullscreen :deep(video),
+  .player-wrapper.player-wrapper--web-fullscreen :deep(.art-player-container),
+  .player-wrapper.player-wrapper--web-fullscreen :deep(.artplayer),
+  .player-wrapper.player-wrapper--web-fullscreen :deep(.art-video),
+  .player-wrapper.player-wrapper--web-fullscreen :deep(video) {
+    flex: 1 1 auto;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+  }
+
+  .player-wrapper:fullscreen .danmaku-overlay,
+  .player-wrapper.player-wrapper--web-fullscreen .danmaku-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     z-index: 9999;
+    --danmaku-controls-max: 820px;
   }
 
-  .player-wrapper:fullscreen .danmaku-overlay :deep(.danmaku-container) {
+  .player-wrapper:fullscreen .danmaku-overlay :deep(.danmaku-container),
+  .player-wrapper.player-wrapper--web-fullscreen .danmaku-overlay :deep(.danmaku-container) {
     pointer-events: none;
   }
 
-  .player-wrapper:fullscreen .danmaku-overlay :deep(.danmaku-controls),
   .player-wrapper:fullscreen .danmaku-overlay :deep(.danmaku-settings-panel),
   .player-wrapper:fullscreen .danmaku-overlay :deep(.danmaku-float-toggle),
   .player-wrapper:fullscreen .danmaku-overlay :deep(.report-dialog-backdrop),
-  .player-wrapper:fullscreen .danmaku-overlay :deep(.connection-toast) {
+  .player-wrapper:fullscreen .danmaku-overlay :deep(.connection-toast),
+  .player-wrapper.player-wrapper--web-fullscreen .danmaku-overlay :deep(.danmaku-settings-panel),
+  .player-wrapper.player-wrapper--web-fullscreen .danmaku-overlay :deep(.danmaku-float-toggle),
+  .player-wrapper.player-wrapper--web-fullscreen .danmaku-overlay :deep(.report-dialog-backdrop),
+  .player-wrapper.player-wrapper--web-fullscreen .danmaku-overlay :deep(.connection-toast) {
     pointer-events: all;
-  }
-
-  .player-wrapper:fullscreen .danmaku-overlay :deep(.danmaku-controls) {
-    bottom: 28px;
-    opacity: 1;
   }
 
   .custom-fullscreen-btn {
@@ -1270,18 +1388,23 @@
     height: 18px;
   }
 
-  .player-wrapper:fullscreen .custom-fullscreen-btn {
+  .player-wrapper:fullscreen .custom-fullscreen-btn,
+  .player-wrapper.player-wrapper--web-fullscreen .custom-fullscreen-btn {
     opacity: 1;
   }
 
   /* 断点续播提示 */
   .resume-tip {
     position: absolute;
-    bottom: 60px;
-    left: 50%;
-    transform: translateX(-50%);
+    right: var(--watch-overlay-edge);
+    bottom: calc(var(--watch-overlay-bottom) + 54px);
+    left: var(--watch-overlay-edge);
     display: flex;
     align-items: center;
+    justify-content: center;
+    width: fit-content;
+    max-width: calc(100% - var(--watch-overlay-edge) - var(--watch-overlay-edge));
+    margin-inline: auto;
     gap: 12px;
     padding: 12px 20px;
     background: rgba(0, 0, 0, 0.9);
@@ -1330,12 +1453,21 @@
   .resume-enter-from,
   .resume-leave-to {
     opacity: 0;
-    transform: translateX(-50%) translateY(20px);
+    transform: translateY(16px);
   }
 
   .danmaku-overlay {
     position: absolute;
     inset: 0;
+    z-index: 100;
+    pointer-events: none;
+  }
+
+  .player-wrapper > :deep(.danmaku-overlay) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     z-index: 100;
     pointer-events: none;
   }
@@ -1388,6 +1520,7 @@
   .panel-actions {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 12px;
   }
 
@@ -1811,6 +1944,10 @@
       grid-template-columns: 1fr;
     }
 
+    .watch-main {
+      padding: 20px var(--page-gutter);
+    }
+
     .shortcuts-card {
       display: block;
     }
@@ -1821,6 +1958,57 @@
   }
 
   @media (max-width: 640px) {
+    .watch-main {
+      padding: 14px var(--page-gutter);
+    }
+
+    .nav-content {
+      padding: 0 var(--page-gutter);
+    }
+
+    .player-wrapper {
+      --watch-overlay-edge: 8px;
+      --watch-overlay-bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
+      border-radius: 10px;
+    }
+
+    .resume-tip {
+      right: var(--watch-overlay-edge);
+      bottom: calc(var(--watch-overlay-bottom) + 8px);
+      left: var(--watch-overlay-edge);
+      width: auto;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      white-space: normal;
+    }
+
+    .resume-btn {
+      min-height: 34px;
+    }
+
+    .panel-header,
+    .section-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+
+    .panel-actions,
+    .download-actions,
+    .action-buttons {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .btn-test-all,
+    .btn-primary,
+    .btn-outline,
+    .btn-favorite {
+      width: 100%;
+      min-height: var(--touch-target);
+    }
+
     .source-grid {
       grid-template-columns: 1fr;
     }

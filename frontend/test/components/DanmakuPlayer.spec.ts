@@ -1,8 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
+import { nextTick } from 'vue';
 import DanmakuPlayer from '@/components/DanmakuPlayer.vue';
 
-const { danmakuApi, wsComposable } = vi.hoisted(() => ({
+const { authStore, danmakuApi, wsComposable } = vi.hoisted(() => ({
+  authStore: {
+    user: { id: 7 },
+    isAdmin: true,
+  },
   danmakuApi: {
     getRoomInfo: vi.fn(),
     getFilterRules: vi.fn(),
@@ -35,9 +40,7 @@ vi.mock('@/services/danmaku-websocket.service', () => ({
 }));
 
 vi.mock('@/stores/auth', () => ({
-  useAuthStore: () => ({
-    user: { id: 7 },
-  }),
+  useAuthStore: () => authStore,
 }));
 
 describe('DanmakuPlayer', () => {
@@ -48,8 +51,19 @@ describe('DanmakuPlayer', () => {
     danmakuApi.sendDanmaku.mockReset();
     wsComposable.connect.mockReset();
     wsComposable.disconnect.mockReset();
+    wsComposable.sendDanmaku.mockReset();
     wsComposable.getRoomInfo.mockReset();
+    wsComposable.onDanmaku.mockReset();
+    wsComposable.onSystem.mockReset();
+    wsComposable.onRoomInfo.mockReset();
+    wsComposable.onConnected.mockReset();
+    wsComposable.onDisconnected.mockReset();
+    wsComposable.onError.mockReset();
+    wsComposable.onHeartbeat.mockReset();
     wsComposable.onReconnectFailed.mockReset();
+    wsComposable.isConnected.value = false;
+    authStore.user = { id: 7 };
+    authStore.isAdmin = true;
     sessionStorage.clear();
 
     danmakuApi.getRoomInfo.mockResolvedValue({
@@ -116,6 +130,22 @@ describe('DanmakuPlayer', () => {
     expect(wrapper.text()).toContain('太燃了');
   });
 
+  it('does not request admin-only filter rules for regular users', async () => {
+    authStore.isAdmin = false;
+
+    mount(DanmakuPlayer, {
+      props: {
+        videoId: 'video-1',
+        mediaResourceId: 7,
+      },
+    });
+    await flushPromises();
+
+    expect(danmakuApi.getRoomInfo).toHaveBeenCalledWith('video-1');
+    expect(danmakuApi.getSuggestions).toHaveBeenCalled();
+    expect(danmakuApi.getFilterRules).not.toHaveBeenCalled();
+  });
+
   it('sends danmaku through the HTTP fallback when websocket is offline', async () => {
     const wrapper = mount(DanmakuPlayer, {
       props: {
@@ -141,6 +171,105 @@ describe('DanmakuPlayer', () => {
     expect((input.element as HTMLInputElement).value).toBe('');
     expect(wrapper.text()).toContain('HTTP 弹幕');
     expect(wrapper.text()).toContain('弹幕已通过 HTTP 回退发送');
+  });
+
+  it('echoes websocket sends immediately and deduplicates the server broadcast', async () => {
+    let onDanmakuListener: ((message: any) => void) | undefined;
+    wsComposable.isConnected.value = true;
+    wsComposable.onDanmaku.mockImplementation(listener => {
+      onDanmakuListener = listener;
+    });
+    wsComposable.sendDanmaku.mockReturnValue({
+      id: 'local-1',
+      userId: '7',
+      videoId: 'video-1',
+      text: 'WS 弹幕',
+      color: '#FFFFFF',
+      type: 'scroll',
+      priority: 1,
+      timestamp: 1735787045000,
+      isHighlighted: false,
+    });
+
+    const wrapper = mount(DanmakuPlayer, {
+      props: {
+        videoId: 'video-1',
+        mediaResourceId: 7,
+      },
+    });
+    await flushPromises();
+
+    await wrapper.get('input.danmaku-input').setValue('WS 弹幕');
+    await wrapper.get('.danmaku-send-btn').trigger('click');
+    await nextTick();
+
+    expect(wrapper.findAll('.danmaku-item').filter(item => item.text() === 'WS 弹幕')).toHaveLength(
+      1,
+    );
+
+    onDanmakuListener?.({
+      id: 'local-1',
+      userId: '7',
+      videoId: 'video-1',
+      text: 'WS 弹幕',
+      color: '#FFFFFF',
+      type: 'scroll',
+      priority: 1,
+      timestamp: 1735787045000,
+    });
+    await nextTick();
+
+    expect(wrapper.findAll('.danmaku-item').filter(item => item.text() === 'WS 弹幕')).toHaveLength(
+      1,
+    );
+  });
+
+  it('renders top and bottom danmaku as anchored overlays', async () => {
+    let onDanmakuListener: ((message: any) => void) | undefined;
+    wsComposable.onDanmaku.mockImplementation(listener => {
+      onDanmakuListener = listener;
+    });
+
+    const wrapper = mount(DanmakuPlayer, {
+      props: {
+        videoId: 'video-1',
+        mediaResourceId: 7,
+      },
+    });
+    await flushPromises();
+
+    onDanmakuListener?.({
+      id: 'top-1',
+      userId: '7',
+      videoId: 'video-1',
+      text: '顶部弹幕',
+      color: '#FFFFFF',
+      type: 'top',
+      priority: 1,
+      timestamp: 1735787045000,
+    });
+    onDanmakuListener?.({
+      id: 'bottom-1',
+      userId: '7',
+      videoId: 'video-1',
+      text: '底部弹幕',
+      color: '#FFFFFF',
+      type: 'bottom',
+      priority: 1,
+      timestamp: 1735787045001,
+    });
+    await nextTick();
+
+    const topStyle = wrapper.get('.danmaku-top').attributes('style') || '';
+    const bottomStyle = wrapper.get('.danmaku-bottom').attributes('style') || '';
+    expect(topStyle).toContain('left: 50%');
+    expect(topStyle).toContain('translateX(-50%)');
+    expect(topStyle).toContain('danmaku-fade-in-out');
+    expect(topStyle).not.toContain('danmaku-scroll-lr');
+    expect(bottomStyle).toContain('left: 50%');
+    expect(bottomStyle).toContain('translateX(-50%)');
+    expect(bottomStyle).toContain('danmaku-fade-in-out');
+    expect(bottomStyle).not.toContain('danmaku-scroll-lr');
   });
 
   it('applies a suggestion chip into the input box', async () => {

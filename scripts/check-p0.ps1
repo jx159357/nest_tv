@@ -35,14 +35,18 @@ function Invoke-Check {
   }
 }
 
+Invoke-Check -Name 'frontend:lint' -Directory 'frontend' -Executable 'npm.cmd' -Arguments @('run', 'lint:check')
+Invoke-Check -Name 'backend:lint' -Directory 'backend' -Executable 'npm.cmd' -Arguments @('run', 'lint:check')
 Invoke-Check -Name 'frontend:type-check' -Directory 'frontend' -Executable 'npm.cmd' -Arguments @('run', 'type-check')
-Invoke-Check -Name 'frontend:build' -Directory 'frontend' -Executable 'npm.cmd' -Arguments @('run', 'build')
 Invoke-Check -Name 'backend:type-check' -Directory 'backend' -Executable 'npm.cmd' -Arguments @('run', 'type-check')
 
 if (-not $SkipTests) {
-  Invoke-Check -Name 'frontend:test:journeys' -Directory 'frontend' -Executable 'npm.cmd' -Arguments @('run', 'test:journeys')
+  Invoke-Check -Name 'frontend:test' -Directory 'frontend' -Executable 'npm.cmd' -Arguments @('test')
   Invoke-Check -Name 'backend:test' -Directory 'backend' -Executable 'npm.cmd' -Arguments @('test')
 }
+
+Invoke-Check -Name 'frontend:build' -Directory 'frontend' -Executable 'npm.cmd' -Arguments @('run', 'build')
+Invoke-Check -Name 'backend:build' -Directory 'backend' -Executable 'npm.cmd' -Arguments @('run', 'build')
 
 Write-Host ""
 Write-Host "P0 checks passed."

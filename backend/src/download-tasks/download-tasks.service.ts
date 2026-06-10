@@ -55,7 +55,8 @@ export class DownloadTasksService {
 
     if (status) countQb.andWhere('downloadTask.status = :status', { status });
     if (type) countQb.andWhere('downloadTask.type = :type', { type });
-    if (mediaResourceId) countQb.andWhere('downloadTask.mediaResourceId = :mediaResourceId', { mediaResourceId });
+    if (mediaResourceId)
+      countQb.andWhere('downloadTask.mediaResourceId = :mediaResourceId', { mediaResourceId });
     if (search?.trim()) {
       countQb.andWhere(
         `(downloadTask.fileName LIKE :search OR downloadTask.sourceLabel LIKE :search OR downloadTask.url LIKE :search)`,
@@ -75,7 +76,8 @@ export class DownloadTasksService {
 
     if (status) dataQb.andWhere('downloadTask.status = :status', { status });
     if (type) dataQb.andWhere('downloadTask.type = :type', { type });
-    if (mediaResourceId) dataQb.andWhere('downloadTask.mediaResourceId = :mediaResourceId', { mediaResourceId });
+    if (mediaResourceId)
+      dataQb.andWhere('downloadTask.mediaResourceId = :mediaResourceId', { mediaResourceId });
     if (search?.trim()) {
       dataQb.andWhere(
         `(downloadTask.fileName LIKE :search OR downloadTask.sourceLabel LIKE :search OR downloadTask.url LIKE :search)`,
@@ -126,10 +128,7 @@ export class DownloadTasksService {
   }
 
   async upsertMine(userId: number, dto: CreateDownloadTaskDto): Promise<DownloadTask> {
-    const dedupKey = DownloadTask.computeDedupKey(
-      dto.type ?? this.inferTaskType(dto),
-      dto.url,
-    );
+    const dedupKey = DownloadTask.computeDedupKey(dto.type ?? this.inferTaskType(dto), dto.url);
 
     let existingTask = await this.downloadTaskRepository.findOne({
       where: { userId, clientId: dto.clientId },
@@ -279,7 +278,8 @@ export class DownloadTasksService {
         ? Math.max(0, Math.min(100, Math.round(dto.progress)))
         : dto.progress;
 
-    const taskType = dto.type ?? this.inferTaskType(dto as Pick<CreateDownloadTaskDto, 'url' | 'type'>);
+    const taskType =
+      dto.type ?? this.inferTaskType(dto as Pick<CreateDownloadTaskDto, 'url' | 'type'>);
     const dedupKey = DownloadTask.computeDedupKey(taskType, dto.url ?? '');
 
     return {

@@ -199,16 +199,16 @@
       </div>
 
       <!-- 分页 -->
-      <div v-if="pagination.totalPages > 1" class="mt-6 flex items-center justify-between">
-        <div class="text-sm text-gray-700">
+      <div v-if="pagination.totalPages > 1" class="play-sources-pagination">
+        <div class="play-sources-pagination__summary">
           显示第 {{ (pagination.page - 1) * pagination.limit + 1 }} 到
           {{ Math.min(pagination.page * pagination.limit, pagination.total) }} 条记录， 共
           {{ pagination.total }} 条记录
         </div>
-        <div class="flex space-x-2">
+        <div class="play-sources-pagination__controls">
           <button
             :disabled="pagination.page <= 1"
-            class="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="play-sources-pagination__button border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             @click="goToPage(pagination.page - 1)"
           >
             上一页
@@ -217,7 +217,7 @@
             v-for="page in getPageNumbers()"
             :key="page"
             :class="[
-              'px-3 py-1 border rounded-md text-sm font-medium',
+              'play-sources-pagination__button border',
               page === pagination.page
                 ? 'border-indigo-500 bg-indigo-50 text-indigo-600'
                 : 'border-gray-300 text-gray-700 hover:bg-gray-50',
@@ -228,7 +228,7 @@
           </button>
           <button
             :disabled="pagination.page >= pagination.totalPages"
-            class="px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="play-sources-pagination__button border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             @click="goToPage(pagination.page + 1)"
           >
             下一页
@@ -613,3 +613,55 @@
     void loadPlaySources();
   });
 </script>
+
+<style scoped>
+  .play-sources-pagination {
+    margin-top: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .play-sources-pagination__summary {
+    min-width: 0;
+    color: #374151;
+    font-size: 0.875rem;
+    overflow-wrap: anywhere;
+  }
+
+  .play-sources-pagination__controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .play-sources-pagination__button {
+    min-height: 2rem;
+    border-radius: 0.375rem;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+  }
+
+  @media (max-width: 640px) {
+    .play-sources-pagination {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .play-sources-pagination__controls {
+      justify-content: flex-start;
+    }
+
+    .play-sources-pagination__button {
+      min-width: 2.5rem;
+      min-height: var(--touch-target);
+      padding: 0.375rem 0.625rem;
+    }
+  }
+</style>

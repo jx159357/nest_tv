@@ -14,12 +14,20 @@
       </button>
       <div class="detail-banner">
         <div
+          v-if="posterSrc && !posterError"
           class="banner-bg"
-          :style="media.poster ? { backgroundImage: `url(${media.poster})` } : {}"
+          :style="{ backgroundImage: `url(${posterSrc})` }"
         ></div>
         <div class="banner-content">
           <div class="poster-wrapper">
-            <img v-if="media.poster" :src="media.poster" :alt="media.title" class="poster-img" />
+            <img
+              v-if="posterSrc && !posterError"
+              :src="posterSrc"
+              :alt="media.title"
+              class="poster-img"
+              loading="eager"
+              @error="onPosterError"
+            />
             <div v-else class="poster-placeholder">暂无封面</div>
           </div>
           <div class="detail-info">
@@ -190,6 +198,7 @@
   import { useDownloadsStore } from '@/stores/downloads';
   import { notifyError, notifyInfo, notifySuccess } from '@/composables/useModal';
   import { log } from '@/utils/logger';
+  import { iptvApi } from '@/api/iptv';
   import type { MediaResource } from '@/types/media';
 
   const route = useRoute();
@@ -206,6 +215,25 @@
   const isFavorite = ref(false);
   const favoriteLoading = ref(false);
   const favoriteMessage = ref('');
+  const posterError = ref(false);
+  const usePosterProxy = ref(false);
+
+  const posterSrc = computed(() => {
+    const url = media.value?.poster;
+    if (!url) return '';
+    if (usePosterProxy.value && (url.startsWith('http://') || url.startsWith('https://'))) {
+      return iptvApi.getImageProxyUrl(url);
+    }
+    return url;
+  });
+
+  const onPosterError = () => {
+    if (!usePosterProxy.value && media.value?.poster?.startsWith('http')) {
+      usePosterProxy.value = true;
+    } else {
+      posterError.value = true;
+    }
+  };
 
   const syncFavoriteStatus = async (mediaId: number) => {
     if (!authStore.isAuthenticated) {
@@ -223,6 +251,8 @@
     const mediaId = parseInt(route.params.id as string);
     loading.value = true;
     favoriteMessage.value = '';
+    posterError.value = false;
+    usePosterProxy.value = false;
     try {
       media.value = await mediaStore.fetchMediaDetail(mediaId);
       await syncFavoriteStatus(mediaId);
@@ -376,7 +406,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    margin: 16px 24px 0;
+    margin: 16px var(--page-gutter) 0;
     padding: 8px 16px;
     background: var(--bg-card);
     border: 1px solid var(--border-primary);
@@ -399,7 +429,7 @@
 
   .detail-banner {
     position: relative;
-    padding: 48px 0;
+    padding: clamp(30px, 5vw, 54px) 0;
     overflow: hidden;
   }
   .banner-bg {
@@ -419,18 +449,19 @@
   .banner-content {
     position: relative;
     z-index: 1;
-    max-width: 1200px;
+    width: min(1200px, 100%);
     margin: 0 auto;
-    padding: 0 24px;
-    display: flex;
-    gap: 40px;
+    padding: 0 var(--page-gutter);
+    display: grid;
+    grid-template-columns: minmax(170px, 220px) minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(24px, 4vw, 40px);
   }
   .poster-wrapper {
-    width: 240px;
-    height: 340px;
+    width: 100%;
+    aspect-ratio: 2 / 3;
     border-radius: 16px;
     overflow: hidden;
-    flex-shrink: 0;
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
   }
   .poster-img {
@@ -452,7 +483,7 @@
     min-width: 0;
   }
   .detail-title {
-    font-size: 32px;
+    font-size: clamp(26px, 3vw, 34px);
     font-weight: 700;
     margin-bottom: 12px;
   }
@@ -606,11 +637,11 @@
   }
 
   .detail-body {
-    max-width: 1200px;
+    width: min(1200px, 100%);
     margin: 0 auto;
-    padding: 24px;
+    padding: 24px var(--page-gutter);
     display: grid;
-    grid-template-columns: 1fr 320px;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
     gap: 24px;
   }
   .section-title {
@@ -640,7 +671,7 @@
   }
   .media-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(var(--grid-card-min), 1fr));
     gap: 16px;
   }
   .empty-row {
@@ -670,13 +701,21 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
     padding: 12px;
     background: rgba(255, 255, 255, 0.03);
     border-radius: 10px;
   }
+  .source-info {
+    min-width: 0;
+  }
   .source-name {
+    display: block;
     font-size: 14px;
     font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .source-meta {
     font-size: 12px;
@@ -684,6 +723,7 @@
     margin-top: 2px;
   }
   .source-status {
+    flex: 0 0 auto;
     font-size: 12px;
     padding: 3px 10px;
     border-radius: 20px;
@@ -735,10 +775,15 @@
   }
   .download-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     margin-top: 10px;
   }
   .btn-sm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
     padding: 6px 14px;
     border-radius: 8px;
     font-size: 12px;
@@ -775,26 +820,22 @@
       grid-template-columns: 1fr;
     }
     .banner-content {
-      flex-direction: column;
+      grid-template-columns: minmax(130px, 170px) minmax(0, 1fr);
       align-items: center;
-      text-align: center;
-    }
-    .poster-wrapper {
-      width: 180px;
-      height: 252px;
+      text-align: left;
     }
     .detail-meta {
-      justify-content: center;
+      justify-content: flex-start;
     }
     .detail-tags {
-      justify-content: center;
-      margin-inline: auto;
+      justify-content: flex-start;
+      margin-inline: 0;
     }
     .detail-extra {
-      justify-content: center;
+      justify-content: flex-start;
     }
     .detail-actions {
-      justify-content: center;
+      justify-content: flex-start;
     }
   }
 
@@ -825,15 +866,52 @@
   }
 
   @media (max-width: 640px) {
+    .detail-banner {
+      padding: 22px 0;
+    }
+
+    .banner-content {
+      grid-template-columns: 96px minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
     .detail-title {
       font-size: 24px;
+      margin-bottom: 8px;
     }
+
+    .detail-desc {
+      -webkit-line-clamp: 2;
+      margin-bottom: 12px;
+    }
+
+    .detail-meta {
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 12px;
+    }
+
+    .meta-item {
+      padding: 3px 8px;
+    }
+
+    .detail-extra {
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
     .detail-actions {
       flex-direction: column;
+      gap: 8px;
     }
     .btn-watch,
     .btn-fav {
       width: 100%;
+      min-height: var(--touch-target);
+      padding: 0 14px;
+      border-radius: 8px;
+      font-size: 14px;
       justify-content: center;
     }
     .ai-fab {
@@ -849,6 +927,63 @@
     }
     .tag {
       flex: 0 0 auto;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .banner-content {
+      grid-template-columns: 104px minmax(0, 1fr);
+      gap: 14px;
+    }
+
+    .poster-wrapper {
+      width: 100%;
+      margin-inline: 0;
+      border-radius: 8px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.42);
+    }
+
+    .detail-info {
+      text-align: left;
+    }
+
+    .detail-title {
+      font-size: 22px;
+    }
+
+    .detail-meta,
+    .detail-tags,
+    .detail-actions {
+      justify-content: flex-start;
+    }
+
+    .extra-line {
+      justify-content: flex-start;
+    }
+  }
+
+  @media (max-width: 340px) {
+    .banner-content {
+      grid-template-columns: 1fr;
+    }
+
+    .poster-wrapper {
+      width: min(140px, 48vw);
+      margin-inline: auto;
+    }
+
+    .detail-info {
+      text-align: center;
+    }
+
+    .detail-meta,
+    .detail-tags,
+    .detail-actions {
+      justify-content: center;
+    }
+
+    .extra-line {
+      justify-content: center;
     }
   }
 </style>

@@ -208,7 +208,7 @@
 
   .login-card {
     background: var(--bg-card);
-    border-radius: 12px;
+    border-radius: var(--panel-radius);
     border: 1px solid var(--border-primary);
     padding: 32px;
     box-shadow: var(--shadow-xl);
@@ -251,7 +251,8 @@
 
   .login-input {
     width: 100%;
-    padding: 12px 16px;
+    min-height: var(--touch-target);
+    padding: 0 16px;
     border-radius: 8px;
     border: 1px solid var(--border-secondary);
     background: var(--bg-secondary);
@@ -263,7 +264,7 @@
 
   .login-input:focus {
     border-color: var(--border-focus);
-    box-shadow: var(--shadow-focus);
+    box-shadow: none;
   }
 
   .login-input::placeholder {
@@ -272,7 +273,8 @@
 
   .login-submit {
     width: 100%;
-    padding: 12px;
+    min-height: var(--touch-target);
+    padding: 0 16px;
     border-radius: 8px;
     background: linear-gradient(
       135deg,
@@ -313,6 +315,18 @@
 
   .login-link:hover {
     color: var(--color-brand-primary-light);
+  }
+
+  .login-input:focus-visible {
+    outline: none;
+    border-color: var(--border-focus);
+    box-shadow: none;
+  }
+
+  .login-submit:focus-visible,
+  .login-link:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
   }
 
   @media (max-width: 767px) {

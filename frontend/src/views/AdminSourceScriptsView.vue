@@ -424,6 +424,8 @@
   }
 
   .src-card {
+    gap: 16px;
+    min-width: 0;
     border-color: var(--border-primary);
     background-color: var(--bg-tertiary);
   }
@@ -439,6 +441,7 @@
 
   .src-modal {
     border-color: var(--border-secondary);
+    border-radius: var(--panel-radius);
     background-color: var(--bg-card);
   }
 
@@ -529,6 +532,44 @@
   /* ===== 文本域 ===== */
   .src-textarea {
     color: var(--text-secondary);
+  }
+
+  @media (max-width: 768px) {
+    .src-card {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .src-card > .flex.items-center.gap-2 {
+      flex-wrap: wrap;
+    }
+
+    .src-card > .flex.items-center.gap-2 button {
+      flex: 1 1 calc(50% - 4px);
+      min-height: 38px;
+    }
+
+    .src-modal {
+      width: calc(100vw - 24px);
+      height: calc(100vh - 24px);
+      max-height: calc(100vh - 24px);
+    }
+
+    .src-modal > .flex.flex-1 {
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .src-modal > .flex.flex-1 > .src-border-subtle {
+      width: 100%;
+      max-height: 42vh;
+      border-right: 0;
+      border-bottom: 1px solid var(--border-primary);
+    }
+
+    .src-textarea {
+      min-height: 280px;
+    }
   }
 
   /* ===== 模态框动画 ===== */

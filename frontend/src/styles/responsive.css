@@ -6,28 +6,9 @@
 /* ===== 响应式断点工具类 ===== */
 @media (max-width: 479px) {
   :root {
-    --font-size-base: 0.875rem;
     --spacing-4: 0.75rem;
     --spacing-6: 1rem;
     --spacing-8: 1.5rem;
-  }
-}
-
-@media (min-width: 480px) and (max-width: 767px) {
-  :root {
-    --font-size-base: 0.9375rem;
-  }
-}
-
-@media (min-width: 768px) and (max-width: 1023px) {
-  :root {
-    --font-size-base: 0.96875rem;
-  }
-}
-
-@media (min-width: 1280px) {
-  :root {
-    --font-size-base: 1.0625rem;
   }
 }
 
@@ -67,8 +48,8 @@
 /* ===== 触摸设备优化 ===== */
 @media (hover: none) {
   .touch-target {
-    min-height: 44px;
-    min-width: 44px;
+    min-height: var(--touch-target);
+    min-width: var(--touch-target);
   }
 
   .touch-active:active {
@@ -145,6 +126,25 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .layout-fade-enter-active,
+  .layout-fade-leave-active,
+  .page-fade-enter-active,
+  .page-fade-leave-active,
+  .admin-page-fade-enter-active,
+  .admin-page-fade-leave-active {
+    transition: none !important;
+  }
+
+  .layout-fade-enter-from,
+  .layout-fade-leave-to,
+  .page-fade-enter-from,
+  .page-fade-leave-to,
+  .admin-page-fade-enter-from,
+  .admin-page-fade-leave-to {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
 
@@ -301,7 +301,7 @@
 /* ===== 卡片样式 ===== */
 .card {
   background: var(--bg-card);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-card);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-primary);
   transition:
@@ -321,7 +321,7 @@
   gap: var(--spacing-2);
   padding: var(--spacing-2) var(--spacing-4);
   font-weight: var(--font-weight-medium);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-control);
   transition: all var(--transition-fast);
   font-size: var(--font-size-sm);
 }

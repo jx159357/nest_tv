@@ -63,13 +63,10 @@ describe('PreloadService', () => {
   it('uses resolved route meta and marks successful preloads', async () => {
     const layout = vi.fn<LazyComponent>().mockResolvedValue({ default: 'layout' });
     const page = vi.fn<LazyComponent>().mockResolvedValue({ default: 'page' });
-    const route = makeRoute(
-      { preload: true },
-      [
-        { component: layout, meta: {} },
-        { component: page, meta: { preload: true } },
-      ],
-    );
+    const route = makeRoute({ preload: true }, [
+      { component: layout, meta: {} },
+      { component: page, meta: { preload: true } },
+    ]);
     const service = new PreloadService(makeRouter({ recommendations: route }));
 
     await service.preloadRoute('recommendations');

@@ -138,6 +138,8 @@
                         :src="item.mediaResource.poster"
                         :alt="item.mediaResource.title"
                         class="h-16 w-12 object-cover rounded"
+                        loading="lazy"
+                        @error="$event.target.style.display='none'"
                       />
                       <div
                         v-else

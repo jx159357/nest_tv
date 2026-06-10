@@ -6,7 +6,7 @@ const { apiGet, apiPost, apiDelete } = vi.hoisted(() => ({
   apiDelete: vi.fn(),
 }));
 
-vi.mock('@/api/index', () => ({
+vi.mock('@/api/http', () => ({
   default: {
     get: apiGet,
     post: apiPost,

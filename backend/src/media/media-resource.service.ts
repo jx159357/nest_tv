@@ -10,7 +10,6 @@ import { UpdateMediaResourceDto } from './dtos/update-media-resource.dto';
 import { MediaResourceQueryDto } from './dtos/media-resource-query.dto';
 import { CacheService } from '../common/cache/cache.service';
 import { Cacheable, CacheEvict } from '../common/decorators/cache.decorator';
-import { comparePlaySources } from '../play-sources/play-source-ranking.util';
 import { PlaySourceService } from '../play-sources/play-source.service';
 
 interface MediaStatisticsRow {
@@ -137,8 +136,8 @@ export class MediaResourceService {
    * 创建影视资源
    */
   @CacheEvict({
-    all: true, // 清除所有媒体相关的缓存
-    key: 'media:list:*', // 清除媒体列表缓存
+    all: true,
+    key: 'media:*',
   })
   async create(createMediaResourceDto: CreateMediaResourceDto): Promise<MediaResource> {
     const existing = await this.findDuplicateCandidate(createMediaResourceDto);
@@ -335,7 +334,8 @@ export class MediaResourceService {
       };
     });
 
-    let watchHistory: { currentTime: number; duration: number; episodeNumber?: number } | null = null;
+    let watchHistory: { currentTime: number; duration: number; episodeNumber?: number } | null =
+      null;
     if (userId) {
       const wh = await this.watchHistoryRepository.findOne({
         where: { userId, mediaResourceId: id },
@@ -372,8 +372,8 @@ export class MediaResourceService {
    * 更新影视资源
    */
   @CacheEvict({
-    all: true, // 清除所有媒体相关的缓存
-    key: 'media:list:*', // 清除媒体列表缓存
+    all: true,
+    key: 'media:*',
   })
   async update(id: number, updateMediaResourceDto: UpdateMediaResourceDto): Promise<MediaResource> {
     const mediaResource = await this.findById(id);
@@ -385,8 +385,8 @@ export class MediaResourceService {
    * 删除影视资源
    */
   @CacheEvict({
-    all: true, // 清除所有媒体相关的缓存
-    key: 'media:list:*', // 清除媒体列表缓存
+    all: true,
+    key: 'media:*',
   })
   async remove(id: number): Promise<void> {
     const mediaResource = await this.findById(id);
@@ -398,43 +398,18 @@ export class MediaResourceService {
    */
   async search(keyword: string, limit: number = 10): Promise<MediaResource[]> {
     try {
-      // 首先尝试精确匹配和前缀匹配（可以利用索引）
-      const exactMatches = await this.mediaResourceRepository.find({
-        where: [
-          { title: Like(`${keyword}%`) }, // 前缀匹配
-        ],
-        take: Math.min(limit, 5), // 限制精确匹配数量
-        order: {
-          rating: 'DESC',
-        },
-      });
-
-      // 如果精确匹配数量不足，再进行模糊匹配
-      if (exactMatches.length < limit) {
-        const remainingLimit = limit - exactMatches.length;
-        const fuzzyMatches = await this.mediaResourceRepository.find({
-          where: [
-            { title: Like(`%${keyword}%`) }, // 模糊匹配
-          ],
-          take: remainingLimit,
-          order: {
-            rating: 'DESC',
-          },
-        });
-
-        // 合并结果，去重
-        const allResults = [...exactMatches, ...fuzzyMatches];
-        const uniqueResults = allResults.filter(
-          (item, index, self) => index === self.findIndex(t => t.id === item.id),
-        );
-
-        return uniqueResults.slice(0, limit);
-      }
-
-      return exactMatches;
+      return await this.mediaResourceRepository
+        .createQueryBuilder('m')
+        .where('m.title LIKE :prefix', { prefix: `${keyword}%` })
+        .orWhere('m.title LIKE :fuzzy', { fuzzy: `%${keyword}%` })
+        .orderBy("CASE WHEN m.title LIKE :prefix THEN 0 ELSE 1 END", 'ASC')
+        .addOrderBy('m.rating', 'DESC')
+        .setParameter('prefix', `${keyword}%`)
+        .setParameter('fuzzy', `%${keyword}%`)
+        .take(limit)
+        .getMany();
     } catch (error) {
       console.error('Search error:', error);
-      // 如果搜索出错，返回空数组而不是抛出错误
       return [];
     }
   }
@@ -442,6 +417,10 @@ export class MediaResourceService {
   /**
    * 获取热门影视
    */
+  @Cacheable({
+    keyGenerator: (...args: unknown[]) => `media:popular:${args[0]}`,
+    ttl: 600,
+  })
   async getPopular(limit: number = 10): Promise<MediaResource[]> {
     return this.createCardQueryBuilder()
       .where('mediaResource.isActive = :isActive', { isActive: true })
@@ -455,6 +434,10 @@ export class MediaResourceService {
   /**
    * 获取最新影视
    */
+  @Cacheable({
+    keyGenerator: (...args: unknown[]) => `media:latest:${args[0]}`,
+    ttl: 180,
+  })
   async getLatest(limit: number = 10): Promise<MediaResource[]> {
     return this.createCardQueryBuilder()
       .where('mediaResource.isActive = :isActive', { isActive: true })
@@ -466,6 +449,7 @@ export class MediaResourceService {
   /**
    * 获取分类统计（类型 + 流派）
    */
+  @Cacheable({ key: 'media:category_stats', ttl: 1800 })
   async getCategoryStats(): Promise<{
     types: Array<{ name: string; label: string; count: number }>;
     genres: Array<{ name: string; count: number }>;
@@ -527,6 +511,10 @@ export class MediaResourceService {
   /**
    * 获取相似影视
    */
+  @Cacheable({
+    keyGenerator: (...args: unknown[]) => `media:similar:${args[0]}:${args[1]}`,
+    ttl: 600,
+  })
   async getSimilar(id: number, limit: number = 6): Promise<MediaResource[]> {
     const mediaResource = await this.findById(id);
 
@@ -574,7 +562,7 @@ export class MediaResourceService {
 
     user.favorites = [...favorites, mediaResource];
     await this.userRepository.save(user);
-    await this.cacheService.clearPattern('media:list:*');
+    await this.cacheService.clearPattern('media:*');
   }
 
   async removeFromFavorites(userId: number, mediaResourceId: number): Promise<void> {
@@ -590,7 +578,7 @@ export class MediaResourceService {
     const favorites = Array.isArray(user.favorites) ? user.favorites : [];
     user.favorites = favorites.filter(item => item.id !== mediaResourceId);
     await this.userRepository.save(user);
-    await this.cacheService.clearPattern('media:list:*');
+    await this.cacheService.clearPattern('media:*');
   }
 
   async isFavoritedByUser(userId: number, mediaResourceId: number): Promise<boolean> {
@@ -671,6 +659,7 @@ export class MediaResourceService {
   /**
    * 获取影视统计信息 - 优化为单次查询
    */
+  @Cacheable({ key: 'media:statistics', ttl: 900 })
   async getStatistics(): Promise<{
     total: number;
     byType: Record<string, number>;
@@ -800,7 +789,7 @@ export class MediaResourceService {
     }
 
     if (deactivated > 0 || movedPlaySources > 0) {
-      await this.cacheService.clearPattern('media:list:*');
+      await this.cacheService.clearPattern('media:*');
     }
 
     return {
@@ -907,6 +896,7 @@ export class MediaResourceService {
   /**
    * 获取数据源列表（用于前台筛选）
    */
+  @Cacheable({ key: 'media:source_list', ttl: 1800 })
   async getSourceList(): Promise<Array<{ name: string; count: number }>> {
     const rows = await this.mediaResourceRepository
       .createQueryBuilder('mediaResource')

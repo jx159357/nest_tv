@@ -7,7 +7,11 @@
       "Bash(npx jest --testPathPatterns=\"download-tasks.service.spec\" --passWithNoTests)",
       "Bash(npx jest --testPathPatterns=\"admin.service.spec\" --passWithNoTests)",
       "Bash(npx jest --testPathPattern=\"admin.service.spec\" --passWithNoTests)",
-      "Bash(npx jest --testPathPatterns=\"(admin|download-tasks).service.spec\" --passWithNoTests)"
+      "Bash(npx jest --testPathPatterns=\"(admin|download-tasks).service.spec\" --passWithNoTests)",
+      "Bash(npm run build)",
+      "Bash(npm test -- --runInBand)",
+      "Bash(npx vue-tsc --noEmit)",
+      "Bash(npx tsc --noEmit)"
     ],
     "deny": [],
     "ask": []

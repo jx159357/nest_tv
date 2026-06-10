@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { DanmakuController } from './danmaku.controller';
 import { AdminRoleGuard } from '../../admin/admin-role.guard';
+import { IS_PUBLIC_KEY } from '../../auth/public.decorator';
 
 describe('DanmakuController', () => {
   const danmakuService = {
@@ -271,6 +272,18 @@ describe('DanmakuController', () => {
       lastActivity: '2025-01-01T01:00:00.000Z',
       message: '当前返回基于网关状态与已入库弹幕汇总的房间信息。',
     });
+  });
+
+  it('exposes read-only room and suggestion endpoints publicly', () => {
+    const getControllerMethod = (name: 'getRealtimeRoomInfo' | 'getDanmakuSuggestions'): unknown =>
+      Object.getOwnPropertyDescriptor(DanmakuController.prototype, name)?.value;
+
+    expect(Reflect.getMetadata(IS_PUBLIC_KEY, getControllerMethod('getRealtimeRoomInfo'))).toBe(
+      true,
+    );
+    expect(Reflect.getMetadata(IS_PUBLIC_KEY, getControllerMethod('getDanmakuSuggestions'))).toBe(
+      true,
+    );
   });
 
   it('returns configured danmaku filter rules', () => {

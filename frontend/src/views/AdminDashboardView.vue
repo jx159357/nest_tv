@@ -1431,6 +1431,7 @@
   }
 
   .dashboard__monitor {
+    min-width: 0;
     overflow: hidden;
     border-radius: var(--radius-2xl);
     background-color: #0f172a;
@@ -1457,6 +1458,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--spacing-6);
+    min-width: 0;
   }
 
   @media (min-width: 1280px) {
@@ -1469,6 +1471,7 @@
 
   .dashboard__monitor-info {
     max-width: 42rem;
+    min-width: 0;
   }
 
   .dashboard__monitor-badge {
@@ -1497,6 +1500,7 @@
     font-size: var(--font-size-sm);
     line-height: 1.625;
     color: #cbd5e1;
+    overflow-wrap: anywhere;
   }
 
   .dashboard__monitor-error {
@@ -1555,6 +1559,7 @@
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--spacing-4);
+    min-width: 0;
   }
 
   @media (min-width: 1280px) {
@@ -1564,6 +1569,7 @@
   }
 
   .dashboard__monitor-panel {
+    min-width: 0;
     border-radius: var(--radius-2xl);
     border: 1px solid rgba(255, 255, 255, 0.1);
     background-color: rgba(255, 255, 255, 0.05);
@@ -1571,10 +1577,22 @@
     backdrop-filter: blur(8px);
   }
 
+  @media (max-width: 640px) {
+    .dashboard__monitor-header,
+    .dashboard__monitor-panel {
+      padding: var(--spacing-4);
+    }
+
+    .dashboard__monitor-body {
+      gap: var(--spacing-3);
+    }
+  }
+
   .dashboard__monitor-panel-header {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-3);
+    min-width: 0;
   }
 
   @media (min-width: 640px) {
@@ -1595,12 +1613,15 @@
     margin-top: var(--spacing-1);
     font-size: var(--font-size-sm);
     color: #94a3b8;
+    overflow-wrap: anywhere;
   }
 
   .dashboard__link-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    max-width: 100%;
+    min-height: var(--touch-target);
     border-radius: 9999px;
     padding: var(--spacing-2) var(--spacing-4);
     font-size: var(--font-size-sm);
@@ -1672,6 +1693,7 @@
   }
 
   .dashboard__info-card {
+    min-width: 0;
     border-radius: var(--radius-xl);
     border: 1px solid rgba(255, 255, 255, 0.1);
     background-color: rgba(15, 23, 42, 0.4);
@@ -1690,6 +1712,7 @@
   }
 
   .dashboard__task-section {
+    min-width: 0;
     margin-top: var(--spacing-4);
     border-radius: var(--radius-xl);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1733,6 +1756,7 @@
     margin-top: var(--spacing-1);
     font-size: var(--font-size-sm);
     color: #e2e8f0;
+    overflow-wrap: anywhere;
   }
 
   .dashboard__task-message {
@@ -1802,6 +1826,7 @@
   }
 
   .dashboard__task-dashboard {
+    min-width: 0;
     margin-top: var(--spacing-4);
     border-radius: var(--radius-xl);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1813,6 +1838,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--spacing-3);
+    min-width: 0;
   }
 
   @media (min-width: 1024px) {
@@ -1827,6 +1853,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-2);
+    min-width: 0;
   }
 
   .dashboard__btn {
@@ -1871,6 +1898,7 @@
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--spacing-4);
+    min-width: 0;
   }
 
   @media (min-width: 1280px) {
@@ -1880,6 +1908,7 @@
   }
 
   .dashboard__task-results-panel {
+    min-width: 0;
     border-radius: var(--radius-xl);
     border: 1px solid rgba(255, 255, 255, 0.1);
     background-color: rgba(15, 23, 42, 0.4);
@@ -1888,9 +1917,11 @@
 
   .dashboard__task-results-header {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: var(--spacing-3);
+    min-width: 0;
   }
 
   .dashboard__task-runs-list {
@@ -1898,9 +1929,11 @@
     display: flex;
     flex-direction: column;
     gap: var(--spacing-3);
+    min-width: 0;
   }
 
   .dashboard__task-run-card {
+    min-width: 0;
     border-radius: var(--radius-lg);
     border: 1px solid rgba(255, 255, 255, 0.1);
     background-color: rgba(15, 23, 42, 0.4);
@@ -1911,6 +1944,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--spacing-2);
+    min-width: 0;
   }
 
   @media (min-width: 640px) {
@@ -1926,12 +1960,14 @@
     flex-wrap: wrap;
     align-items: center;
     gap: var(--spacing-2);
+    min-width: 0;
   }
 
   .dashboard__task-run-message {
     margin-top: var(--spacing-2);
     font-size: var(--font-size-xs);
     color: #64748b;
+    overflow-wrap: anywhere;
   }
 
   .dashboard__task-run-stats {
@@ -1941,6 +1977,15 @@
     gap: var(--spacing-2);
     font-size: var(--font-size-xs);
     color: #cbd5e1;
+    min-width: 0;
+  }
+
+  @media (max-width: 640px) {
+    .dashboard__task-dashboard,
+    .dashboard__task-results-panel,
+    .dashboard__task-run-card {
+      padding: var(--spacing-3);
+    }
   }
 
   @media (min-width: 768px) {

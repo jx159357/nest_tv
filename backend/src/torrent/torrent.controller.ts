@@ -12,7 +12,6 @@ import {
   UseGuards,
   UsePipes,
   ValidationPipe,
-  Header,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';

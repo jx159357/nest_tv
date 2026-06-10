@@ -10,7 +10,7 @@ import type {
 } from '@/types/danmaku';
 
 type DanmakuEventListener = (...args: any[]) => void;
-type SocketClient = typeof import('socket.io-client')['default'];
+type SocketClient = (typeof import('socket.io-client'))['default'];
 type Socket = ReturnType<SocketClient>;
 
 let socketClientLoader: Promise<SocketClient> | null = null;
@@ -200,23 +200,26 @@ export class DanmakuWebSocketService {
   }
 
   // 发送弹幕消息
-  sendDanmaku(message: Omit<DanmakuMessage, 'id' | 'timestamp'>) {
+  sendDanmaku(message: Omit<DanmakuMessage, 'id' | 'timestamp'>): DanmakuMessage | null {
     if (!this.isConnected.value || !this.socket) {
       // 添加到消息队列
       this.addToMessageQueue({
         event: 'send-danmaku',
         data: message,
       });
-      return;
+      return null;
     }
 
-    this.socket.emit('send-danmaku', {
+    const nextMessage: DanmakuMessage = {
       ...message,
       videoId: this.roomId.value,
       userId: this.userId.value,
       timestamp: Date.now(),
       id: this.generateMessageId(),
-    });
+    };
+
+    this.socket.emit('send-danmaku', nextMessage);
+    return nextMessage;
   }
 
   // 获取房间信息

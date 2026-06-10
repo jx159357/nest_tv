@@ -97,11 +97,7 @@ export const danmakuApi = {
     ),
 
   getFilterRules: () =>
-    ApiClient.get<DanmakuFilterRulesSnapshot>(
-      '/danmaku/filter/rules',
-      { silent: true },
-      false,
-    ),
+    ApiClient.get<DanmakuFilterRulesSnapshot>('/danmaku/filter/rules', { silent: true }, false),
 
   updateFilterRules: (payload: {
     sensitiveWords?: string[];

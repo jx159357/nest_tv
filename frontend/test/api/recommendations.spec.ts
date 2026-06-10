@@ -4,7 +4,7 @@ const { apiGet } = vi.hoisted(() => ({
   apiGet: vi.fn(),
 }));
 
-vi.mock('@/api/index', () => ({
+vi.mock('@/api/http', () => ({
   default: {
     get: apiGet,
   },

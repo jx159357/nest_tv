@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
@@ -18,37 +18,50 @@
 
     <!-- 结构化数据 -->
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "Nest TV",
-      "description": "高清在线影视观看平台",
-      "url": "/",
-      "applicationCategory": "MultimediaApplication",
-      "operatingSystem": "Web Browser"
-    }
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Nest TV",
+        "description": "高清在线影视观看平台",
+        "url": "/",
+        "applicationCategory": "MultimediaApplication",
+        "operatingSystem": "Web Browser"
+      }
     </script>
   </head>
   <body>
     <script>
       (function () {
-        try {
-          var savedTheme = localStorage.getItem('nest-tv-theme');
-          var theme = savedTheme === 'light' ? 'light' : 'dark';
-          var root = document.documentElement;
-          var themeColor = document.querySelector('meta[name="theme-color"]');
+        var root = document.documentElement;
+        var themeColor = document.querySelector('meta[name="theme-color"]');
+        var getSystemTheme = function () {
+          return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+            ? 'light'
+            : 'dark';
+        };
+        var applyTheme = function (theme) {
+          var resolvedTheme = theme === 'system' ? getSystemTheme() : theme;
 
-          root.classList.toggle('dark', theme === 'dark');
-          root.dataset.theme = theme;
-          root.style.colorScheme = theme;
+          root.classList.toggle('dark', resolvedTheme === 'dark');
+          root.dataset.theme = resolvedTheme;
+          root.dataset.themePreference = theme;
+          root.style.colorScheme = resolvedTheme;
 
           if (themeColor) {
-            themeColor.setAttribute('content', theme === 'dark' ? '#08090d' : '#ffffff');
+            themeColor.setAttribute('content', resolvedTheme === 'dark' ? '#08090d' : '#ffffff');
           }
+        };
+
+        try {
+          var savedTheme = localStorage.getItem('nest-tv-theme');
+          var theme =
+            savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'system'
+              ? savedTheme
+              : 'system';
+
+          applyTheme(theme);
         } catch (e) {
-          document.documentElement.classList.add('dark');
-          document.documentElement.dataset.theme = 'dark';
-          document.documentElement.style.colorScheme = 'dark';
+          applyTheme('system');
         }
       })();
     </script>

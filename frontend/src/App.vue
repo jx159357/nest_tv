@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { onMounted, ref } from 'vue';
+  import type { RouteLocationNormalizedLoaded } from 'vue-router';
   import { useAuthStore } from '@/stores/auth';
   import EnhancedModal from '@/components/EnhancedModal.vue';
   import UpdateNotification from '@/components/UpdateNotification.vue';
@@ -12,6 +13,10 @@
   const authStore = useAuthStore();
   const toastRef = ref<InstanceType<typeof Toast> | null>(null);
   const progressRef = ref<InstanceType<typeof GlobalProgressBar> | null>(null);
+
+  const getLayoutKey = (route: RouteLocationNormalizedLoaded) => {
+    return route.matched[0]?.path || route.path;
+  };
 
   const initializeApp = async () => {
     try {
@@ -31,9 +36,7 @@
   <div id="app-root">
     <GlobalProgressBar ref="progressRef" />
     <RouterView v-slot="{ Component, route }">
-      <Transition name="page-slide" mode="out-in">
-        <component :is="Component" :key="route.path" />
-      </Transition>
+      <component :is="Component" :key="getLayoutKey(route)" />
     </RouterView>
 
     <EnhancedModal
@@ -60,22 +63,5 @@
     min-height: 100vh;
     background: var(--bg-page-gradient);
     color: var(--text-primary);
-  }
-
-  .page-slide-enter-active,
-  .page-slide-leave-active {
-    transition:
-      opacity 0.25s ease,
-      transform 0.25s ease;
-  }
-
-  .page-slide-enter-from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-
-  .page-slide-leave-to {
-    opacity: 0;
-    transform: translateY(-12px);
   }
 </style>

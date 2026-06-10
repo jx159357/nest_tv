@@ -6,7 +6,7 @@ const { apiGet, apiPost, apiPut } = vi.hoisted(() => ({
   apiPut: vi.fn(),
 }));
 
-vi.mock('@/api/index', () => ({
+vi.mock('@/api/http', () => ({
   default: {
     get: apiGet,
     post: apiPost,
@@ -29,7 +29,7 @@ describe('authApi', () => {
     await authApi.getProfile();
     const validation = await authApi.validateToken();
 
-    expect(apiGet).toHaveBeenNthCalledWith(1, '/users/profile', undefined, false);
+    expect(apiGet).toHaveBeenNthCalledWith(1, '/users/profile', { silent: true }, false);
     expect(apiGet).toHaveBeenNthCalledWith(2, '/users/profile', undefined, false);
     expect(validation).toEqual({
       valid: true,

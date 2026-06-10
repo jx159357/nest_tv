@@ -18,6 +18,7 @@ export interface CacheOptions {
 
 export interface CacheableOptions extends CacheOptions {
   key?: string; // 支持静态键
+  keyGenerator?: (...args: unknown[]) => string; // 动态缓存键生成器
 }
 
 export interface CacheEvictOptions extends CacheOptions {
@@ -457,13 +458,7 @@ export class CacheService {
     let cursor = '0';
 
     do {
-      const [nextCursor, batch] = await this.redis.scan(
-        cursor,
-        'MATCH',
-        pattern,
-        'COUNT',
-        100,
-      );
+      const [nextCursor, batch] = await this.redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
       cursor = nextCursor;
       keys.push(...batch);
     } while (cursor !== '0');

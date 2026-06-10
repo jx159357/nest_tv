@@ -196,7 +196,7 @@
     display: inline-flex;
     align-self: flex-start;
     padding: 4px 12px;
-    border-radius: 20px;
+    border-radius: var(--badge-radius);
     border: 1px solid rgba(16, 185, 129, 0.3);
     background: rgba(16, 185, 129, 0.08);
     font-size: 12px;
@@ -233,7 +233,7 @@
 
   .register-feature-card {
     padding: 16px;
-    border-radius: 16px;
+    border-radius: var(--panel-radius);
     border: 1px solid var(--border-primary);
     background: var(--bg-card);
   }
@@ -252,7 +252,7 @@
 
   .register-card {
     background: var(--bg-card);
-    border-radius: 24px;
+    border-radius: var(--panel-radius);
     border: 1px solid var(--border-primary);
     padding: 32px;
     box-shadow: var(--shadow-xl);
@@ -296,8 +296,9 @@
 
   .register-input {
     width: 100%;
-    padding: 12px 16px;
-    border-radius: 12px;
+    min-height: var(--touch-target);
+    padding: 0 16px;
+    border-radius: 8px;
     border: 1px solid var(--border-secondary);
     background: var(--bg-secondary);
     color: var(--text-primary);
@@ -308,7 +309,7 @@
 
   .register-input:focus {
     border-color: var(--border-focus);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    box-shadow: var(--shadow-focus);
   }
 
   .register-input::placeholder {
@@ -328,8 +329,9 @@
 
   .register-submit {
     width: 100%;
-    padding: 12px;
-    border-radius: 12px;
+    min-height: var(--touch-target);
+    padding: 0 16px;
+    border-radius: 8px;
     background: linear-gradient(
       135deg,
       var(--color-brand-primary),
@@ -369,5 +371,68 @@
 
   .register-link:hover {
     color: var(--color-brand-primary-light);
+  }
+
+  .register-input:focus-visible,
+  .register-submit:focus-visible,
+  .register-link:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 767px) {
+    .register-page {
+      align-items: flex-start;
+      padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+    }
+
+    .register-grid {
+      gap: 18px;
+    }
+
+    .register-hero {
+      gap: 12px;
+    }
+
+    .register-hero-title {
+      font-size: 24px;
+      line-height: 1.25;
+    }
+
+    .register-hero-desc {
+      margin-top: 10px;
+      display: -webkit-box;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .register-features {
+      display: none;
+    }
+
+    .register-card {
+      padding: 20px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .register-card-title {
+      font-size: 22px;
+    }
+
+    .register-form {
+      margin-top: 20px;
+      gap: 16px;
+    }
+
+    .register-input {
+      font-size: 16px;
+    }
+
+    .register-submit {
+      font-size: 15px;
+    }
   }
 </style>

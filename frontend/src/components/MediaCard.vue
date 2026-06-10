@@ -1,5 +1,15 @@
 <template>
-  <div class="media-card" :class="cardClasses" v-on="longPress.handlers" @click="handleClick">
+  <div
+    class="media-card"
+    :class="cardClasses"
+    :role="clickable ? 'button' : undefined"
+    :tabindex="clickable && !loading ? 0 : -1"
+    :aria-label="clickable ? `查看 ${media.title}` : undefined"
+    v-on="longPress.handlers"
+    @click="handleClick"
+    @keydown.enter.prevent="handleClick"
+    @keydown.space.prevent="handleClick"
+  >
     <!-- 骨架屏加载状态 -->
     <div v-if="loading" class="media-card__skeleton">
       <div class="media-card__skeleton-image"></div>
@@ -94,7 +104,7 @@
               <h3>{{ media.title }}</h3>
             </div>
             <div class="action-sheet__list">
-              <button class="action-sheet__item" @click="handleAction('detail')">
+              <button class="action-sheet__item" type="button" @click="handleAction('detail')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10" />
                   <line x1="12" y1="16" x2="12" y2="12" />
@@ -102,7 +112,7 @@
                 </svg>
                 查看详情
               </button>
-              <button class="action-sheet__item" @click="handleAction('favorite')">
+              <button class="action-sheet__item" type="button" @click="handleAction('favorite')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path
                     d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
@@ -110,7 +120,7 @@
                 </svg>
                 收藏
               </button>
-              <button class="action-sheet__item" @click="handleAction('share')">
+              <button class="action-sheet__item" type="button" @click="handleAction('share')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="18" cy="5" r="3" />
                   <circle cx="6" cy="12" r="3" />
@@ -121,7 +131,9 @@
                 分享
               </button>
             </div>
-            <button class="action-sheet__cancel" @click="showActionSheet = false">取消</button>
+            <button class="action-sheet__cancel" type="button" @click="showActionSheet = false">
+              取消
+            </button>
           </div>
         </div>
       </Transition>
@@ -358,8 +370,9 @@
     cursor: pointer;
   }
 
-  .media-card--hoverable:hover {
-    transform: translateY(-3px);
+  .media-card--clickable:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 4px;
   }
 
   .media-card--loading {
@@ -434,10 +447,6 @@
     opacity: 0;
   }
 
-  .media-card:hover .media-card__image-img--loaded {
-    transform: scale(1.06);
-  }
-
   .media-card__image-placeholder {
     position: absolute;
     inset: 0;
@@ -477,10 +486,6 @@
     justify-content: center;
   }
 
-  .media-card:hover .media-card__overlay {
-    opacity: 1;
-  }
-
   .media-card__play-btn {
     width: 44px;
     height: 44px;
@@ -492,10 +497,6 @@
     transform: scale(0.8);
     transition: transform var(--transition-normal);
     box-shadow: 0 12px 32px var(--color-brand-glow);
-  }
-
-  .media-card:hover .media-card__play-btn {
-    transform: scale(1);
   }
 
   .media-card__play-btn svg {
@@ -559,7 +560,15 @@
     transition: color var(--transition-fast);
   }
 
-  .media-card:hover .media-card__title {
+  .media-card:focus-visible .media-card__overlay {
+    opacity: 1;
+  }
+
+  .media-card:focus-visible .media-card__play-btn {
+    transform: scale(1);
+  }
+
+  .media-card:focus-visible .media-card__title {
     color: var(--color-brand-primary-light);
   }
 
@@ -707,6 +716,44 @@
 
   .action-sheet__cancel:hover {
     background: var(--bg-tertiary);
+  }
+
+  @media (hover: hover) {
+    .media-card--hoverable:hover {
+      transform: translateY(-3px);
+    }
+
+    .media-card:hover .media-card__image-img--loaded {
+      transform: scale(1.06);
+    }
+
+    .media-card:hover .media-card__overlay {
+      opacity: 1;
+    }
+
+    .media-card:hover .media-card__play-btn {
+      transform: scale(1);
+    }
+
+    .media-card:hover .media-card__title {
+      color: var(--color-brand-primary-light);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .media-card__rating,
+    .media-card__type {
+      max-width: calc(100% - 16px);
+    }
+
+    .media-card__title {
+      font-size: 13px;
+      min-height: 36px;
+    }
+
+    .media-card__meta {
+      min-height: 18px;
+    }
   }
 
   .sheet-enter-active,

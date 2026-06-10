@@ -5,7 +5,7 @@
         <h1 class="page-title text-2xl font-bold">用户管理</h1>
         <p class="page-description mt-2">查看系统用户、角色和账户状态</p>
       </div>
-      <div class="flex gap-3">
+      <div class="users-filter-actions flex flex-wrap gap-3">
         <input
           v-model="search"
           type="text"
@@ -348,5 +348,19 @@
   .page-btn {
     border-color: var(--border-primary);
     color: var(--text-muted);
+  }
+
+  @media (max-width: 768px) {
+    .users-filter-actions {
+      width: 100%;
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .search-input,
+    .btn-primary {
+      width: 100%;
+      min-height: var(--touch-target);
+    }
   }
 </style>
