@@ -28,6 +28,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { CreatePlaySourceDto, UpdatePlaySourceDto } from './dtos/play-source.dto';
 import { PlaySourceQueryDto } from './dtos/play-source-query.dto';
+import { ResolveCmsDto } from './dto/resolve-cms.dto';
 import { PlaySourceStatus } from '../entities/play-source.entity';
 
 @ApiTags('播放源管理')
@@ -246,7 +247,47 @@ export class PlaySourceController {
   @ApiResponse({ status: 404, description: '播放源不存在' })
   @ApiParam({ name: 'id', description: '播放源ID' })
   async validate(@Param('id', ParseIntPipe) id: number) {
-    return this.playSourceService.validate(id);
+    const result = await this.playSourceService.validate(id);
+    const circuitBreaker = this.playSourceService.getCircuitBreakerStatus(id);
+    return { ...result, circuitBreaker };
+  }
+
+  @Get(':id/circuit-breaker')
+  @ApiOperation({ summary: '获取播放源熔断状态' })
+  @ApiParam({ name: 'id', description: '播放源ID' })
+  async getCircuitBreakerStatus(@Param('id', ParseIntPipe) id: number) {
+    await this.playSourceService.findById(id);
+    return this.playSourceService.getCircuitBreakerStatus(id);
+  }
+
+  @Post(':id/circuit-breaker/reset')
+  @ApiOperation({ summary: '重置播放源熔断状态' })
+  @ApiParam({ name: 'id', description: '播放源ID' })
+  async resetCircuitBreaker(@Param('id', ParseIntPipe) id: number) {
+    await this.playSourceService.findById(id);
+    this.playSourceService.resetCircuitBreaker(id);
+    return { message: 'Circuit breaker reset successfully.' };
+  }
+
+  @Post('batch/enable')
+  @ApiOperation({ summary: '批量启用播放源' })
+  @ApiResponse({ status: 200, description: '批量启用成功' })
+  async batchEnable(@Body('ids') ids: number[]) {
+    return this.playSourceService.batchUpdateStatus(ids, true);
+  }
+
+  @Post('batch/disable')
+  @ApiOperation({ summary: '批量禁用播放源' })
+  @ApiResponse({ status: 200, description: '批量禁用成功' })
+  async batchDisable(@Body('ids') ids: number[]) {
+    return this.playSourceService.batchUpdateStatus(ids, false);
+  }
+
+  @Post('batch/delete')
+  @ApiOperation({ summary: '批量删除播放源' })
+  @ApiResponse({ status: 200, description: '批量删除成功' })
+  async batchDelete(@Body('ids') ids: number[]) {
+    return this.playSourceService.batchDelete(ids);
   }
 
   /**
@@ -306,7 +347,7 @@ export class PlaySourceController {
   })
   @ApiResponse({ status: 200, description: '解析成功' })
   @UsePipes(new ValidationPipe({ transform: true }))
-  async resolveFromCms(@Body() body: { title: string; episodeNumber?: number }) {
+  async resolveFromCms(@Body() body: ResolveCmsDto) {
     const episodes = await this.macCmsResolver.resolveByTitle(body.title, body.episodeNumber);
     return { episodes };
   }
@@ -340,5 +381,24 @@ export class PlaySourceController {
   async triggerCleanup() {
     const cleaned = await this.healthService.cleanupExpiredSources(30);
     return { cleaned };
+  }
+
+  /**
+   * 上报播放性能指标
+   */
+  @Post(':id/metrics')
+  @Public()
+  @ApiOperation({ summary: '上报播放性能指标', description: '前端播放器上报首帧时间、卡顿次数等播放性能数据' })
+  @ApiParam({ name: 'id', description: '播放源ID' })
+  @ApiResponse({ status: 200, description: '上报成功' })
+  async reportMetrics(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { firstFrameTimeMs?: number; stallCount?: number; success?: boolean },
+  ) {
+    return this.playSourceService.recordPlayMetrics(id, {
+      firstFrameTimeMs: body.firstFrameTimeMs,
+      stallCount: body.stallCount,
+      success: body.success !== false,
+    });
   }
 }

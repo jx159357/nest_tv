@@ -12,6 +12,12 @@ interface ApiError {
   silent?: boolean;
 }
 
+const generateRequestId = (): string => {
+  const randomId = globalThis.crypto?.randomUUID?.();
+  if (randomId) return randomId;
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+};
+
 // 成功响应包装器
 export class ApiResponseWrapper {
   static success<T>(data: T, message?: string): ApiResponse<T> {
@@ -74,9 +80,13 @@ export class RequestInterceptor {
   static config() {
     return {
       onRequest: (config: any) => {
+        config.headers = config.headers || {};
         const token = localStorage.getItem('token');
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
+        }
+        if (!config.headers['X-Request-ID']) {
+          config.headers['X-Request-ID'] = generateRequestId();
         }
         return config;
       },

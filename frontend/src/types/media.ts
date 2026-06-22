@@ -71,6 +71,10 @@ export interface PlaySource {
   lastCheckedAt?: Date;
   mediaResourceId: number;
   mediaResource?: MediaResource;
+  firstFrameTimeMs?: number;
+  stallCount?: number;
+  playSuccessCount?: number;
+  playAttemptCount?: number;
 }
 
 export enum PlaySourceType {
@@ -107,6 +111,7 @@ export interface MediaQueryParams {
 export interface PlaySourceQueryParams {
   page?: number;
   pageSize?: number;
+  /** @deprecated Use pageSize instead */
   limit?: number;
   type?: PlaySourceType;
   status?: PlaySourceStatus;
@@ -160,4 +165,42 @@ export interface PlaySourceUpdateData {
   validationInfo?: any;
   webDiskInfo?: any;
   episodeNumber?: number;
+}
+
+export interface PlayDetailEpisode {
+  id: number;
+  episodeNumber?: number;
+  url: string;
+  name: string;
+  resolution?: string;
+  format?: string;
+  status?: string;
+  isAds?: boolean;
+}
+
+export interface PlayDetailSourceGroup {
+  name: string;
+  episodes: PlayDetailEpisode[];
+}
+
+export interface PlayDetailResponse {
+  id: number;
+  title: string;
+  description?: string;
+  type: string;
+  poster?: string;
+  backdrop?: string;
+  rating: number;
+  genres?: string[];
+  quality?: string;
+  releaseDate?: string;
+  episodeCount?: number;
+  sourceGroups: PlayDetailSourceGroup[];
+  sourceFreshness: 'fresh' | 'stale' | 'refreshing' | 'empty';
+  downloadUrls?: string[];
+  watchHistory?: {
+    currentTime: number;
+    duration: number;
+    episodeNumber?: number;
+  } | null;
 }

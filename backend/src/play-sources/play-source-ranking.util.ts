@@ -32,12 +32,58 @@ export function isPlaySourceFresh(
   return now.getTime() - playSource.lastCheckedAt.getTime() <= freshnessHours * 60 * 60 * 1000;
 }
 
+export function getPlaySourceScore(
+  playSource: PlaySource,
+  now: Date = new Date(),
+): number {
+  const statusRank = PLAY_SOURCE_STATUS_RANK[playSource.status] ?? 0;
+  const typeRank = PLAY_SOURCE_TYPE_RANK[playSource.type] ?? 0;
+  const activeBonus = playSource.isActive ? 5 : 0;
+  const adsPenalty = playSource.isAds ? -2 : 0;
+
+  let freshnessScore = 0;
+  if (playSource.lastCheckedAt) {
+    const hoursSinceCheck = (now.getTime() - playSource.lastCheckedAt.getTime()) / (60 * 60 * 1000);
+    freshnessScore = Math.max(0, 10 - hoursSinceCheck / 1.2);
+  }
+
+  let successRate = 0;
+  if (playSource.playAttemptCount > 0) {
+    successRate = (playSource.playSuccessCount / playSource.playAttemptCount) * 10;
+  }
+
+  let speedScore = 10;
+  if (typeof playSource.firstFrameTimeMs === 'number' && playSource.firstFrameTimeMs > 0) {
+    speedScore = Math.max(0, 10 - playSource.firstFrameTimeMs / 1000);
+  }
+
+  let stallPenalty = 0;
+  if (playSource.playAttemptCount > 0) {
+    const stallRate = playSource.stallCount / Math.max(playSource.playAttemptCount, 1);
+    stallPenalty = stallRate * -5;
+  }
+
+  return (
+    statusRank * 10 +
+    typeRank * 8 +
+    activeBonus +
+    freshnessScore * 3 +
+    successRate * 4 +
+    speedScore * 2 +
+    stallPenalty +
+    adsPenalty +
+    (playSource.playCount > 0 ? Math.min(playSource.playCount, 50) * 0.1 : 0) -
+    (playSource.priority || 0) * 0.5
+  );
+}
+
 export function comparePlaySources(
   left: PlaySource,
   right: PlaySource,
   now: Date = new Date(),
 ): number {
   return (
+    compareNumbers(getPlaySourceScore(right, now), getPlaySourceScore(left, now)) ||
     compareNumbers(getAvailabilityRank(right), getAvailabilityRank(left)) ||
     compareNumbers(getTypeRank(right), getTypeRank(left)) ||
     compareNumbers(getFreshnessRank(right, now), getFreshnessRank(left, now)) ||

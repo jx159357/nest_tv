@@ -11,7 +11,20 @@
       "Bash(npm run build)",
       "Bash(npm test -- --runInBand)",
       "Bash(npx vue-tsc --noEmit)",
-      "Bash(npx tsc --noEmit)"
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx jest --testPathPattern=\"recommendation.service.spec\" --passWithNoTests --verbose)",
+      "Bash(npx jest --testPathPatterns=\"recommendation.service.spec\" --passWithNoTests --verbose)",
+      "Bash(npx vitest run --reporter=verbose)",
+      "Bash(npx eslint src/views/AdminDashboardView.vue --ext .vue,.ts --no-eslintrc --rule '{\"\"\"\"no-unused-vars\"\"\"\": \"\"\"\"off\"\"\"\"}' --format compact)",
+      "Bash(grep -c \"#[0-9a-fA-F]\\{3,8\\}\\|rgba\\|white\" src/views/AdminDashboardView.vue)",
+      "Bash(grep -n \"rgba(255, 255, 255, 0\\.1)\" src/views/AdminDashboardView.vue)",
+      "Bash(grep -c \"#[0-9a-fA-F]\\{3,8\\}\\|rgba\" src/views/AdminDashboardView.vue)",
+      "Bash(grep -c \"#[0-9a-fA-F]\\{3,8\\}\\|rgba\\|color: white\" src/views/AdminDownloadTasksView.vue src/views/AdminPlaySourcesView.vue)",
+      "Bash(grep -n \"#[0-9a-fA-F]\\{3,8\\}\\|color: white\" src/views/AdminDownloadTasksView.vue)",
+      "Bash(grep -n \"#[0-9a-fA-F]\\{3,8\\}\\|color: white\" src/views/AdminPlaySourcesView.vue)",
+      "Bash(npm run lint)",
+      "Bash(npm test -- --passWithNoTests)",
+      "Bash(npm test)"
     ],
     "deny": [],
     "ask": []

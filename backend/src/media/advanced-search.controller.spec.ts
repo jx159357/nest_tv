@@ -44,7 +44,7 @@ describe('AdvancedSearchController', () => {
   it('loads search history for the authenticated user', async () => {
     advancedSearchService.getUserSearchHistory.mockResolvedValue(['沙丘']);
 
-    await controller.getUserSearchHistory(11, '5');
+    await controller.getUserSearchHistory(11, { limit: 5 });
 
     expect(advancedSearchService.getUserSearchHistory).toHaveBeenCalledWith(11, 5);
   });

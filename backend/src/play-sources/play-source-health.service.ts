@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 import { PlaySource, PlaySourceStatus, PlaySourceType } from '../entities/play-source.entity';
 import { MediaResource } from '../entities/media-resource.entity';
 import { MacCmsResolverService } from './mac-cms-resolver.service';
@@ -38,6 +39,7 @@ export class PlaySourceHealthService {
     private readonly mediaResourceRepository: Repository<MediaResource>,
     private readonly macCmsResolver: MacCmsResolverService,
     private readonly appLogger: AppLoggerService,
+    private readonly configService: ConfigService,
   ) {}
 
   @Cron('0 */2 * * *')
@@ -156,7 +158,9 @@ export class PlaySourceHealthService {
 
     try {
       const axios = (await import('axios')).default;
-      const proxyUrl = `http://localhost:3334/iptv/stream/proxy?url=${encodeURIComponent(url)}`;
+      const port = this.configService.get<string>('PORT', '3334');
+      const host = this.configService.get<string>('PROXY_HOST', '127.0.0.1');
+      const proxyUrl = `http://${host}:${port}/iptv/stream/proxy?url=${encodeURIComponent(url)}`;
       const proxyResp = await axios.get(proxyUrl, {
         timeout: 10000,
         validateStatus: () => true,

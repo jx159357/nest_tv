@@ -1253,7 +1253,7 @@
   /* ========== Buttons ========== */
   .dt-btn-primary {
     background-color: var(--color-brand-primary);
-    color: #fff;
+    color: var(--text-inverse);
   }
 
   .dt-btn-primary:hover {
@@ -1289,7 +1289,7 @@
   .dt-pill-active-success {
     border-color: rgba(52, 211, 153, 0.3);
     background-color: rgba(16, 185, 129, 0.15);
-    color: #6ee7b7;
+    color: var(--color-success-light);
   }
 
   .dt-pill-inactive {

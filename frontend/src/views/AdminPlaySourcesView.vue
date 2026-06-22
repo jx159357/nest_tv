@@ -429,6 +429,39 @@
       </div>
     </div>
 
+    <div
+      v-if="selectedIds.size > 0"
+      class="batch-action-bar"
+    >
+      <div class="batch-action-info">
+        已选择 <strong>{{ selectedIds.size }}</strong> 条播放源
+      </div>
+      <div class="batch-action-buttons">
+        <button
+          class="batch-btn batch-btn-enable"
+          :disabled="batchLoading"
+          @click="executeBatch('enable')"
+        >
+          批量启用
+        </button>
+        <button
+          class="batch-btn batch-btn-disable"
+          :disabled="batchLoading"
+          @click="executeBatch('disable')"
+        >
+          批量禁用
+        </button>
+        <button
+          class="batch-btn batch-btn-delete"
+          :disabled="batchLoading"
+          @click="executeBatch('delete')"
+        >
+          批量删除
+        </button>
+        <button class="batch-btn batch-btn-cancel" @click="clearSelection">取消选择</button>
+      </div>
+    </div>
+
     <div class="table-container">
       <div v-if="loading" class="p-8 text-center" style="color: var(--text-muted)">加载中...</div>
       <div v-else-if="error" class="p-8 text-center" style="color: var(--color-danger)">
@@ -503,10 +536,19 @@
           <table class="data-table">
             <thead>
               <tr>
+                <th class="checkbox-col">
+                  <input
+                    type="checkbox"
+                    :checked="isAllSelected"
+                    :indeterminate="isIndeterminate"
+                    @change="toggleSelectAll"
+                  />
+                </th>
                 <th>来源</th>
                 <th>媒体</th>
                 <th>类型</th>
                 <th>状态</th>
+                <th>成功率</th>
                 <th>优先级</th>
                 <th>最后校验</th>
                 <th>创建时间</th>
@@ -514,6 +556,13 @@
             </thead>
             <tbody>
               <tr v-for="item in playSources" :key="item.id" :class="getPlaySourceRowClass(item)">
+                <td class="checkbox-col">
+                  <input
+                    type="checkbox"
+                    :checked="selectedIds.has(item.id)"
+                    @change="toggleSelect(item.id)"
+                  />
+                </td>
                 <td>
                   <div class="font-medium" style="color: var(--text-primary)">
                     {{ item.sourceName || item.name || '未命名播放源' }}
@@ -542,6 +591,11 @@
                 <td style="color: var(--text-secondary)">{{ item.type }}</td>
                 <td>
                   <span :class="getStatusClass(item.status)">{{ item.status }}</span>
+                </td>
+                <td>
+                  <span :class="getSuccessRateClass(item)">
+                    {{ formatSuccessRate(item) }}
+                  </span>
                 </td>
                 <td style="color: var(--text-secondary)">{{ item.priority }}</td>
                 <td style="color: var(--text-secondary)">{{ formatDate(item.lastCheckedAt) }}</td>
@@ -590,6 +644,7 @@
     type CrawlerAlertFilter,
   } from '@/utils/collection-source-alerts';
   import type { PlaySource } from '@/types/media';
+  import { playSourceApi } from '@/api/playSource';
   import { log } from '@/utils/logger';
 
   const route = useRoute();
@@ -597,6 +652,8 @@
 
   const playSources = ref<PlaySource[]>([]);
   const loading = ref(false);
+  const selectedIds = ref<Set<number>>(new Set());
+  const batchLoading = ref(false);
   const error = ref<string | null>(null);
   const type = ref('');
   const source = ref('');
@@ -1004,6 +1061,64 @@
     await loadFocusedSourceContext();
   };
 
+  const isAllSelected = computed(() => {
+    return playSources.value.length > 0 && playSources.value.every(item => selectedIds.value.has(item.id));
+  });
+
+  const isIndeterminate = computed(() => {
+    const count = playSources.value.filter(item => selectedIds.value.has(item.id)).length;
+    return count > 0 && count < playSources.value.length;
+  });
+
+  const toggleSelectAll = () => {
+    if (isAllSelected.value) {
+      selectedIds.value.clear();
+    } else {
+      for (const item of playSources.value) {
+        selectedIds.value.add(item.id);
+      }
+    }
+  };
+
+  const toggleSelect = (id: number) => {
+    if (selectedIds.value.has(id)) {
+      selectedIds.value.delete(id);
+    } else {
+      selectedIds.value.add(id);
+    }
+  };
+
+  const clearSelection = () => {
+    selectedIds.value.clear();
+  };
+
+  const executeBatch = async (action: 'enable' | 'disable' | 'delete') => {
+    const ids = [...selectedIds.value];
+    if (ids.length === 0) return;
+
+    const actionLabel = action === 'enable' ? '启用' : action === 'disable' ? '禁用' : '删除';
+    if (action === 'delete' && !confirm(`确认删除 ${ids.length} 条播放源？此操作不可撤销。`)) {
+      return;
+    }
+
+    batchLoading.value = true;
+    try {
+      if (action === 'enable') {
+        await playSourceApi.batchEnable(ids);
+      } else if (action === 'disable') {
+        await playSourceApi.batchDisable(ids);
+      } else {
+        await playSourceApi.batchDelete(ids);
+      }
+      selectedIds.value.clear();
+      await loadPlaySources(page.value);
+    } catch (err) {
+      log.error('AdminPlaySources', `批量${actionLabel}失败:`, err);
+    } finally {
+      batchLoading.value = false;
+    }
+  };
+
   const getQuickFilterClass = (key: QuickFilterKey) => {
     const isActive = activeQuickFilterKey.value === key;
 
@@ -1066,6 +1181,23 @@
       default:
         return 'status-badge status-default';
     }
+  };
+
+  const formatSuccessRate = (item: PlaySource) => {
+    const attempts = item.playAttemptCount ?? 0;
+    if (attempts === 0) return '—';
+    const successes = item.playSuccessCount ?? 0;
+    return `${Math.round((successes / attempts) * 100)}%`;
+  };
+
+  const getSuccessRateClass = (item: PlaySource) => {
+    const attempts = item.playAttemptCount ?? 0;
+    if (attempts === 0) return 'rate-badge rate-unknown';
+    const successes = item.playSuccessCount ?? 0;
+    const rate = (successes / attempts) * 100;
+    if (rate >= 80) return 'rate-badge rate-high';
+    if (rate >= 50) return 'rate-badge rate-medium';
+    return 'rate-badge rate-low';
   };
 
   const getValidationSummary = (item: PlaySource) => {
@@ -1185,7 +1317,7 @@
 
   .ps-quick-filter--active {
     background: var(--color-brand-primary, #6366f1);
-    color: #fff;
+    color: var(--text-inverse);
     box-shadow: var(--shadow-sm);
   }
 
@@ -1303,7 +1435,7 @@
     padding: 0 16px;
     font-size: 14px;
     font-weight: 500;
-    color: #fff;
+    color: var(--text-inverse);
     background: var(--color-brand-primary, #6366f1);
     transition: all 0.2s;
   }
@@ -1569,6 +1701,134 @@
   .status-default {
     background: var(--bg-secondary);
     color: var(--text-muted);
+  }
+
+  .rate-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .rate-high {
+    background: var(--color-success-bg, rgba(16, 185, 129, 0.15));
+    color: var(--color-success, #10b981);
+  }
+
+  .rate-medium {
+    background: var(--color-warning-bg, rgba(245, 158, 11, 0.15));
+    color: var(--color-warning, #f59e0b);
+  }
+
+  .rate-low {
+    background: var(--color-danger-bg, rgba(244, 63, 94, 0.15));
+    color: var(--color-danger, #f43f5e);
+  }
+
+  .rate-unknown {
+    background: var(--bg-secondary);
+    color: var(--text-muted);
+  }
+
+  .checkbox-col {
+    width: 40px;
+    text-align: center;
+  }
+
+  .checkbox-col input[type='checkbox'] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--color-brand-primary, #6366f1);
+  }
+
+  .batch-action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-radius: var(--panel-radius);
+    border: 1px solid var(--color-brand-border, rgba(99, 102, 241, 0.3));
+    background: var(--color-brand-overlay, rgba(99, 102, 241, 0.08));
+    padding: 12px 16px;
+  }
+
+  .batch-action-info {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .batch-action-info strong {
+    color: var(--color-brand-primary, #6366f1);
+    font-weight: 600;
+  }
+
+  .batch-action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .batch-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    border-radius: var(--radius-control);
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .batch-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .batch-btn-enable {
+    background: var(--color-success-bg, rgba(16, 185, 129, 0.15));
+    color: var(--color-success, #10b981);
+    border-color: var(--color-success-border, rgba(16, 185, 129, 0.3));
+  }
+
+  .batch-btn-enable:hover:not(:disabled) {
+    background: var(--color-success-bg, rgba(16, 185, 129, 0.25));
+  }
+
+  .batch-btn-disable {
+    background: var(--color-warning-bg, rgba(245, 158, 11, 0.15));
+    color: var(--color-warning, #f59e0b);
+    border-color: var(--color-warning-border, rgba(245, 158, 11, 0.3));
+  }
+
+  .batch-btn-disable:hover:not(:disabled) {
+    background: var(--color-warning-bg, rgba(245, 158, 11, 0.25));
+  }
+
+  .batch-btn-delete {
+    background: var(--color-danger-bg, rgba(244, 63, 94, 0.15));
+    color: var(--color-danger, #f43f5e);
+    border-color: var(--color-danger-border, rgba(244, 63, 94, 0.3));
+  }
+
+  .batch-btn-delete:hover:not(:disabled) {
+    background: var(--color-danger-bg, rgba(244, 63, 94, 0.25));
+  }
+
+  .batch-btn-cancel {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border-color: var(--border-secondary);
+  }
+
+  .batch-btn-cancel:hover {
+    background: var(--bg-card);
   }
 
   .table-footer {

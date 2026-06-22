@@ -97,4 +97,23 @@ export const playSourceApi = {
       { title, episodeNumber },
     );
   },
+
+  // 上报播放性能指标
+  reportMetrics: (
+    id: number,
+    metrics: { firstFrameTimeMs?: number; stallCount?: number; success?: boolean },
+  ) => {
+    return ApiClient.post<void>(`/play-sources/${id}/metrics`, metrics as Record<string, any>, {
+      silent: true,
+    });
+  },
+
+  batchEnable: (ids: number[]) =>
+    ApiClient.post<{ updated: number }>('/play-sources/batch/enable', { ids }),
+
+  batchDisable: (ids: number[]) =>
+    ApiClient.post<{ updated: number }>('/play-sources/batch/disable', { ids }),
+
+  batchDelete: (ids: number[]) =>
+    ApiClient.post<{ deleted: number }>('/play-sources/batch/delete', { ids }),
 };

@@ -1,7 +1,7 @@
 import ApiClient from './http';
 import { apiCacheManager } from '@/utils/api-cache';
 import type { PaginatedResponse } from '@/types/api';
-import type { MediaResource, MediaQueryParams } from '@/types/media';
+import type { MediaResource, MediaQueryParams, PlayDetailResponse } from '@/types/media';
 
 const splitRequestOptions = (params?: MediaQueryParams) => {
   const { silent, limit, ...query } = params ?? {};
@@ -40,6 +40,10 @@ export const mediaApi = {
 
   getMediaById: (id: string) => {
     return ApiClient.get<MediaResource>(`/media/${id}`, undefined, false);
+  },
+
+  getPlayDetail: (id: string) => {
+    return ApiClient.get<PlayDetailResponse>(`/media/${id}/play-detail`, undefined, false);
   },
 
   searchMedia: (query: string, params?: MediaQueryParams) => {

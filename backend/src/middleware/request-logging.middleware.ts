@@ -1,6 +1,7 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { AppLoggerService } from '../common/services/app-logger.service';
+import { ensureRequestId } from '../common/utils/request-id.util';
 
 /**
  * 请求日志中间件
@@ -14,9 +15,11 @@ export class RequestLoggingMiddleware implements NestMiddleware {
     const startTime = Date.now();
     const { method, originalUrl, headers } = req;
     const logger = this.logger; // 保存logger引用
+    const requestId = ensureRequestId(req, res);
 
     // 记录请求开始
     logger.logRequest({
+      requestId,
       method,
       url: originalUrl,
       ip: this.getClientIp(req),
@@ -31,6 +34,7 @@ export class RequestLoggingMiddleware implements NestMiddleware {
       // 记录响应信息
       try {
         logger.logResponse({
+          requestId,
           method,
           url: originalUrl,
           statusCode,
@@ -69,6 +73,7 @@ export class RequestLoggingMiddleware implements NestMiddleware {
  * 请求日志信息接口
  */
 export interface RequestLogInfo {
+  requestId: string;
   method: string;
   url: string;
   ip: string;
@@ -80,6 +85,7 @@ export interface RequestLogInfo {
  * 响应日志信息接口
  */
 export interface ResponseLogInfo {
+  requestId: string;
   method: string;
   url: string;
   statusCode: number;

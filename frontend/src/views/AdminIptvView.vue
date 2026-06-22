@@ -118,7 +118,13 @@
             <tr v-for="channel in channels" :key="channel.id">
               <td>
                 <div class="channel-name">
-                  <img v-if="channel.logo" :src="getLogoUrl(channel.logo)" class="channel-logo" loading="lazy" @error="hideOnError" />
+                  <img
+                    v-if="channel.logo"
+                    :src="getLogoUrl(channel.logo)"
+                    class="channel-logo"
+                    loading="lazy"
+                    @error="hideOnError"
+                  />
                   <span>{{ channel.name }}</span>
                 </div>
               </td>
@@ -234,7 +240,13 @@
     <div v-if="activeTab === 'logos'" class="tab-content">
       <div class="logos-grid">
         <div v-for="logo in logos" :key="logo.id" class="logo-card">
-          <img :src="getLogoUrl(logo.url)" :alt="logo.name" class="logo-image" loading="lazy" @error="setLogoFallback" />
+          <img
+            :src="getLogoUrl(logo.url)"
+            :alt="logo.name"
+            class="logo-image"
+            loading="lazy"
+            @error="setLogoFallback"
+          />
           <div class="logo-info">
             <h4>{{ logo.name }}</h4>
             <p>{{ logo.category || '未分类' }}</p>
@@ -402,7 +414,8 @@
     if (el) el.style.display = 'none';
   };
 
-  const LOGO_FALLBACK_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect fill='%23e2e8f0' width='40' height='40'/%3E%3Ctext x='20' y='26' text-anchor='middle' fill='%2394a3b8' font-size='12'%3ELogo%3C/text%3E%3C/svg%3E";
+  const LOGO_FALLBACK_SVG =
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect fill='%23e2e8f0' width='40' height='40'/%3E%3Ctext x='20' y='26' text-anchor='middle' fill='%2394a3b8' font-size='12'%3ELogo%3C/text%3E%3C/svg%3E";
 
   const setLogoFallback = (e: Event) => {
     const el = e.target as HTMLImageElement | null;

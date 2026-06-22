@@ -44,17 +44,85 @@ export interface PlaySourceRefreshResult {
   playSource?: PlaySource;
 }
 
+interface CircuitBreakerState {
+  consecutiveFailures: number;
+  lastFailureAt: number;
+  openedAt: number;
+}
+
 @Injectable()
 export class PlaySourceService {
   private readonly FRESHNESS_MS = 6 * 60 * 60 * 1000;
   private readonly STALE_MS = 24 * 60 * 60 * 1000;
   private readonly refreshLocks = new Map<number, Promise<void>>();
 
+  private readonly CIRCUIT_MAX_FAILURES = 5;
+  private readonly CIRCUIT_COOLDOWN_MS = 30 * 60 * 1000;
+  private readonly circuitBreakers = new Map<number, CircuitBreakerState>();
+
   constructor(
     @InjectRepository(PlaySource)
     private playSourceRepository: Repository<PlaySource>,
     private parseProvidersService: ParseProvidersService,
   ) {}
+
+  private isCircuitOpen(sourceId: number): boolean {
+    const state = this.circuitBreakers.get(sourceId);
+    if (!state || state.consecutiveFailures < this.CIRCUIT_MAX_FAILURES) {
+      return false;
+    }
+    return Date.now() - state.openedAt < this.CIRCUIT_COOLDOWN_MS;
+  }
+
+  private recordCircuitFailure(sourceId: number): void {
+    const existing = this.circuitBreakers.get(sourceId);
+    const consecutiveFailures = (existing?.consecutiveFailures ?? 0) + 1;
+    const now = Date.now();
+    this.circuitBreakers.set(sourceId, {
+      consecutiveFailures,
+      lastFailureAt: now,
+      openedAt: consecutiveFailures >= this.CIRCUIT_MAX_FAILURES ? now : (existing?.openedAt ?? 0),
+    });
+  }
+
+  private recordCircuitSuccess(sourceId: number): void {
+    this.circuitBreakers.delete(sourceId);
+  }
+
+  resetCircuitBreaker(sourceId: number): void {
+    this.circuitBreakers.delete(sourceId);
+  }
+
+  getCircuitBreakerStatus(sourceId: number): {
+    state: 'closed' | 'open' | 'half-open';
+    consecutiveFailures: number;
+    cooldownRemainingMs: number;
+  } {
+    const cb = this.circuitBreakers.get(sourceId);
+    if (!cb || cb.consecutiveFailures === 0) {
+      return { state: 'closed', consecutiveFailures: 0, cooldownRemainingMs: 0 };
+    }
+    if (cb.consecutiveFailures < this.CIRCUIT_MAX_FAILURES) {
+      return {
+        state: 'closed',
+        consecutiveFailures: cb.consecutiveFailures,
+        cooldownRemainingMs: 0,
+      };
+    }
+    const elapsed = Date.now() - cb.openedAt;
+    if (elapsed >= this.CIRCUIT_COOLDOWN_MS) {
+      return {
+        state: 'half-open',
+        consecutiveFailures: cb.consecutiveFailures,
+        cooldownRemainingMs: 0,
+      };
+    }
+    return {
+      state: 'open',
+      consecutiveFailures: cb.consecutiveFailures,
+      cooldownRemainingMs: this.CIRCUIT_COOLDOWN_MS - elapsed,
+    };
+  }
 
   async getSourceHealthSummary(sourceName: string): Promise<{
     sourceName: string;
@@ -344,6 +412,63 @@ export class PlaySourceService {
     await this.playSourceRepository.remove(playSource);
   }
 
+  async batchUpdateStatus(ids: number[], isActive: boolean): Promise<{ updated: number }> {
+    if (!ids || ids.length === 0) {
+      return { updated: 0 };
+    }
+    const uniqueIds = [...new Set(ids)].filter(id => Number.isFinite(id) && id > 0);
+    if (uniqueIds.length === 0) {
+      return { updated: 0 };
+    }
+    const status = isActive ? PlaySourceStatus.ACTIVE : PlaySourceStatus.INACTIVE;
+    const result = await this.playSourceRepository
+      .createQueryBuilder()
+      .update()
+      .set({ isActive, status })
+      .whereInIds(uniqueIds)
+      .execute();
+    return { updated: result.affected ?? 0 };
+  }
+
+  async batchDelete(ids: number[]): Promise<{ deleted: number }> {
+    if (!ids || ids.length === 0) {
+      return { deleted: 0 };
+    }
+    const uniqueIds = [...new Set(ids)].filter(id => Number.isFinite(id) && id > 0);
+    if (uniqueIds.length === 0) {
+      return { deleted: 0 };
+    }
+    const result = await this.playSourceRepository
+      .createQueryBuilder()
+      .delete()
+      .whereInIds(uniqueIds)
+      .execute();
+    return { deleted: result.affected ?? 0 };
+  }
+
+  async recordPlayMetrics(
+    id: number,
+    metrics: { firstFrameTimeMs?: number; stallCount?: number; success: boolean },
+  ): Promise<void> {
+    const playSource = await this.findById(id);
+    playSource.playAttemptCount = (playSource.playAttemptCount || 0) + 1;
+    if (metrics.success) {
+      playSource.playSuccessCount = (playSource.playSuccessCount || 0) + 1;
+    }
+    if (typeof metrics.firstFrameTimeMs === 'number' && metrics.firstFrameTimeMs > 0) {
+      const existing = playSource.firstFrameTimeMs;
+      if (typeof existing === 'number' && existing > 0) {
+        playSource.firstFrameTimeMs = Math.round(existing * 0.7 + metrics.firstFrameTimeMs * 0.3);
+      } else {
+        playSource.firstFrameTimeMs = metrics.firstFrameTimeMs;
+      }
+    }
+    if (typeof metrics.stallCount === 'number' && metrics.stallCount > 0) {
+      playSource.stallCount = (playSource.stallCount || 0) + metrics.stallCount;
+    }
+    await this.playSourceRepository.save(playSource);
+  }
+
   async validate(id: number): Promise<{
     isValid: boolean;
     message: string;
@@ -629,10 +754,30 @@ export class PlaySourceService {
   }
 
   private async validatePlaySource(playSource: PlaySource): Promise<PlaySourceValidationResult> {
+    if (this.isCircuitOpen(playSource.id)) {
+      const cbStatus = this.getCircuitBreakerStatus(playSource.id);
+      return {
+        isValid: false,
+        message: `Circuit breaker open: ${cbStatus.consecutiveFailures} consecutive failures. Retry in ${Math.ceil(cbStatus.cooldownRemainingMs / 60000)}m.`,
+        validationInfo: {
+          strategy: 'circuit-breaker',
+          reason: 'circuit_open',
+          consecutiveFailures: cbStatus.consecutiveFailures,
+          cooldownRemainingMs: cbStatus.cooldownRemainingMs,
+        },
+      };
+    }
+
     const result = await this.checkPlaySourceAvailability(playSource);
     const existingOrigin = this.isRecord(playSource.validationInfo?.origin)
       ? playSource.validationInfo.origin
       : undefined;
+
+    if (result.isValid) {
+      this.recordCircuitSuccess(playSource.id);
+    } else {
+      this.recordCircuitFailure(playSource.id);
+    }
 
     playSource.status = result.isValid ? PlaySourceStatus.ACTIVE : PlaySourceStatus.ERROR;
     playSource.isActive = result.isValid;

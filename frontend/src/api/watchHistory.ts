@@ -1,5 +1,5 @@
 import api from './http';
-import type { PaginatedResponse } from '@/types/api';
+import type { PaginatedResponse, PaginationParams } from '@/types/api';
 import type { MediaResource } from '@/types/media';
 
 export interface WatchHistoryItem {
@@ -25,9 +25,14 @@ export interface WatchHistoryStats {
   totalWatchTime: number;
 }
 
+export interface WatchHistoryQueryParams extends PaginationParams {
+  isCompleted?: boolean;
+  mediaResourceId?: number;
+}
+
 export const watchHistoryApi = {
   // 获取当前用户观看历史
-  getMyWatchHistory: (params?: any) => {
+  getMyWatchHistory: (params?: WatchHistoryQueryParams) => {
     return api.get<PaginatedResponse<WatchHistoryItem>>(
       '/watch-history/user/me',
       { params },
@@ -36,7 +41,7 @@ export const watchHistoryApi = {
   },
 
   // 获取用户的观看历史
-  getUserWatchHistory: (_userId?: string | number, params?: any) => {
+  getUserWatchHistory: (_userId?: string | number, params?: WatchHistoryQueryParams) => {
     return api.get<PaginatedResponse<WatchHistoryItem>>(
       '/watch-history/user/me',
       { params },
@@ -51,12 +56,12 @@ export const watchHistoryApi = {
   },
 
   // 获取用户继续观看列表
-  getContinueWatching: (_userId?: string | number, params?: any) => {
+  getContinueWatching: (_userId?: string | number, params?: PaginationParams) => {
     return api.get<WatchHistoryItem[]>('/watch-history/user/me/continue', { params }, false);
   },
 
   // 获取用户已看完列表
-  getCompleted: (_userId?: string | number, params?: any) => {
+  getCompleted: (_userId?: string | number, params?: WatchHistoryQueryParams) => {
     return api.get<PaginatedResponse<WatchHistoryItem>>(
       '/watch-history/user/me/completed',
       { params },

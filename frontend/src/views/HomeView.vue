@@ -510,7 +510,8 @@
       const failedCount = results.filter(r => r.status === 'rejected').length;
 
       popularMedia.value = popularResult.status === 'fulfilled' ? popularResult.value : [];
-      bannerItems.value = popularResult.status === 'fulfilled' ? popularResult.value.slice(0, 5) : [];
+      bannerItems.value =
+        popularResult.status === 'fulfilled' ? popularResult.value.slice(0, 5) : [];
       latestMedia.value = latestResult.status === 'fulfilled' ? latestResult.value : [];
       topRatedMedia.value = topRatedResult.status === 'fulfilled' ? topRatedResult.value : [];
 
@@ -1077,15 +1078,20 @@
     padding-bottom: 24px;
   }
 
-  /* 加载状态 */
+  /* 加载状态 - 与 .media-row--rail 保持一致避免布局跳动 */
   .loading-row {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(var(--grid-card-min), 1fr));
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(156px, 184px);
+    grid-template-columns: none;
     gap: var(--grid-card-gap);
+    overflow: hidden;
+    padding: 2px 2px 18px;
   }
 
   .skeleton-card {
     aspect-ratio: 2/3;
+    min-height: 0;
     background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-card-elevated));
     border-radius: var(--poster-radius);
     animation: pulse 2s ease-in-out infinite;
@@ -1350,12 +1356,12 @@
     }
 
     .media-row,
-    .media-grid,
-    .loading-row {
+    .media-grid {
       grid-template-columns: repeat(2, 1fr);
       gap: 10px;
     }
 
+    .loading-row,
     .media-row--rail {
       grid-auto-columns: minmax(136px, 42vw);
       grid-template-columns: none;

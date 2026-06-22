@@ -1,10 +1,6 @@
 import { isPrivateIp, isReservedIp } from './ip-checker.util';
 
-const BLOCKED_HOSTS = new Set([
-  'localhost',
-  'metadata.google.internal',
-  'instance-data',
-]);
+const BLOCKED_HOSTS = new Set(['localhost', 'metadata.google.internal', 'instance-data']);
 
 const BLOCKED_PROTOCOLS = new Set(['file:', 'ftp:', 'gopher:', 'dict:', 'ldap:', 'jar:']);
 
@@ -12,7 +8,9 @@ const BLOCKED_PROTOCOLS = new Set(['file:', 'ftp:', 'gopher:', 'dict:', 'ldap:',
  * 验证代理 URL 是否安全（防 SSRF）。
  * 仅允许 http/https，禁止内网/保留地址和常见绕过手段。
  */
-export function validateProxyUrl(rawUrl: string): { ok: true; url: URL } | { ok: false; reason: string } {
+export function validateProxyUrl(
+  rawUrl: string,
+): { ok: true; url: URL } | { ok: false; reason: string } {
   let url: URL;
   try {
     url = new URL(rawUrl);

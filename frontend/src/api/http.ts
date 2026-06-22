@@ -3,7 +3,6 @@ import { RequestInterceptor, RetryHelper } from '@/utils/api-helpers';
 import { GlobalErrorHandler } from '@/utils/global-error-handler';
 import { setupCacheInterceptors, withCache, apiCacheManager } from '@/utils/api-cache';
 import { useAuthStore } from '@/stores/auth';
-import { log } from '@/utils/logger';
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
@@ -96,6 +95,33 @@ const assertJsonLikeResponse = (data: unknown, url: string, silent?: boolean): v
   }
 };
 
+interface StandardResponse {
+  success: boolean;
+  data: unknown;
+  requestId: string;
+  timestamp: string;
+}
+
+const isStandardResponse = (data: unknown): data is StandardResponse => {
+  if (typeof data !== 'object' || data === null) return false;
+  const obj = data as Record<string, unknown>;
+  return (
+    'success' in obj &&
+    'data' in obj &&
+    'requestId' in obj &&
+    'timestamp' in obj &&
+    typeof obj.requestId === 'string' &&
+    typeof obj.timestamp === 'string'
+  );
+};
+
+const unwrapResponse = <T>(data: unknown): T => {
+  if (isStandardResponse(data)) {
+    return data.data as T;
+  }
+  return data as T;
+};
+
 class ApiClient {
   private static instance = api;
 
@@ -106,11 +132,11 @@ class ApiClient {
         .get(url, withCache(config || {}, cacheConfig))
         .then(response => {
           assertJsonLikeResponse(response.data, url, config?.silent);
-          return response.data;
+          return unwrapResponse<T>(response.data);
         })
         .catch(error => {
           if (error?.cached) {
-            return error.data;
+            return unwrapResponse<T>(error.data);
           }
           GlobalErrorHandler.handle(error, `获取数据失败: ${url}`);
           throw error;
@@ -121,7 +147,7 @@ class ApiClient {
       return await RetryHelper.retry(async () => {
         const response = await this.instance.get(url, config);
         assertJsonLikeResponse(response.data, url, config?.silent);
-        return response.data;
+        return unwrapResponse<T>(response.data);
       });
     } catch (error) {
       GlobalErrorHandler.handle(error, `获取数据失败: ${url}`);
@@ -139,7 +165,7 @@ class ApiClient {
         const response = await this.instance.post(url, data, config);
         assertJsonLikeResponse(response.data, url, config?.silent);
         apiCacheManager.clearCacheByPattern(/^GET:/);
-        return response.data;
+        return unwrapResponse<T>(response.data);
       });
     } catch (error) {
       GlobalErrorHandler.handle(error, `POST请求失败: ${url}`);
@@ -157,7 +183,7 @@ class ApiClient {
         const response = await this.instance.put(url, data, config);
         assertJsonLikeResponse(response.data, url, config?.silent);
         apiCacheManager.clearCacheByPattern(/^GET:/);
-        return response.data;
+        return unwrapResponse<T>(response.data);
       });
     } catch (error) {
       GlobalErrorHandler.handle(error, `PUT请求失败: ${url}`);
@@ -175,7 +201,7 @@ class ApiClient {
         const response = await this.instance.patch(url, data, config);
         assertJsonLikeResponse(response.data, url, config?.silent);
         apiCacheManager.clearCacheByPattern(/^GET:/);
-        return response.data;
+        return unwrapResponse<T>(response.data);
       });
     } catch (error) {
       GlobalErrorHandler.handle(error, `PATCH请求失败: ${url}`);
@@ -189,7 +215,7 @@ class ApiClient {
         const response = await this.instance.delete(url, config);
         assertJsonLikeResponse(response.data, url, config?.silent);
         apiCacheManager.clearCacheByPattern(/^GET:/);
-        return response.data;
+        return unwrapResponse<T>(response.data);
       });
     } catch (error) {
       GlobalErrorHandler.handle(error, `DELETE请求失败: ${url}`);
@@ -220,7 +246,7 @@ class ApiClient {
             },
           });
           apiCacheManager.clearCacheByPattern(/^GET:/);
-          return response.data;
+          return unwrapResponse<T>(response.data);
         } catch (error) {
           GlobalErrorHandler.handle(error, `文件上传失败: ${url}`);
           throw error;

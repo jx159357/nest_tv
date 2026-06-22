@@ -1,6 +1,7 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { AppLoggerService } from '../common/services/app-logger.service';
+import { ensureRequestId } from '../common/utils/request-id.util';
 
 /**
  * 性能监控中间件
@@ -14,10 +15,7 @@ export class PerformanceMonitoringMiddleware implements NestMiddleware {
     const startTime = Date.now();
     const startMemory = process.memoryUsage();
     const { method, originalUrl } = req;
-    const requestId = this.generateRequestId();
-
-    // 添加请求ID到请求头
-    req.headers['x-request-id'] = requestId;
+    const requestId = ensureRequestId(req, res);
 
     res.on('finish', () => {
       const endTime = Date.now();
@@ -70,13 +68,6 @@ export class PerformanceMonitoringMiddleware implements NestMiddleware {
         'MEMORY_WARNING',
       );
     }
-  }
-
-  /**
-   * 生成请求ID
-   */
-  private generateRequestId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 }
 

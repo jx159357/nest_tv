@@ -39,6 +39,7 @@
               @seeked="onPlayerSeeked"
               @ended="onVideoEnded"
               @error="onPlayerError"
+              @metrics="onPlaybackMetrics"
             />
 
             <DanmakuPlayer
@@ -77,6 +78,19 @@
                 </button>
               </div>
             </Transition>
+          </div>
+
+          <div v-if="!currentPlaySource && !loading" class="no-source-error">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="no-source-error__icon">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <p class="no-source-error__title">暂无可用播放线路</p>
+            <p class="no-source-error__desc">当前视频没有可用的播放源，请尝试刷新</p>
+            <button class="no-source-error__btn" type="button" @click="refreshCurrentMedia">
+              刷新播放源
+            </button>
           </div>
 
           <div class="play-source-panel">
@@ -331,13 +345,15 @@
   import { useAuthStore } from '@/stores/auth';
   import { useDownloadsStore } from '@/stores/downloads';
   import { watchHistoryApi } from '@/api/watchHistory';
+  import { mediaApi } from '@/api/media';
   import { notifyError, notifyInfo, notifySuccess } from '@/composables/useModal';
   import ArtPlayerWrapper from '@/components/ArtPlayerWrapper.vue';
+  import type { PlaybackMetrics } from '@/components/ArtPlayerWrapper.vue';
   import { batchTestSources, getSourceScore, type SourceTestResult } from '@/utils/source-test';
   import { playSourceApi } from '@/api/playSource';
   import { buildApiUrl } from '@/api/url';
   import { log } from '@/utils/logger';
-  import type { MediaResource, PlaySource } from '@/types/media';
+  import type { MediaResource, PlaySource, PlayDetailResponse } from '@/types/media';
 
   const DanmakuPlayer = defineAsyncComponent(() =>
     import('@/components/DanmakuPlayer.vue').then(module => module.default),
@@ -709,6 +725,55 @@
     notifyError('刷新失败', '未能找到可用的播放源。');
   };
 
+  const refreshCurrentMedia = async () => {
+    if (!media.value) return;
+    try {
+      const result = await playSourceApi.refreshMediaPlaySources(String(media.value.id));
+      if (result.best) {
+        media.value.playSources = result.valid;
+        currentPlaySource.value = result.best as unknown as PlaySource;
+        notifySuccess('播放源已刷新', `${result.valid.length} 个可用`);
+      } else {
+        await loadMedia();
+      }
+    } catch {
+      await loadMedia();
+    }
+  };
+
+  const onPlaybackMetrics = (metrics: PlaybackMetrics) => {
+    const sourceId = currentPlaySource.value?.id;
+    if (!sourceId) return;
+    playSourceApi.reportMetrics(sourceId, metrics).catch(() => {});
+  };
+
+  const convertSourceGroupsToPlaySources = (playDetail: PlayDetailResponse): PlaySource[] => {
+    const sources: PlaySource[] = [];
+    for (const group of playDetail.sourceGroups) {
+      for (const ep of group.episodes) {
+        sources.push({
+          id: ep.id,
+          url: ep.url,
+          sourceName: group.name,
+          name: ep.name,
+          episodeNumber: ep.episodeNumber,
+          resolution: ep.resolution,
+          format: ep.format,
+          status: (ep.status as any) || 'active',
+          isAds: ep.isAds ?? false,
+          isActive: true,
+          type: 'online' as any,
+          priority: 1,
+          playCount: 0,
+          mediaResourceId: playDetail.id,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as unknown as PlaySource);
+      }
+    }
+    return sources;
+  };
+
   const loadMedia = async () => {
     const mediaId = parseInt(route.params.id as string);
     loading.value = true;
@@ -716,14 +781,44 @@
     favoriteMessage.value = '';
 
     try {
-      const mediaData = await mediaStore.fetchMediaDetail(mediaId);
+      const playDetail = await mediaApi.getPlayDetail(String(mediaId));
+      const playSources = convertSourceGroupsToPlaySources(playDetail);
+
+      const mediaData: MediaResource = {
+        id: playDetail.id,
+        title: playDetail.title,
+        description: playDetail.description,
+        type: playDetail.type as any,
+        poster: playDetail.poster,
+        backdrop: playDetail.backdrop,
+        rating: playDetail.rating,
+        genres: playDetail.genres,
+        quality: playDetail.quality as any,
+        releaseDate: playDetail.releaseDate ? new Date(playDetail.releaseDate) : undefined,
+        episodeCount: playDetail.episodeCount,
+        downloadUrls: playDetail.downloadUrls,
+        playSources,
+        sourceFreshness: playDetail.sourceFreshness,
+        viewCount: 0,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as MediaResource;
+
       media.value = mediaData;
       failedPlaySourceIds.value = new Set();
       mediaRefreshAttempted.value = false;
       cmsResolveAttempted.value = false;
 
-      if (mediaData.playSources && mediaData.playSources.length > 0) {
-        currentPlaySource.value = selectBestInitialSource(mediaData.playSources);
+      if (playDetail.watchHistory) {
+        resumeTime.value = playDetail.watchHistory.currentTime || 0;
+        if (playDetail.watchHistory.episodeNumber) {
+          currentEpisode.value = playDetail.watchHistory.episodeNumber;
+        }
+      }
+
+      if (playSources.length > 0) {
+        currentPlaySource.value = selectBestInitialSource(playSources);
       } else {
         const cmsSource = await resolveFromMacCms();
         if (cmsSource) {
@@ -741,12 +836,6 @@
       if (macCmsEpisodes.value.length > 0 && !mediaData.episodeCount) {
         mediaData.episodeCount = macCmsEpisodes.value.length;
       }
-
-      const timeParam = Array.isArray(route.query.time) ? route.query.time[0] : route.query.time;
-      const tParam = Array.isArray(route.query.t) ? route.query.t[0] : route.query.t;
-      const timeValue = timeParam || tParam;
-      const parsedTime = Number(timeValue);
-      resumeTime.value = Number.isFinite(parsedTime) && parsedTime > 0 ? parsedTime : 0;
 
       if (resumeTime.value > 0) {
         showResumeTip.value = true;
@@ -1551,18 +1640,18 @@
 
   .source-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 6px;
   }
 
   .source-btn {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px;
+    padding: 8px 10px;
     background: var(--bg-secondary);
     border: 1px solid var(--border-primary);
-    border-radius: 10px;
+    border-radius: 8px;
     color: var(--text-primary);
     cursor: pointer;
     transition: all 0.2s;
@@ -1835,8 +1924,8 @@
 
   .episode-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 8px;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
   }
 
   .episode-total {
@@ -1882,14 +1971,15 @@
   }
 
   .episode-btn {
-    padding: 8px;
+    padding: 6px;
     background: var(--bg-secondary);
     border: 1px solid var(--border-primary);
-    border-radius: 8px;
+    border-radius: 6px;
     color: var(--text-primary);
     font-size: 13px;
     cursor: pointer;
     transition: all 0.2s;
+    min-height: 36px;
   }
 
   .episode-btn:hover {
@@ -2010,11 +2100,100 @@
     }
 
     .source-grid {
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(2, 1fr);
     }
 
     .episode-grid {
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
     }
+
+    .episode-btn {
+      padding: 4px;
+      font-size: 12px;
+      min-height: 32px;
+    }
+
+    .source-btn {
+      padding: 6px 8px;
+    }
+
+    .source-name {
+      font-size: 13px;
+    }
+
+    .play-source-panel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      max-height: 60vh;
+      overflow-y: auto;
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
+      padding: 16px;
+    }
+
+    .episode-section {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      max-height: 50vh;
+      overflow-y: auto;
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
+      padding: 16px;
+    }
+  }
+
+  .no-source-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 48px 24px;
+    background: var(--bg-secondary);
+    border-radius: var(--panel-radius, 12px);
+    text-align: center;
+  }
+
+  .no-source-error__icon {
+    width: 48px;
+    height: 48px;
+    color: var(--color-warning, #f59e0b);
+  }
+
+  .no-source-error__title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .no-source-error__desc {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  .no-source-error__btn {
+    margin-top: 8px;
+    padding: 10px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+    background: var(--color-brand-primary, #6366f1);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .no-source-error__btn:hover {
+    opacity: 0.85;
   }
 </style>

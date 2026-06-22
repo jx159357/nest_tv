@@ -1,8 +1,18 @@
 import { RecommendationService } from './recommendation.service';
 
 describe('RecommendationService', () => {
+  const queryBuilderChain = {
+    select: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    addOrderBy: jest.fn().mockReturnThis(),
+    take: jest.fn().mockReturnThis(),
+    getMany: jest.fn().mockResolvedValue([]),
+  };
   const mediaResourceRepository = {
     find: jest.fn(),
+    createQueryBuilder: jest.fn().mockReturnValue(queryBuilderChain),
   };
   const recommendationRepository = {};
   const watchHistoryRepository = {
@@ -14,28 +24,40 @@ describe('RecommendationService', () => {
   const userRepository = {
     findOne: jest.fn(),
   };
-  const cacheManager = {
-    get: jest.fn(),
-    set: jest.fn(),
-    clear: jest.fn(),
+  const cacheService = {
+    multiGet: jest.fn(),
+    multiSet: jest.fn(),
+    clearPattern: jest.fn(),
   };
 
   let service: RecommendationService;
 
+  const createQueryBuilderChain = () => {
+    queryBuilderChain.select.mockReturnThis();
+    queryBuilderChain.where.mockReturnThis();
+    queryBuilderChain.andWhere.mockReturnThis();
+    queryBuilderChain.orderBy.mockReturnThis();
+    queryBuilderChain.addOrderBy.mockReturnThis();
+    queryBuilderChain.take.mockReturnThis();
+    queryBuilderChain.getMany.mockResolvedValue([]);
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
+    createQueryBuilderChain();
+    mediaResourceRepository.createQueryBuilder.mockReturnValue(queryBuilderChain);
     service = new RecommendationService(
       mediaResourceRepository as never,
       recommendationRepository as never,
       watchHistoryRepository as never,
       searchHistoryRepository as never,
       userRepository as never,
-      cacheManager as never,
+      cacheService as never,
     );
   });
 
   it('builds a search-based profile when recent searches exist without watch history', async () => {
-    cacheManager.get.mockResolvedValue(null);
+    cacheService.multiGet.mockResolvedValue(null);
     watchHistoryRepository.find.mockResolvedValue([]);
     searchHistoryRepository.find.mockResolvedValue([
       {
@@ -54,7 +76,7 @@ describe('RecommendationService', () => {
   });
 
   it('boosts personalized items with matching recent search keywords', async () => {
-    cacheManager.get.mockResolvedValue(null);
+    cacheService.multiGet.mockResolvedValue(null);
     watchHistoryRepository.find.mockResolvedValue([]);
     searchHistoryRepository.find.mockResolvedValue([
       {
@@ -65,7 +87,7 @@ describe('RecommendationService', () => {
       },
     ]);
     userRepository.findOne.mockResolvedValue(null);
-    mediaResourceRepository.find.mockResolvedValue([
+    queryBuilderChain.getMany.mockResolvedValue([
       {
         id: 1,
         title: '沙丘',

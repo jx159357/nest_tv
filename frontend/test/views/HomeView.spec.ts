@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import HomeView from '@/views/HomeView.vue';
 
-const { routerPush, routeState, mediaStore, authStore, searchApi, watchHistoryApi } = vi.hoisted(
-  () => ({
+const { routerPush, routeState, mediaStore, authStore, searchApi, watchHistoryApi, mediaApi } =
+  vi.hoisted(() => ({
     routerPush: vi.fn(),
     routeState: {
       query: {} as Record<string, string>,
@@ -29,8 +29,10 @@ const { routerPush, routeState, mediaStore, authStore, searchApi, watchHistoryAp
     watchHistoryApi: {
       getContinueWatching: vi.fn(),
     },
-  }),
-);
+    mediaApi: {
+      getBootstrap: vi.fn(),
+    },
+  }));
 
 vi.mock('vue-router', () => ({
   RouterLink: {
@@ -57,6 +59,10 @@ vi.mock('@/api/search', () => ({
 
 vi.mock('@/api/watchHistory', () => ({
   watchHistoryApi,
+}));
+
+vi.mock('@/api/media', () => ({
+  mediaApi,
 }));
 
 vi.mock('@/components/NavigationLayout.vue', () => ({
@@ -103,6 +109,7 @@ describe('HomeView', () => {
     mediaStore.fetchTopRatedMedia.mockReset();
     mediaStore.searchMedia.mockReset();
     watchHistoryApi.getContinueWatching.mockReset();
+    mediaApi.getBootstrap.mockReset();
     searchApi.getSuggestions.mockReset();
     searchApi.getPopularKeywords.mockReset();
     searchApi.getHistory.mockReset();
@@ -116,6 +123,11 @@ describe('HomeView', () => {
     mediaStore.fetchTopRatedMedia.mockResolvedValue([]);
     mediaStore.searchMedia.mockResolvedValue({ data: [] });
     watchHistoryApi.getContinueWatching.mockResolvedValue([]);
+    mediaApi.getBootstrap.mockResolvedValue({
+      popular: [],
+      latest: [],
+      topRated: [],
+    });
     searchApi.getSuggestions.mockResolvedValue([]);
     searchApi.getPopularKeywords.mockResolvedValue([]);
     searchApi.getHistory.mockResolvedValue([]);
@@ -139,16 +151,16 @@ describe('HomeView', () => {
     });
 
   it('loads home media lists on mount when there is no search query', async () => {
-    mediaStore.fetchPopularMedia.mockResolvedValue([{ id: 1, title: '热门视频', rating: 8.8 }]);
-    mediaStore.fetchLatestMedia.mockResolvedValue([{ id: 2, title: '最新视频', rating: 8.2 }]);
-    mediaStore.fetchTopRatedMedia.mockResolvedValue([{ id: 3, title: '高评分视频', rating: 9.6 }]);
+    mediaApi.getBootstrap.mockResolvedValue({
+      popular: [{ id: 1, title: '热门视频', rating: 8.8 }],
+      latest: [{ id: 2, title: '最新视频', rating: 8.2 }],
+      topRated: [{ id: 3, title: '高评分视频', rating: 9.6 }],
+    });
 
     const wrapper = mountView();
     await flushPromises();
 
-    expect(mediaStore.fetchPopularMedia).toHaveBeenCalledWith(8, { silent: true });
-    expect(mediaStore.fetchLatestMedia).toHaveBeenCalledWith(8, { silent: true });
-    expect(mediaStore.fetchTopRatedMedia).toHaveBeenCalledWith(8, 8, { silent: true });
+    expect(mediaApi.getBootstrap).toHaveBeenCalledWith(8);
     expect(wrapper.text()).toContain('热门视频');
     expect(wrapper.text()).toContain('最新视频');
     expect(wrapper.text()).toContain('高评分视频');
@@ -169,7 +181,11 @@ describe('HomeView', () => {
   });
 
   it('navigates to media detail when a media card is clicked', async () => {
-    mediaStore.fetchPopularMedia.mockResolvedValue([{ id: 42, title: '测试电影', rating: 8.5 }]);
+    mediaApi.getBootstrap.mockResolvedValue({
+      popular: [{ id: 42, title: '测试电影', rating: 8.5 }],
+      latest: [],
+      topRated: [],
+    });
 
     const wrapper = mountView();
     await flushPromises();

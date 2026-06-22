@@ -103,7 +103,11 @@ export class AppLoggerService {
     if (!this.requestLogEnabled) return;
 
     const logMessage = `${info.method} ${info.url} - IP: ${info.ip}`;
-    const context = `HTTP_REQUEST | User-Agent: ${info.userAgent || 'Unknown'}`;
+    const context = [
+      'HTTP_REQUEST',
+      `RequestID: ${info.requestId}`,
+      `User-Agent: ${info.userAgent || 'Unknown'}`,
+    ].join(' | ');
 
     this.logger.log(logMessage, context);
   }
@@ -116,7 +120,7 @@ export class AppLoggerService {
 
     const statusColor = info.statusCode >= 400 ? 'ERROR' : 'SUCCESS';
     const logMessage = `${info.method} ${info.url} - ${info.statusCode} (${info.responseTime}ms)`;
-    const context = `HTTP_RESPONSE_${statusColor}`;
+    const context = `HTTP_RESPONSE_${statusColor} | RequestID: ${info.requestId}`;
 
     if (info.statusCode >= 400) {
       this.logger.warn(logMessage, context);

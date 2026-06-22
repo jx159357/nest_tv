@@ -1,15 +1,16 @@
-import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { DatabaseHealthService } from '../services/database-health.service';
-import { CacheService } from '../cache/cache.service';
+import { RedisHealthService } from '../services/redis-health.service';
 import { AppLoggerService } from '../services/app-logger.service';
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 
 @ApiTags('系统管理')
 @Controller('health')
 export class HealthController {
   constructor(
     private readonly databaseHealthService: DatabaseHealthService,
-    private readonly cacheService: CacheService,
+    private readonly redisHealthService: RedisHealthService,
     private readonly loggerService: AppLoggerService,
   ) {}
 
@@ -103,7 +104,7 @@ export class HealthController {
     // 并行检查各个服务
     const [databaseHealth, redisHealth] = await Promise.allSettled([
       this.databaseHealthService.checkDatabaseHealth(),
-      this.checkRedisHealth(),
+      this.redisHealthService.checkRedisHealth(),
     ]);
 
     const responseTime = Date.now() - startTime;
@@ -171,7 +172,7 @@ export class HealthController {
   @Get('redis')
   @ApiOperation({ summary: 'Redis健康检查', description: '专门检查Redis连接状态' })
   async getRedisHealth() {
-    return this.checkRedisHealth();
+    return this.redisHealthService.checkRedisHealth();
   }
 
   @Get('readiness')
@@ -179,11 +180,27 @@ export class HealthController {
   async getReadiness() {
     try {
       // 检查数据库连接
-      await this.databaseHealthService.checkDatabaseHealth();
+      const dbHealthy = await this.databaseHealthService.checkDatabaseHealth();
+      if (!dbHealthy) {
+        return {
+          status: 'not_ready',
+          timestamp: new Date().toISOString(),
+          message: '数据库连接不可用',
+          error: '数据库健康检查返回失败状态',
+        };
+      }
 
       // 检查Redis连接（如果配置了）
       if (process.env.REDIS_HOST) {
-        await this.checkRedisHealth();
+        const redisHealthy = await this.redisHealthService.checkRedisHealth();
+        if (!redisHealthy) {
+          return {
+            status: 'not_ready',
+            timestamp: new Date().toISOString(),
+            message: 'Redis连接不可用',
+            error: 'Redis健康检查返回失败状态',
+          };
+        }
       }
 
       return {
@@ -212,53 +229,24 @@ export class HealthController {
     };
   }
 
-  /**
-   * 检查Redis健康状态
-   */
-  private async checkRedisHealth() {
-    try {
-      // 测试Redis连接
-      const testKey = `health_check_${Date.now()}`;
-      const testValue = 'ok';
-
-      await this.cacheService.set(testKey, testValue, { ttl: 10 }); // 10秒过期
-      const retrievedValue = await this.cacheService.get(testKey);
-      await this.cacheService.delete(testKey);
-
-      if (retrievedValue === testValue) {
-        return {
-          status: 'healthy',
-          message: 'Redis连接正常',
-          responseTime: 0, // 这里可以计算实际响应时间
-        };
-      } else {
-        return {
-          status: 'unhealthy',
-          message: 'Redis读写测试失败',
-        };
-      }
-    } catch (error) {
-      return {
-        status: 'unhealthy',
-        message: 'Redis连接失败',
-        error: error instanceof Error ? error.message : '未知错误',
-      };
-    }
-  }
-
   @Get('metrics')
   @ApiOperation({ summary: '系统指标', description: '获取系统性能指标' })
   @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   getMetrics() {
     const dbStatus = this.databaseHealthService.getDatabaseStatus();
+    const memoryUsage = process.memoryUsage();
 
     return {
       timestamp: new Date().toISOString(),
       system: {
-        memory: process.memoryUsage(),
-        cpu: process.cpuUsage(),
+        memory: {
+          rss: memoryUsage.rss,
+          heapTotal: memoryUsage.heapTotal,
+          heapUsed: memoryUsage.heapUsed,
+          external: memoryUsage.external,
+        },
         uptime: process.uptime(),
-        pid: process.pid,
         version: process.version,
         platform: process.platform,
         arch: process.arch,

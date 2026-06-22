@@ -7,6 +7,7 @@ export interface ApiError {
   message: string;
   status: number;
   data?: any;
+  requestId?: string;
 }
 
 export interface BusinessError {
@@ -19,6 +20,19 @@ const isSilentError = (error: any): boolean => {
   return error?.config?.silent === true || error?.silent === true;
 };
 
+const getHeaderValue = (headers: any, name: string): string | undefined => {
+  const value = headers?.[name] ?? headers?.[name.toLowerCase()];
+  return typeof value === 'string' ? value : undefined;
+};
+
+const extractRequestId = (error: any): string | undefined => {
+  return (
+    getHeaderValue(error?.response?.headers, 'x-request-id') ||
+    error?.response?.data?.requestId ||
+    error?.config?.headers?.['X-Request-ID']
+  );
+};
+
 // 全局错误处理器
 export class GlobalErrorHandler {
   // 通用错误处理方法
@@ -29,8 +43,9 @@ export class GlobalErrorHandler {
   // 处理API错误
   static handleApiError(error: any, defaultMessage: string = '操作失败'): ApiError {
     const silent = isSilentError(error);
+    const requestId = extractRequestId(error);
     if (!silent) {
-      log.error('GlobalErrorHandler', 'API Error:', error);
+      log.error('GlobalErrorHandler', `API Error${requestId ? ` [${requestId}]` : ''}:`, error);
     }
 
     // 提取错误信息
@@ -108,6 +123,7 @@ export class GlobalErrorHandler {
       message,
       status: statusCode,
       data: error.response?.data,
+      requestId,
     };
   }
 

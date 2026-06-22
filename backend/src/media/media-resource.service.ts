@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Like, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { MediaResource } from '../entities/media-resource.entity';
 import { User } from '../entities/user.entity';
 import { PlaySource } from '../entities/play-source.entity';
@@ -88,11 +88,18 @@ export class MediaResourceService {
     return date.toISOString().slice(0, 10);
   }
 
+  private extractYear(releaseDate?: string | Date | null): string {
+    if (!releaseDate) return '';
+    const date = releaseDate instanceof Date ? releaseDate : new Date(releaseDate);
+    if (Number.isNaN(date.getTime())) return '';
+    return String(date.getFullYear());
+  }
+
   private buildMediaDedupKey(media: MediaDedupInput): string {
     return [
       this.normalizeText(media.title),
       this.normalizeText(media.type),
-      this.normalizeReleaseDate(media.releaseDate),
+      this.extractYear(media.releaseDate),
       this.normalizeText(media.source),
     ].join('|');
   }
@@ -352,7 +359,7 @@ export class MediaResourceService {
     return {
       id: media.id,
       title: media.title,
-      description: media.description,
+      description: media.description ? media.description.slice(0, 500) : undefined,
       type: media.type,
       poster: media.poster,
       backdrop: media.backdrop,
@@ -363,7 +370,7 @@ export class MediaResourceService {
       episodeCount: media.episodeCount,
       sourceGroups,
       sourceFreshness,
-      downloadUrls: media.downloadUrls ?? [],
+      downloadUrls: (media.downloadUrls ?? []).slice(0, 5),
       watchHistory,
     };
   }
@@ -402,7 +409,7 @@ export class MediaResourceService {
         .createQueryBuilder('m')
         .where('m.title LIKE :prefix', { prefix: `${keyword}%` })
         .orWhere('m.title LIKE :fuzzy', { fuzzy: `%${keyword}%` })
-        .orderBy("CASE WHEN m.title LIKE :prefix THEN 0 ELSE 1 END", 'ASC')
+        .orderBy('CASE WHEN m.title LIKE :prefix THEN 0 ELSE 1 END', 'ASC')
         .addOrderBy('m.rating', 'DESC')
         .setParameter('prefix', `${keyword}%`)
         .setParameter('fuzzy', `%${keyword}%`)
@@ -418,7 +425,7 @@ export class MediaResourceService {
    * 获取热门影视
    */
   @Cacheable({
-    keyGenerator: (...args: unknown[]) => `media:popular:${args[0]}`,
+    keyGenerator: (...args: unknown[]) => `media:popular:${String(args[0])}`,
     ttl: 600,
   })
   async getPopular(limit: number = 10): Promise<MediaResource[]> {
@@ -435,7 +442,7 @@ export class MediaResourceService {
    * 获取最新影视
    */
   @Cacheable({
-    keyGenerator: (...args: unknown[]) => `media:latest:${args[0]}`,
+    keyGenerator: (...args: unknown[]) => `media:latest:${String(args[0])}`,
     ttl: 180,
   })
   async getLatest(limit: number = 10): Promise<MediaResource[]> {
@@ -512,7 +519,7 @@ export class MediaResourceService {
    * 获取相似影视
    */
   @Cacheable({
-    keyGenerator: (...args: unknown[]) => `media:similar:${args[0]}:${args[1]}`,
+    keyGenerator: (...args: unknown[]) => `media:similar:${String(args[0])}:${String(args[1])}`,
     ttl: 600,
   })
   async getSimilar(id: number, limit: number = 6): Promise<MediaResource[]> {

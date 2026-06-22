@@ -18,13 +18,17 @@ export interface PaginatedResponse<T> {
   data: T[];
   page: number;
   limit: number;
+  pageSize?: number;
   total: number;
   totalPages: number;
+  hasNext?: boolean;
+  hasPrevious?: boolean;
 }
 
 export interface PaginationParams {
   page?: number;
   limit?: number;
+  pageSize?: number;
   sort?: string;
   order?: 'ASC' | 'DESC';
 }

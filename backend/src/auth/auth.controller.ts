@@ -16,6 +16,8 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 import { Public } from './public.decorator';
 import { UserService } from '../users/user.service';
 import { UserResponseDto } from '../users/dtos/user-response.dto';
+import { LoginUserDto } from '../users/dtos/login-user.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 
 interface AuthenticatedRequest {
   user: UserResponseDto;
@@ -172,7 +174,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: '刷新成功' })
   @ApiResponse({ status: 401, description: '刷新令牌无效或已过期' })
-  async refresh(@Body() body: { refreshToken: string }) {
+  async refresh(@Body() body: RefreshTokenDto) {
     try {
       const payload = this.jwtService.verify(body.refreshToken);
       const user = await this.userService.findById(payload.sub);
@@ -259,7 +261,7 @@ export class AuthController {
       },
     },
   })
-  async simpleLogin(@Body() loginData: { identifier: string; password: string }) {
+  async simpleLogin(@Body() loginData: LoginUserDto) {
     // 这里直接调用UserService来验证用户
     // 为了简化，我们暂时使用AuthService中的validateUser方法
     const user = await this.authService.validateUser(loginData.identifier, loginData.password);

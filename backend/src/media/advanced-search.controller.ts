@@ -28,6 +28,13 @@ import { GetCurrentUserId } from '../decorators/current-user.decorator';
 import { AdvancedSearchService, SearchResult } from './advanced-search.service';
 import type { AdvancedSearchParams } from './advanced-search.service';
 import { CreateSearchHistoryDto } from './dtos/search-history.dto';
+import { AdvancedSearchDto } from './dto/advanced-search.dto';
+import {
+  KeywordQueryDto,
+  LimitQueryDto,
+  DaysQueryDto,
+  StreamSearchQueryDto,
+} from './dto/limit-query.dto';
 import { MediaResourceService } from './media-resource.service';
 import { TorrentService } from '../torrent/torrent.service';
 
@@ -59,7 +66,7 @@ export class AdvancedSearchController {
   @ApiResponse({ status: 400, description: '参数错误' })
   async advancedSearch(
     @GetCurrentUserId() userId: number,
-    @Body() searchParams: AdvancedSearchParams,
+    @Body() searchParams: AdvancedSearchDto,
   ): Promise<SearchResult> {
     try {
       return await this.advancedSearchService.advancedSearch(searchParams, userId);
@@ -77,10 +84,9 @@ export class AdvancedSearchController {
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiQuery({ name: 'keyword', description: '搜索关键词' })
   @ApiQuery({ name: 'limit', description: '返回数量限制，默认8', required: false })
-  async getSearchSuggestions(@Query('keyword') keyword: string, @Query('limit') limit?: string) {
+  async getSearchSuggestions(@Query() query: KeywordQueryDto) {
     try {
-      const parsedLimit = limit ? parseInt(limit, 10) : 8;
-      return await this.advancedSearchService.getSearchSuggestions(keyword, parsedLimit);
+      return await this.advancedSearchService.getSearchSuggestions(query.keyword, query.limit ?? 8);
     } catch (error: unknown) {
       throw toHttpException(error, '获取搜索建议失败');
     }
@@ -94,10 +100,9 @@ export class AdvancedSearchController {
   @ApiOperation({ summary: '获取热门搜索关键词' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiQuery({ name: 'limit', description: '返回数量限制，默认20', required: false })
-  async getPopularKeywords(@Query('limit') limit?: string): Promise<string[]> {
+  async getPopularKeywords(@Query() query: LimitQueryDto): Promise<string[]> {
     try {
-      const parsedLimit = limit ? parseInt(limit, 10) : 20;
-      return await this.advancedSearchService.getPopularSearchKeywords(parsedLimit);
+      return await this.advancedSearchService.getPopularSearchKeywords(query.limit ?? 20);
     } catch (error: unknown) {
       throw toHttpException(error, '获取热门搜索关键词失败');
     }
@@ -131,11 +136,10 @@ export class AdvancedSearchController {
   @ApiQuery({ name: 'limit', description: '返回数量限制，默认10', required: false })
   async getUserSearchHistory(
     @GetCurrentUserId() userId: number,
-    @Query('limit') limit?: string,
+    @Query() query: LimitQueryDto,
   ): Promise<string[]> {
     try {
-      const parsedLimit = limit ? parseInt(limit, 10) : 10;
-      return await this.advancedSearchService.getUserSearchHistory(userId, parsedLimit);
+      return await this.advancedSearchService.getUserSearchHistory(userId, query.limit ?? 10);
     } catch (error: unknown) {
       throw toHttpException(error, '获取搜索历史失败');
     }
@@ -167,11 +171,10 @@ export class AdvancedSearchController {
   @ApiQuery({ name: 'limit', description: '返回数量限制，默认5', required: false })
   async getRelatedKeywords(
     @Param('keyword') keyword: string,
-    @Query('limit') limit?: string,
+    @Query() query: LimitQueryDto,
   ): Promise<string[]> {
     try {
-      const parsedLimit = limit ? parseInt(limit, 10) : 5;
-      return await this.advancedSearchService.getRelatedKeywords(keyword, parsedLimit);
+      return await this.advancedSearchService.getRelatedKeywords(keyword, query.limit ?? 5);
     } catch (error: unknown) {
       throw toHttpException(error, '获取相关关键词失败');
     }
@@ -185,7 +188,7 @@ export class AdvancedSearchController {
   @ApiOperation({ summary: '获取搜索趋势统计' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiQuery({ name: 'days', description: '统计天数，默认7', required: false })
-  async getSearchTrends(@Query('days') days?: string): Promise<{
+  async getSearchTrends(@Query() query: DaysQueryDto): Promise<{
     totalSearches: number;
     dailyTrends: Array<{
       date: string;
@@ -198,8 +201,7 @@ export class AdvancedSearchController {
     }>;
   }> {
     try {
-      const parsedDays = days ? parseInt(days, 10) : 7;
-      return await this.advancedSearchService.getSearchTrends(parsedDays);
+      return await this.advancedSearchService.getSearchTrends(query.days ?? 7);
     } catch (error: unknown) {
       throw toHttpException(error, '获取搜索趋势失败');
     }
@@ -215,11 +217,8 @@ export class AdvancedSearchController {
   async smartSearch(
     @Query('query') query: string,
     @GetCurrentUserId() userId: number,
-    @Body() body?: { userId?: number; filters?: Record<string, unknown> },
   ): Promise<SearchResult> {
     try {
-      void body;
-
       // 智能解析搜索查询
       const searchParams = this.parseSmartSearchQuery(query);
 
@@ -312,11 +311,10 @@ export class AdvancedSearchController {
   @ApiQuery({ name: 'type', description: '类型筛选', required: false })
   @ApiQuery({ name: 'limit', description: '每源返回数量', required: false })
   streamSearch(
-    @Query('keyword') keyword: string,
-    @Query('type') type?: string,
-    @Query('limit') limit?: string,
+    @Query() query: StreamSearchQueryDto,
   ): Observable<{ data: Record<string, unknown> }> {
-    const parsedLimit = limit ? parseInt(limit, 10) : 20;
+    const { keyword, limit, type } = query;
+    const parsedLimit = limit ?? 20;
     const types = type ? type.split(',').filter(Boolean) : [];
 
     return new Observable<{ data: Record<string, unknown> }>(subscriber => {

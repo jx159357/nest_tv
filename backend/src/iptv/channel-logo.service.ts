@@ -306,7 +306,7 @@ export class ChannelLogoService {
   }
 
   @Cacheable({
-    keyGenerator: (...args: unknown[]) => `logo:all:${args[0] || 'all'}`,
+    keyGenerator: (...args: unknown[]) => `logo:all:${(args[0] as string) || 'all'}`,
     ttl: 1800,
   })
   async findAll(category?: string): Promise<LogoData[]> {

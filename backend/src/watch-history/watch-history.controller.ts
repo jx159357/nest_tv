@@ -5,6 +5,7 @@ import {
   Body,
   Patch,
   Param,
+  ParseIntPipe,
   Delete,
   Query,
   UseGuards,
@@ -17,6 +18,7 @@ import { WatchHistoryService } from './watch-history.service';
 import { CreateWatchHistoryDto } from './dtos/create-watch-history.dto';
 import { UpdateWatchHistoryDto } from './dtos/update-watch-history.dto';
 import { WatchHistoryQueryDto } from './dtos/watch-history-query.dto';
+import { UpdateProgressDto } from './dto/update-progress.dto';
 import { WatchHistory } from '../entities/watch-history.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GetCurrentUserId } from '../decorators/current-user.decorator';
@@ -144,7 +146,7 @@ export class WatchHistoryController {
   @ApiOperation({ summary: '根据ID获取观看历史详情' })
   @ApiParam({ name: 'id', description: '观看历史ID' })
   @ApiResponse({ status: 200, description: '成功获取观看历史详情', type: WatchHistory })
-  async findById(@Param('id') id: number): Promise<WatchHistory> {
+  async findById(@Param('id', ParseIntPipe) id: number): Promise<WatchHistory> {
     return await this.watchHistoryService.findById(id);
   }
 
@@ -154,8 +156,8 @@ export class WatchHistoryController {
   @ApiParam({ name: 'mediaResourceId', description: '影视资源ID' })
   @ApiResponse({ status: 200, description: '成功获取观看历史', type: WatchHistory })
   async findByUserAndMedia(
-    @Param('userId') userId: number,
-    @Param('mediaResourceId') mediaResourceId: number,
+    @Param('userId', ParseIntPipe) userId: number,
+    @Param('mediaResourceId', ParseIntPipe) mediaResourceId: number,
   ): Promise<WatchHistory | null> {
     return await this.watchHistoryService.findByUserAndMedia(userId, mediaResourceId);
   }
@@ -163,21 +165,16 @@ export class WatchHistoryController {
   @Patch('progress')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '更新观看进度' })
-  @ApiQuery({ name: 'mediaResourceId', description: '影视资源ID' })
-  @ApiQuery({ name: 'currentTime', description: '当前观看时间（秒）' })
-  @ApiQuery({ name: 'duration', required: false, description: '总时长（秒）' })
   @ApiResponse({ status: 200, description: '观看进度更新成功', type: WatchHistory })
   async updateProgress(
     @GetCurrentUserId() userId: number,
-    @Query('mediaResourceId') mediaResourceId: number,
-    @Query('currentTime') currentTime: number,
-    @Query('duration') duration?: number,
+    @Query() query: UpdateProgressDto,
   ): Promise<WatchHistory> {
     return await this.watchHistoryService.updateProgress(
       userId,
-      mediaResourceId,
-      currentTime,
-      duration,
+      query.mediaResourceId,
+      query.currentTime,
+      query.duration,
     );
   }
 
@@ -188,7 +185,7 @@ export class WatchHistoryController {
   @ApiResponse({ status: 200, description: '观看历史更新成功', type: WatchHistory })
   @UsePipes(new ValidationPipe({ transform: true }))
   async update(
-    @Param('id') id: number,
+    @Param('id', ParseIntPipe) id: number,
     @Body() updateWatchHistoryDto: UpdateWatchHistoryDto,
   ): Promise<WatchHistory> {
     return await this.watchHistoryService.update(id, updateWatchHistoryDto);
@@ -199,7 +196,7 @@ export class WatchHistoryController {
   @ApiOperation({ summary: '标记为已看完' })
   @ApiParam({ name: 'id', description: '观看历史ID' })
   @ApiResponse({ status: 200, description: '标记完成成功', type: WatchHistory })
-  async markAsCompleted(@Param('id') id: number): Promise<WatchHistory> {
+  async markAsCompleted(@Param('id', ParseIntPipe) id: number): Promise<WatchHistory> {
     return await this.watchHistoryService.markAsCompleted(id);
   }
 
@@ -208,7 +205,7 @@ export class WatchHistoryController {
   @ApiOperation({ summary: '删除观看历史' })
   @ApiParam({ name: 'id', description: '观看历史ID' })
   @ApiResponse({ status: 200, description: '观看历史删除成功' })
-  async remove(@Param('id') id: number): Promise<void> {
+  async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     await this.watchHistoryService.remove(id);
   }
 

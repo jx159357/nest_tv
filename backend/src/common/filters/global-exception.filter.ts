@@ -2,6 +2,7 @@ import { ExceptionFilter, ArgumentsHost, Catch, HttpException } from '@nestjs/co
 import { Request, Response } from 'express';
 import { Logger } from '@nestjs/common';
 import { AppLoggerService, LogContext } from '../services/app-logger.service';
+import { ensureRequestId } from '../utils/request-id.util';
 
 interface RequestWithUser extends Request {
   user?: {
@@ -68,12 +69,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<RequestWithUser>();
+    const requestId = ensureRequestId(request, response);
 
     // 记录错误日志
-    this.logError(exception, request);
+    this.logError(exception, request, requestId);
 
     // 生成错误响应
-    const errorResponse = this.buildErrorResponse(exception, request);
+    const errorResponse = this.buildErrorResponse(exception, request, requestId);
 
     // 发送错误响应
     response.status(errorResponse.statusCode).json(errorResponse);
@@ -115,9 +117,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   /**
    * 记录错误日志
    */
-  private logError(exception: unknown, request: RequestWithUser): void {
+  private logError(exception: unknown, request: RequestWithUser, requestId: string): void {
     const { type, severity } = this.classifyError(exception);
-    const requestId = this.generateRequestId();
 
     // 基础错误信息
     const errorInfo = {
@@ -202,9 +203,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   /**
    * 构建错误响应
    */
-  private buildErrorResponse(exception: unknown, request: RequestWithUser): ErrorResponse {
+  private buildErrorResponse(
+    exception: unknown,
+    request: RequestWithUser,
+    requestId: string,
+  ): ErrorResponse {
     const { type, severity } = this.classifyError(exception);
-    const requestId = this.generateRequestId();
 
     let statusCode = 500;
     let message = '服务器内部错误';
@@ -241,13 +245,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             }
           : undefined,
     };
-  }
-
-  /**
-   * 生成请求ID
-   */
-  private generateRequestId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
   private toError(exception: unknown): Error {

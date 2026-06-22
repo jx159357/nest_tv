@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import WatchView from '@/views/WatchView.vue';
 
-const { routeState, routerState, mediaStore, authStore, downloadsStore, watchHistoryApi } =
+const { routeState, routerState, mediaStore, mediaApi, authStore, downloadsStore, watchHistoryApi } =
   vi.hoisted(() => ({
     routeState: {
       params: { id: '9' },
@@ -12,10 +12,12 @@ const { routeState, routerState, mediaStore, authStore, downloadsStore, watchHis
       push: vi.fn(),
     },
     mediaStore: {
-      fetchMediaDetail: vi.fn(),
       incrementViewCount: vi.fn(),
       fetchFavoriteStatus: vi.fn(),
       toggleFavorite: vi.fn(),
+    },
+    mediaApi: {
+      getPlayDetail: vi.fn(),
     },
     authStore: {
       token: '',
@@ -52,6 +54,10 @@ vi.mock('@/stores/downloads', () => ({
 
 vi.mock('@/api/watchHistory', () => ({
   watchHistoryApi,
+}));
+
+vi.mock('@/api/media', () => ({
+  mediaApi,
 }));
 
 vi.mock('@/api/playSource', () => ({
@@ -97,32 +103,42 @@ vi.mock('@/components/PlayerGestureControl.vue', () => ({
 describe('WatchView', () => {
   beforeEach(() => {
     routerState.push.mockReset();
-    mediaStore.fetchMediaDetail.mockReset();
+    mediaApi.getPlayDetail.mockReset();
     mediaStore.incrementViewCount.mockReset();
     mediaStore.fetchFavoriteStatus.mockReset();
     mediaStore.toggleFavorite.mockReset();
     routeState.params = { id: '9' };
     routeState.query = { time: '128' };
 
-    mediaStore.fetchMediaDetail.mockResolvedValue({
+    mediaApi.getPlayDetail.mockResolvedValue({
       id: 9,
       title: 'Demo Movie',
       description: 'Example description',
-      duration: 3600,
       rating: 8.6,
       poster: '',
       genres: [],
-      source: 'demo',
-      playSources: [
+      sourceGroups: [
         {
-          id: 1,
-          url: 'https://example.com/video.mp4',
-          sourceName: 'Main Source',
-          resolution: '1080p',
-          format: 'mp4',
-          type: 'online',
+          name: 'Main Source',
+          episodes: [
+            {
+              id: 1,
+              url: 'https://example.com/video.mp4',
+              name: '播放',
+              resolution: '1080p',
+              format: 'mp4',
+              status: 'active',
+              isAds: false,
+            },
+          ],
         },
       ],
+      sourceFreshness: 'fresh',
+      downloadUrls: [],
+      watchHistory: {
+        currentTime: 128,
+        duration: 3600,
+      },
     });
     mediaStore.incrementViewCount.mockResolvedValue(undefined);
     mediaStore.fetchFavoriteStatus.mockResolvedValue(false);
@@ -142,24 +158,30 @@ describe('WatchView', () => {
   });
 
   it('renders safely when media rating is missing', async () => {
-    mediaStore.fetchMediaDetail.mockResolvedValueOnce({
+    mediaApi.getPlayDetail.mockResolvedValueOnce({
       id: 9,
       title: 'Demo Movie',
       description: 'Example description',
-      duration: 3600,
       poster: '',
       genres: [],
-      source: 'demo',
-      playSources: [
+      sourceGroups: [
         {
-          id: 1,
-          url: 'https://example.com/video.mp4',
-          sourceName: 'Main Source',
-          resolution: '1080p',
-          format: 'mp4',
-          type: 'online',
+          name: 'Main Source',
+          episodes: [
+            {
+              id: 1,
+              url: 'https://example.com/video.mp4',
+              name: '播放',
+              resolution: '1080p',
+              format: 'mp4',
+              status: 'active',
+              isAds: false,
+            },
+          ],
         },
       ],
+      sourceFreshness: 'fresh',
+      downloadUrls: [],
     });
 
     const wrapper = mount(WatchView, {
@@ -209,39 +231,45 @@ describe('WatchView', () => {
   });
 
   it('switches to the next available source after a player error', async () => {
-    mediaStore.fetchMediaDetail.mockResolvedValueOnce({
+    mediaApi.getPlayDetail.mockResolvedValueOnce({
       id: 9,
       title: 'Demo Movie',
       description: 'Example description',
-      duration: 3600,
       rating: 8.6,
       poster: '',
       genres: [],
-      source: 'demo',
-      playSources: [
+      sourceGroups: [
         {
-          id: 1,
-          url: 'https://example.com/broken.m3u8',
-          sourceName: 'Broken Source',
-          resolution: '1080p',
-          format: 'm3u8',
-          type: 'stream',
-          status: 'active',
-          isActive: true,
-          episodeNumber: 1,
+          name: 'Broken Source',
+          episodes: [
+            {
+              id: 1,
+              url: 'https://example.com/broken.m3u8',
+              name: '播放',
+              resolution: '1080p',
+              format: 'm3u8',
+              status: 'active',
+              isAds: false,
+            },
+          ],
         },
         {
-          id: 2,
-          url: 'https://example.com/backup.m3u8',
-          sourceName: 'Backup Source',
-          resolution: '1080p',
-          format: 'm3u8',
-          type: 'stream',
-          status: 'active',
-          isActive: true,
-          episodeNumber: 1,
+          name: 'Backup Source',
+          episodes: [
+            {
+              id: 2,
+              url: 'https://example.com/backup.m3u8',
+              name: '播放',
+              resolution: '1080p',
+              format: 'm3u8',
+              status: 'active',
+              isAds: false,
+            },
+          ],
         },
       ],
+      sourceFreshness: 'fresh',
+      downloadUrls: [],
     });
 
     const wrapper = mount(WatchView, {

@@ -8,6 +8,7 @@ import {
 import { Observable, map } from 'rxjs';
 import { Request, Response } from 'express';
 import { Reflector } from '@nestjs/core';
+import { ensureRequestId } from '../utils/request-id.util';
 
 export const SKIP_TRANSFORM_KEY = 'skipTransform';
 
@@ -17,10 +18,6 @@ export interface StandardResponse<T> {
   message?: string;
   requestId: string;
   timestamp: string;
-}
-
-function generateRequestId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
 /**
@@ -48,7 +45,9 @@ export class TransformInterceptor<T> implements NestInterceptor<T, StandardRespo
     }
 
     const httpContext = context.switchToHttp();
+    const request = httpContext.getRequest<Request>();
     const response = httpContext.getResponse<Response>();
+    const requestId = ensureRequestId(request, response);
 
     const contentType = response.getHeader('content-type');
     if (
@@ -78,7 +77,6 @@ export class TransformInterceptor<T> implements NestInterceptor<T, StandardRespo
           return data;
         }
 
-        const requestId = generateRequestId();
         return {
           success: true as const,
           data,

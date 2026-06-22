@@ -42,6 +42,12 @@
     currentTime: 0,
   });
 
+  export interface PlaybackMetrics {
+    firstFrameTimeMs: number;
+    stallCount: number;
+    success: boolean;
+  }
+
   const emit = defineEmits<{
     ready: [player: Artplayer];
     timeupdate: [currentTime: number, duration: number];
@@ -50,6 +56,7 @@
     seeked: [currentTime: number];
     ended: [];
     error: [error: string];
+    metrics: [metrics: PlaybackMetrics];
   }>();
 
   const artRef = ref<HTMLDivElement>();
@@ -89,6 +96,9 @@
   };
 
   let hlsInstance: Hls | null = null;
+  let playStartAt = 0;
+  let stallCount = 0;
+  let firstFrameReported = false;
 
   const clearHlsStartupTimer = () => {
     if (hlsStartupTimer !== null) {
@@ -113,6 +123,19 @@
 
   const hidePlayerLoading = (player: Artplayer) => {
     player.loading.show = false;
+  };
+
+  const resetMetrics = () => {
+    playStartAt = 0;
+    stallCount = 0;
+    firstFrameReported = false;
+  };
+
+  const reportFirstFrame = () => {
+    if (firstFrameReported || playStartAt <= 0) return;
+    firstFrameReported = true;
+    const firstFrameTimeMs = Date.now() - playStartAt;
+    emit('metrics', { firstFrameTimeMs, stallCount: 0, success: true });
   };
 
   const destroyHls = () => {
@@ -391,12 +414,14 @@
     player.on('video:timeupdate', () => {
       if (art === player) {
         clearPlaybackWatchdog();
+        reportFirstFrame();
         emit('timeupdate', player.currentTime, player.duration);
       }
     });
 
     player.on('video:play', () => {
       if (art === player) {
+        if (!playStartAt) playStartAt = Date.now();
         startPlaybackWatchdog(player);
         emit('play', player.currentTime);
       }
@@ -412,11 +437,18 @@
     player.on('video:loadedmetadata', () => {
       clearPlaybackWatchdog();
       hidePlayerLoading(player);
+      reportFirstFrame();
     });
 
     player.on('video:canplay', () => {
       clearPlaybackWatchdog();
       hidePlayerLoading(player);
+    });
+
+    player.on('video:waiting', () => {
+      if (art === player && firstFrameReported) {
+        stallCount++;
+      }
     });
 
     player.on('video:seeked', () => {
@@ -461,10 +493,16 @@
   });
 
   onUnmounted(() => {
+    if (playStartAt > 0 && !firstFrameReported) {
+      emit('metrics', { firstFrameTimeMs: 0, stallCount: 0, success: false });
+    } else if (firstFrameReported && stallCount > 0) {
+      emit('metrics', { firstFrameTimeMs: 0, stallCount, success: true });
+    }
     playerLoadId++;
     hlsLoadId++;
     clearPlaybackWatchdog();
     destroyHls();
+    resetMetrics();
     if (art) {
       art.destroy(false);
       art = null;

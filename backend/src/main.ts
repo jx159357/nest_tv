@@ -10,11 +10,17 @@ import { SecurityHeadersMiddleware } from './middleware/security-headers.middlew
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { AppLoggerService } from './common/services/app-logger.service';
+import { ensureRequestId } from './common/utils/request-id.util';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: ['log', 'error', 'warn'],
     bufferLogs: true,
+  });
+
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    ensureRequestId(req, res);
+    next();
   });
 
   // 启用响应压缩
@@ -56,6 +62,13 @@ async function bootstrap() {
       'X-Requested-With',
       'X-Request-ID',
       'Accept-Charset',
+    ],
+    exposedHeaders: [
+      'X-Request-ID',
+      'X-RateLimit-Limit',
+      'X-RateLimit-Remaining',
+      'X-RateLimit-Reset',
+      'Retry-After',
     ],
     credentials: true, // 支持凭证（cookies, Authorization headers）
     optionsSuccessStatus: 200, // 预检请求成功状态
@@ -186,16 +199,18 @@ async function bootstrap() {
   };
 
   const defaultPort = parseInt(process.env.PORT || '3334', 10);
-  let port: number;
+  let port = defaultPort;
 
-  try {
-    port = await getAvailablePort(defaultPort);
-    console.log(`✅ 端口 ${port} 可用`);
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : '未知错误';
-    console.warn(`⚠️ 端口检测失败: ${errorMessage}`);
-    console.log(`🔄 使用动态端口: ${defaultPort + Math.floor(Math.random() * 1000)}`);
-    port = defaultPort + Math.floor(Math.random() * 1000);
+  if (!isProduction) {
+    try {
+      port = await getAvailablePort(defaultPort);
+      console.log(`✅ 端口 ${port} 可用`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      console.warn(`⚠️ 端口检测失败: ${errorMessage}`);
+      console.log(`🔄 使用动态端口: ${defaultPort + Math.floor(Math.random() * 1000)}`);
+      port = defaultPort + Math.floor(Math.random() * 1000);
+    }
   }
 
   await app.listen(port);

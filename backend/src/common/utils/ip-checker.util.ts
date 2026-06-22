@@ -1,17 +1,4 @@
-const PRIVATE_RANGES = [
-  { prefix: '10.', mask: 8 },
-  { prefix: '172.', mask: 12 },
-  { prefix: '192.168.', mask: 16 },
-];
-
-const RESERVED_PREFIXES = [
-  '0.',
-  '127.',
-  '169.254.',
-  '224.',
-  '240.',
-  '255.',
-];
+const RESERVED_PREFIXES = ['0.', '127.', '169.254.', '224.', '240.', '255.'];
 
 export function isPrivateIp(ip: string): boolean {
   if (ip === '127.0.0.1' || ip === '::1') return true;

@@ -119,6 +119,18 @@ export class PlaySource {
   @Column({ nullable: true })
   lastCheckedAt?: Date;
 
+  @Column({ type: 'int', nullable: true })
+  firstFrameTimeMs?: number;
+
+  @Column({ default: 0 })
+  stallCount: number;
+
+  @Column({ default: 0 })
+  playSuccessCount: number;
+
+  @Column({ default: 0 })
+  playAttemptCount: number;
+
   @Column({ type: 'json', nullable: true })
   validationInfo?: Record<string, unknown> | null;
 
