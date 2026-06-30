@@ -117,7 +117,7 @@ export class AdminService {
     action: string,
     resource: string,
     metadata: Record<string, unknown> = {},
-    roleId: number,
+    roleId: number = 1,
     userId?: number,
     status: 'success' | 'error' | 'warning' = 'success',
     description?: string,
@@ -190,7 +190,7 @@ export class AdminService {
   async toggleUserStatus(userId: number) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
-      throw new Error(`User with ID ${userId} not found`);
+      throw new HttpException(`User with ID ${userId} not found`, HttpStatus.NOT_FOUND);
     }
     user.isActive = !user.isActive;
     await this.userRepository.save(user);

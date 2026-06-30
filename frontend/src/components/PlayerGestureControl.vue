@@ -107,6 +107,7 @@
   let dragType: 'progress' | 'volume' | 'brightness' | null = null;
   let lastTapTime = 0;
   let doubleTapTimer: ReturnType<typeof setTimeout> | null = null;
+  let lastDeltaX = 0;
 
   const onTouchStart = (e: TouchEvent) => {
     if (!props.enabled || !props.videoElement) return;
@@ -126,6 +127,7 @@
     const touch = e.touches[0];
     const deltaX = touch.clientX - startX;
     const deltaY = touch.clientY - startY;
+    lastDeltaX = deltaX;
 
     if (!isDragging) {
       if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
@@ -191,8 +193,7 @@
         case 'progress': {
           const rect = gestureRef.value?.getBoundingClientRect();
           if (rect) {
-            const deltaX = 0;
-            const seekDelta = (deltaX / rect.width) * 120;
+            const seekDelta = (lastDeltaX / rect.width) * 120;
             const newTime = Math.max(
               0,
               Math.min(

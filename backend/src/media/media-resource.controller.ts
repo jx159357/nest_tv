@@ -25,6 +25,7 @@ import { MediaResourceService } from './media-resource.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { RateLimitGuard, RateLimit } from '../common/guards/rate-limit.guard';
+import { AdminRoleGuard } from '../admin/admin-role.guard';
 import { GetCurrentUserId } from '../decorators/current-user.decorator';
 import { CreateMediaResourceDto } from './dtos/create-media-resource.dto';
 import { UpdateMediaResourceDto } from './dtos/update-media-resource.dto';
@@ -150,6 +151,7 @@ export class MediaResourceController {
   }
 
   @Post('deduplicate')
+  @UseGuards(AdminRoleGuard)
   @ApiOperation({ summary: '清理重复影视资源' })
   @ApiResponse({ status: 200, description: '清理成功' })
   async deduplicateMediaResources() {
@@ -290,6 +292,7 @@ export class MediaResourceController {
    * 创建影视资源
    */
   @Post()
+  @UseGuards(AdminRoleGuard)
   @ApiOperation({
     summary: '创建影视资源',
     description: '创建新的影视资源，支持标题、描述、类型、封面等信息',
@@ -375,6 +378,7 @@ export class MediaResourceController {
    * 更新影视资源
    */
   @Put(':id')
+  @UseGuards(AdminRoleGuard)
   @ApiOperation({
     summary: '更新影视资源',
     description: '根据ID更新影视资源信息，支持部分更新',
@@ -442,6 +446,7 @@ export class MediaResourceController {
    * 删除影视资源
    */
   @Delete(':id')
+  @UseGuards(AdminRoleGuard)
   @ApiOperation({
     summary: '删除影视资源',
     description: '根据ID删除指定的影视资源，删除后无法恢复',

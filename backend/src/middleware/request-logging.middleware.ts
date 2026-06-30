@@ -42,8 +42,7 @@ export class RequestLoggingMiddleware implements NestMiddleware {
           timestamp: new Date().toISOString(),
         });
       } catch (error) {
-        // 如果记录日志失败，不中断正常流程
-        console.error('Failed to log response:', error);
+        logger.warn('Failed to log response', 'RequestLoggingMiddleware');
       }
     });
 

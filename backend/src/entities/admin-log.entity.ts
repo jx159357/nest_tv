@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { AdminRole } from './admin-role.entity';
 import { User } from './user.entity';
@@ -14,6 +15,8 @@ import { User } from './user.entity';
  * 记录管理员的所有操作日志
  */
 @Entity('admin_logs')
+@Index('idx_admin_log_role_created', ['roleId', 'createdAt'])
+@Index('idx_admin_log_user_created', ['userId', 'createdAt'])
 export class AdminLog {
   @PrimaryGeneratedColumn()
   id: number; // 日志ID

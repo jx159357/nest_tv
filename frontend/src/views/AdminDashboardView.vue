@@ -192,9 +192,16 @@
                 </div>
               </div>
 
-              <div v-else class="dashboard__empty-state">
-                {{ dailySummaryError || '暂无每日自动采集执行记录。' }}
+              <div v-else-if="dailySummaryError" class="dashboard__empty-state">
+                {{ dailySummaryError }}
               </div>
+              <EmptyState
+                v-else
+                title="暂无采集记录"
+                description="系统尚未执行过自动采集任务"
+                icon="document"
+                :action="{ text: '手动执行', onClick: triggerDailyCollectionRun }"
+              />
 
               <p v-if="dailySummary?.message" class="dashboard__task-message">
                 {{ dailySummary.message }}
@@ -317,7 +324,12 @@
                           </div>
                         </div>
                       </div>
-                      <div v-else class="dashboard__empty-state">暂无任务历史记录。</div>
+                      <EmptyState
+                        v-else
+                        title="暂无任务历史"
+                        description="还没有执行过采集任务"
+                        icon="document"
+                      />
                     </div>
 
                     <div class="dashboard__task-results-panel">
@@ -356,14 +368,26 @@
                           </div>
                         </div>
                       </div>
-                      <div v-else class="dashboard__empty-state">最近任务暂无持续性异常来源。</div>
+                      <EmptyState
+                        v-else
+                        title="暂无异常来源"
+                        description="最近任务暂无持续性异常来源"
+                        icon="document"
+                      />
                     </div>
                   </div>
                 </template>
 
-                <div v-else class="dashboard__empty-state">
-                  {{ taskDashboardError || '暂无任务看板数据。' }}
+                <div v-else-if="taskDashboardError" class="dashboard__empty-state">
+                  {{ taskDashboardError }}
                 </div>
+                <EmptyState
+                  v-else
+                  title="暂无看板数据"
+                  description="等待采集任务产出数据"
+                  icon="document"
+                  :action="{ text: '刷新看板', onClick: loadTaskDashboard }"
+                />
 
                 <p v-if="taskDashboardError && taskDashboard" class="dashboard__task-error">
                   {{ taskDashboardError }}
@@ -431,9 +455,13 @@
                 </div>
               </div>
 
-              <div v-else class="dashboard__empty-state">
-                暂无可展示的来源统计，等待采集任务产出真实数据。
-              </div>
+              <EmptyState
+                v-else
+                title="暂无来源统计"
+                description="等待采集任务产出数据"
+                icon="document"
+                :action="{ text: '刷新统计', onClick: loadCollectionStatistics }"
+              />
             </div>
 
             <div id="dashboard-alert-summary" class="dashboard__alerts-grid">
@@ -635,9 +663,12 @@
                 </div>
               </div>
 
-              <div v-else class="dashboard__empty-state dashboard__empty-state--success">
-                当前没有需要优先关注的来源，稳定性表现良好。
-              </div>
+              <EmptyState
+                v-else
+                title="暂无待关注来源"
+                description="当前没有需要优先关注的来源，稳定性表现良好"
+                icon="document"
+              />
             </div>
           </div>
         </div>
@@ -695,9 +726,12 @@
               </div>
             </div>
           </div>
-          <div v-else class="dashboard__empty-activity">
-            <p class="dashboard__empty-text">暂无管理活动记录</p>
-          </div>
+          <EmptyState
+            v-else
+            title="暂无活动记录"
+            description="还没有管理操作记录"
+            icon="document"
+          />
         </div>
       </div>
 
@@ -769,6 +803,7 @@
 <script setup lang="ts">
   import { computed, ref, onMounted, onUnmounted } from 'vue';
   import { adminApi, type AdminDanmakuHealthStatus } from '@/api/admin';
+  import EmptyState from '@/components/EmptyState.vue';
   import { crawlerApi, type CollectionStatistics } from '@/api/crawler';
   import {
     schedulerApi,
@@ -1359,12 +1394,12 @@
   }
 
   .dashboard__stat-icon--blue {
-    background-color: rgba(59, 130, 246, 0.15);
+    background-color: var(--color-info-overlay);
     color: var(--color-info-light);
   }
 
   .dashboard__stat-icon--emerald {
-    background-color: rgba(16, 185, 129, 0.15);
+    background-color: var(--color-success-overlay);
     color: var(--color-success-light);
   }
 
@@ -1374,7 +1409,7 @@
   }
 
   .dashboard__stat-icon--amber {
-    background-color: rgba(245, 158, 11, 0.15);
+    background-color: var(--color-warning-overlay);
     color: var(--color-warning-light);
   }
 
@@ -1630,43 +1665,43 @@
   }
 
   .dashboard__link-btn--primary {
-    border: 1px solid rgba(129, 140, 248, 0.3);
-    background-color: rgba(99, 102, 241, 0.1);
+    border: 1px solid var(--color-info-border);
+    background-color: var(--color-info-overlay);
     color: var(--color-info-light);
   }
 
   .dashboard__link-btn--primary:hover {
-    background-color: rgba(99, 102, 241, 0.2);
+    background-color: var(--color-info-border);
   }
 
   .dashboard__link-btn--success {
-    border: 1px solid rgba(52, 211, 153, 0.3);
-    background-color: rgba(16, 185, 129, 0.1);
+    border: 1px solid var(--color-success-border);
+    background-color: var(--color-success-overlay);
     color: var(--color-success-light);
   }
 
   .dashboard__link-btn--success:hover {
-    background-color: rgba(16, 185, 129, 0.2);
+    background-color: var(--color-success-border);
   }
 
   .dashboard__link-btn--warning {
-    border: 1px solid rgba(251, 191, 36, 0.3);
-    background-color: rgba(245, 158, 11, 0.1);
+    border: 1px solid var(--color-warning-border);
+    background-color: var(--color-warning-overlay);
     color: var(--color-warning-light);
   }
 
   .dashboard__link-btn--warning:hover {
-    background-color: rgba(245, 158, 11, 0.2);
+    background-color: var(--color-warning-border);
   }
 
   .dashboard__link-btn--danger {
-    border: 1px solid rgba(251, 113, 133, 0.3);
+    border: 1px solid var(--color-error-border);
     background-color: var(--color-error-overlay);
     color: var(--color-error-light);
   }
 
   .dashboard__link-btn--danger:hover {
-    background-color: rgba(239, 68, 68, 0.2);
+    background-color: var(--color-error-border);
   }
 
   .dashboard__link-btn--secondary {
@@ -1782,8 +1817,8 @@
   }
 
   .dashboard__empty-state--success {
-    border-color: rgba(52, 211, 153, 0.2);
-    background-color: rgba(16, 185, 129, 0.1);
+    border-color: var(--color-success-border);
+    background-color: var(--color-success-overlay);
     color: var(--color-success-light);
   }
 
@@ -1884,13 +1919,13 @@
   }
 
   .dashboard__btn--success {
-    border: 1px solid rgba(52, 211, 153, 0.3);
-    background-color: rgba(16, 185, 129, 0.1);
+    border: 1px solid var(--color-success-border);
+    background-color: var(--color-success-overlay);
     color: var(--color-success-light);
   }
 
   .dashboard__btn--success:hover:not(:disabled) {
-    background-color: rgba(16, 185, 129, 0.2);
+    background-color: var(--color-success-border);
   }
 
   .dashboard__task-results-grid {
@@ -2164,18 +2199,18 @@
   }
 
   .dashboard__alert-card--critical {
-    border: 1px solid rgba(251, 113, 133, 0.2);
+    border: 1px solid var(--color-error-border);
     background-color: var(--color-error-overlay);
   }
 
   .dashboard__alert-card--high {
-    border: 1px solid rgba(251, 191, 36, 0.2);
-    background-color: rgba(245, 158, 11, 0.1);
+    border: 1px solid var(--color-warning-border);
+    background-color: var(--color-warning-overlay);
   }
 
   .dashboard__alert-card--stalled {
-    border: 1px solid rgba(56, 189, 248, 0.2);
-    background-color: rgba(14, 165, 233, 0.1);
+    border: 1px solid var(--color-info-border);
+    background-color: var(--color-info-overlay);
   }
 
   .dashboard__alert-card--inactive {
@@ -2196,7 +2231,7 @@
   }
 
   .dashboard__alert-card--stalled .dashboard__alert-label {
-    color: #bae6fd;
+    color: var(--color-info-lighter);
   }
 
   .dashboard__alert-card--inactive .dashboard__alert-label {
@@ -2277,7 +2312,7 @@
   }
 
   .dashboard__action-btn--recommended:hover {
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: var(--glass-heavy);
   }
 
   .dashboard__action-btn--rose {
@@ -2285,11 +2320,11 @@
   }
 
   .dashboard__action-btn--amber {
-    border-color: rgba(251, 191, 36, 0.3);
+    border-color: var(--color-warning-border);
   }
 
   .dashboard__action-btn--sky {
-    border-color: rgba(56, 189, 248, 0.3);
+    border-color: var(--color-info-border);
   }
 
   .dashboard__action-btn--fuchsia {
@@ -2395,18 +2430,18 @@
   }
 
   .dashboard__score--critical {
-    background-color: rgba(239, 68, 68, 0.15);
+    background-color: var(--color-error-overlay);
     color: var(--color-error-light);
   }
 
   .dashboard__score--warning {
-    background-color: rgba(245, 158, 11, 0.15);
+    background-color: var(--color-warning-overlay);
     color: var(--color-warning-light);
   }
 
   .dashboard__score--info {
-    background-color: rgba(14, 165, 233, 0.15);
-    color: #bae6fd;
+    background-color: var(--color-info-overlay);
+    color: var(--color-info-lighter);
   }
 
   .dashboard__highlight-tag {
@@ -2494,27 +2529,27 @@
   }
 
   .dashboard__badge--success {
-    background-color: rgba(16, 185, 129, 0.15);
+    background-color: var(--color-success-overlay);
     color: var(--color-success-light);
-    outline-color: rgba(52, 211, 153, 0.3);
+    outline-color: var(--color-success-border);
   }
 
   .dashboard__badge--warning {
-    background-color: rgba(245, 158, 11, 0.15);
+    background-color: var(--color-warning-overlay);
     color: var(--color-warning-light);
-    outline-color: rgba(251, 191, 36, 0.3);
+    outline-color: var(--color-warning-border);
   }
 
   .dashboard__badge--error {
-    background-color: rgba(239, 68, 68, 0.15);
+    background-color: var(--color-error-overlay);
     color: var(--color-error-light);
-    outline-color: rgba(251, 113, 133, 0.3);
+    outline-color: var(--color-error-border);
   }
 
   .dashboard__badge--info {
-    background-color: rgba(14, 165, 233, 0.15);
-    color: #bae6fd;
-    outline-color: rgba(56, 189, 248, 0.3);
+    background-color: var(--color-info-overlay);
+    color: var(--color-info-lighter);
+    outline-color: var(--color-info-border);
   }
 
   .dashboard__badge--neutral {
@@ -2524,7 +2559,7 @@
   }
 
   .dashboard__badge--critical {
-    background-color: rgba(239, 68, 68, 0.2);
+    background-color: var(--color-error-border);
     color: var(--color-error-light);
     outline-color: rgba(253, 224, 71, 0.4);
   }
@@ -2532,9 +2567,9 @@
   .dashboard__error-state {
     border-radius: var(--radius-2xl);
     border: 1px solid var(--color-warning);
-    background-color: rgba(245, 158, 11, 0.05);
+    background-color: var(--color-warning-overlay);
     padding: var(--spacing-5) var(--spacing-6);
-    color: #92400e;
+    color: var(--color-warning-dark);
     box-shadow: var(--shadow-sm);
   }
 
@@ -2560,7 +2595,7 @@
   .dashboard__error-message {
     margin-top: var(--spacing-1);
     font-size: var(--font-size-sm);
-    color: #b45309;
+    color: var(--color-warning-dark);
   }
 
   .dashboard__bottom-grid {
@@ -2703,12 +2738,12 @@
   }
 
   .dashboard__health-badge--success {
-    background-color: rgba(16, 185, 129, 0.15);
+    background-color: var(--color-success-overlay);
     color: var(--color-success);
   }
 
   .dashboard__health-badge--error {
-    background-color: rgba(239, 68, 68, 0.15);
+    background-color: var(--color-error-overlay);
     color: var(--color-error);
   }
 
@@ -2725,8 +2760,8 @@
   .dashboard__danmaku-health {
     margin-top: var(--spacing-3);
     border-radius: var(--radius-lg);
-    border: 1px solid rgba(99, 102, 241, 0.2);
-    background-color: rgba(99, 102, 241, 0.05);
+    border: 1px solid var(--color-info-border);
+    background-color: var(--color-info-overlay);
     padding: var(--spacing-3);
   }
 

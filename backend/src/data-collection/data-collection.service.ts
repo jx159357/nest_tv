@@ -5,7 +5,7 @@ import { MediaResource, MediaType } from '../entities/media-resource.entity';
 import { UpdateMediaResourceDto } from '../media/dtos/update-media-resource.dto';
 import { MediaResourceService } from '../media/media-resource.service';
 import { PlaySourceService } from '../play-sources/play-source.service';
-import { PlaySourceType } from '../entities/play-source.entity';
+import { PlaySourceType, PlaySourceVisibility } from '../entities/play-source.entity';
 import { ProxyPoolService } from '../common/services/proxy-pool.service';
 import type { ProxyInfo } from '../common/types/proxy-pool.types';
 
@@ -1414,15 +1414,18 @@ export class DataCollectionService {
         continue;
       }
 
-      await this.playSourceService.create({
-        mediaResourceId,
-        type: this.inferPlaySourceType(url),
-        url,
-        priority: index + 1,
-        resolution: undefined,
-        sourceName: `${sourceName}源 ${index + 1}`,
-        description: mediaData.description,
-      });
+      await this.playSourceService.create(
+        {
+          mediaResourceId,
+          type: this.inferPlaySourceType(url),
+          url,
+          priority: index + 1,
+          resolution: undefined,
+          sourceName: `${sourceName}源 ${index + 1}`,
+          description: mediaData.description,
+        },
+        { visibility: PlaySourceVisibility.PUBLIC },
+      );
       created++;
     }
 

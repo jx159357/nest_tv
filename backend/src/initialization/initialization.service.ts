@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { MediaResourceService } from '../media/media-resource.service';
 import { MediaQuality, MediaType } from '../entities/media-resource.entity';
 import { PlaySourceService } from '../play-sources/play-source.service';
-import { PlaySourceType } from '../entities/play-source.entity';
+import { PlaySourceType, PlaySourceVisibility } from '../entities/play-source.entity';
 import { User } from '../entities/user.entity';
 import { Logger } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
@@ -247,14 +247,17 @@ export class InitializationService implements OnModuleInit {
         });
 
         for (const ps of item.playSources) {
-          await this.playSourceService.create({
-            mediaResourceId: media.id,
-            url: ps.url,
-            type: ps.type,
-            resolution: ps.resolution,
-            priority: 1,
-            sourceName: ps.sourceName,
-          });
+          await this.playSourceService.create(
+            {
+              mediaResourceId: media.id,
+              url: ps.url,
+              type: ps.type,
+              resolution: ps.resolution,
+              priority: 1,
+              sourceName: ps.sourceName,
+            },
+            { visibility: PlaySourceVisibility.PUBLIC },
+          );
         }
 
         this.logger.log(`示例资源 "${item.title}" 创建成功`);

@@ -59,6 +59,17 @@
               </svg>
             </button>
 
+            <button
+              class="skip-settings-btn"
+              title="跳过片头/片尾"
+              @click="showSkipSettings = !showSkipSettings"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="5 4 15 12 5 20 5 4" />
+                <line x1="19" y1="5" x2="19" y2="19" />
+              </svg>
+            </button>
+
             <!-- 移动端手势控制 -->
             <PlayerGestureControl
               v-if="isMobile"
@@ -80,8 +91,54 @@
             </Transition>
           </div>
 
+          <Transition name="slide-up">
+            <div v-if="showSkipSettings" class="skip-settings-panel">
+              <h3>跳过片头/片尾</h3>
+              <p class="skip-settings-hint">设置后自动跳过，留空表示不跳过</p>
+              <div class="skip-settings-row">
+                <label>
+                  <span>片头结束时间</span>
+                  <div class="skip-input-group">
+                    <input v-model.number="skipIntroEnd" type="number" min="0" placeholder="秒数" />
+                    <button class="skip-set-btn" @click="setCurrentAsIntroEnd">当前时间</button>
+                  </div>
+                  <span v-if="skipIntroEnd > 0" class="skip-time-display">{{
+                    formatTime(skipIntroEnd)
+                  }}</span>
+                </label>
+              </div>
+              <div class="skip-settings-row">
+                <label>
+                  <span>片尾开始时间</span>
+                  <div class="skip-input-group">
+                    <input
+                      v-model.number="skipOutroStart"
+                      type="number"
+                      min="0"
+                      placeholder="秒数"
+                    />
+                    <button class="skip-set-btn" @click="setCurrentAsOutroStart">当前时间</button>
+                  </div>
+                  <span v-if="skipOutroStart > 0" class="skip-time-display">{{
+                    formatTime(skipOutroStart)
+                  }}</span>
+                </label>
+              </div>
+              <div class="skip-settings-actions">
+                <button class="skip-save-btn" @click="saveSkipSettings">保存</button>
+                <button class="skip-cancel-btn" @click="showSkipSettings = false">取消</button>
+              </div>
+            </div>
+          </Transition>
+
           <div v-if="!currentPlaySource && !loading" class="no-source-error">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="no-source-error__icon">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              class="no-source-error__icon"
+            >
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -93,7 +150,32 @@
             </button>
           </div>
 
-          <div class="play-source-panel">
+          <button
+            class="source-panel-toggle"
+            type="button"
+            @click="showSourcePanel = !showSourcePanel"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            {{ showSourcePanel ? '收起播放源' : '播放源' }}
+            <span v-if="currentPlaySource" class="source-panel-toggle__name">
+              {{ currentPlaySource.sourceName || `源${currentPlaySource.id}` }}
+            </span>
+          </button>
+
+          <div
+            v-if="isMobile && showSourcePanel"
+            class="source-panel-backdrop"
+            @click="showSourcePanel = false"
+          ></div>
+
+          <div
+            :class="[
+              'play-source-panel',
+              { 'play-source-panel--open': isMobile && showSourcePanel },
+            ]"
+          >
             <div class="panel-header">
               <h2>
                 播放源
@@ -130,7 +212,10 @@
                   { active: currentPlaySource?.id === playSource.id },
                   getSourceBadgeClass(playSource.id),
                 ]"
-                @click="selectPlaySource(playSource)"
+                @click="
+                  selectPlaySource(playSource);
+                  showSourcePanel = false;
+                "
               >
                 <div class="source-info">
                   <div class="source-name">
@@ -400,11 +485,16 @@
   const videoElement = ref<HTMLVideoElement | null>(null);
   const showResumeTip = ref(false);
   const isMobile = ref(false);
+  const showSourcePanel = ref(false);
   const isWebFullscreen = ref(false);
   const isApplyingRoomSync = ref(false);
   const lastRoomSyncSentAt = ref(0);
   const macCmsEpisodes = ref<Array<{ episode: string; url: string; sourceName: string }>>([]);
+  const showSkipSettings = ref(false);
+  const skipIntroEnd = ref(0);
+  const skipOutroStart = ref(0);
   let previousBodyOverflow = '';
+  let skipNotificationShown = false;
 
   const checkMobile = () => {
     isMobile.value = window.innerWidth <= 768 || 'ontouchstart' in window;
@@ -424,6 +514,49 @@
 
   const resumeFromTip = () => {
     showResumeTip.value = false;
+  };
+
+  const getSkipStorageKey = (mediaId: number) => `skip-settings-${mediaId}`;
+
+  const loadSkipSettings = (mediaId: number) => {
+    try {
+      const saved = localStorage.getItem(getSkipStorageKey(mediaId));
+      if (saved) {
+        const parsed = JSON.parse(saved) as { introEnd?: number; outroStart?: number };
+        skipIntroEnd.value = parsed.introEnd ?? 0;
+        skipOutroStart.value = parsed.outroStart ?? 0;
+      } else {
+        skipIntroEnd.value = 0;
+        skipOutroStart.value = 0;
+      }
+    } catch {
+      skipIntroEnd.value = 0;
+      skipOutroStart.value = 0;
+    }
+    skipNotificationShown = false;
+  };
+
+  const saveSkipSettings = () => {
+    const mediaId = media.value?.id;
+    if (!mediaId) return;
+    localStorage.setItem(
+      getSkipStorageKey(mediaId),
+      JSON.stringify({ introEnd: skipIntroEnd.value, outroStart: skipOutroStart.value }),
+    );
+    showSkipSettings.value = false;
+    notifySuccess('跳过设置已保存', '片头/片尾设置已更新');
+  };
+
+  const setCurrentAsIntroEnd = () => {
+    if (currentPlayer.value) {
+      skipIntroEnd.value = Math.floor(currentPlayer.value.currentTime);
+    }
+  };
+
+  const setCurrentAsOutroStart = () => {
+    if (currentPlayer.value) {
+      skipOutroStart.value = Math.floor(currentPlayer.value.currentTime);
+    }
   };
 
   const getSpeedDisplay = (sourceId: number) => {
@@ -841,6 +974,8 @@
         showResumeTip.value = true;
       }
 
+      loadSkipSettings(mediaId);
+
       await syncFavoriteStatus(mediaId);
       await mediaStore.incrementViewCount(String(mediaId));
     } catch (error) {
@@ -880,6 +1015,26 @@
 
   const onTimeUpdate = (currentTime: number, duration: number) => {
     void saveWatchProgress(currentTime, false, duration);
+
+    if (skipIntroEnd.value > 0 && currentTime < skipIntroEnd.value && currentTime > 0) {
+      if (!skipNotificationShown) {
+        skipNotificationShown = true;
+        notifyInfo('跳过片头', `已跳转至 ${formatTime(skipIntroEnd.value)}`);
+      }
+      if (currentPlayer.value) {
+        (currentPlayer.value as any).currentTime = skipIntroEnd.value;
+      }
+    }
+
+    if (skipOutroStart.value > 0 && duration > 0 && currentTime >= skipOutroStart.value) {
+      if (!skipNotificationShown) {
+        skipNotificationShown = true;
+        notifyInfo('跳过片尾', '已自动跳过片尾');
+      }
+      if (currentPlayer.value) {
+        (currentPlayer.value as any).currentTime = duration;
+      }
+    }
   };
 
   const onVideoEnded = () => {
@@ -887,8 +1042,50 @@
     void saveWatchProgress(duration, true, duration);
   };
 
+  const classifyPlayerError = (error: string): { category: string; userMessage: string } => {
+    const lower = error.toLowerCase();
+    if (
+      lower.includes('network') ||
+      lower.includes('timeout') ||
+      lower.includes('fetch') ||
+      lower.includes('连接') ||
+      lower.includes('超时')
+    ) {
+      return { category: 'network', userMessage: '网络不佳，正在尝试其他线路...' };
+    }
+    if (
+      lower.includes('403') ||
+      lower.includes('404') ||
+      lower.includes('410') ||
+      lower.includes('forbidden') ||
+      lower.includes('expired') ||
+      lower.includes('过期')
+    ) {
+      return { category: 'source', userMessage: '播放地址已失效，正在尝试其他线路...' };
+    }
+    if (
+      lower.includes('format') ||
+      lower.includes('decode') ||
+      lower.includes('codec') ||
+      lower.includes('不支持')
+    ) {
+      return { category: 'format', userMessage: '视频格式不支持，正在切换线路...' };
+    }
+    if (
+      lower.includes('geo') ||
+      lower.includes('region') ||
+      lower.includes('地区') ||
+      lower.includes('限制')
+    ) {
+      return { category: 'geo', userMessage: '该播放源有地区限制，正在切换线路...' };
+    }
+    return { category: 'unknown', userMessage: '播放失败，正在尝试其他线路...' };
+  };
+
   const onPlayerError = async (error: string) => {
-    log.error('WatchView', '播放器错误:', error);
+    const { category, userMessage } = classifyPlayerError(error);
+    log.error('WatchView', `播放器错误 [${category}]:`, error);
+    notifyInfo('播放异常', userMessage);
     const failedSource = currentPlaySource.value;
     if (!failedSource || !media.value?.playSources?.length) return;
 
@@ -953,7 +1150,13 @@
 
     // Step 4: MacCMS resolve + persist
     if (cmsResolveAttempted.value) {
-      notifyError('播放失败', '所有播放源均不可用，请尝试重新爬取资源。');
+      const finalMessage =
+        category === 'network'
+          ? '网络不佳，所有线路均无法连接，请检查网络后重试。'
+          : category === 'source'
+            ? '所有播放地址均已失效，请尝试重新采集资源。'
+            : '所有播放源均不可用，请尝试重新爬取资源。';
+      notifyError('播放失败', finalMessage);
       return;
     }
     cmsResolveAttempted.value = true;
@@ -1091,6 +1294,7 @@
 
   const selectEpisode = async (episode: number) => {
     currentEpisode.value = episode;
+    resumeTime.value = 0;
     failedPlaySourceIds.value.clear();
     mediaRefreshAttempted.value = false;
     cmsResolveAttempted.value = false;
@@ -1222,6 +1426,22 @@
   };
 
   let saveInterval: ReturnType<typeof setInterval>;
+
+  const handleBeforeUnload = () => {
+    if (!authStore.token || !media.value) return;
+    const currentTime = getCurrentPlayerTime();
+    if (currentTime <= 0) return;
+    const duration = media.value.duration || 0;
+    const payload = JSON.stringify({
+      mediaResourceId: media.value.id,
+      currentTime: Math.floor(currentTime),
+      duration: Math.floor(duration),
+      isCompleted: duration > 0 && currentTime >= duration - 5,
+    });
+    const blob = new Blob([payload], { type: 'application/json' });
+    navigator.sendBeacon('/api/watch-history', blob);
+  };
+
   onMounted(() => {
     checkMobile();
     window.addEventListener('resize', checkMobile);
@@ -1235,6 +1455,7 @@
         void saveWatchProgress(currentTime, true);
       }
     }, 30000);
+    window.addEventListener('beforeunload', handleBeforeUnload);
   });
 
   onUnmounted(() => {
@@ -1243,6 +1464,7 @@
       void saveWatchProgress(currentTime, true);
     }
     clearInterval(saveInterval);
+    window.removeEventListener('beforeunload', handleBeforeUnload);
     window.removeEventListener('resize', checkMobile);
     window.removeEventListener('keydown', handleFullscreenKeydown);
     document.removeEventListener('fullscreenchange', handleFullscreenChange);
@@ -1482,6 +1704,150 @@
     opacity: 1;
   }
 
+  .skip-settings-btn {
+    position: absolute;
+    top: 12px;
+    right: 56px;
+    z-index: 200;
+    width: 36px;
+    height: 36px;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    border-radius: 6px;
+    color: var(--text-inverse);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: all;
+  }
+
+  .player-wrapper:hover .skip-settings-btn {
+    opacity: 1;
+  }
+
+  .skip-settings-btn:hover {
+    background: rgba(0, 0, 0, 0.8);
+  }
+
+  .skip-settings-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .player-wrapper:fullscreen .skip-settings-btn,
+  .player-wrapper.player-wrapper--web-fullscreen .skip-settings-btn {
+    opacity: 1;
+  }
+
+  .skip-settings-panel {
+    background: var(--surface-card);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--panel-radius);
+    padding: 20px;
+    margin-top: 12px;
+  }
+
+  .skip-settings-panel h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 4px;
+  }
+
+  .skip-settings-hint {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0 0 16px;
+  }
+
+  .skip-settings-row {
+    margin-bottom: 12px;
+  }
+
+  .skip-settings-row label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .skip-settings-row label > span:first-child {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .skip-input-group {
+    display: flex;
+    gap: 8px;
+  }
+
+  .skip-input-group input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-control);
+    background: var(--surface-muted);
+    color: var(--text-primary);
+    font-size: 14px;
+  }
+
+  .skip-set-btn {
+    padding: 8px 12px;
+    background: var(--color-brand-overlay);
+    border: 1px solid var(--color-brand-border);
+    border-radius: var(--radius-control);
+    color: var(--color-brand-primary-light);
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .skip-set-btn:hover {
+    background: var(--color-brand-primary);
+    color: var(--text-inverse);
+  }
+
+  .skip-time-display {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .skip-settings-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .skip-save-btn {
+    padding: 8px 20px;
+    background: var(--color-brand-primary);
+    border: none;
+    border-radius: var(--radius-control);
+    color: var(--text-inverse);
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .skip-save-btn:hover {
+    opacity: 0.9;
+  }
+
+  .skip-cancel-btn {
+    padding: 8px 20px;
+    background: var(--surface-muted);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-control);
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .skip-cancel-btn:hover {
+    background: var(--surface-card-hover);
+  }
+
   /* 断点续播提示 */
   .resume-tip {
     position: absolute;
@@ -1566,6 +1932,14 @@
     border-radius: 14px;
     padding: 20px;
     border: 1px solid var(--border-primary);
+  }
+
+  .source-panel-toggle {
+    display: none;
+  }
+
+  .source-panel-backdrop {
+    display: none;
   }
 
   .panel-header {
@@ -2058,13 +2432,13 @@
 
     .player-wrapper {
       --watch-overlay-edge: 8px;
-      --watch-overlay-bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
+      --watch-overlay-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
       border-radius: 10px;
     }
 
     .resume-tip {
       right: var(--watch-overlay-edge);
-      bottom: calc(var(--watch-overlay-bottom) + 8px);
+      bottom: calc(var(--watch-overlay-bottom) + 60px);
       left: var(--watch-overlay-edge);
       width: auto;
       flex-direction: column;
@@ -2101,25 +2475,68 @@
 
     .source-grid {
       grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
     }
 
     .episode-grid {
-      grid-template-columns: repeat(5, 1fr);
-      gap: 4px;
+      grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+      gap: 6px;
     }
 
     .episode-btn {
-      padding: 4px;
-      font-size: 12px;
-      min-height: 32px;
+      padding: 6px 4px;
+      font-size: 13px;
+      min-height: 36px;
     }
 
     .source-btn {
-      padding: 6px 8px;
+      padding: 8px 10px;
     }
 
     .source-name {
       font-size: 13px;
+    }
+
+    .source-panel-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      min-height: var(--touch-target);
+      padding: 10px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-primary);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .source-panel-toggle:hover {
+      background: var(--border-primary);
+    }
+
+    .source-panel-toggle svg {
+      width: 16px;
+      height: 16px;
+      transition: transform 0.25s ease;
+    }
+
+    .source-panel-toggle .source-panel-toggle__name {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .source-panel-backdrop {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 49;
+      background: rgba(0, 0, 0, 0.45);
     }
 
     .play-source-panel {
@@ -2133,19 +2550,20 @@
       border-radius: 16px 16px 0 0;
       box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
       padding: 16px;
+      transform: translateY(100%);
+      transition: transform 0.28s ease;
     }
 
-    .episode-section {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 50;
-      max-height: 50vh;
-      overflow-y: auto;
-      border-radius: 16px 16px 0 0;
-      box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
-      padding: 16px;
+    .play-source-panel--open {
+      transform: translateY(0);
+    }
+
+    .player-wrapper:not(:fullscreen):not(.player-wrapper--web-fullscreen) :deep(.danmaku-controls) {
+      display: none;
+    }
+
+    .player-wrapper:not(:fullscreen):not(.player-wrapper--web-fullscreen) .resume-tip {
+      display: none;
     }
   }
 
@@ -2185,7 +2603,7 @@
     padding: 10px 24px;
     font-size: 14px;
     font-weight: 500;
-    color: #fff;
+    color: var(--text-inverse);
     background: var(--color-brand-primary, #6366f1);
     border: none;
     border-radius: 8px;

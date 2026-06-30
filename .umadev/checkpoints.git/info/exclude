@@ -1,0 +1,12 @@
+/.git/
+node_modules/
+target/
+dist/
+build/
+.next/
+.nuxt/
+.output/
+.venv/
+__pycache__/
+.umadev/
+*.log

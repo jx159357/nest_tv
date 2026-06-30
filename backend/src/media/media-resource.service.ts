@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MediaResource } from '../entities/media-resource.entity';
@@ -11,6 +11,7 @@ import { MediaResourceQueryDto } from './dtos/media-resource-query.dto';
 import { CacheService } from '../common/cache/cache.service';
 import { Cacheable, CacheEvict } from '../common/decorators/cache.decorator';
 import { PlaySourceService } from '../play-sources/play-source.service';
+import { PlaySourceVisibility } from '../entities/play-source.entity';
 
 interface MediaStatisticsRow {
   total: string;
@@ -61,6 +62,8 @@ const MEDIA_CARD_SELECT_FIELDS = [
 
 @Injectable()
 export class MediaResourceService {
+  private readonly logger = new Logger(MediaResourceService.name);
+
   constructor(
     @InjectRepository(MediaResource)
     private mediaResourceRepository: Repository<MediaResource>,
@@ -289,7 +292,7 @@ export class MediaResourceService {
       (mediaResource as any).sourceFreshness = result.freshness;
     } catch {
       mediaResource.playSources = await this.playSourceRepository.find({
-        where: { mediaResourceId: id, isActive: true },
+        where: { mediaResourceId: id, isActive: true, visibility: PlaySourceVisibility.PUBLIC },
         order: { priority: 'ASC', updatedAt: 'DESC' },
       });
     }
@@ -311,7 +314,7 @@ export class MediaResourceService {
       sourceFreshness = result.freshness;
     } catch {
       playSources = await this.playSourceRepository.find({
-        where: { mediaResourceId: id, isActive: true },
+        where: { mediaResourceId: id, isActive: true, visibility: PlaySourceVisibility.PUBLIC },
         order: { priority: 'ASC', updatedAt: 'DESC' },
       });
     }
@@ -416,7 +419,7 @@ export class MediaResourceService {
         .take(limit)
         .getMany();
     } catch (error) {
-      console.error('Search error:', error);
+      this.logger.error('Search error', error);
       return [];
     }
   }

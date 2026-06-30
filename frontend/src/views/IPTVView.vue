@@ -605,7 +605,7 @@
     background: var(--color-brand-primary);
     border: none;
     border-radius: 8px;
-    color: white;
+    color: var(--text-inverse);
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
@@ -1103,7 +1103,7 @@
   }
   .btn-play {
     background: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-accent));
-    color: white;
+    color: var(--text-inverse);
   }
   .btn-play:hover {
     transform: translateY(-1px);
@@ -1111,7 +1111,7 @@
   }
   .btn-validate {
     background: var(--color-success);
-    color: white;
+    color: var(--text-inverse);
   }
   .btn-validate:hover {
     background: var(--color-success-dark);

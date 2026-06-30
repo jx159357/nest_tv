@@ -2,34 +2,41 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import WatchView from '@/views/WatchView.vue';
 
-const { routeState, routerState, mediaStore, mediaApi, authStore, downloadsStore, watchHistoryApi } =
-  vi.hoisted(() => ({
-    routeState: {
-      params: { id: '9' },
-      query: { time: '128' } as Record<string, string>,
-    },
-    routerState: {
-      push: vi.fn(),
-    },
-    mediaStore: {
-      incrementViewCount: vi.fn(),
-      fetchFavoriteStatus: vi.fn(),
-      toggleFavorite: vi.fn(),
-    },
-    mediaApi: {
-      getPlayDetail: vi.fn(),
-    },
-    authStore: {
-      token: '',
-    },
-    downloadsStore: {
-      enqueueTask: vi.fn(),
-      startTask: vi.fn(),
-    },
-    watchHistoryApi: {
-      recordProgress: vi.fn(),
-    },
-  }));
+const {
+  routeState,
+  routerState,
+  mediaStore,
+  mediaApi,
+  authStore,
+  downloadsStore,
+  watchHistoryApi,
+} = vi.hoisted(() => ({
+  routeState: {
+    params: { id: '9' },
+    query: { time: '128' } as Record<string, string>,
+  },
+  routerState: {
+    push: vi.fn(),
+  },
+  mediaStore: {
+    incrementViewCount: vi.fn(),
+    fetchFavoriteStatus: vi.fn(),
+    toggleFavorite: vi.fn(),
+  },
+  mediaApi: {
+    getPlayDetail: vi.fn(),
+  },
+  authStore: {
+    token: '',
+  },
+  downloadsStore: {
+    enqueueTask: vi.fn(),
+    startTask: vi.fn(),
+  },
+  watchHistoryApi: {
+    recordProgress: vi.fn(),
+  },
+}));
 
 vi.mock('vue-router', () => ({
   RouterLink: {

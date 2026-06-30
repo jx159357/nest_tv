@@ -509,7 +509,7 @@
     type AdminDownloadTaskActionPayload,
     type AdminDownloadTaskItem,
   } from '@/api/admin';
-  import { showConfirm } from '@/composables/useModal';
+  import { showConfirm, notifySuccess, notifyError } from '@/composables/useModal';
   import type { User } from '@/types/user';
   import { log } from '@/utils/logger';
 
@@ -915,7 +915,7 @@
     }
   };
 
-  const retryVisibleFailedTasks = async () => {
+  const retryVisibleFailedTasks = () => {
     const failedTasks = tasks.value.filter(
       task => task.status === 'error' || task.status === 'cancelled',
     );
@@ -924,27 +924,37 @@
       return;
     }
 
-    bulkActionLoading.value = true;
-    actionState.value = null;
+    showConfirm(
+      `确定要将当前页 ${failedTasks.length} 条异常任务重置为待处理吗？`,
+      async () => {
+        bulkActionLoading.value = true;
+        actionState.value = null;
 
-    try {
-      await adminApi.handleDownloadTasksBatch({
-        action: 'retry',
-        ids: failedTasks.map(task => task.id),
-      });
-      actionState.value = {
-        status: 'success',
-        message: `已将当前页 ${failedTasks.length} 条异常任务重置为待处理。`,
-      };
-      await loadTasks(page.value);
-    } catch (err: unknown) {
-      actionState.value = {
-        status: 'error',
-        message: err instanceof Error ? err.message : '批量重置异常任务失败',
-      };
-    } finally {
-      bulkActionLoading.value = false;
-    }
+        try {
+          await adminApi.handleDownloadTasksBatch({
+            action: 'retry',
+            ids: failedTasks.map(task => task.id),
+          });
+          actionState.value = {
+            status: 'success',
+            message: `已将当前页 ${failedTasks.length} 条异常任务重置为待处理。`,
+          };
+          notifySuccess('重置成功', `已将 ${failedTasks.length} 条异常任务重置为待处理。`);
+          await loadTasks(page.value);
+        } catch (err: unknown) {
+          const errMsg = err instanceof Error ? err.message : '批量重置异常任务失败';
+          actionState.value = {
+            status: 'error',
+            message: errMsg,
+          };
+          notifyError('重置失败', errMsg);
+        } finally {
+          bulkActionLoading.value = false;
+        }
+      },
+      '重置异常任务',
+      '确认重置',
+    );
   };
 
   const cancelVisiblePendingTasks = () => {
@@ -1228,7 +1238,7 @@
   }
 
   .dt-text-brand {
-    color: var(--color-brand-light, #818cf8);
+    color: var(--color-brand-light);
   }
 
   .dt-text-success-light {
@@ -1257,7 +1267,7 @@
   }
 
   .dt-btn-primary:hover {
-    background-color: var(--color-brand-hover, #4338ca);
+    background-color: var(--color-brand-hover);
   }
 
   .dt-btn-secondary {
@@ -1270,25 +1280,25 @@
   }
 
   .dt-btn-rose {
-    border-color: rgba(239, 68, 68, 0.3);
+    border-color: var(--color-error-border);
     background-color: var(--bg-secondary);
     color: var(--color-error-light, #f87171);
   }
 
   .dt-btn-rose:hover {
-    background-color: rgba(239, 68, 68, 0.1);
+    background-color: var(--color-error-overlay);
   }
 
   /* ========== Filter Pills ========== */
   .dt-pill-active-brand {
-    border-color: rgba(129, 140, 248, 0.3);
-    background-color: rgba(99, 102, 241, 0.15);
-    color: var(--color-brand-lighter, #a5b4fc);
+    border-color: var(--color-info-border);
+    background-color: var(--color-info-overlay);
+    color: var(--color-brand-lighter);
   }
 
   .dt-pill-active-success {
-    border-color: rgba(52, 211, 153, 0.3);
-    background-color: rgba(16, 185, 129, 0.15);
+    border-color: var(--color-success-border);
+    background-color: var(--color-success-overlay);
     color: var(--color-success-light);
   }
 
@@ -1319,14 +1329,14 @@
 
   /* ========== Alerts ========== */
   .dt-alert-success {
-    border-color: rgba(16, 185, 129, 0.3);
-    background-color: rgba(16, 185, 129, 0.1);
+    border-color: var(--color-success-border);
+    background-color: var(--color-success-overlay);
     color: var(--color-success-light, #34d399);
   }
 
   .dt-alert-error {
-    border-color: rgba(239, 68, 68, 0.3);
-    background-color: rgba(239, 68, 68, 0.1);
+    border-color: var(--color-error-border);
+    background-color: var(--color-error-overlay);
     color: var(--color-error-light, #f87171);
   }
 
@@ -1374,11 +1384,11 @@
 
   /* ========== Links ========== */
   .dt-link {
-    color: var(--color-brand-light, #818cf8);
+    color: var(--color-brand-light);
   }
 
   .dt-link:hover {
-    color: var(--color-brand-lighter, #a5b4fc);
+    color: var(--color-brand-lighter);
   }
 
   /* ========== Detail Button ========== */
@@ -1398,7 +1408,7 @@
 
   /* ========== Progress Bar ========== */
   .dt-progress-track {
-    background-color: var(--border-primary, #334155);
+    background-color: var(--border-primary);
   }
 
   .dt-progress-bar {
@@ -1412,39 +1422,39 @@
 
   /* ========== Recommendation Box ========== */
   .dt-recommend-box {
-    border-color: rgba(99, 102, 241, 0.3);
-    background-color: rgba(99, 102, 241, 0.1);
+    border-color: var(--color-info-border);
+    background-color: var(--color-info-overlay);
   }
 
   /* ========== Action Buttons (Recommendation) ========== */
   .dt-action-brand {
-    border-color: rgba(99, 102, 241, 0.3);
+    border-color: var(--color-info-border);
     background-color: var(--bg-secondary);
-    color: var(--color-brand-lighter, #a5b4fc);
+    color: var(--color-brand-lighter);
   }
 
   .dt-action-brand:hover {
-    background-color: rgba(99, 102, 241, 0.2);
+    background-color: var(--color-info-border);
   }
 
   .dt-action-success {
-    border-color: rgba(16, 185, 129, 0.3);
+    border-color: var(--color-success-border);
     background-color: var(--bg-secondary);
     color: var(--color-success-light, #34d399);
   }
 
   .dt-action-success:hover {
-    background-color: rgba(16, 185, 129, 0.2);
+    background-color: var(--color-success-border);
   }
 
   .dt-action-error {
-    border-color: rgba(239, 68, 68, 0.3);
+    border-color: var(--color-error-border);
     background-color: var(--bg-secondary);
     color: var(--color-error-light, #f87171);
   }
 
   .dt-action-error:hover {
-    background-color: rgba(239, 68, 68, 0.2);
+    background-color: var(--color-error-border);
   }
 
   /* ========== Metadata Boxes ========== */
@@ -1477,12 +1487,12 @@
 
   /* ========== Status Badges ========== */
   .dt-status--pending {
-    background: rgba(245, 158, 11, 0.15);
+    background: var(--color-warning-overlay);
     color: var(--color-warning-light, #fbbf24);
   }
 
   .dt-status--downloading {
-    background: rgba(59, 130, 246, 0.15);
+    background: var(--color-info-overlay);
     color: var(--color-info-light, #60a5fa);
   }
 
@@ -1492,26 +1502,26 @@
   }
 
   .dt-status--completed {
-    background: rgba(16, 185, 129, 0.15);
+    background: var(--color-success-overlay);
     color: var(--color-success-light, #34d399);
   }
 
   .dt-status--error {
-    background: rgba(239, 68, 68, 0.15);
+    background: var(--color-error-overlay);
     color: var(--color-error-light, #f87171);
   }
 
   .dt-status--cancelled {
-    background: rgba(244, 63, 94, 0.15);
+    background: var(--color-error-overlay);
     color: var(--color-error-light, #fb7185);
   }
 
   /* ========== Row Highlighting ========== */
   .dt-row--error {
-    background: rgba(239, 68, 68, 0.06);
+    background: var(--color-error-overlay);
   }
 
   .dt-row--downloading {
-    background: rgba(59, 130, 246, 0.06);
+    background: var(--color-info-overlay);
   }
 </style>

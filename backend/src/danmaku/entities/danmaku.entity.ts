@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, Index } from 'typeorm';
 import { User } from '../../entities/user.entity';
 import { MediaResource } from '../../entities/media-resource.entity';
 
@@ -21,6 +21,10 @@ export interface DanmakuMetadata {
 }
 
 @Entity('danmaku')
+@Index('idx_danmaku_media_created', ['mediaResourceId', 'createdAt'])
+@Index('idx_danmaku_video_created', ['videoId', 'createdAt'])
+@Index('idx_danmaku_user_created', ['userId', 'createdAt'])
+@Index('idx_danmaku_active_created', ['isActive', 'createdAt'])
 export class Danmaku {
   @PrimaryGeneratedColumn()
   id: number;
@@ -77,12 +81,6 @@ export class Danmaku {
   // 关系字段
   @Column({ type: 'int', name: 'user_id' })
   userId: number;
-
-  // 复合索引暂时注释掉，TypeORM在最新版本中的语法有所不同
-  // @Index(['mediaResourceId', 'createdAt'], { name: 'idx_danmaku_media_created' })
-  // @Index(['videoId', 'createdAt'], { name: 'idx_danmaku_video_created' })
-  // @Index(['userId', 'createdAt'], { name: 'idx_danmaku_user_created' })
-  // @Index(['isActive', 'createdAt'], { name: 'idx_danmaku_active_created' })
 
   // 关系
   @ManyToOne(() => User, { onDelete: 'SET NULL' })

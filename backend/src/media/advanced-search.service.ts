@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { MediaResource } from '../entities/media-resource.entity';
@@ -56,6 +56,8 @@ interface SearchSuggestionRow {
 
 @Injectable()
 export class AdvancedSearchService {
+  private readonly logger = new Logger(AdvancedSearchService.name);
+
   private readonly searchHistory: Map<number, string[]> = new Map();
   private readonly popularSearches: Map<string, number> = new Map();
 
@@ -409,7 +411,7 @@ export class AdvancedSearchService {
       await this.searchHistoryRepository.save(searchHistory);
     } catch (error) {
       // 静默处理错误，不影响主要搜索功能
-      console.warn('Failed to record search history:', error);
+      this.logger.warn('Failed to record search history', error);
     }
   }
 

@@ -91,7 +91,14 @@
             <button
               class="btn-secondary mr-3 disabled:cursor-not-allowed disabled:opacity-50"
               :disabled="saving"
-              @click="resetRules"
+              @click="
+                showConfirm(
+                  '确定要恢复默认过滤规则吗？当前自定义规则将被覆盖。',
+                  resetRules,
+                  '恢复默认规则',
+                  '恢复默认',
+                )
+              "
             >
               恢复默认规则
             </button>
@@ -130,7 +137,12 @@
             <div class="mt-1">{{ formatUptime(health.uptime) }}</div>
           </div>
         </div>
-        <div v-else class="text-sm" style="color: var(--text-muted)">暂无弹幕运行数据</div>
+        <EmptyState
+          v-else
+          title="暂无弹幕运行数据"
+          description="弹幕网关尚未返回运行状态"
+          icon="document"
+        />
       </section>
     </div>
 
@@ -175,13 +187,12 @@
         </button>
       </div>
 
-      <div
+      <EmptyState
         v-if="filteredReportedDanmaku.length === 0"
-        class="text-sm"
-        style="color: var(--text-muted)"
-      >
-        当前筛选下没有举报弹幕。
-      </div>
+        title="暂无举报弹幕"
+        description="当前筛选条件下没有举报弹幕"
+        icon="document"
+      />
       <div v-else class="space-y-3">
         <div v-for="item in filteredReportedDanmaku" :key="item.id" class="dm-report-item">
           <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
@@ -203,14 +214,28 @@
                 <button
                   v-if="item.status !== 'hidden'"
                   class="dm-action-btn dm-action-rose"
-                  @click="moderateReportedDanmaku(item.id, 'hide')"
+                  @click="
+                    showConfirm(
+                      '确定要隐藏该弹幕吗？隐藏后其他用户将无法看到此弹幕。',
+                      () => moderateReportedDanmaku(item.id, 'hide'),
+                      '隐藏弹幕',
+                      '隐藏',
+                    )
+                  "
                 >
                   隐藏弹幕
                 </button>
                 <button
                   v-else
                   class="dm-action-btn dm-action-emerald"
-                  @click="moderateReportedDanmaku(item.id, 'restore')"
+                  @click="
+                    showConfirm(
+                      '确定要恢复该弹幕显示吗？恢复后其他用户将可以再次看到此弹幕。',
+                      () => moderateReportedDanmaku(item.id, 'restore'),
+                      '恢复弹幕',
+                      '恢复',
+                    )
+                  "
                 >
                   恢复显示
                 </button>
@@ -231,6 +256,8 @@
     type DanmakuHealthStatus,
     type ReportedDanmakuItem,
   } from '@/api/danmaku';
+  import { showConfirm } from '@/composables/useModal';
+  import EmptyState from '@/components/EmptyState.vue';
 
   const health = ref<DanmakuHealthStatus | null>(null);
   const sensitiveWordsText = ref('');
@@ -417,8 +444,8 @@
     padding: 8px 16px;
     font-size: 14px;
     font-weight: 500;
-    color: #fff;
-    background: var(--color-brand-primary, #6366f1);
+    color: var(--text-inverse);
+    background: var(--color-brand-primary);
     transition: all 0.2s;
   }
 

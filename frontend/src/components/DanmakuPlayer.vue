@@ -1150,7 +1150,7 @@
   }
 
   .danmaku-type-select {
-    background: #1a1a2e;
+    background: var(--bg-cinema-soft);
     border: 1px solid rgba(255, 255, 255, 0.2);
     color: var(--text-primary);
     padding: 5px 6px;
@@ -1162,7 +1162,7 @@
   }
 
   .danmaku-type-select option {
-    background: #1a1a2e;
+    background: var(--bg-cinema-soft);
     color: var(--text-primary);
   }
 
@@ -1180,7 +1180,7 @@
   }
 
   .danmaku-send-btn:hover:not(:disabled) {
-    background: #5558e6;
+    background: var(--color-brand-primary-dark);
   }
 
   .danmaku-send-btn:disabled {
@@ -1410,7 +1410,7 @@
   }
 
   .filter-add-btn:hover {
-    background: #5558e6;
+    background: var(--color-brand-primary-dark);
   }
 
   .filter-keyword-list {
@@ -1424,17 +1424,17 @@
     align-items: center;
     gap: 4px;
     padding: 3px 8px;
-    background: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: var(--color-error-overlay);
+    border: 1px solid var(--color-error-border);
     border-radius: 12px;
     font-size: 12px;
-    color: #fca5a5;
+    color: var(--color-error-light);
   }
 
   .tag-remove {
     background: none;
     border: none;
-    color: #fca5a5;
+    color: var(--color-error-light);
     cursor: pointer;
     font-size: 14px;
     line-height: 1;
@@ -1484,8 +1484,8 @@
   }
 
   .connection-toast--success {
-    color: #34d399;
-    border-color: rgba(52, 211, 153, 0.2);
+    color: var(--color-success-light);
+    border-color: var(--color-success-border);
   }
 
   .toast-close {
@@ -1527,7 +1527,7 @@
   }
 
   .report-active {
-    color: #ef4444;
+    color: var(--color-error);
   }
 
   .report-dialog-backdrop {
@@ -1596,7 +1596,6 @@
   @media (max-width: 640px) {
     .danmaku-player {
       --danmaku-edge: 8px;
-      --danmaku-controls-bottom: 8px;
     }
 
     .danmaku-controls {

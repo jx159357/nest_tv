@@ -173,26 +173,7 @@
   border: 0;
 }
 
-/* ===== 骨架屏动画 ===== */
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--bg-tertiary) 25%,
-    var(--bg-secondary) 50%,
-    var(--bg-tertiary) 75%
-  );
-  background-size: 200% 100%;
-  animation: skeleton-loading 1.5s ease-in-out infinite;
-}
-
-@keyframes skeleton-loading {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
+/* ===== 骨架屏动画（定义在 style.css） ===== */
 
 /* ===== 懒加载过渡 ===== */
 .lazy-loading {

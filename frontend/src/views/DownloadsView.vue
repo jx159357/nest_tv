@@ -768,7 +768,7 @@
     padding: 0.5rem 1rem;
     font-size: 0.875rem;
     font-weight: 500;
-    color: white;
+    color: var(--text-inverse);
     border: none;
     cursor: pointer;
     transition: opacity 0.15s;
@@ -874,7 +874,7 @@
 
   .dl-type-active {
     background: var(--color-brand-primary);
-    color: white;
+    color: var(--text-inverse);
   }
 
   .dl-type-default {

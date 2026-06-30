@@ -15,9 +15,12 @@
       <span>加载中...</span>
     </div>
 
-    <div v-else-if="targets.length === 0" class="crawler-targets__empty">
-      <span>暂无数据源配置</span>
-    </div>
+    <EmptyState
+      v-else-if="targets.length === 0"
+      title="暂无数据源"
+      description="点击上方按钮添加爬虫目标"
+      icon="light"
+    />
 
     <div v-else class="crawler-targets__grid">
       <div
@@ -291,6 +294,9 @@
   import { ref, computed, onMounted } from 'vue';
   import { adminApi } from '@/api/admin';
   import type { AdminCrawlerTarget } from '@/api/admin';
+  import EmptyState from '@/components/EmptyState.vue';
+  import { showConfirm, notifySuccess, notifyError } from '@/composables/useModal';
+  import { log } from '@/utils/logger';
 
   const targets = ref<AdminCrawlerTarget[]>([]);
   const loading = ref(true);
@@ -339,7 +345,8 @@
     try {
       targets.value = await adminApi.getCrawlerTargets();
     } catch (error) {
-      console.error('加载数据源失败:', error);
+      log.error('AdminCrawlerTargets', '加载数据源失败:', error);
+      notifyError('加载失败', '无法加载数据源列表');
     } finally {
       loading.value = false;
     }
@@ -350,41 +357,57 @@
     formData.value = { ...target, selectors: { ...target.selectors } };
   };
 
-  const handleActivate = async (target: AdminCrawlerTarget) => {
-    try {
-      await adminApi.activateCrawlerTarget(target.id);
-      await loadTargets();
-    } catch (error) {
-      console.error('激活失败:', error);
-    }
+  const handleActivate = (target: AdminCrawlerTarget) => {
+    showConfirm(`确定激活数据源"${target.name}"吗？`, async () => {
+      try {
+        await adminApi.activateCrawlerTarget(target.id);
+        notifySuccess('激活成功', `数据源"${target.name}"已激活为前台展示`);
+        await loadTargets();
+      } catch (error) {
+        log.error('AdminCrawlerTargets', '激活失败:', error);
+        notifyError('激活失败', String(error));
+      }
+    });
   };
 
-  const handleDeactivate = async (target: AdminCrawlerTarget) => {
-    try {
-      await adminApi.deactivateCrawlerTarget(target.id);
-      await loadTargets();
-    } catch (error) {
-      console.error('取消激活失败:', error);
-    }
+  const handleDeactivate = (target: AdminCrawlerTarget) => {
+    showConfirm(`确定取消激活数据源"${target.name}"吗？`, async () => {
+      try {
+        await adminApi.deactivateCrawlerTarget(target.id);
+        notifySuccess('取消激活成功', `数据源"${target.name}"已取消前台展示`);
+        await loadTargets();
+      } catch (error) {
+        log.error('AdminCrawlerTargets', '取消激活失败:', error);
+        notifyError('取消激活失败', String(error));
+      }
+    });
   };
 
-  const handleToggleEnabled = async (target: AdminCrawlerTarget) => {
-    try {
-      await adminApi.toggleCrawlerTargetEnabled(target.id);
-      await loadTargets();
-    } catch (error) {
-      console.error('切换状态失败:', error);
-    }
+  const handleToggleEnabled = (target: AdminCrawlerTarget) => {
+    const action = target.enabled ? '禁用' : '启用';
+    showConfirm(`确定${action}数据源"${target.name}"吗？`, async () => {
+      try {
+        await adminApi.toggleCrawlerTargetEnabled(target.id);
+        notifySuccess(`${action}成功`, `数据源"${target.name}"已${action}`);
+        await loadTargets();
+      } catch (error) {
+        log.error('AdminCrawlerTargets', '切换状态失败:', error);
+        notifyError(`${action}失败`, String(error));
+      }
+    });
   };
 
-  const handleDelete = async (target: AdminCrawlerTarget) => {
-    if (!confirm(`确定删除数据源"${target.name}"吗？`)) return;
-    try {
-      await adminApi.deleteCrawlerTarget(target.id);
-      await loadTargets();
-    } catch (error) {
-      console.error('删除失败:', error);
-    }
+  const handleDelete = (target: AdminCrawlerTarget) => {
+    showConfirm(`确定删除数据源"${target.name}"吗？`, async () => {
+      try {
+        await adminApi.deleteCrawlerTarget(target.id);
+        notifySuccess('删除成功', `数据源"${target.name}"已删除`);
+        await loadTargets();
+      } catch (error) {
+        log.error('AdminCrawlerTargets', '删除失败:', error);
+        notifyError('删除失败', String(error));
+      }
+    });
   };
 
   const handleSubmit = async () => {
@@ -392,13 +415,16 @@
     try {
       if (editingTarget.value) {
         await adminApi.updateCrawlerTarget(editingTarget.value.id, formData.value);
+        notifySuccess('编辑成功', `数据源"${editingTarget.value.name}"已更新`);
       } else {
         await adminApi.createCrawlerTarget(formData.value);
+        notifySuccess('创建成功', '新数据源已添加');
       }
       closeDialog();
       await loadTargets();
     } catch (error) {
-      console.error('保存失败:', error);
+      log.error('AdminCrawlerTargets', '保存失败:', error);
+      notifyError('保存失败', String(error));
     } finally {
       submitting.value = false;
     }
@@ -442,7 +468,7 @@
   .crawler-targets__add-btn {
     padding: var(--spacing-2) var(--spacing-4);
     background: var(--color-brand-primary);
-    color: white;
+    color: var(--text-inverse);
     border: none;
     border-radius: var(--radius-md);
     font-size: var(--font-size-sm);
@@ -529,18 +555,18 @@
   }
 
   .crawler-targets__status--enabled {
-    background: rgba(34, 197, 94, 0.15);
-    color: #22c55e;
+    background: var(--color-success-overlay);
+    color: var(--color-success);
   }
 
   .crawler-targets__status--disabled {
-    background: rgba(239, 68, 68, 0.15);
-    color: #ef4444;
+    background: var(--color-error-overlay);
+    color: var(--color-error);
   }
 
   .crawler-targets__status--active {
-    background: rgba(99, 102, 241, 0.15);
-    color: #6366f1;
+    background: var(--color-info-overlay);
+    color: var(--color-info);
   }
 
   .crawler-targets__card-actions {
@@ -565,39 +591,39 @@
   }
 
   .crawler-targets__action-btn--activate {
-    background: rgba(99, 102, 241, 0.15);
-    border-color: rgba(99, 102, 241, 0.3);
-    color: #818cf8;
+    background: var(--color-info-overlay);
+    border-color: var(--color-info-border);
+    color: var(--color-info-light);
   }
 
   .crawler-targets__action-btn--deactivate {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.3);
-    color: #f87171;
+    background: var(--color-error-overlay);
+    border-color: var(--color-error-border);
+    color: var(--color-error-light);
   }
 
   .crawler-targets__action-btn--enable {
-    background: rgba(34, 197, 94, 0.15);
-    border-color: rgba(34, 197, 94, 0.3);
-    color: #4ade80;
+    background: var(--color-success-overlay);
+    border-color: var(--color-success-border);
+    color: var(--color-success-light);
   }
 
   .crawler-targets__action-btn--disable {
-    background: rgba(234, 179, 8, 0.15);
-    border-color: rgba(234, 179, 8, 0.3);
-    color: #facc15;
+    background: var(--color-warning-overlay);
+    border-color: var(--color-warning-border);
+    color: var(--color-warning-light);
   }
 
   .crawler-targets__action-btn--edit {
-    background: rgba(59, 130, 246, 0.15);
-    border-color: rgba(59, 130, 246, 0.3);
-    color: #60a5fa;
+    background: var(--color-info-overlay);
+    border-color: var(--color-info-border);
+    color: var(--color-info-light);
   }
 
   .crawler-targets__action-btn--delete {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.3);
-    color: #f87171;
+    background: var(--color-error-overlay);
+    border-color: var(--color-error-border);
+    color: var(--color-error-light);
   }
 
   .crawler-targets__card-body {
@@ -642,7 +668,7 @@
   .crawler-targets__dialog-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: var(--overlay-heavy);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -746,7 +772,7 @@
   .crawler-targets__form-submit {
     background: var(--color-brand-primary);
     border: none;
-    color: white;
+    color: var(--text-inverse);
   }
 
   .crawler-targets__form-submit:hover:not(:disabled) {

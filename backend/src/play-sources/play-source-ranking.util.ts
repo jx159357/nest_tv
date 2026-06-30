@@ -32,10 +32,7 @@ export function isPlaySourceFresh(
   return now.getTime() - playSource.lastCheckedAt.getTime() <= freshnessHours * 60 * 60 * 1000;
 }
 
-export function getPlaySourceScore(
-  playSource: PlaySource,
-  now: Date = new Date(),
-): number {
+export function getPlaySourceScore(playSource: PlaySource, now: Date = new Date()): number {
   const statusRank = PLAY_SOURCE_STATUS_RANK[playSource.status] ?? 0;
   const typeRank = PLAY_SOURCE_TYPE_RANK[playSource.type] ?? 0;
   const activeBonus = playSource.isActive ? 5 : 0;

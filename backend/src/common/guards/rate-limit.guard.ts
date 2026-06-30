@@ -50,24 +50,18 @@ export class RateLimitGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<RateLimitRequest>();
     const response = context.switchToHttp().getResponse<RateLimitResponse>();
 
-    // 获取限流配置
     const options = this.reflector.get<RateLimitOptions>(RATE_LIMIT_OPTIONS, context.getHandler());
 
-    // 如果没有限流配置，直接通过
-    if (!options) {
-      return true;
-    }
+    const effectiveOptions = options ?? {
+      windowMs: 15 * 60 * 1000,
+      maxRequests: 100,
+    };
 
-    // 获取限流键（IP + 路径）
     const key = this.getLimitKey(request, context);
+    const result = await this.rateLimitService.checkLimit(key, effectiveOptions);
 
-    // 检查限流
-    const result = await this.rateLimitService.checkLimit(key, options);
-
-    // 设置响应头
     this.setResponseHeaders(response, result.info);
 
-    // 如果限流失败，抛出异常
     if (!result.success) {
       throw new HttpException(
         {

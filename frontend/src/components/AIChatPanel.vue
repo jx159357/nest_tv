@@ -231,7 +231,7 @@
     justify-content: center;
     padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px))
       max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--bg-overlay);
     backdrop-filter: blur(4px);
   }
 
@@ -341,7 +341,7 @@
   }
 
   .ai-msg--user .ai-msg-avatar {
-    background: #3b82f6;
+    background: var(--color-info);
     color: var(--text-inverse);
   }
 
@@ -358,7 +358,7 @@
   }
 
   .ai-msg--user .ai-msg-body {
-    background: #3b82f6;
+    background: var(--color-info);
     color: var(--text-inverse);
     border-bottom-right-radius: 4px;
   }
@@ -371,11 +371,11 @@
 
   .ai-msg-text :deep(strong) {
     font-weight: 600;
-    color: #a5b4fc;
+    color: var(--color-info-lighter);
   }
 
   .ai-msg-text :deep(code) {
-    background: rgba(99, 102, 241, 0.2);
+    background: var(--color-info-overlay);
     padding: 1px 6px;
     border-radius: 4px;
     font-size: 13px;
@@ -444,17 +444,17 @@
 
   .ai-suggestion {
     padding: 8px 16px;
-    background: rgba(99, 102, 241, 0.1);
-    border: 1px solid rgba(99, 102, 241, 0.25);
+    background: var(--color-info-overlay);
+    border: 1px solid var(--color-info-border);
     border-radius: 20px;
-    color: #a5b4fc;
+    color: var(--color-info-lighter);
     font-size: 13px;
     cursor: pointer;
     transition: all 0.2s;
   }
 
   .ai-suggestion:hover {
-    background: rgba(99, 102, 241, 0.2);
+    background: var(--color-info-bg);
   }
 
   .ai-input-area {
@@ -504,7 +504,7 @@
   }
 
   .ai-send:hover:not(:disabled) {
-    background: #4f46e5;
+    background: var(--color-brand-primary-dark);
   }
 
   .ai-send:disabled {

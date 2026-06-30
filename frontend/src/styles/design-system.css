@@ -33,9 +33,12 @@
   --color-info: #3b82f6;
   --color-info-light: #60a5fa;
   --color-info-dark: #2563eb;
+  --color-info-lighter: #bfdbfe;
   --color-danger: var(--color-error);
   --color-danger-light: var(--color-error-light);
   --color-danger-dark: var(--color-error-dark);
+  --color-error-lighter: #fecaca;
+  --color-warning-lighter: #fef3c7;
 
   /* ===== 中性色（浅色模式） ===== */
   --color-gray-50: #f8fafc;
@@ -194,6 +197,7 @@
   /* ===== 功能色半透明 ===== */
   --color-brand-overlay: rgba(216, 13, 31, 0.1);
   --color-brand-border: rgba(216, 13, 31, 0.22);
+  --color-selection: rgba(229, 9, 20, 0.3);
   --color-success-overlay: rgba(16, 185, 129, 0.1);
   --color-success-border: rgba(16, 185, 129, 0.2);
   --color-error-overlay: rgba(239, 68, 68, 0.1);
@@ -370,36 +374,9 @@
   --admin-scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
 }
 
-/* ===== 全局滚动条 ===== */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
 /* ===== 全局选择颜色 ===== */
 ::selection {
-  background: rgba(229, 9, 20, 0.3);
+  background: var(--color-selection);
   color: inherit;
 }
 

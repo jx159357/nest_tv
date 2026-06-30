@@ -5,10 +5,10 @@ services:
     image: mysql:8.0
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-nest_tv_prod_root_2025}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-CHANGE_ME_mysql_root_password}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-nest_tv}
       MYSQL_USER: ${MYSQL_USER:-nest_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-nest_tv_prod_pass_2025}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-CHANGE_ME_mysql_password}
     volumes:
       - mysql_prod_data:/var/lib/mysql
       - ./backend/database/init:/docker-entrypoint-initdb.d:ro
@@ -37,25 +37,25 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       PORT: 3334
       DB_HOST: mysql
       DB_PORT: 3306
       DB_USERNAME: ${MYSQL_USER:-nest_user}
-      DB_PASSWORD: ${MYSQL_PASSWORD:-nest_tv_prod_pass_2025}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-CHANGE_ME_mysql_password}
       DB_DATABASE: ${MYSQL_DATABASE:-nest_tv}
-      DB_SYNCHRONIZE: 'true'
+      DB_SYNCHRONIZE: 'false'
       DB_LOGGING: 'false'
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      JWT_SECRET: ${JWT_SECRET:-nest-tv-prod-secret-change-me}
+      JWT_SECRET: ${JWT_SECRET:-CHANGE_ME_TO_A_RANDOM_64_CHAR_STRING}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-3600}
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-nest-tv-client}
       JWT_ISSUER: ${JWT_ISSUER:-nest-tv-server}
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*}
-      ALLOW_INIT_DEFAULT_DATA: 'true'
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://your-domain.com}
+      ALLOW_INIT_DEFAULT_DATA: 'false'
       ENABLE_SCHEDULED_CRAWL: 'true'
       SCHEDULE_CRAWL_INTERVAL: '6h'
       BCRYPT_ROUNDS: '12'

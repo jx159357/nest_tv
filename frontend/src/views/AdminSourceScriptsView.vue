@@ -25,12 +25,13 @@
       <div class="src-spinner h-8 w-8 animate-spin rounded-full border-2"></div>
     </div>
 
-    <div
+    <EmptyState
       v-else-if="scripts.length === 0"
-      class="src-empty-card rounded-xl border py-16 text-center"
-    >
-      <p class="src-text-muted">暂无源脚本，点击"新建脚本"开始</p>
-    </div>
+      title="暂无源脚本"
+      description="点击新建脚本开始配置数据源"
+      icon="film"
+      :action="{ text: '新建脚本', onClick: () => openEditor() }"
+    />
 
     <div v-else class="space-y-3">
       <div
@@ -208,6 +209,8 @@
 <script setup lang="ts">
   import { ref, onMounted } from 'vue';
   import axios from 'axios';
+  import { showConfirm, notifySuccess, notifyError } from '@/composables/useModal';
+  import EmptyState from '@/components/EmptyState.vue';
 
   interface ScriptRecord {
     id: number;
@@ -308,9 +311,10 @@
       });
       closeEditor();
       await loadScripts();
+      notifySuccess('保存成功', '脚本已保存');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Save failed';
-      alert(msg);
+      notifyError('保存失败', msg);
     } finally {
       saving.value = false;
     }
@@ -342,23 +346,36 @@
     await runTest();
   };
 
-  const toggleScript = async (script: ScriptRecord) => {
-    try {
-      await axios.post(`/api/source-scripts/${script.id}/toggle`);
-      await loadScripts();
-    } catch {
-      // ignore
-    }
+  const toggleScript = (script: ScriptRecord) => {
+    const action = script.enabled ? '禁用' : '启用';
+    showConfirm(`确定${action}脚本 "${script.name}"?`, async () => {
+      try {
+        await axios.post(`/api/source-scripts/${script.id}/toggle`);
+        await loadScripts();
+        notifySuccess(`${action}成功`, `脚本 "${script.name}" 已${action}`);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : `${action}失败`;
+        notifyError(`${action}失败`, msg);
+      }
+    });
   };
 
-  const deleteScript = async (script: ScriptRecord) => {
-    if (!confirm(`确定删除脚本 "${script.name}"?`)) return;
-    try {
-      await axios.delete(`/api/source-scripts/${script.id}`);
-      await loadScripts();
-    } catch {
-      // ignore
-    }
+  const deleteScript = (script: ScriptRecord) => {
+    showConfirm(
+      `确定删除脚本 "${script.name}"?`,
+      async () => {
+        try {
+          await axios.delete(`/api/source-scripts/${script.id}`);
+          await loadScripts();
+          notifySuccess('删除成功', `脚本 "${script.name}" 已删除`);
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : '删除失败';
+          notifyError('删除失败', msg);
+        }
+      },
+      '确认删除',
+      '删除',
+    );
   };
 
   const formatTime = (value?: string) => {

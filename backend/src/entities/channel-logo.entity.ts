@@ -4,9 +4,12 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 
 @Entity('channel_logos')
+@Index('idx_channel_logo_name', ['name'])
+@Index('idx_channel_logo_category', ['category'])
 export class ChannelLogo {
   @PrimaryGeneratedColumn()
   id: number;

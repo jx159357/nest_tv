@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import magnetUri from 'magnet-uri';
-import { PlaySource, PlaySourceType } from '../entities/play-source.entity';
+import { PlaySource, PlaySourceType, PlaySourceVisibility } from '../entities/play-source.entity';
 import { MediaResource } from '../entities/media-resource.entity';
 
 interface MagnetInfoPayload {
@@ -151,7 +151,10 @@ export class TorrentService {
     const queryBuilder = this.playSourceRepository
       .createQueryBuilder('playSource')
       .leftJoinAndSelect('playSource.mediaResource', 'mediaResource')
-      .where('playSource.type = :type', { type: PlaySourceType.MAGNET });
+      .where('playSource.type = :type', { type: PlaySourceType.MAGNET })
+      .andWhere('playSource.isActive = :isActive', { isActive: true })
+      .andWhere('playSource.visibility = :visibility', { visibility: PlaySourceVisibility.PUBLIC })
+      .andWhere('mediaResource.isActive = :mediaActive', { mediaActive: true });
 
     if (keyword.trim()) {
       queryBuilder.andWhere(
@@ -202,7 +205,10 @@ export class TorrentService {
     const queryBuilder = this.playSourceRepository
       .createQueryBuilder('playSource')
       .leftJoinAndSelect('playSource.mediaResource', 'mediaResource')
-      .where('playSource.type = :type', { type: PlaySourceType.MAGNET });
+      .where('playSource.type = :type', { type: PlaySourceType.MAGNET })
+      .andWhere('playSource.isActive = :isActive', { isActive: true })
+      .andWhere('playSource.visibility = :visibility', { visibility: PlaySourceVisibility.PUBLIC })
+      .andWhere('mediaResource.isActive = :mediaActive', { mediaActive: true });
 
     if (category?.trim()) {
       queryBuilder.andWhere('mediaResource.type = :category', { category: category.trim() });
@@ -217,6 +223,8 @@ export class TorrentService {
       .createQueryBuilder('playSource')
       .leftJoinAndSelect('playSource.mediaResource', 'mediaResource')
       .where('playSource.type = :type', { type: PlaySourceType.MAGNET })
+      .andWhere('playSource.isActive = :isActive', { isActive: true })
+      .andWhere('playSource.visibility = :visibility', { visibility: PlaySourceVisibility.PUBLIC })
       .andWhere('playSource.url LIKE :hash', { hash: `%${hash}%` })
       .orderBy('playSource.createdAt', 'DESC')
       .getMany();

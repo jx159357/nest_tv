@@ -9,10 +9,12 @@ import {
   ParseIntPipe,
   Body,
   Query,
+  Req,
   UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import {
   ApiTags,
   ApiOperation,
@@ -26,10 +28,20 @@ import { MacCmsResolverService } from './mac-cms-resolver.service';
 import { PlaySourceHealthService } from './play-source-health.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
+import { AdminRoleGuard } from '../admin/admin-role.guard';
 import { CreatePlaySourceDto, UpdatePlaySourceDto } from './dtos/play-source.dto';
 import { PlaySourceQueryDto } from './dtos/play-source-query.dto';
 import { ResolveCmsDto } from './dto/resolve-cms.dto';
-import { PlaySourceStatus } from '../entities/play-source.entity';
+import { PlaySourceStatus, PlaySourceVisibility } from '../entities/play-source.entity';
+
+interface JwtUser {
+  id: number;
+  role: string;
+}
+
+interface AuthenticatedRequest extends Request {
+  user: JwtUser;
+}
 
 @ApiTags('播放源管理')
 @Controller('play-sources')
@@ -127,8 +139,10 @@ export class PlaySourceController {
   })
   @ApiQuery({ name: 'isActive', description: '是否激活', example: true, required: false })
   @ApiQuery({ name: 'mediaResourceId', description: '媒体资源ID', example: 1, required: false })
-  async findAll(@Query() queryDto: PlaySourceQueryDto) {
-    return this.playSourceService.findAll(queryDto);
+  async findAll(@Query() queryDto: PlaySourceQueryDto, @Req() req: AuthenticatedRequest) {
+    const userId = req.user?.id;
+    const isAdmin = req.user?.role === 'admin' || req.user?.role === 'superAdmin';
+    return this.playSourceService.findAll(queryDto, userId, isAdmin);
   }
 
   /**
@@ -200,18 +214,25 @@ export class PlaySourceController {
    * 创建播放源
    */
   @Post()
+  @UseGuards(AdminRoleGuard)
   @ApiOperation({ summary: '创建播放源' })
   @ApiResponse({ status: 201, description: '创建成功' })
   @ApiResponse({ status: 400, description: '参数错误' })
   @UsePipes(new ValidationPipe({ transform: true }))
-  async create(@Body() createPlaySourceDto: CreatePlaySourceDto) {
-    return this.playSourceService.create(createPlaySourceDto);
+  async create(@Body() createPlaySourceDto: CreatePlaySourceDto, @Req() req: AuthenticatedRequest) {
+    const userId = req.user?.id;
+    const isAdmin = req.user?.role === 'admin' || req.user?.role === 'superAdmin';
+    return this.playSourceService.create(createPlaySourceDto, {
+      createdById: userId,
+      visibility: isAdmin ? PlaySourceVisibility.PUBLIC : PlaySourceVisibility.PRIVATE,
+    });
   }
 
   /**
    * 更新播放源
    */
   @Put(':id')
+  @UseGuards(AdminRoleGuard)
   @ApiOperation({ summary: '更新播放源' })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiResponse({ status: 404, description: '播放源不存在' })
@@ -220,20 +241,26 @@ export class PlaySourceController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updatePlaySourceDto: UpdatePlaySourceDto,
+    @Req() req: AuthenticatedRequest,
   ) {
-    return this.playSourceService.update(id, updatePlaySourceDto);
+    const userId = req.user?.id;
+    const isAdmin = req.user?.role === 'admin' || req.user?.role === 'superAdmin';
+    return this.playSourceService.update(id, updatePlaySourceDto, userId, isAdmin);
   }
 
   /**
    * 删除播放源
    */
   @Delete(':id')
+  @UseGuards(AdminRoleGuard)
   @ApiOperation({ summary: '删除播放源' })
   @ApiResponse({ status: 200, description: '删除成功' })
   @ApiResponse({ status: 404, description: '播放源不存在' })
   @ApiParam({ name: 'id', description: '播放源ID' })
-  async remove(@Param('id', ParseIntPipe) id: number) {
-    await this.playSourceService.remove(id);
+  async remove(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+    const userId = req.user?.id;
+    const isAdmin = req.user?.role === 'admin' || req.user?.role === 'superAdmin';
+    await this.playSourceService.remove(id, userId, isAdmin);
     return { message: '删除成功' };
   }
 
@@ -270,6 +297,7 @@ export class PlaySourceController {
   }
 
   @Post('batch/enable')
+  @UseGuards(AdminRoleGuard)
   @ApiOperation({ summary: '批量启用播放源' })
   @ApiResponse({ status: 200, description: '批量启用成功' })
   async batchEnable(@Body('ids') ids: number[]) {
@@ -277,6 +305,7 @@ export class PlaySourceController {
   }
 
   @Post('batch/disable')
+  @UseGuards(AdminRoleGuard)
   @ApiOperation({ summary: '批量禁用播放源' })
   @ApiResponse({ status: 200, description: '批量禁用成功' })
   async batchDisable(@Body('ids') ids: number[]) {
@@ -284,6 +313,7 @@ export class PlaySourceController {
   }
 
   @Post('batch/delete')
+  @UseGuards(AdminRoleGuard)
   @ApiOperation({ summary: '批量删除播放源' })
   @ApiResponse({ status: 200, description: '批量删除成功' })
   async batchDelete(@Body('ids') ids: number[]) {
@@ -310,8 +340,10 @@ export class PlaySourceController {
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 404, description: '播放源不存在' })
   @ApiParam({ name: 'mediaId', description: '媒体资源ID' })
-  async getBestPlaySource(@Param('mediaId', ParseIntPipe) mediaId: number) {
-    return this.playSourceService.getBestPlaySource(mediaId);
+  async getBestPlaySource(@Param('mediaId', ParseIntPipe) mediaId: number, @Req() req: AuthenticatedRequest) {
+    const userId = req.user?.id;
+    const isAdmin = req.user?.role === 'admin' || req.user?.role === 'superAdmin';
+    return this.playSourceService.getBestPlaySource(mediaId, userId, isAdmin);
   }
 
   /**
@@ -321,8 +353,10 @@ export class PlaySourceController {
   @ApiOperation({ summary: '获取媒体资源的播放源列表' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiParam({ name: 'mediaId', description: '媒体资源ID' })
-  async getByMediaResource(@Param('mediaId', ParseIntPipe) mediaId: number) {
-    return this.playSourceService.getByMediaResource(mediaId);
+  async getByMediaResource(@Param('mediaId', ParseIntPipe) mediaId: number, @Req() req: AuthenticatedRequest) {
+    const userId = req.user?.id;
+    const isAdmin = req.user?.role === 'admin' || req.user?.role === 'superAdmin';
+    return this.playSourceService.getByMediaResource(mediaId, userId, isAdmin);
   }
 
   /**
@@ -366,6 +400,7 @@ export class PlaySourceController {
    * 手动触发播放源健康检查
    */
   @Post('health/check')
+  @UseGuards(AdminRoleGuard)
   @ApiOperation({ summary: '手动触发播放源健康检查' })
   @ApiResponse({ status: 200, description: '检查完成' })
   async triggerHealthCheck() {
@@ -376,6 +411,7 @@ export class PlaySourceController {
    * 手动触发过期播放源清理
    */
   @Post('health/cleanup')
+  @UseGuards(AdminRoleGuard)
   @ApiOperation({ summary: '手动触发过期播放源清理' })
   @ApiResponse({ status: 200, description: '清理完成' })
   async triggerCleanup() {
@@ -388,7 +424,10 @@ export class PlaySourceController {
    */
   @Post(':id/metrics')
   @Public()
-  @ApiOperation({ summary: '上报播放性能指标', description: '前端播放器上报首帧时间、卡顿次数等播放性能数据' })
+  @ApiOperation({
+    summary: '上报播放性能指标',
+    description: '前端播放器上报首帧时间、卡顿次数等播放性能数据',
+  })
   @ApiParam({ name: 'id', description: '播放源ID' })
   @ApiResponse({ status: 200, description: '上报成功' })
   async reportMetrics(

@@ -38,104 +38,113 @@
       <div v-if="loading" class="admin-loading p-8 text-center">加载中...</div>
       <div v-else-if="error" class="admin-error p-8 text-center">{{ error }}</div>
       <template v-else>
-        <div class="overflow-x-auto">
-          <table class="admin-table min-w-full">
-            <thead class="admin-table-head">
-              <tr>
-                <th
-                  class="admin-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                >
-                  标题
-                </th>
-                <th
-                  class="admin-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                >
-                  类型
-                </th>
-                <th
-                  class="admin-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                >
-                  质量
-                </th>
-                <th
-                  class="admin-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                >
-                  评分
-                </th>
-                <th
-                  class="admin-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                >
-                  观看
-                </th>
-                <th
-                  class="admin-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                >
-                  状态
-                </th>
-                <th
-                  class="admin-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                >
-                  创建时间
-                </th>
-              </tr>
-            </thead>
-            <tbody class="admin-table-body">
-              <tr v-for="item in mediaList" :key="item.id">
-                <td class="admin-cell-primary px-4 py-3 text-sm">
-                  <div class="font-medium">{{ item.title }}</div>
-                  <div class="admin-description line-clamp-1 text-xs">
-                    {{ item.description || '暂无描述' }}
-                  </div>
-                  <router-link
-                    :to="{
-                      name: 'admin-download-tasks',
-                      query: { mediaResourceId: String(item.id) },
-                    }"
-                    class="admin-link mt-2 inline-flex text-xs"
+        <EmptyState
+          v-if="mediaList.length === 0"
+          title="暂无媒体资源"
+          description="尝试调整搜索条件或爬取新资源"
+          icon="film"
+          :action="{ text: '刷新', onClick: () => loadMedia() }"
+        />
+        <template v-else>
+          <div class="overflow-x-auto">
+            <table class="admin-table min-w-full">
+              <thead class="admin-table-head">
+                <tr>
+                  <th
+                    class="admin-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
                   >
-                    查看下载任务
-                  </router-link>
-                </td>
-                <td class="admin-cell px-4 py-3 text-sm">{{ item.type }}</td>
-                <td class="admin-cell px-4 py-3 text-sm">{{ item.quality }}</td>
-                <td class="admin-cell px-4 py-3 text-sm">{{ item.rating.toFixed(1) }}</td>
-                <td class="admin-cell px-4 py-3 text-sm">{{ item.viewCount }}</td>
-                <td class="px-4 py-3 text-sm">
-                  <span
-                    :class="[
-                      'status-badge rounded-full px-2 py-1 text-xs font-medium',
-                      item.isActive ? 'status-active' : 'status-inactive',
-                    ]"
+                    标题
+                  </th>
+                  <th
+                    class="admin-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
                   >
-                    {{ item.isActive ? '启用' : '停用' }}
-                  </span>
-                </td>
-                <td class="admin-cell px-4 py-3 text-sm">{{ formatDate(item.createdAt) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="admin-pagination flex items-center justify-between px-4 py-3 text-sm">
-          <span>共 {{ total }} 条</span>
-          <div class="flex items-center gap-3">
-            <button
-              :disabled="page <= 1"
-              class="admin-page-btn rounded px-3 py-1 disabled:opacity-50"
-              @click="applyFilters(page - 1)"
-            >
-              上一页
-            </button>
-            <span>{{ page }} / {{ totalPages }}</span>
-            <button
-              :disabled="page >= totalPages"
-              class="admin-page-btn rounded px-3 py-1 disabled:opacity-50"
-              @click="applyFilters(page + 1)"
-            >
-              下一页
-            </button>
+                    类型
+                  </th>
+                  <th
+                    class="admin-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  >
+                    质量
+                  </th>
+                  <th
+                    class="admin-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  >
+                    评分
+                  </th>
+                  <th
+                    class="admin-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  >
+                    观看
+                  </th>
+                  <th
+                    class="admin-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  >
+                    状态
+                  </th>
+                  <th
+                    class="admin-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  >
+                    创建时间
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="admin-table-body">
+                <tr v-for="item in mediaList" :key="item.id">
+                  <td class="admin-cell-primary px-4 py-3 text-sm">
+                    <div class="font-medium">{{ item.title }}</div>
+                    <div class="admin-description line-clamp-1 text-xs">
+                      {{ item.description || '暂无描述' }}
+                    </div>
+                    <router-link
+                      :to="{
+                        name: 'admin-download-tasks',
+                        query: { mediaResourceId: String(item.id) },
+                      }"
+                      class="admin-link mt-2 inline-flex text-xs"
+                    >
+                      查看下载任务
+                    </router-link>
+                  </td>
+                  <td class="admin-cell px-4 py-3 text-sm">{{ item.type }}</td>
+                  <td class="admin-cell px-4 py-3 text-sm">{{ item.quality }}</td>
+                  <td class="admin-cell px-4 py-3 text-sm">{{ item.rating.toFixed(1) }}</td>
+                  <td class="admin-cell px-4 py-3 text-sm">{{ item.viewCount }}</td>
+                  <td class="px-4 py-3 text-sm">
+                    <span
+                      :class="[
+                        'status-badge rounded-full px-2 py-1 text-xs font-medium',
+                        item.isActive ? 'status-active' : 'status-inactive',
+                      ]"
+                    >
+                      {{ item.isActive ? '启用' : '停用' }}
+                    </span>
+                  </td>
+                  <td class="admin-cell px-4 py-3 text-sm">{{ formatDate(item.createdAt) }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-        </div>
+
+          <div class="admin-pagination flex items-center justify-between px-4 py-3 text-sm">
+            <span>共 {{ total }} 条</span>
+            <div class="flex items-center gap-3">
+              <button
+                :disabled="page <= 1"
+                class="admin-page-btn rounded px-3 py-1 disabled:opacity-50"
+                @click="applyFilters(page - 1)"
+              >
+                上一页
+              </button>
+              <span>{{ page }} / {{ totalPages }}</span>
+              <button
+                :disabled="page >= totalPages"
+                class="admin-page-btn rounded px-3 py-1 disabled:opacity-50"
+                @click="applyFilters(page + 1)"
+              >
+                下一页
+              </button>
+            </div>
+          </div>
+        </template>
       </template>
     </div>
   </div>
@@ -146,6 +155,7 @@
   import { useRoute, useRouter } from 'vue-router';
   import { adminApi } from '@/api/admin';
   import type { MediaResource } from '@/types/media';
+  import EmptyState from '@/components/EmptyState.vue';
 
   const route = useRoute();
   const router = useRouter();

@@ -281,7 +281,7 @@
       var(--color-brand-primary),
       var(--color-brand-primary-dark)
     );
-    color: white;
+    color: var(--text-inverse);
     font-size: 14px;
     font-weight: 600;
     border: none;

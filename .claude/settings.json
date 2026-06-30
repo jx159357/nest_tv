@@ -1,0 +1,35 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "C:\\node-global\\node_modules\\umadev\\node_modules\\@umacloud\\cli-win32-x64\\bin\\umadev.exe hook tool-audit",
+            "type": "command"
+          }
+        ],
+        "matcher": "Write|Edit|MultiEdit|Bash"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "C:\\node-global\\node_modules\\umadev\\node_modules\\@umacloud\\cli-win32-x64\\bin\\umadev.exe hook pre-write",
+            "type": "command"
+          }
+        ],
+        "matcher": "Write|Edit|MultiEdit"
+      },
+      {
+        "hooks": [
+          {
+            "command": "C:\\node-global\\node_modules\\umadev\\node_modules\\@umacloud\\cli-win32-x64\\bin\\umadev.exe hook pre-bash",
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
+      }
+    ]
+  }
+}

@@ -12,6 +12,12 @@ interface LoginResult {
 
 type AuthenticatedUser = UserResponseDto;
 
+interface LoginAttempt {
+  count: number;
+  firstAttemptAt: number;
+  lockedUntil: number | null;
+}
+
 /**
  * 认证服务
  * 处理JWT令牌相关的业务逻辑
@@ -19,6 +25,10 @@ type AuthenticatedUser = UserResponseDto;
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private readonly loginAttempts = new Map<string, LoginAttempt>();
+  private readonly MAX_LOGIN_ATTEMPTS = 5;
+  private readonly LOCK_DURATION_MS = 15 * 60 * 1000; // 15分钟
+  private readonly ATTEMPT_WINDOW_MS = 10 * 60 * 1000; // 10分钟窗口
 
   constructor(
     private userService: UserService,
@@ -27,17 +37,86 @@ export class AuthService {
   ) {}
 
   /**
+   * 检查登录是否被锁定
+   */
+  private checkLoginLock(identifier: string): void {
+    const attempt = this.loginAttempts.get(identifier);
+    if (!attempt) return;
+
+    const now = Date.now();
+
+    if (attempt.lockedUntil && now < attempt.lockedUntil) {
+      const remainingSeconds = Math.ceil((attempt.lockedUntil - now) / 1000);
+      throw new UnauthorizedException(`登录尝试次数过多，请 ${remainingSeconds} 秒后再试`);
+    }
+
+    if (attempt.lockedUntil && now >= attempt.lockedUntil) {
+      this.loginAttempts.delete(identifier);
+      return;
+    }
+
+    if (now - attempt.firstAttemptAt > this.ATTEMPT_WINDOW_MS) {
+      this.loginAttempts.delete(identifier);
+    }
+  }
+
+  /**
+   * 记录登录失败
+   */
+  private recordLoginFailure(identifier: string): void {
+    const now = Date.now();
+    const attempt = this.loginAttempts.get(identifier);
+
+    if (!attempt) {
+      this.loginAttempts.set(identifier, {
+        count: 1,
+        firstAttemptAt: now,
+        lockedUntil: null,
+      });
+      return;
+    }
+
+    if (now - attempt.firstAttemptAt > this.ATTEMPT_WINDOW_MS) {
+      this.loginAttempts.set(identifier, {
+        count: 1,
+        firstAttemptAt: now,
+        lockedUntil: null,
+      });
+      return;
+    }
+
+    attempt.count++;
+
+    if (attempt.count >= this.MAX_LOGIN_ATTEMPTS) {
+      attempt.lockedUntil = now + this.LOCK_DURATION_MS;
+      this.logger.warn(
+        `账号 ${identifier} 因多次登录失败被锁定 ${this.LOCK_DURATION_MS / 1000} 秒`,
+      );
+    }
+  }
+
+  /**
+   * 清除登录失败记录
+   */
+  private clearLoginAttempts(identifier: string): void {
+    this.loginAttempts.delete(identifier);
+  }
+
+  /**
    * 验证用户
    * @param identifier 用户名或邮箱
    * @param pass 密码
    * @returns 用户信息或null
    */
   async validateUser(identifier: string, pass: string): Promise<AuthenticatedUser | null> {
+    this.checkLoginLock(identifier);
+
     try {
-      // 调用UserService的登录方法来验证用户
       const result: LoginResult = await this.userService.login({ identifier, password: pass });
+      this.clearLoginAttempts(identifier);
       return result.user;
     } catch {
+      this.recordLoginFailure(identifier);
       return null;
     }
   }

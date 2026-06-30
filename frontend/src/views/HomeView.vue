@@ -18,6 +18,19 @@
         </button>
       </div>
 
+      <div class="search-filters">
+        <button
+          v-for="filter in searchTypeFilters"
+          :key="filter.value"
+          type="button"
+          class="search-filter-chip"
+          :class="{ active: activeSearchType === filter.value }"
+          @click="setSearchType(filter.value)"
+        >
+          {{ filter.label }}
+        </button>
+      </div>
+
       <div v-if="searchError" class="error-state">{{ searchError }}</div>
 
       <div v-if="mediaResults.length > 0" class="source-group">
@@ -132,7 +145,10 @@
             <button class="home-search__button" type="submit">搜索</button>
             <div
               v-if="
-                showHomeSearchMenu && (searchSuggestions.length > 0 || recentSearches.length > 0)
+                showHomeSearchMenu &&
+                (searchSuggestions.length > 0 ||
+                  recentSearches.length > 0 ||
+                  popularKeywords.length > 0)
               "
               class="home-search__menu"
             >
@@ -146,6 +162,21 @@
                   @mousedown.prevent="selectSearchKeyword(item.text)"
                 >
                   {{ item.text }}
+                </button>
+              </div>
+              <div v-if="popularKeywords.length > 0" class="home-search__menu-group">
+                <div class="home-search__menu-title">热门搜索</div>
+                <button
+                  v-for="(keyword, idx) in popularKeywords"
+                  :key="`popular-${keyword}`"
+                  type="button"
+                  class="home-search__menu-item home-search__menu-item--popular"
+                  @mousedown.prevent="selectSearchKeyword(keyword)"
+                >
+                  <span class="home-search__menu-rank" :class="{ 'top-3': idx < 3 }">{{
+                    idx + 1
+                  }}</span>
+                  {{ keyword }}
                 </button>
               </div>
               <div v-if="recentSearches.length > 0" class="home-search__menu-group">
@@ -262,9 +293,13 @@
             @click="goToMediaDetail(media.id)"
           />
         </div>
-        <div v-else class="empty-row">
-          <p>{{ homeLoadError || '暂无热门视频' }}</p>
-        </div>
+        <EmptyState
+          v-else
+          :title="homeLoadError || '暂无热门视频'"
+          description="热门内容加载失败或暂无数据"
+          icon="film"
+          :action="{ text: '重新加载', onClick: loadHomeData }"
+        />
       </section>
 
       <!-- 最新上线 -->
@@ -289,9 +324,13 @@
             @click="goToMediaDetail(media.id)"
           />
         </div>
-        <div v-else class="empty-row">
-          <p>{{ homeLoadError || '暂无最新视频' }}</p>
-        </div>
+        <EmptyState
+          v-else
+          :title="homeLoadError || '暂无最新视频'"
+          description="最新内容加载失败或暂无数据"
+          icon="film"
+          :action="{ text: '重新加载', onClick: loadHomeData }"
+        />
       </section>
 
       <!-- 高分佳作 -->
@@ -317,9 +356,13 @@
             @click="goToMediaDetail(media.id)"
           />
         </div>
-        <div v-else class="empty-row">
-          <p>{{ homeLoadError || '暂无高分视频' }}</p>
-        </div>
+        <EmptyState
+          v-else
+          :title="homeLoadError || '暂无高分视频'"
+          description="高分内容加载失败或暂无数据"
+          icon="film"
+          :action="{ text: '重新加载', onClick: loadHomeData }"
+        />
       </section>
     </template>
   </div>
@@ -332,6 +375,7 @@
   import { useAuthStore } from '@/stores/auth';
   import MediaCard from '@/components/MediaCard.vue';
   import BannerCarousel from '@/components/BannerCarousel.vue';
+  import EmptyState from '@/components/EmptyState.vue';
   import { log } from '@/utils/logger';
   import { searchApi } from '@/api/search';
   import { mediaApi } from '@/api/media';
@@ -365,7 +409,17 @@
   const homeSearchQuery = ref('');
   const searchSuggestions = ref<SearchSuggestionItem[]>([]);
   const recentSearches = ref<string[]>([]);
+  const popularKeywords = ref<string[]>([]);
   const showHomeSearchMenu = ref(false);
+  const activeSearchType = ref<string>('');
+
+  const searchTypeFilters = [
+    { label: '全部', value: '' },
+    { label: '电影', value: 'movie' },
+    { label: '电视剧', value: 'tv_series' },
+    { label: '动漫', value: 'anime' },
+    { label: '综艺', value: 'variety' },
+  ];
 
   const searchStreaming = ref(false);
   const popularLoading = ref(false);
@@ -375,6 +429,7 @@
   const homeLoadError = ref<string | null>(null);
 
   let cancelSse: (() => void) | null = null;
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   const setPlaceholder = (e: Event) => {
     const el = e.target as HTMLImageElement | null;
@@ -436,6 +491,14 @@
     }
   };
 
+  const loadPopularKeywords = async () => {
+    try {
+      popularKeywords.value = await searchApi.getPopularKeywords(8);
+    } catch {
+      popularKeywords.value = [];
+    }
+  };
+
   const loadSearchSuggestions = async () => {
     const query = homeSearchQuery.value.trim();
     if (!query) {
@@ -452,6 +515,7 @@
   const openHomeSearchMenu = () => {
     showHomeSearchMenu.value = true;
     void loadRecentSearches();
+    void loadPopularKeywords();
     void loadSearchSuggestions();
   };
 
@@ -463,7 +527,10 @@
 
   const onHomeSearchInput = () => {
     showHomeSearchMenu.value = true;
-    void loadSearchSuggestions();
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      void loadSearchSuggestions();
+    }, 300);
   };
 
   const selectSearchKeyword = (keyword: string) => {
@@ -533,6 +600,13 @@
     }
   };
 
+  const setSearchType = (type: string) => {
+    activeSearchType.value = type;
+    if (activeSearchQuery.value) {
+      startStreamSearch(activeSearchQuery.value);
+    }
+  };
+
   const startStreamSearch = (query: string) => {
     cancelSse?.();
     searchStreaming.value = true;
@@ -544,6 +618,7 @@
 
     cancelSse = searchApi.streamSearch(query, {
       limit: 20,
+      type: activeSearchType.value || undefined,
       onEvent: (event: SseSearchEvent) => {
         if (event.type === 'media' && Array.isArray(event.data)) {
           mediaResults.value = event.data as MediaResource[];
@@ -773,6 +848,31 @@
   .home-search__menu-item:hover {
     background: var(--surface-card-hover);
     color: var(--text-primary);
+  }
+
+  .home-search__menu-item--popular {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .home-search__menu-rank {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    background: var(--surface-muted);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .home-search__menu-rank.top-3 {
+    background: var(--color-brand-primary);
+    color: var(--text-inverse);
   }
 
   .home-search__quick {
@@ -1222,7 +1322,37 @@
 
   .btn-back svg {
     width: 16px;
-    height: 16px;
+  }
+
+  .search-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .search-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 16px;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--badge-radius);
+    background: var(--surface-muted);
+    color: var(--text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .search-filter-chip:hover {
+    border-color: var(--color-brand-border);
+    color: var(--text-primary);
+  }
+
+  .search-filter-chip.active {
+    background: var(--color-brand-primary);
+    border-color: var(--color-brand-primary);
+    color: var(--text-inverse);
   }
 
   .streaming-badge {

@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import axios, { type AxiosResponse, type RawAxiosResponseHeaders } from 'axios';
 import magnetUri from 'magnet-uri';
 import { ParseProvidersService } from '../parse-providers/parse-providers.service';
-import { PlaySource, PlaySourceStatus, PlaySourceType } from '../entities/play-source.entity';
+import { PlaySource, PlaySourceStatus, PlaySourceType, PlaySourceVisibility } from '../entities/play-source.entity';
 import { CreatePlaySourceDto } from './dtos/create-play-source.dto';
 import { UpdatePlaySourceDto } from './dtos/update-play-source.dto';
 import { PlaySourceQueryDto } from './dtos/play-source-query.dto';
@@ -186,7 +186,10 @@ export class PlaySourceService {
     };
   }
 
-  async create(createPlaySourceDto: CreatePlaySourceDto): Promise<PlaySource> {
+  async create(
+    createPlaySourceDto: CreatePlaySourceDto,
+    options?: { createdById?: number; visibility?: PlaySourceVisibility },
+  ): Promise<PlaySource> {
     const url = this.normalizeUrl(createPlaySourceDto.url);
     const existing = await this.playSourceRepository.findOne({
       where: {
@@ -217,10 +220,16 @@ export class PlaySourceService {
     const playSource = this.playSourceRepository.create(createPlaySourceDto);
     playSource.url = url;
     playSource.status = PlaySourceStatus.ACTIVE;
+    if (options?.createdById) {
+      playSource.createdById = options.createdById;
+    }
+    if (options?.visibility) {
+      playSource.visibility = options.visibility;
+    }
     return this.playSourceRepository.save(playSource);
   }
 
-  async findAll(queryDto: PlaySourceQueryDto): Promise<{
+  async findAll(queryDto: PlaySourceQueryDto, currentUserId?: number, isAdmin = false): Promise<{
     data: PlaySource[];
     total: number;
     page: number;
@@ -242,6 +251,13 @@ export class PlaySourceService {
     const queryBuilder = this.playSourceRepository
       .createQueryBuilder('playSource')
       .leftJoinAndSelect('playSource.mediaResource', 'mediaResource');
+
+    if (!isAdmin && currentUserId) {
+      queryBuilder.andWhere(
+        '(playSource.visibility = :pub OR (playSource.visibility = :priv AND playSource.createdById = :uid))',
+        { pub: PlaySourceVisibility.PUBLIC, priv: PlaySourceVisibility.PRIVATE, uid: currentUserId },
+      );
+    }
 
     if (mediaResourceId) {
       queryBuilder.andWhere('playSource.mediaResourceId = :mediaResourceId', { mediaResourceId });
@@ -311,8 +327,11 @@ export class PlaySourceService {
     return playSource;
   }
 
-  async update(id: number, updatePlaySourceDto: UpdatePlaySourceDto): Promise<PlaySource> {
+  async update(id: number, updatePlaySourceDto: UpdatePlaySourceDto, currentUserId?: number, isAdmin = false): Promise<PlaySource> {
     const playSource = await this.findById(id);
+    if (!isAdmin && currentUserId && playSource.visibility === PlaySourceVisibility.PRIVATE && playSource.createdById !== currentUserId) {
+      throw new NotFoundException(`Play source ${id} not found`);
+    }
     Object.assign(playSource, updatePlaySourceDto);
     return this.playSourceRepository.save(playSource);
   }
@@ -407,8 +426,11 @@ export class PlaySourceService {
     };
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: number, currentUserId?: number, isAdmin = false): Promise<void> {
     const playSource = await this.findById(id);
+    if (!isAdmin && currentUserId && playSource.visibility === PlaySourceVisibility.PRIVATE && playSource.createdById !== currentUserId) {
+      throw new NotFoundException(`Play source ${id} not found`);
+    }
     await this.playSourceRepository.remove(playSource);
   }
 
@@ -516,13 +538,27 @@ export class PlaySourceService {
     };
   }
 
-  async getBestPlaySource(mediaResourceId: number): Promise<PlaySource | null> {
-    const sources = await this.playSourceRepository.find({
-      where: {
-        mediaResourceId,
-        isActive: true,
-      },
-    });
+  async getBestPlaySource(mediaResourceId: number, currentUserId?: number, isAdmin = false): Promise<PlaySource | null> {
+    let sources: PlaySource[];
+    if (isAdmin) {
+      sources = await this.playSourceRepository.find({
+        where: { mediaResourceId, isActive: true },
+      });
+    } else if (currentUserId) {
+      sources = await this.playSourceRepository
+        .createQueryBuilder('ps')
+        .where('ps.mediaResourceId = :mediaResourceId', { mediaResourceId })
+        .andWhere('ps.isActive = :isActive', { isActive: true })
+        .andWhere(
+          '(ps.visibility = :pub OR (ps.visibility = :priv AND ps.createdById = :uid))',
+          { pub: PlaySourceVisibility.PUBLIC, priv: PlaySourceVisibility.PRIVATE, uid: currentUserId },
+        )
+        .getMany();
+    } else {
+      sources = await this.playSourceRepository.find({
+        where: { mediaResourceId, isActive: true, visibility: PlaySourceVisibility.PUBLIC },
+      });
+    }
 
     const orderedSources = this.sortPlaySources(sources).filter(
       source => source.status !== PlaySourceStatus.ERROR,
@@ -542,13 +578,27 @@ export class PlaySourceService {
     return null;
   }
 
-  async getByMediaResource(mediaResourceId: number): Promise<PlaySource[]> {
-    const sources = await this.playSourceRepository.find({
-      where: {
-        mediaResourceId,
-        isActive: true,
-      },
-    });
+  async getByMediaResource(mediaResourceId: number, currentUserId?: number, isAdmin = false): Promise<PlaySource[]> {
+    let sources: PlaySource[];
+    if (isAdmin) {
+      sources = await this.playSourceRepository.find({
+        where: { mediaResourceId, isActive: true },
+      });
+    } else if (currentUserId) {
+      sources = await this.playSourceRepository
+        .createQueryBuilder('ps')
+        .where('ps.mediaResourceId = :mediaResourceId', { mediaResourceId })
+        .andWhere('ps.isActive = :isActive', { isActive: true })
+        .andWhere(
+          '(ps.visibility = :pub OR (ps.visibility = :priv AND ps.createdById = :uid))',
+          { pub: PlaySourceVisibility.PUBLIC, priv: PlaySourceVisibility.PRIVATE, uid: currentUserId },
+        )
+        .getMany();
+    } else {
+      sources = await this.playSourceRepository.find({
+        where: { mediaResourceId, isActive: true, visibility: PlaySourceVisibility.PUBLIC },
+      });
+    }
 
     const sorted = this.sortPlaySources(sources).filter(
       source => source.status === PlaySourceStatus.ACTIVE && source.isActive,
@@ -557,16 +607,30 @@ export class PlaySourceService {
     return this.deduplicateByUrl(sorted);
   }
 
-  async getPlayableSources(mediaResourceId: number): Promise<{
+  async getPlayableSources(mediaResourceId: number, currentUserId?: number, isAdmin = false): Promise<{
     sources: PlaySource[];
     freshness: 'fresh' | 'stale' | 'refreshing' | 'empty';
   }> {
-    const sources = await this.playSourceRepository.find({
-      where: {
-        mediaResourceId,
-        isActive: true,
-      },
-    });
+    let sources: PlaySource[];
+    if (isAdmin) {
+      sources = await this.playSourceRepository.find({
+        where: { mediaResourceId, isActive: true },
+      });
+    } else if (currentUserId) {
+      sources = await this.playSourceRepository
+        .createQueryBuilder('ps')
+        .where('ps.mediaResourceId = :mediaResourceId', { mediaResourceId })
+        .andWhere('ps.isActive = :isActive', { isActive: true })
+        .andWhere(
+          '(ps.visibility = :pub OR (ps.visibility = :priv AND ps.createdById = :uid))',
+          { pub: PlaySourceVisibility.PUBLIC, priv: PlaySourceVisibility.PRIVATE, uid: currentUserId },
+        )
+        .getMany();
+    } else {
+      sources = await this.playSourceRepository.find({
+        where: { mediaResourceId, isActive: true, visibility: PlaySourceVisibility.PUBLIC },
+      });
+    }
 
     const activeSources = sources.filter(s => s.status === PlaySourceStatus.ACTIVE);
     if (activeSources.length === 0) {

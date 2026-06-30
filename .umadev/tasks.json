@@ -1,0 +1,21 @@
+{
+  "seq": 2,
+  "tasks": [
+    {
+      "id": "t1",
+      "requirement": "优化当前项目",
+      "status": "failed",
+      "started_at_unix": 1782784928,
+      "done": 0,
+      "total": 0
+    },
+    {
+      "id": "t2",
+      "requirement": "s 优化当前项目",
+      "status": "failed",
+      "started_at_unix": 1782784972,
+      "done": 0,
+      "total": 0
+    }
+  ]
+}

@@ -28,9 +28,10 @@ import type {
 } from '../scheduler/crawler-scheduler.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
+import { AdminRoleGuard } from '../admin/admin-role.guard';
 import { MediaResourceService } from '../media/media-resource.service';
 import { MediaType, MediaQuality } from '../entities/media-resource.entity';
-import { PlaySourceType } from '../entities/play-source.entity';
+import { PlaySourceType, PlaySourceVisibility } from '../entities/play-source.entity';
 import { CrawlRequestDto, BatchCrawlRequestDto, CrawlAndSaveDto } from './dtos/crawl-request.dto';
 import { CRAWLER_TARGETS } from './crawler.config';
 import { PlaySourceService } from '../play-sources/play-source.service';
@@ -543,15 +544,18 @@ export class CrawlerController {
         continue;
       }
 
-      await this.playSourceService.create({
-        mediaResourceId,
-        type: this.inferPlaySourceType(url),
-        url,
-        priority: index + 1,
-        resolution: data.quality,
-        sourceName: `${source}源 ${index + 1}`,
-        description: data.description,
-      });
+      await this.playSourceService.create(
+        {
+          mediaResourceId,
+          type: this.inferPlaySourceType(url),
+          url,
+          priority: index + 1,
+          resolution: data.quality,
+          sourceName: `${source}源 ${index + 1}`,
+          description: data.description,
+        },
+        { visibility: PlaySourceVisibility.PUBLIC },
+      );
 
       created++;
     }
@@ -764,7 +768,7 @@ export class CrawlerController {
   }
 
   @Post('trigger')
-  @Public()
+  @UseGuards(AdminRoleGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '触发爬虫任务', description: '手动触发爬虫从指定目标采集数据' })
   @ApiQuery({ name: 'targetName', required: false, description: '目标网站名称' })

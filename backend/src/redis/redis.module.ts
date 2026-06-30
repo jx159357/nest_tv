@@ -1,7 +1,9 @@
-import { Global, Module } from '@nestjs/common';
+import { Global, Module, Logger } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { REDIS_CLIENT } from '../common/constants/redis.constants';
+
+const logger = new Logger('RedisModule');
 
 type RedisEventHandler = (...args: unknown[]) => void;
 type RedisExecResult = [Error | null, unknown][];
@@ -145,32 +147,32 @@ const createRedisProviderClient = async (
   });
 
   client.on('error', (err: unknown) => {
-    console.warn(`${label} Redis客户端错误:`, getErrorMessage(err));
+    logger.warn(`${label} Redis客户端错误: ${getErrorMessage(err)}`);
   });
 
   client.on('connect', () => {
-    console.log(`${label} Redis连接成功`);
+    logger.log(`${label} Redis连接成功`);
   });
 
   client.on('reconnecting', () => {
-    console.log(`${label} Redis重连中...`);
+    logger.log(`${label} Redis重连中...`);
   });
 
   client.on('ready', () => {
-    console.log(`${label} Redis就绪`);
+    logger.log(`${label} Redis就绪`);
   });
 
   client.on('end', () => {
-    console.log(`${label} Redis连接结束`);
+    logger.log(`${label} Redis连接结束`);
   });
 
   try {
     await client.connect();
     await client.ping();
-    console.log(`${label} Redis连接测试成功`);
+    logger.log(`${label} Redis连接测试成功`);
     return client;
   } catch (error: unknown) {
-    console.warn(`${label} Redis连接失败，将使用降级客户端:`, getErrorMessage(error));
+    logger.warn(`${label} Redis连接失败，将使用降级客户端: ${getErrorMessage(error)}`);
     client.disconnect();
     return createFallbackRedisClient();
   }

@@ -1,5 +1,8 @@
+import { Logger } from '@nestjs/common';
 import { CacheService } from '../cache/cache.service';
 import { CacheableOptions, CacheEvictOptions } from '../cache/cache.service';
+
+const logger = new Logger('CacheDecorator');
 
 interface CacheEnabledInstance {
   cacheService: CacheService;
@@ -127,7 +130,7 @@ export const CacheRefresh = (options: CacheableOptions = {}) => {
             await cacheService.multiSet(cacheKey, newResult, options);
           })
           .catch((error: unknown) => {
-            console.error(`缓存刷新失败: ${cacheKey}`, error);
+            logger.error(`缓存刷新失败: ${cacheKey}`, error);
           });
         return cached;
       }

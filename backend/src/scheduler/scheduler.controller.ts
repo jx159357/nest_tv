@@ -1,6 +1,7 @@
 import { Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AdminRoleGuard } from '../admin/admin-role.guard';
 import { DailySourceCollectionService } from './daily-source-collection.service';
 
 @ApiTags('调度任务')
@@ -25,6 +26,7 @@ export class SchedulerController {
   }
 
   @Post('daily-source-collection/run')
+  @UseGuards(AdminRoleGuard)
   @ApiOperation({ summary: '手动触发每日播放源采集任务' })
   @ApiResponse({ status: 201, description: '任务已执行' })
   async runDailySourceCollection() {

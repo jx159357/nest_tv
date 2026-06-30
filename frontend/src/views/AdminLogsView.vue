@@ -160,197 +160,216 @@
       <div v-if="loading" class="logs-empty-text p-8 text-center">加载中...</div>
       <div v-else-if="error" class="logs-error-text p-8 text-center">{{ error }}</div>
       <template v-else>
-        <div class="overflow-x-auto">
-          <table class="logs-table min-w-full">
-            <thead class="logs-table-thead">
-              <tr>
-                <th
-                  class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                >
-                  时间
-                </th>
-                <th
-                  class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                >
-                  操作
-                </th>
-                <th
-                  class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                >
-                  资源
-                </th>
-                <th
-                  class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                >
-                  状态
-                </th>
-                <th
-                  class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                >
-                  角色
-                </th>
-                <th
-                  class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                >
-                  用户
-                </th>
-                <th
-                  class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                >
-                  说明
-                </th>
-                <th
-                  class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                >
-                  详情
-                </th>
-              </tr>
-            </thead>
-            <tbody class="logs-table-body">
-              <template v-for="log in logs" :key="log.id">
+        <EmptyState
+          v-if="logs.length === 0"
+          title="暂无日志记录"
+          description="当前筛选条件下没有日志"
+          icon="document"
+        />
+        <template v-else>
+          <div class="overflow-x-auto">
+            <table class="logs-table min-w-full">
+              <thead class="logs-table-thead">
                 <tr>
-                  <td class="logs-td-muted px-4 py-3 text-sm">{{ formatDate(log.createdAt) }}</td>
-                  <td class="logs-td-primary px-4 py-3 text-sm">{{ log.action }}</td>
-                  <td class="logs-td-muted px-4 py-3 text-sm">{{ log.resource }}</td>
-                  <td class="px-4 py-3 text-sm">
-                    <span
-                      :class="[
-                        'logs-badge rounded-full px-2 py-1 text-xs font-medium',
-                        log.status === 'success'
-                          ? 'logs-badge--success'
-                          : log.status === 'warning'
-                            ? 'logs-badge--warning'
-                            : 'logs-badge--error',
-                      ]"
-                    >
-                      {{ log.status }}
-                    </span>
-                  </td>
-                  <td class="logs-td-muted px-4 py-3 text-sm">
-                    {{ log.role?.name || `#${log.roleId}` }}
-                  </td>
-                  <td class="logs-td-muted px-4 py-3 text-sm">
-                    {{ log.user?.username || (log.userId ? `#${log.userId}` : '系统') }}
-                  </td>
-                  <td class="logs-td-muted px-4 py-3 text-sm">
-                    <div class="line-clamp-2">{{ log.errorMessage || log.description || '—' }}</div>
-                  </td>
-                  <td class="logs-td-muted px-4 py-3 text-sm">
-                    <button
-                      class="logs-detail-btn rounded border px-3 py-1 text-xs font-medium"
-                      @click="toggleLogDetails(log.id)"
-                    >
-                      {{ selectedLogId === log.id ? '收起' : '详情' }}
-                    </button>
-                  </td>
+                  <th
+                    class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  >
+                    时间
+                  </th>
+                  <th
+                    class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  >
+                    操作
+                  </th>
+                  <th
+                    class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  >
+                    资源
+                  </th>
+                  <th
+                    class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  >
+                    状态
+                  </th>
+                  <th
+                    class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  >
+                    角色
+                  </th>
+                  <th
+                    class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  >
+                    用户
+                  </th>
+                  <th
+                    class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  >
+                    说明
+                  </th>
+                  <th
+                    class="logs-th px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  >
+                    详情
+                  </th>
                 </tr>
-                <tr v-if="selectedLogId === log.id" class="logs-expanded-row">
-                  <td colspan="8" class="px-4 py-4">
-                    <div class="grid gap-4 lg:grid-cols-2">
-                      <div class="logs-detail-panel rounded-xl border px-4 py-3">
-                        <div class="logs-detail-label text-xs font-medium uppercase tracking-wide">
-                          元数据
-                        </div>
-                        <div
-                          v-if="metadataEntries(log).length === 0"
-                          class="logs-detail-empty mt-2 text-sm"
-                        >
-                          暂无元数据
-                        </div>
-                        <div v-else class="logs-detail-text mt-2 space-y-2 text-sm">
-                          <div v-for="item in metadataEntries(log)" :key="`${log.id}-${item.key}`">
-                            <div
-                              class="logs-detail-label text-xs font-medium uppercase tracking-wide"
-                            >
-                              {{ item.key }}
-                            </div>
-                            <div class="mt-1 break-all">{{ item.value }}</div>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="logs-detail-panel rounded-xl border px-4 py-3">
-                        <div class="logs-detail-label text-xs font-medium uppercase tracking-wide">
-                          请求信息
-                        </div>
-                        <div v-if="!log.requestInfo" class="logs-detail-empty mt-2 text-sm">
-                          暂无请求信息
-                        </div>
-                        <div v-else class="logs-detail-text mt-2 space-y-2 text-sm">
-                          <div>
-                            <div
-                              class="logs-detail-label text-xs font-medium uppercase tracking-wide"
-                            >
-                              Method / URL
-                            </div>
-                            <div class="mt-1 break-all">
-                              {{ log.requestInfo.method || '—' }} {{ log.requestInfo.url || '' }}
-                            </div>
-                          </div>
-                          <div>
-                            <div
-                              class="logs-detail-label text-xs font-medium uppercase tracking-wide"
-                            >
-                              IP
-                            </div>
-                            <div class="mt-1 break-all">{{ log.requestInfo.ip || '—' }}</div>
-                          </div>
-                          <div>
-                            <div
-                              class="logs-detail-label text-xs font-medium uppercase tracking-wide"
-                            >
-                              User Agent
-                            </div>
-                            <div class="mt-1 break-all">{{ log.requestInfo.userAgent || '—' }}</div>
-                          </div>
-                        </div>
-                      </div>
-                      <div
-                        v-if="downloadTaskLogTarget(log)"
-                        class="logs-download-panel rounded-xl border px-4 py-3 lg:col-span-2"
+              </thead>
+              <tbody class="logs-table-body">
+                <template v-for="log in logs" :key="log.id">
+                  <tr>
+                    <td class="logs-td-muted px-4 py-3 text-sm">{{ formatDate(log.createdAt) }}</td>
+                    <td class="logs-td-primary px-4 py-3 text-sm">{{ log.action }}</td>
+                    <td class="logs-td-muted px-4 py-3 text-sm">{{ log.resource }}</td>
+                    <td class="px-4 py-3 text-sm">
+                      <span
+                        :class="[
+                          'logs-badge rounded-full px-2 py-1 text-xs font-medium',
+                          log.status === 'success'
+                            ? 'logs-badge--success'
+                            : log.status === 'warning'
+                              ? 'logs-badge--warning'
+                              : 'logs-badge--error',
+                        ]"
                       >
-                        <div
-                          class="logs-download-label text-xs font-medium uppercase tracking-wide"
-                        >
-                          关联下载任务
-                        </div>
-                        <div class="logs-detail-text mt-2 text-sm">
-                          该日志包含下载任务客户端 ID，可直接跳回下载任务管理页继续排查。
-                        </div>
-                        <RouterLink
-                          :to="downloadTaskLogTarget(log)!"
-                          class="logs-download-link mt-3 inline-flex rounded-full border px-3 py-1.5 text-xs font-medium"
-                        >
-                          打开关联下载任务
-                        </RouterLink>
+                        {{ log.status }}
+                      </span>
+                    </td>
+                    <td class="logs-td-muted px-4 py-3 text-sm">
+                      {{ log.role?.name || `#${log.roleId}` }}
+                    </td>
+                    <td class="logs-td-muted px-4 py-3 text-sm">
+                      {{ log.user?.username || (log.userId ? `#${log.userId}` : '系统') }}
+                    </td>
+                    <td class="logs-td-muted px-4 py-3 text-sm">
+                      <div class="line-clamp-2">
+                        {{ log.errorMessage || log.description || '—' }}
                       </div>
-                    </div>
-                  </td>
-                </tr>
-              </template>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="logs-pagination flex items-center justify-between border-t px-4 py-3 text-sm">
-          <span>共 {{ total }} 条</span>
-          <div class="flex items-center gap-3">
-            <button
-              :disabled="page <= 1"
-              class="logs-pagination-btn rounded border px-3 py-1 disabled:opacity-50"
-              @click="applyFilters(page - 1)"
-            >
-              上一页
-            </button>
-            <span>{{ page }} / {{ totalPages }}</span>
-            <button
-              :disabled="page >= totalPages"
-              class="logs-pagination-btn rounded border px-3 py-1 disabled:opacity-50"
-              @click="applyFilters(page + 1)"
-            >
-              下一页
-            </button>
+                    </td>
+                    <td class="logs-td-muted px-4 py-3 text-sm">
+                      <button
+                        class="logs-detail-btn rounded border px-3 py-1 text-xs font-medium"
+                        @click="toggleLogDetails(log.id)"
+                      >
+                        {{ selectedLogId === log.id ? '收起' : '详情' }}
+                      </button>
+                    </td>
+                  </tr>
+                  <tr v-if="selectedLogId === log.id" class="logs-expanded-row">
+                    <td colspan="8" class="px-4 py-4">
+                      <div class="grid gap-4 lg:grid-cols-2">
+                        <div class="logs-detail-panel rounded-xl border px-4 py-3">
+                          <div
+                            class="logs-detail-label text-xs font-medium uppercase tracking-wide"
+                          >
+                            元数据
+                          </div>
+                          <div
+                            v-if="metadataEntries(log).length === 0"
+                            class="logs-detail-empty mt-2 text-sm"
+                          >
+                            暂无元数据
+                          </div>
+                          <div v-else class="logs-detail-text mt-2 space-y-2 text-sm">
+                            <div
+                              v-for="item in metadataEntries(log)"
+                              :key="`${log.id}-${item.key}`"
+                            >
+                              <div
+                                class="logs-detail-label text-xs font-medium uppercase tracking-wide"
+                              >
+                                {{ item.key }}
+                              </div>
+                              <div class="mt-1 break-all">{{ item.value }}</div>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="logs-detail-panel rounded-xl border px-4 py-3">
+                          <div
+                            class="logs-detail-label text-xs font-medium uppercase tracking-wide"
+                          >
+                            请求信息
+                          </div>
+                          <div v-if="!log.requestInfo" class="logs-detail-empty mt-2 text-sm">
+                            暂无请求信息
+                          </div>
+                          <div v-else class="logs-detail-text mt-2 space-y-2 text-sm">
+                            <div>
+                              <div
+                                class="logs-detail-label text-xs font-medium uppercase tracking-wide"
+                              >
+                                Method / URL
+                              </div>
+                              <div class="mt-1 break-all">
+                                {{ log.requestInfo.method || '—' }} {{ log.requestInfo.url || '' }}
+                              </div>
+                            </div>
+                            <div>
+                              <div
+                                class="logs-detail-label text-xs font-medium uppercase tracking-wide"
+                              >
+                                IP
+                              </div>
+                              <div class="mt-1 break-all">{{ log.requestInfo.ip || '—' }}</div>
+                            </div>
+                            <div>
+                              <div
+                                class="logs-detail-label text-xs font-medium uppercase tracking-wide"
+                              >
+                                User Agent
+                              </div>
+                              <div class="mt-1 break-all">
+                                {{ log.requestInfo.userAgent || '—' }}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          v-if="downloadTaskLogTarget(log)"
+                          class="logs-download-panel rounded-xl border px-4 py-3 lg:col-span-2"
+                        >
+                          <div
+                            class="logs-download-label text-xs font-medium uppercase tracking-wide"
+                          >
+                            关联下载任务
+                          </div>
+                          <div class="logs-detail-text mt-2 text-sm">
+                            该日志包含下载任务客户端 ID，可直接跳回下载任务管理页继续排查。
+                          </div>
+                          <RouterLink
+                            :to="downloadTaskLogTarget(log)!"
+                            class="logs-download-link mt-3 inline-flex rounded-full border px-3 py-1.5 text-xs font-medium"
+                          >
+                            打开关联下载任务
+                          </RouterLink>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
           </div>
-        </div>
+
+          <div class="logs-pagination flex items-center justify-between border-t px-4 py-3 text-sm">
+            <span>共 {{ total }} 条</span>
+            <div class="flex items-center gap-3">
+              <button
+                :disabled="page <= 1"
+                class="logs-pagination-btn rounded border px-3 py-1 disabled:opacity-50"
+                @click="applyFilters(page - 1)"
+              >
+                上一页
+              </button>
+              <span>{{ page }} / {{ totalPages }}</span>
+              <button
+                :disabled="page >= totalPages"
+                class="logs-pagination-btn rounded border px-3 py-1 disabled:opacity-50"
+                @click="applyFilters(page + 1)"
+              >
+                下一页
+              </button>
+            </div>
+          </div>
+        </template>
       </template>
     </div>
   </div>
@@ -361,6 +380,7 @@
   import { RouterLink, useRoute, useRouter } from 'vue-router';
   import { adminApi } from '@/api/admin';
   import type { AdminLogItem } from '@/api/admin';
+  import EmptyState from '@/components/EmptyState.vue';
 
   const route = useRoute();
   const router = useRouter();
@@ -755,20 +775,20 @@
   }
 
   .logs-chip--active-brand {
-    border-color: rgba(99, 102, 241, 0.3);
-    background-color: rgba(99, 102, 241, 0.15);
+    border-color: var(--color-info-border);
+    background-color: var(--color-info-overlay);
     color: var(--color-brand-primary-light);
   }
 
   .logs-chip--active-success {
-    border-color: rgba(16, 185, 129, 0.3);
-    background-color: rgba(16, 185, 129, 0.15);
+    border-color: var(--color-success-border);
+    background-color: var(--color-success-overlay);
     color: var(--color-success-light);
   }
 
   .logs-chip--active-error {
-    border-color: rgba(239, 68, 68, 0.3);
-    background-color: rgba(239, 68, 68, 0.15);
+    border-color: var(--color-error-border);
+    background-color: var(--color-error-overlay);
     color: var(--color-error-light);
   }
 
@@ -829,17 +849,17 @@
 
   /* ===== Status badges ===== */
   .logs-badge--success {
-    background-color: rgba(16, 185, 129, 0.15);
+    background-color: var(--color-success-overlay);
     color: var(--color-success-light);
   }
 
   .logs-badge--warning {
-    background-color: rgba(245, 158, 11, 0.15);
+    background-color: var(--color-warning-overlay);
     color: var(--color-warning-light);
   }
 
   .logs-badge--error {
-    background-color: rgba(239, 68, 68, 0.15);
+    background-color: var(--color-error-overlay);
     color: var(--color-error-light);
   }
 
@@ -878,8 +898,8 @@
 
   /* ===== Download task section ===== */
   .logs-download-panel {
-    border-color: rgba(99, 102, 241, 0.2);
-    background-color: rgba(99, 102, 241, 0.1);
+    border-color: var(--color-info-border);
+    background-color: var(--color-info-overlay);
   }
 
   .logs-download-label {
@@ -887,13 +907,13 @@
   }
 
   .logs-download-link {
-    border-color: rgba(99, 102, 241, 0.3);
-    background-color: rgba(99, 102, 241, 0.1);
+    border-color: var(--color-info-border);
+    background-color: var(--color-info-overlay);
     color: var(--color-brand-primary-light);
   }
 
   .logs-download-link:hover {
-    background-color: rgba(99, 102, 241, 0.2);
+    background-color: var(--color-info-border);
   }
 
   /* ===== Empty / error states ===== */

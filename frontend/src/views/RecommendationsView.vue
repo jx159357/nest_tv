@@ -862,7 +862,7 @@
     padding: 10px 20px;
     border-radius: 10px;
     background: var(--color-brand-primary);
-    color: white;
+    color: var(--text-inverse);
     font-size: 14px;
     font-weight: 500;
     border: none;

@@ -481,7 +481,7 @@
   }
 
   .btn-join-id:hover:not(:disabled) {
-    background: #5558e6;
+    background: var(--color-brand-primary-dark);
   }
 
   .btn-join-id:disabled {
@@ -567,10 +567,10 @@
 
   .btn-join {
     padding: 6px 12px;
-    background: rgba(99, 102, 241, 0.15);
-    border: 1px solid rgba(99, 102, 241, 0.3);
+    background: var(--color-info-overlay);
+    border: 1px solid var(--color-info-border);
     border-radius: 6px;
-    color: #818cf8;
+    color: var(--color-info-light);
     font-size: 12px;
     cursor: pointer;
   }
@@ -604,16 +604,16 @@
   }
 
   .status-badge.playing {
-    background: rgba(34, 197, 94, 0.2);
-    color: #22c55e;
+    background: var(--color-success-overlay);
+    color: var(--color-success-light);
   }
 
   .online-badge {
     padding: 4px 10px;
-    background: rgba(99, 102, 241, 0.15);
+    background: var(--color-info-overlay);
     border-radius: 12px;
     font-size: 12px;
-    color: #818cf8;
+    color: var(--color-info-light);
   }
 
   .room-share {
@@ -635,28 +635,28 @@
 
   .room-id-code {
     padding: 3px 8px;
-    background: rgba(99, 102, 241, 0.15);
-    border: 1px solid rgba(99, 102, 241, 0.25);
+    background: var(--color-info-overlay);
+    border: 1px solid var(--color-info-border);
     border-radius: 4px;
     font-family: monospace;
     font-size: 12px;
-    color: #a5b4fc;
+    color: var(--color-info-lighter);
     letter-spacing: 0.5px;
   }
 
   .btn-copy {
     padding: 4px 10px;
-    background: rgba(99, 102, 241, 0.15);
-    border: 1px solid rgba(99, 102, 241, 0.3);
+    background: var(--color-info-overlay);
+    border: 1px solid var(--color-info-border);
     border-radius: 6px;
-    color: #818cf8;
+    color: var(--color-info-light);
     font-size: 12px;
     cursor: pointer;
     transition: all 0.2s;
   }
 
   .btn-copy:hover {
-    background: rgba(99, 102, 241, 0.25);
+    background: var(--color-info-bg);
   }
 
   .chat-panel {
@@ -684,7 +684,7 @@
   }
 
   .chat-message.self .msg-user {
-    color: #818cf8;
+    color: var(--color-info-light);
   }
 
   .msg-user {
@@ -724,7 +724,7 @@
   }
 
   .chat-input button:hover {
-    background: #5558e6;
+    background: var(--color-brand-primary-dark);
   }
 
   .users-list h4 {
@@ -747,7 +747,7 @@
 
   .host-badge {
     padding: 2px 6px;
-    background: rgba(251, 191, 36, 0.2);
+    background: var(--color-warning-overlay);
     border-radius: 4px;
     font-size: 11px;
     color: var(--color-warning-light);

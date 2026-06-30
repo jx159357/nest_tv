@@ -7,6 +7,7 @@ import {
   IsBoolean,
   IsUrl,
   IsDate,
+  Matches,
 } from 'class-validator';
 import { PlaySourceType, PlaySourceStatus } from '../../entities/play-source.entity';
 import { ApiProperty } from '@nestjs/swagger';
@@ -15,7 +16,7 @@ export class CreatePlaySourceDto {
   @ApiProperty({ description: '播放链接' })
   @IsString()
   @IsNotEmpty()
-  @IsUrl()
+  @Matches(/^(https?:\/\/|magnet:)/, { message: 'url must be a valid URL or magnet link' })
   url: string;
 
   @ApiProperty({ description: '播放源类型', enum: PlaySourceType })

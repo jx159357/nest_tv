@@ -1,0 +1,125 @@
+{
+  "targets": {
+    "claude": {
+      "family": "claude",
+      "host": "claude",
+      "installed_at": "2026-06-30T02:38:53.262094+00:00",
+      "paths": [],
+      "scopes": {
+        "global": false,
+        "project": false,
+        "runtime": false
+      }
+    },
+    "claude-code": {
+      "family": "claude",
+      "host": "claude-code",
+      "installed_at": "2026-06-30T02:38:53.152539+00:00",
+      "paths": [
+        "C:\\Users\\Administrator\\.claude\\skills\\super-dev",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\.claude-plugin\\marketplace.json",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\.claude\\CLAUDE.md",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\.claude\\agents\\super-dev.md",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\.claude\\commands\\super-dev-seeai.md",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\.claude\\commands\\super-dev.md",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\.claude\\settings.local.json",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\.claude\\skills\\super-dev-seeai\\SKILL.md",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\.claude\\skills\\super-dev\\SKILL.md",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\CLAUDE.md",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\plugins\\super-dev-claude\\.claude-plugin\\plugin.json",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\plugins\\super-dev-claude\\README.md",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\plugins\\super-dev-claude\\skills\\super-dev-seeai\\SKILL.md",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\plugins\\super-dev-claude\\skills\\super-dev\\SKILL.md"
+      ],
+      "scopes": {
+        "global": true,
+        "project": true,
+        "runtime": false
+      }
+    },
+    "codex": {
+      "family": "codex",
+      "host": "codex",
+      "installed_at": "2026-06-30T02:38:53.281100+00:00",
+      "paths": [
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\AGENTS.md"
+      ],
+      "scopes": {
+        "global": false,
+        "project": true,
+        "runtime": false
+      }
+    },
+    "codex-cli": {
+      "family": "codex",
+      "host": "codex-cli",
+      "installed_at": "2026-06-30T02:38:53.191096+00:00",
+      "paths": [
+        "C:\\Users\\Administrator\\.agents\\skills\\super-dev",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\.agents\\plugins\\marketplace.json",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\.agents\\skills\\super-dev-seeai\\SKILL.md",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\.agents\\skills\\super-dev\\SKILL.md",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\AGENTS.md",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\plugins\\super-dev-codex\\.codex-plugin\\plugin.json",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\plugins\\super-dev-codex\\README.md",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\plugins\\super-dev-codex\\skills\\super-dev-seeai\\SKILL.md",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\plugins\\super-dev-codex\\skills\\super-dev\\SKILL.md"
+      ],
+      "scopes": {
+        "global": true,
+        "project": true,
+        "runtime": false
+      }
+    },
+    "cursor": {
+      "family": "cursor",
+      "host": "cursor",
+      "installed_at": "2026-06-30T02:38:53.254094+00:00",
+      "paths": [
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\.cursor\\commands\\super-dev-seeai.md",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\.cursor\\commands\\super-dev.md",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\AGENTS.md"
+      ],
+      "scopes": {
+        "global": false,
+        "project": true,
+        "runtime": false
+      }
+    },
+    "cursor-cli": {
+      "family": "cursor",
+      "host": "cursor-cli",
+      "installed_at": "2026-06-30T02:38:53.238094+00:00",
+      "paths": [
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\.cursor\\rules\\super-dev.mdc",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\AGENTS.md"
+      ],
+      "scopes": {
+        "global": false,
+        "project": true,
+        "runtime": false
+      }
+    },
+    "opencode": {
+      "family": "opencode",
+      "host": "opencode",
+      "installed_at": "2026-06-30T02:38:53.227094+00:00",
+      "paths": [
+        "C:\\Users\\Administrator\\.config\\opencode\\skills\\super-dev",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\.opencode\\agents\\super-dev.md",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\.opencode\\commands\\super-dev-seeai.md",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\.opencode\\commands\\super-dev.md",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\.opencode\\skills\\super-dev-seeai\\SKILL.md",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\.opencode\\skills\\super-dev\\SKILL.md",
+        "D:\\demo_jx\\cursor_pro\\nest_tv\\AGENTS.md"
+      ],
+      "scopes": {
+        "global": true,
+        "project": true,
+        "runtime": false
+      }
+    }
+  },
+  "updated_at": "2026-06-30T02:38:53.281100+00:00",
+  "version": 1
+}

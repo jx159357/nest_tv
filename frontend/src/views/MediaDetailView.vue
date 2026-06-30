@@ -120,7 +120,7 @@
               @click="goToMediaDetail(item.id)"
             />
           </div>
-          <div v-else class="empty-row">暂无相关推荐</div>
+          <EmptyState v-else title="暂无相关推荐" description="暂无相关内容推荐" icon="search" />
         </section>
 
         <aside class="detail-sidebar">
@@ -141,7 +141,12 @@
                 }}</span>
               </div>
             </div>
-            <div v-else class="empty-source">暂无可用播放源</div>
+            <EmptyState
+              v-else
+              title="暂无可用播放源"
+              description="该资源暂无可用的播放线路"
+              icon="film"
+            />
           </div>
 
           <div v-if="media.downloadUrls && media.downloadUrls.length > 0" class="sidebar-card">
@@ -172,7 +177,13 @@
       </div>
     </template>
 
-    <div v-else class="error-state">加载失败</div>
+    <EmptyState
+      v-else
+      title="加载失败"
+      description="无法获取资源详情，请稍后重试"
+      icon="document"
+      :action="{ text: '重试', onClick: loadMedia }"
+    />
 
     <button
       v-if="media && authStore.isAuthenticated"
@@ -193,6 +204,7 @@
   import MediaCard from '@/components/MediaCard.vue';
   import AIChatPanel from '@/components/AIChatPanel.vue';
   import TextClamp from '@/components/TextClamp.vue';
+  import EmptyState from '@/components/EmptyState.vue';
   import { useMediaStore } from '@/stores/media';
   import { useAuthStore } from '@/stores/auth';
   import { useDownloadsStore } from '@/stores/downloads';
@@ -577,7 +589,7 @@
     background: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-accent));
     border: none;
     border-radius: 12px;
-    color: white;
+    color: var(--text-inverse);
     font-size: 15px;
     font-weight: 600;
     cursor: pointer;
@@ -794,7 +806,7 @@
   }
   .btn-primary {
     background: var(--color-brand-primary);
-    color: white;
+    color: var(--text-inverse);
     border: none;
   }
   .btn-primary:hover {
@@ -848,7 +860,7 @@
     background: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-accent));
     border: none;
     border-radius: 14px;
-    color: white;
+    color: var(--text-inverse);
     font-size: 16px;
     font-weight: 700;
     cursor: pointer;
@@ -923,10 +935,26 @@
       justify-content: flex-start;
       max-width: 100%;
       overflow-x: auto;
-      padding-bottom: 2px;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .detail-tags::-webkit-scrollbar {
+      display: none;
     }
     .tag {
       flex: 0 0 auto;
+    }
+    .btn-sm {
+      min-height: 36px;
+      padding: 8px 14px;
+    }
+    .download-actions {
+      flex-direction: column;
+    }
+    .download-actions .btn-sm {
+      width: 100%;
+      justify-content: center;
     }
   }
 

@@ -370,6 +370,8 @@
     const playableUrl = getPlayableUrl(props.src);
     log.info('ArtPlayer', 'initPlayer', { src: props.src, isHls, playableUrl });
 
+    const savedPlaybackRate = parseFloat(localStorage.getItem('artplayer-playback-rate') || '1');
+
     const player = new Artplayer({
       container: artRef.value!,
       url: playableUrl,
@@ -385,7 +387,7 @@
       screenshot: true,
       setting: true,
       hotkey: true,
-      pip: false,
+      pip: true,
       mutex: true,
       backdrop: true,
       playsInline: true,
@@ -405,10 +407,20 @@
     art = player;
 
     player.on('ready', () => {
+      if (savedPlaybackRate !== 1) {
+        player.playbackRate = savedPlaybackRate;
+      }
       if (props.currentTime > 0) {
         player.currentTime = props.currentTime;
       }
       emit('ready', player);
+    });
+
+    player.on('video:ratechange', () => {
+      const rate = player.playbackRate;
+      if (rate) {
+        localStorage.setItem('artplayer-playback-rate', String(rate));
+      }
     });
 
     player.on('video:timeupdate', () => {

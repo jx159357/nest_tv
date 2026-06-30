@@ -856,14 +856,14 @@
   }
 
   .notice-success {
-    border-color: rgba(16, 185, 129, 0.3);
-    background-color: rgba(16, 185, 129, 0.1);
+    border-color: var(--color-success-border);
+    background-color: var(--color-success-overlay);
     color: var(--color-success-light);
   }
 
   .notice-error {
-    border-color: rgba(239, 68, 68, 0.3);
-    background-color: rgba(239, 68, 68, 0.1);
+    border-color: var(--color-error-border);
+    background-color: var(--color-error-overlay);
     color: var(--color-error-light);
   }
 
@@ -922,7 +922,7 @@
   }
 
   .status-active {
-    background-color: rgba(16, 185, 129, 0.15);
+    background-color: var(--color-success-overlay);
     color: var(--color-success-light);
   }
 
@@ -999,7 +999,7 @@
   }
 
   .form-input:focus {
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    box-shadow: 0 0 0 2px var(--color-info-border);
   }
 
   .form-checkbox {

@@ -1,0 +1,11 @@
+{
+  "phase": "research",
+  "active_gate": "",
+  "slug": "nest_tv",
+  "requirement": "优化当前项目",
+  "last_transition_at": "2026-06-30T02:02:10Z",
+  "note": "Started director build (TUI) with claude-code",
+  "backend": "claude-code",
+  "base_session_id": "44fd1e14-858b-4bcd-8fd0-a13d34c2aefa",
+  "spec_version": "UMADEV_HOST_SPEC_V1"
+}

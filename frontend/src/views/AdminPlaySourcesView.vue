@@ -429,10 +429,7 @@
       </div>
     </div>
 
-    <div
-      v-if="selectedIds.size > 0"
-      class="batch-action-bar"
-    >
+    <div v-if="selectedIds.size > 0" class="batch-action-bar">
       <div class="batch-action-info">
         已选择 <strong>{{ selectedIds.size }}</strong> 条播放源
       </div>
@@ -646,6 +643,7 @@
   import type { PlaySource } from '@/types/media';
   import { playSourceApi } from '@/api/playSource';
   import { log } from '@/utils/logger';
+  import { showConfirm, notifySuccess, notifyError } from '@/composables/useModal';
 
   const route = useRoute();
   const router = useRouter();
@@ -1062,7 +1060,10 @@
   };
 
   const isAllSelected = computed(() => {
-    return playSources.value.length > 0 && playSources.value.every(item => selectedIds.value.has(item.id));
+    return (
+      playSources.value.length > 0 &&
+      playSources.value.every(item => selectedIds.value.has(item.id))
+    );
   });
 
   const isIndeterminate = computed(() => {
@@ -1097,25 +1098,32 @@
     if (ids.length === 0) return;
 
     const actionLabel = action === 'enable' ? '启用' : action === 'disable' ? '禁用' : '删除';
-    if (action === 'delete' && !confirm(`确认删除 ${ids.length} 条播放源？此操作不可撤销。`)) {
-      return;
-    }
 
-    batchLoading.value = true;
-    try {
-      if (action === 'enable') {
-        await playSourceApi.batchEnable(ids);
-      } else if (action === 'disable') {
-        await playSourceApi.batchDisable(ids);
-      } else {
-        await playSourceApi.batchDelete(ids);
+    const doBatch = async () => {
+      batchLoading.value = true;
+      try {
+        if (action === 'enable') {
+          await playSourceApi.batchEnable(ids);
+        } else if (action === 'disable') {
+          await playSourceApi.batchDisable(ids);
+        } else {
+          await playSourceApi.batchDelete(ids);
+        }
+        selectedIds.value.clear();
+        await loadPlaySources(page.value);
+        notifySuccess('批量操作', `批量${actionLabel}成功`);
+      } catch (err) {
+        log.error('AdminPlaySources', `批量${actionLabel}失败:`, err);
+        notifyError('批量操作失败', `批量${actionLabel}失败，请稍后重试`);
+      } finally {
+        batchLoading.value = false;
       }
-      selectedIds.value.clear();
-      await loadPlaySources(page.value);
-    } catch (err) {
-      log.error('AdminPlaySources', `批量${actionLabel}失败:`, err);
-    } finally {
-      batchLoading.value = false;
+    };
+
+    if (action === 'delete') {
+      showConfirm(`确认删除 ${ids.length} 条播放源？此操作不可撤销。`, doBatch, '确认删除');
+    } else {
+      await doBatch();
     }
   };
 
@@ -1423,7 +1431,7 @@
 
   .filter-input:focus {
     border-color: var(--border-focus);
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+    box-shadow: 0 0 0 2px var(--color-info-overlay);
   }
 
   .btn-primary {
@@ -1481,28 +1489,28 @@
 
   .filter-tag-emerald {
     border-radius: 9999px;
-    background: rgba(16, 185, 129, 0.1);
+    background: var(--color-success-overlay);
     padding: 4px 10px;
     color: var(--color-success, #10b981);
   }
 
   .filter-tag-indigo {
     border-radius: 9999px;
-    background: rgba(99, 102, 241, 0.1);
+    background: var(--color-info-overlay);
     padding: 4px 10px;
     color: var(--color-brand-primary-light, #818cf8);
   }
 
   .filter-tag-amber {
     border-radius: 9999px;
-    background: rgba(245, 158, 11, 0.1);
+    background: var(--color-warning-overlay);
     padding: 4px 10px;
     color: var(--color-warning, #f59e0b);
   }
 
   .filter-tag-rose {
     border-radius: 9999px;
-    background: rgba(244, 63, 94, 0.1);
+    background: var(--color-error-overlay);
     padding: 4px 10px;
     color: var(--color-danger, #f43f5e);
   }
@@ -1741,7 +1749,7 @@
     width: 16px;
     height: 16px;
     cursor: pointer;
-    accent-color: var(--color-brand-primary, #6366f1);
+    accent-color: var(--color-brand-primary);
   }
 
   .batch-action-bar {
@@ -1751,8 +1759,8 @@
     justify-content: space-between;
     gap: 12px;
     border-radius: var(--panel-radius);
-    border: 1px solid var(--color-brand-border, rgba(99, 102, 241, 0.3));
-    background: var(--color-brand-overlay, rgba(99, 102, 241, 0.08));
+    border: 1px solid var(--color-brand-border);
+    background: var(--color-brand-overlay);
     padding: 12px 16px;
   }
 
@@ -1762,7 +1770,7 @@
   }
 
   .batch-action-info strong {
-    color: var(--color-brand-primary, #6366f1);
+    color: var(--color-brand-primary);
     font-weight: 600;
   }
 

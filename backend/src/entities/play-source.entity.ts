@@ -30,6 +30,11 @@ export enum PlaySourceStatus {
   CHECKING = 'checking',
 }
 
+export enum PlaySourceVisibility {
+  PUBLIC = 'public',
+  PRIVATE = 'private',
+}
+
 @Entity('play_sources')
 @Index('idx_play_source_type', ['type'])
 @Index('idx_play_source_status', ['status'])
@@ -43,6 +48,8 @@ export enum PlaySourceStatus {
 @Index('idx_play_source_media_type_status', ['mediaResourceId', 'type', 'status'])
 @Index('idx_play_source_expire', ['expireDate'])
 @Index('idx_play_source_created', ['createdAt'])
+@Index('idx_play_source_visibility', ['visibility'])
+@Index('idx_play_source_created_by', ['createdById'])
 export class PlaySource {
   @PrimaryGeneratedColumn()
   id: number;
@@ -139,6 +146,15 @@ export class PlaySource {
 
   @Column()
   mediaResourceId: number;
+
+  @Column({ type: 'enum', enum: PlaySourceVisibility, default: PlaySourceVisibility.PUBLIC })
+  visibility: PlaySourceVisibility;
+
+  @Column({ nullable: true })
+  createdById?: number;
+
+  @ManyToOne(() => User, { nullable: true, createForeignKeyConstraints: false })
+  createdBy?: User;
 
   @ManyToMany(() => User, user => user.configuredPlaySources)
   @JoinTable()

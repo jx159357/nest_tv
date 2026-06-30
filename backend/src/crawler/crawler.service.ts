@@ -13,7 +13,7 @@ import { CRAWLER_TARGETS, CRAWLER_CONFIG, CRAWLER_RULES } from './crawler.config
 import { MediaResourceService } from '../media/media-resource.service';
 import { PlaySourceService } from '../play-sources/play-source.service';
 import { MediaType, MediaQuality } from '../entities/media-resource.entity';
-import { PlaySourceType, PlaySourceStatus } from '../entities/play-source.entity';
+import { PlaySourceType, PlaySourceStatus, PlaySourceVisibility } from '../entities/play-source.entity';
 import type { PlaySourceOriginInfo } from '../play-sources/play-source.service';
 import { CrawlerTarget as CrawlerTargetEntity } from '../entities/crawler-target.entity';
 import { AppLoggerService } from '../common/services/app-logger.service';
@@ -1765,13 +1765,16 @@ export class CrawlerService {
       // 使用真实来源名称，如果没有则使用默认格式
       const sourceName = sourceNames[index] || `${source}源 ${index + 1}`;
 
-      const playSource = await this.playSourceService.create({
-        mediaResourceId,
-        type: this.inferPlaySourceType(url),
-        url,
-        priority: index + 1,
-        sourceName,
-      });
+      const playSource = await this.playSourceService.create(
+        {
+          mediaResourceId,
+          type: this.inferPlaySourceType(url),
+          url,
+          priority: index + 1,
+          sourceName,
+        },
+        { visibility: PlaySourceVisibility.PUBLIC },
+      );
       const origin = sourceOrigins[index];
       if (origin) {
         await this.playSourceService.updateOriginInfo(playSource.id, origin);

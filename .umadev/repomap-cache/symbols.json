@@ -1,0 +1,1133 @@
+F	frontend/src/api/iptv.ts	25
+S	i	1	4	IPTVChannel	export interface IPTVChannel {
+S	i	1	35	IPTVChannelListResponse	export interface IPTVChannelListResponse {
+S	i	1	43	IPTVStats	export interface IPTVStats {
+S	i	1	51	IPTVQueryParams	export interface IPTVQueryParams {
+S	i	1	68	EpgProgram	export interface EpgProgram {
+S	i	1	76	ChannelEpg	export interface ChannelEpg {
+S	i	1	84	StreamTestResult	export interface StreamTestResult {
+S	i	1	95	BatchTestResult	export interface BatchTestResult {
+S	i	1	103	QualityStats	export interface QualityStats {
+S	i	1	113	IptvSourceConfig	export interface IptvSourceConfig {
+S	i	1	124	CollectionResult	export interface CollectionResult {
+S	i	1	133	BatchCollectionResult	export interface BatchCollectionResult {
+S	i	1	143	ChannelLogo	export interface ChannelLogo {
+S	i	1	159	LogoMatchResult	export interface LogoMatchResult {
+S	k	1	166	iptvApi	export const iptvApi = {
+F	frontend/src/api/crawler.ts	17.8
+S	i	1	3	CrawlerTarget	export interface CrawlerTarget {
+S	i	1	10	CrawlPersistence	export interface CrawlPersistence {
+S	i	1	17	CrawlResultData	export interface CrawlResultData {
+S	i	1	35	CrawlResultResponse	export interface CrawlResultResponse {
+S	i	1	43	BatchCrawlResponse	export interface BatchCrawlResponse {
+S	i	1	55	CollectedSourceSummary	export interface CollectedSourceSummary {
+S	i	1	68	CollectPopularResponse	export interface CollectPopularResponse {
+S	i	1	74	SourceHealthSummary	export interface SourceHealthSummary {
+S	i	1	106	SourcePolicyUpdatePayload	export interface SourcePolicyUpdatePayload {
+S	i	1	117	CollectionSourceStatistics	export interface CollectionSourceStatistics {
+S	i	1	147	CollectionStatistics	export interface CollectionStatistics {
+S	i	1	164	StatisticsResponse	export interface StatisticsResponse {
+S	k	1	170	crawlerApi	export const crawlerApi = {
+F	frontend/src/types/media.ts	17.8
+S	i	1	2	MediaResource	export interface MediaResource {
+S	e	1	28	MediaType	export enum MediaType {
+S	e	1	36	MediaQuality	export enum MediaQuality {
+S	i	1	44	PlaySource	export interface PlaySource {
+S	e	1	80	PlaySourceType	export enum PlaySourceType {
+S	e	1	91	PlaySourceStatus	export enum PlaySourceStatus {
+S	i	1	99	MediaQueryParams	export interface MediaQueryParams {
+S	i	1	111	PlaySourceQueryParams	export interface PlaySourceQueryParams {
+S	i	1	125	PlaySourceCreateData	export interface PlaySourceCreateData {
+S	i	1	147	PlaySourceUpdateData	export interface PlaySourceUpdateData {
+S	i	1	170	PlayDetailEpisode	export interface PlayDetailEpisode {
+S	i	1	181	PlayDetailSourceGroup	export interface PlayDetailSourceGroup {
+S	i	1	186	PlayDetailResponse	export interface PlayDetailResponse {
+F	frontend/src/api/scheduler.ts	14.8
+S	i	1	3	DailySourceValidationSummary	export interface DailySourceValidationSummary {
+S	i	1	9	DailySourceCollectionSourceSummary	export interface DailySourceCollectionSourceSummary {
+S	i	1	23	DailySourceCollectionRunSummary	export interface DailySourceCollectionRunSummary {
+S	i	1	41	DailySourceCollectionRunRecord	export interface DailySourceCollectionRunRecord extends DailySourceCollectionRunSummary {
+S	i	1	45	DailySourceCollectionDashboardMetrics	export interface DailySourceCollectionDashboardMetrics {
+S	i	1	62	DailySourceCollectionIssueSource	export interface DailySourceCollectionIssueSource {
+S	i	1	72	DailySourceCollectionDashboardSummary	export interface DailySourceCollectionDashboardSummary {
+S	k	1	79	schedulerApi	export const schedulerApi = {
+F	backend/src/scheduler/daily-source-collection.service.ts	14.2
+S	i	1	11	DailySourceValidationSummary	export interface DailySourceValidationSummary {
+S	i	1	18	DailySourceCollectionRunSummary	export interface DailySourceCollectionRunSummary {
+S	i	1	36	DailySourceCollectionRunRecord	export interface DailySourceCollectionRunRecord extends DailySourceCollectionRunSummary {
+S	i	1	40	DailySourceCollectionDashboardMetrics	export interface DailySourceCollectionDashboardMetrics {
+S	i	1	57	DailySourceCollectionIssueSource	export interface DailySourceCollectionIssueSource {
+S	i	1	67	DailySourceCollectionDashboardSummary	export interface DailySourceCollectionDashboardSummary {
+S	c	1	75	DailySourceCollectionService	export class DailySourceCollectionService {
+F	backend/src/data-collection/data-collection.service.ts	12.8
+S	i	1	12	MediaData	export interface MediaData {
+S	i	1	51	SourceCollectionPolicy	export interface SourceCollectionPolicy {
+S	i	1	62	PersistenceResult	export interface PersistenceResult {
+S	i	1	69	CollectedSourceSummary	export interface CollectedSourceSummary {
+S	i	1	83	SourceHealthSummary	export interface SourceHealthSummary {
+S	i	1	115	CollectionSourceStatistics	export interface CollectionSourceStatistics {
+S	i	1	147	CollectionStatistics	export interface CollectionStatistics {
+S	i	1	164	CrawlerSource	export interface CrawlerSource {
+S	c	1	185	DataCollectionService	export class DataCollectionService {
+S	i	0	30	SourceSelectors	interface SourceSelectors {
+S	i	0	45	CrawlerSourceConfig	interface CrawlerSourceConfig {
+S	t	0	145	ProxyRequestPurpose	type ProxyRequestPurpose = 'discovery' | 'detail' | 'connectivity';
+S	i	0	174	AxiosProxyConfig	interface AxiosProxyConfig {
+F	frontend/src/types/history.ts	12.4
+S	i	1	5	WatchHistory	export interface WatchHistory {
+S	i	1	25	WatchHistoryItem	export interface WatchHistoryItem {
+S	i	1	34	WatchHistoryQueryParams	export interface WatchHistoryQueryParams {
+S	i	1	42	WatchHistoryCreateData	export interface WatchHistoryCreateData {
+S	i	1	50	WatchHistoryUpdateData	export interface WatchHistoryUpdateData {
+S	i	1	57	Recommendation	export interface Recommendation {
+S	e	1	70	RecommendationType	export enum RecommendationType {
+S	i	1	78	RecommendationQueryParams	export interface RecommendationQueryParams {
+S	i	1	86	RecommendationCreateData	export interface RecommendationCreateData {
+F	frontend/src/i18n/index.ts	11.9
+S	k	1	17	availableLocales	export const availableLocales = [
+S	t	1	22	SupportedLocale	export type SupportedLocale = (typeof availableLocales)[number]['code'];
+S	k	1	26	isLocaleSupported	export const isLocaleSupported = (locale: string): locale is SupportedLocale => {
+S	k	1	41	i18n	export const i18n = createI18n<[LocaleMessages], SupportedLocale, false>({
+S	k	1	71	getBrowserLocale	export const getBrowserLocale = (): SupportedLocale => {
+S	k	1	90	setLocale	export const setLocale = async (locale: SupportedLocale): Promise<void> => {
+S	k	1	105	initializeI18nLocale	export const initializeI18nLocale = async (): Promise<void> => {
+S	k	1	110	getCurrentLocale	export const getCurrentLocale = (): SupportedLocale => {
+S	t	0	23	LocaleMessages	type LocaleMessages = typeof zhCN;
+F	frontend/src/types/user.ts	11.9
+S	i	1	17	User	export interface User {
+S	i	1	32	UserRecommendationSettings	export interface UserRecommendationSettings {
+S	i	1	40	LoginCredentials	export interface LoginCredentials {
+S	i	1	45	RegisterUserData	export interface RegisterUserData {
+S	i	1	53	AuthResponse	export interface AuthResponse {
+S	i	1	60	UserProfile	export interface UserProfile {
+S	i	1	73	UserUpdateData	export interface UserUpdateData {
+S	i	1	81	ChangePasswordData	export interface ChangePasswordData {
+S	i	0	5	WatchHistoryItem	interface WatchHistoryItem {
+F	frontend/src/api/torrent.ts	11.2
+S	i	1	3	ParsedMagnetResult	export interface ParsedMagnetResult {
+S	i	1	12	TorrentLinkedMedia	export interface TorrentLinkedMedia {
+S	i	1	19	TorrentInfoResult	export interface TorrentInfoResult {
+S	i	1	33	TorrentHealthResult	export interface TorrentHealthResult {
+S	i	1	42	TorrentListItem	export interface TorrentListItem {
+S	i	1	54	TorrentSearchResponse	export interface TorrentSearchResponse {
+S	k	1	62	torrentApi	export const torrentApi = {
+F	frontend/src/composables/useModal.ts	10.6
+S	k	1	4	modalState	export const modalState = reactive({
+S	k	1	17	showModal	export const showModal = (options: {
+S	f	1	41	hideModal	export const hideModal = () => {
+S	f	1	46	showLoading	export const showLoading = (message = '加载中...') => {
+S	f	1	56	showSuccess	export const showSuccess = (message: string, title = '成功') => {
+S	f	1	66	showError	export const showError = (message: string, title = '错误') => {
+S	f	1	76	showInfo	export const showInfo = (message: string, title = '提示') => {
+S	k	1	86	showConfirm	export const showConfirm = (
+S	i	1	106	Notification	export interface Notification {
+S	k	1	114	notifications	export const notifications = ref<Notification[]>([]);
+S	k	1	119	showNotification	export const showNotification = (options: {
+S	f	1	148	removeNotification	export const removeNotification = (id: number) => {
+S	f	1	156	notifySuccess	export const notifySuccess = (title: string, message: string) => {
+S	f	1	160	notifyError	export const notifyError = (title: string, message: string) => {
+S	f	1	164	notifyWarning	export const notifyWarning = (title: string, message: string) => {
+S	f	1	168	notifyInfo	export const notifyInfo = (title: string, message: string) => {
+F	backend/src/torrent/torrent.service.ts	10.1
+S	i	1	16	ParsedMagnetResult	export interface ParsedMagnetResult {
+S	i	1	25	TorrentInfoResult	export interface TorrentInfoResult {
+S	i	1	44	TorrentHealthResult	export interface TorrentHealthResult {
+S	i	1	53	TorrentListItem	export interface TorrentListItem {
+S	c	1	66	TorrentService	export class TorrentService {
+S	i	0	8	MagnetInfoPayload	interface MagnetInfoPayload {
+F	frontend/src/api/admin.ts	10
+S	i	1	5	AdminPaginatedResponse	export interface AdminPaginatedResponse<T> {
+S	i	1	13	AdminSystemStats	export interface AdminSystemStats {
+S	i	1	25	AdminHealthStatus	export interface AdminHealthStatus {
+S	i	1	36	AdminDanmakuHealthStatus	export interface AdminDanmakuHealthStatus {
+S	i	1	52	AdminLogItem	export interface AdminLogItem {
+S	i	1	73	AdminRoleItem	export interface AdminRoleItem {
+S	i	1	83	AdminRolePayload	export interface AdminRolePayload {
+S	i	1	90	AdminPermissionItem	export interface AdminPermissionItem {
+S	i	1	102	AdminPermissionPayload	export interface AdminPermissionPayload {
+S	i	1	111	AdminWatchHistoryItem	export interface AdminWatchHistoryItem {
+S	i	1	131	AdminCrawlerTarget	export interface AdminCrawlerTarget {
+S	i	1	167	AdminDownloadTaskItem	export interface AdminDownloadTaskItem {
+S	i	1	194	AdminDownloadTaskActionPayload	export interface AdminDownloadTaskActionPayload {
+S	i	1	198	AdminBatchDownloadTaskActionPayload	export interface AdminBatchDownloadTaskActionPayload extends AdminDownloadTaskActionPayload {
+S	k	1	202	adminApi	export const adminApi = {
+F	frontend/src/router/index.ts	10
+S	f	0	5	MainLayout	const MainLayout = () => import('../layouts/MainLayout.vue');
+S	f	0	8	LoginView	const LoginView = () => import('../views/LoginView.vue');
+S	f	0	9	RegisterView	const RegisterView = () => import('../views/RegisterView.vue');
+S	f	0	12	HomeView	const HomeView = () => import('../views/HomeView.vue');
+S	f	0	13	MediaDetailView	const MediaDetailView = () => import('../views/MediaDetailView.vue');
+S	f	0	14	WatchView	const WatchView = () => import('../views/WatchView.vue');
+S	f	0	15	IPTVView	const IPTVView = () => import('../views/IPTVView.vue');
+S	f	0	16	RecommendationsView	const RecommendationsView = () => import('../views/RecommendationsView.vue');
+S	f	0	17	CategoriesView	const CategoriesView = () => import('../views/CategoriesView.vue');
+S	f	0	20	ProfileView	const ProfileView = () => import('../views/ProfileView.vue');
+S	f	0	21	SettingsView	const SettingsView = () => import('../views/SettingsView.vue');
+S	f	0	22	SearchHistoryView	const SearchHistoryView = () => import('../views/SearchHistoryView.vue');
+S	f	0	23	FavoritesView	const FavoritesView = () => import('../views/FavoritesView.vue');
+S	f	0	24	WatchHistoryView	const WatchHistoryView = () => import('../views/WatchHistoryView.vue');
+S	f	0	25	DownloadsView	const DownloadsView = () => import('../views/DownloadsView.vue');
+S	f	0	26	TorrentView	const TorrentView = () => import('../views/TorrentView.vue');
+S	f	0	29	CrawlerView	const CrawlerView = () => import('../views/CrawlerView.vue');
+S	f	0	30	PlaySourcesView	const PlaySourcesView = () => import('../views/PlaySourcesView.vue');
+S	f	0	31	AdminLayout	const AdminLayout = () => import('../layouts/AdminLayout.vue');
+S	f	0	32	AdminDashboardView	const AdminDashboardView = () => import('../views/AdminDashboardView.vue');
+S	f	0	33	AdminUsersView	const AdminUsersView = () => import('../views/AdminUsersView.vue');
+S	f	0	34	AdminRolesView	const AdminRolesView = () => import('../views/AdminRolesView.vue');
+S	f	0	35	AdminMediaView	const AdminMediaView = () => import('../views/AdminMediaView.vue');
+S	f	0	36	AdminPlaySourcesView	const AdminPlaySourcesView = () => import('../views/AdminPlaySourcesView.vue');
+S	f	0	37	AdminDownloadTasksView	const AdminDownloadTasksView = () => import('../views/AdminDownloadTasksView.vue');
+S	f	0	38	AdminWatchHistoryView	const AdminWatchHistoryView = () => import('../views/AdminWatchHistoryView.vue');
+S	f	0	39	AdminLogsView	const AdminLogsView = () => import('../views/AdminLogsView.vue');
+S	f	0	40	AdminDanmakuView	const AdminDanmakuView = () => import('../views/AdminDanmakuView.vue');
+S	f	0	41	AdminSourceScriptsView	const AdminSourceScriptsView = () => import('../views/AdminSourceScriptsView.vue');
+S	f	0	42	AdminCrawlerTargetsView	const AdminCrawlerTargetsView = () => import('../views/AdminCrawlerTargetsView.vue');
+S	f	0	43	AdminIptvView	const AdminIptvView = () => import('../views/AdminIptvView.vue');
+S	f	0	46	NotFoundView	const NotFoundView = () => import('../views/NotFoundView.vue');
+F	backend/src/main.ts	8.3
+S	f	0	16	bootstrap	async function bootstrap() {
+S	t	0	46	CorsCallback	type CorsCallback = (error: Error | null, allow?: boolean) => void;
+S	f	0	176	attempt	const attempt = (i: number) => {
+F	backend/src/danmaku/services/danmaku.service.ts	8.2
+S	i	1	10	CreateDanmakuDto	export interface CreateDanmakuDto {
+S	t	1	19	DanmakuUpdateDto	export type DanmakuUpdateDto = Partial<CreateDanmakuDto> & {
+S	i	1	23	DanmakuQueryDto	export interface DanmakuQueryDto {
+S	i	1	36	DanmakuFilterDto	export interface DanmakuFilterDto {
+S	i	1	74	DanmakuStats	export interface DanmakuStats {
+S	i	1	84	DanmakuLeaderboardItem	export interface DanmakuLeaderboardItem {
+S	i	1	93	DanmakuTrendPoint	export interface DanmakuTrendPoint {
+S	i	1	100	DanmakuTrendAnalysis	export interface DanmakuTrendAnalysis {
+S	i	1	109	DanmakuReportsSnapshot	export interface DanmakuReportsSnapshot {
+S	i	1	116	DanmakuSuggestionRecord	export interface DanmakuSuggestionRecord {
+S	i	1	124	ReportedDanmakuRecord	export interface ReportedDanmakuRecord {
+S	i	1	135	DanmakuRealtimeRoomSummary	export interface DanmakuRealtimeRoomSummary {
+S	c	1	164	DanmakuService	export class DanmakuService {
+S	i	0	57	DanmakuContentAnalysis	interface DanmakuContentAnalysis {
+S	i	0	64	DanmakuStatsRaw	interface DanmakuStatsRaw {
+S	i	0	140	ImportedDanmakuItem	interface ImportedDanmakuItem {
+S	i	0	154	DanmakuLeaderboardRaw	interface DanmakuLeaderboardRaw {
+F	frontend/src/main.ts	8.2
+S	f	0	19	registerServiceWorker	const registerServiceWorker = async () => {
+S	f	0	61	bootstrap	const bootstrap = async () => {
+F	backend/src/iptv/iptv-source-collector.service.ts	8
+S	i	1	8	IptvSourceConfig	export interface IptvSourceConfig {
+S	i	1	19	CollectionResult	export interface CollectionResult {
+S	i	1	28	BatchCollectionResult	export interface BatchCollectionResult {
+S	c	1	101	IptvSourceCollector	export class IptvSourceCollector {
+S	t	0	38	ParsedChannel	type ParsedChannel = {
+F	frontend/src/utils/api-helpers.ts	8
+S	c	1	22	ApiResponseWrapper	export class ApiResponseWrapper {
+S	c	1	41	ApiErrorHandler	export class ApiErrorHandler {
+S	c	1	79	RequestInterceptor	export class RequestInterceptor {
+S	c	1	118	PaginationHelper	export class PaginationHelper {
+S	c	1	165	CacheManager	export class CacheManager {
+S	c	1	200	RetryHelper	export class RetryHelper {
+S	c	1	237	ValidationHelper	export class ValidationHelper {
+S	c	1	281	StorageHelper	export class StorageHelper {
+S	c	1	319	DateHelper	export class DateHelper {
+S	i	0	6	ApiError	interface ApiError {
+F	backend/src/entities/play-source.entity.ts	7.9
+S	e	1	15	PlaySourceType	export enum PlaySourceType {
+S	e	1	26	PlaySourceStatus	export enum PlaySourceStatus {
+S	e	1	33	PlaySourceVisibility	export enum PlaySourceVisibility {
+S	c	1	53	PlaySource	export class PlaySource {
+F	backend/src/entities/media-resource.entity.ts	7.3
+S	e	1	23	MediaType	export enum MediaType {
+S	e	1	34	MediaQuality	export enum MediaQuality {
+S	c	1	69	MediaResource	export class MediaResource {
+F	frontend/src/types/advanced.ts	7.3
+S	i	1	2	WebDiskInfo	export interface WebDiskInfo {
+S	i	1	15	MagnetInfo	export interface MagnetInfo {
+S	i	1	29	MagnetFile	export interface MagnetFile {
+S	i	1	35	DownloadTask	export interface DownloadTask {
+S	i	1	58	DownloadMetadata	export interface DownloadMetadata {
+S	i	1	68	DownloadSubtitle	export interface DownloadSubtitle {
+S	i	1	75	DownloadConfig	export interface DownloadConfig {
+S	i	1	86	DownloadManager	export interface DownloadManager {
+F	frontend/src/api/danmaku.ts	7
+S	i	1	3	DanmakuRealtimeRoomInfo	export interface DanmakuRealtimeRoomInfo {
+S	i	1	12	DanmakuFilterRulesSnapshot	export interface DanmakuFilterRulesSnapshot {
+S	i	1	20	DanmakuHealthStatus	export interface DanmakuHealthStatus {
+S	i	1	36	ReportedDanmakuItem	export interface ReportedDanmakuItem {
+S	i	1	47	ModerateDanmakuPayload	export interface ModerateDanmakuPayload {
+S	i	1	51	DanmakuSuggestionItem	export interface DanmakuSuggestionItem {
+S	i	1	59	DanmakuSuggestionsResponse	export interface DanmakuSuggestionsResponse {
+S	i	1	67	DanmakuCreatePayload	export interface DanmakuCreatePayload {
+S	i	1	76	DanmakuRecord	export interface DanmakuRecord {
+S	k	1	91	danmakuApi	export const danmakuApi = {
+F	frontend/src/types/api.ts	7
+S	i	1	2	ApiResponse	export interface ApiResponse<T = any> {
+S	i	1	10	ApiError	export interface ApiError {
+S	i	1	17	PaginatedResponse	export interface PaginatedResponse<T> {
+S	i	1	28	PaginationParams	export interface PaginationParams {
+S	i	1	36	FilterParams	export interface FilterParams {
+F	backend/src/crawler/crawler.service.ts	6.7
+S	i	1	48	CrawlerTarget	export interface CrawlerTarget {
+S	i	1	70	CrawledData	export interface CrawledData {
+S	i	1	87	CrawlWebsiteResult	export interface CrawlWebsiteResult {
+S	c	1	95	CrawlerService	export class CrawlerService {
+S	i	0	28	CrawlerProxyStrategy	interface CrawlerProxyStrategy {
+S	i	0	33	CrawlerProxySettings	interface CrawlerProxySettings {
+S	i	0	38	AxiosCrawlerProxyConfig	interface AxiosCrawlerProxyConfig {
+F	backend/src/iptv/epg.service.ts	6.4
+S	i	1	7	EpgProgram	export interface EpgProgram {
+S	i	1	15	EpgSource	export interface EpgSource {
+S	i	1	22	ChannelEpg	export interface ChannelEpg {
+S	c	1	47	EpgService	export class EpgService {
+F	frontend/src/api/recommendations.ts	6.4
+S	i	1	4	RecommendationProfilePreference	export interface RecommendationProfilePreference {
+S	i	1	9	RecommendationProfile	export interface RecommendationProfile {
+S	i	1	21	PersonalizedRecommendationItem	export interface PersonalizedRecommendationItem {
+S	k	1	27	recommendationsApi	export const recommendationsApi = {
+F	frontend/src/api/watchHistory.ts	6.4
+S	i	1	5	WatchHistoryItem	export interface WatchHistoryItem {
+S	i	1	21	WatchHistoryStats	export interface WatchHistoryStats {
+S	i	1	28	WatchHistoryQueryParams	export interface WatchHistoryQueryParams extends PaginationParams {
+S	k	1	33	watchHistoryApi	export const watchHistoryApi = {
+F	frontend/src/utils/collection-source-alerts.ts	6.4
+S	t	1	3	AttentionSeverity	export type AttentionSeverity = 'critical' | 'high' | 'medium';
+S	t	1	4	CrawlerAlertFilter	export type CrawlerAlertFilter = 'critical' | 'high' | 'stalled' | 'inactive';
+S	t	1	5	AlertActionTarget	export type AlertActionTarget = 'crawler' | 'play-sources';
+S	i	1	7	AttentionSourceItem	export interface AttentionSourceItem {
+S	f	1	20	getAlertFilterRecommendedAction	export const getAlertFilterRecommendedAction = (filter: CrawlerAlertFilter) => {
+S	f	1	54	getHoursSince	export const getHoursSince = (timestamp?: string | null) => {
+S	k	1	67	buildAttentionSourceItem	export const buildAttentionSourceItem = (
+S	f	1	203	compareAttentionSources	export const compareAttentionSources = (left: AttentionSourceItem, right: AttentionSourceItem) => {
+S	k	1	213	matchesCrawlerAlertFilter	export const matchesCrawlerAlertFilter = (
+F	backend/src/admin/dto/admin-query.dto.ts	6
+S	e	1	6	AdminLogStatusQuery	export enum AdminLogStatusQuery {
+S	e	1	12	AdminPlaySourceSortByQuery	export enum AdminPlaySourceSortByQuery {
+S	e	1	18	AdminSortOrderQuery	export enum AdminSortOrderQuery {
+S	c	1	23	AdminPaginationQueryDto	export class AdminPaginationQueryDto {
+S	c	1	40	AdminUsersQueryDto	export class AdminUsersQueryDto extends AdminPaginationQueryDto {
+S	c	1	52	AdminMediaQueryDto	export class AdminMediaQueryDto extends AdminPaginationQueryDto {
+S	c	1	64	AdminPlaySourcesQueryDto	export class AdminPlaySourcesQueryDto extends AdminPaginationQueryDto {
+S	c	1	101	AdminWatchHistoryQueryDto	export class AdminWatchHistoryQueryDto extends AdminPaginationQueryDto {
+S	c	1	110	AdminDownloadTasksQueryDto	export class AdminDownloadTasksQueryDto extends AdminPaginationQueryDto {
+S	c	1	158	AdminLogsQueryDto	export class AdminLogsQueryDto extends AdminPaginationQueryDto {
+F	backend/src/recommendations/recommendation.service.ts	5.9
+S	i	1	20	RecommendationProfile	export interface RecommendationProfile {
+S	i	1	32	PersonalizedRecommendationItem	export interface PersonalizedRecommendationItem {
+S	c	1	39	RecommendationService	export class RecommendationService {
+S	i	0	15	WeightedPreference	interface WeightedPreference {
+F	backend/src/iptv/stream-quality-tester.service.ts	5.8
+S	i	1	7	StreamTestResult	export interface StreamTestResult {
+S	i	1	18	BatchTestResult	export interface BatchTestResult {
+S	c	1	27	StreamQualityTester	export class StreamQualityTester {
+F	frontend/src/utils/version.ts	5.8
+S	f	1	7	getAppVersion	export function getAppVersion(): string {
+S	f	1	11	getStoredVersion	export function getStoredVersion(): string | null {
+S	f	1	19	setStoredVersion	export function setStoredVersion(v: string): void {
+S	f	1	27	isNewVersion	export function isNewVersion(serverVersion: string): boolean {
+S	f	1	33	shouldCheckVersion	export function shouldCheckVersion(): boolean {
+S	f	1	43	markVersionChecked	export function markVersionChecked(): void {
+S	f	1	51	checkForUpdates	export async function checkForUpdates(): Promise<{ hasUpdate: boolean; version: string } | null> {
+S	f	1	72	initVersion	export function initVersion(): void {
+F	frontend/src/utils/source-test.ts	5.3
+S	i	1	1	SourceTestResult	export interface SourceTestResult {
+S	f	1	21	getResolutionScore	export function getResolutionScore(resolution: string | null | undefined): number {
+S	f	1	27	getSourceScore	export function getSourceScore(speed: number, resolution: string | null): number {
+S	f	1	33	testSourceSpeed	export async function testSourceSpeed(url: string, timeout = 8000): Promise<number> {
+S	f	1	63	detectResolution	export async function detectResolution(url: string, timeout = 6000): Promise<string | null> {
+S	f	1	89	testSingleSource	export async function testSingleSource(sourceId: number, url: string): Promise<SourceTestResult> {
+S	f	1	105	batchTestSources	export async function batchTestSources(
+S	f	0	113	worker	const worker = async () => {
+F	backend/src/common/services/proxy-monitoring.service.ts	5.2
+S	i	1	7	ProxyMonitoringMetrics	export interface ProxyMonitoringMetrics {
+S	i	1	21	ProxyAlert	export interface ProxyAlert {
+S	t	1	29	ProxyHealthStatus	export type ProxyHealthStatus = 'excellent' | 'good' | 'fair' | 'poor' | 'critical';
+S	i	1	53	ProxyPerformanceReportData	export interface ProxyPerformanceReportData {
+S	i	1	63	ProxyPerformanceReportError	export interface ProxyPerformanceReportError {
+S	t	1	67	ProxyPerformanceReport	export type ProxyPerformanceReport = ProxyPerformanceReportData | ProxyPerformanceReportError;
+S	i	1	69	ProxyHealthReport	export interface ProxyHealthReport {
+S	c	1	81	ProxyMonitoringService	export class ProxyMonitoringService {
+S	i	0	31	ProxyAlertSummary	interface ProxyAlertSummary {
+S	i	0	39	ProxyMetricSummary	interface ProxyMetricSummary {
+S	i	0	46	ProxyThroughputSummary	interface ProxyThroughputSummary {
+S	t	0	78	LogMethod	type LogMethod = (message: string) => void;
+F	frontend/src/utils/api-cache.ts	5
+S	k	1	346	apiCacheManager	export const apiCacheManager = new APICacheManager();
+S	c	1	351	HybridCacheManager	export class HybridCacheManager {
+S	k	1	474	hybridCache	export const hybridCache = new HybridCacheManager();
+S	k	1	479	setupCacheInterceptors	export const setupCacheInterceptors = (instance: AxiosInstance): void => {
+S	k	1	511	withCache	export const withCache = (
+S	k	1	528	forceRefresh	export const forceRefresh = (
+S	i	0	4	CacheConfig	interface CacheConfig {
+S	i	0	12	CachedAxiosRequestConfig	interface CachedAxiosRequestConfig extends AxiosRequestConfig {
+S	i	0	16	CacheItem	interface CacheItem<T = any> {
+S	c	0	30	APICacheManager	class APICacheManager {
+F	backend/src/entities/download-task.entity.ts	4.9
+S	e	1	14	DownloadTaskType	export enum DownloadTaskType {
+S	e	1	20	DownloadTaskStatus	export enum DownloadTaskStatus {
+S	e	1	29	DownloadTaskHandler	export enum DownloadTaskHandler {
+S	c	1	39	DownloadTask	export class DownloadTask {
+F	frontend/src/composables/useTheme.ts	4.9
+S	t	1	3	AppTheme	export type AppTheme = 'light' | 'dark' | 'system';
+S	t	1	4	ResolvedTheme	export type ResolvedTheme = 'light' | 'dark';
+S	f	1	74	initializeTheme	export const initializeTheme = () => {
+S	f	1	82	setTheme	export const setTheme = (theme: AppTheme) => {
+S	f	1	96	toggleTheme	export const toggleTheme = () => {
+S	f	1	103	useTheme	export const useTheme = () => ({
+S	f	0	38	applyTheme	const applyTheme = (theme: AppTheme) => {
+S	f	0	54	bindSystemThemeListener	const bindSystemThemeListener = () => {
+S	f	0	60	handleSystemThemeChange	const handleSystemThemeChange = () => {
+F	frontend/src/services/danmaku-websocket.service.ts	4.9
+S	c	1	26	DanmakuWebSocketService	export class DanmakuWebSocketService {
+S	f	1	362	initDanmakuService	export function initDanmakuService(authStore: any): DanmakuWebSocketService {
+S	f	1	372	getDanmakuService	export function getDanmakuService(): DanmakuWebSocketService | null {
+S	f	1	377	useDanmakuWebSocket	export function useDanmakuWebSocket(videoId: string) {
+S	t	0	12	DanmakuEventListener	type DanmakuEventListener = (...args: any[]) => void;
+S	t	0	13	SocketClient	type SocketClient = (typeof import('socket.io-client'))['default'];
+S	t	0	14	Socket	type Socket = ReturnType<SocketClient>;
+S	f	0	384	connect	const connect = () => {
+S	f	0	391	disconnect	const disconnect = () => {
+S	f	0	396	sendDanmaku	const sendDanmaku = (message: Omit<DanmakuMessage, 'id' | 'timestamp'>) => {
+S	f	0	401	getRoomInfo	const getRoomInfo = () => {
+S	f	0	406	onDanmaku	const onDanmaku = (callback: (message: DanmakuMessage) => void) => {
+S	f	0	410	onSystem	const onSystem = (callback: (message: DanmakuMessage) => void) => {
+S	f	0	414	onRoomInfo	const onRoomInfo = (callback: (info: RoomInfo) => void) => {
+S	f	0	418	onConnected	const onConnected = (callback: () => void) => {
+S	f	0	422	onDisconnected	const onDisconnected = (callback: (reason: string) => void) => {
+S	f	0	426	onError	const onError = (callback: (error: any) => void) => {
+S	f	0	430	onHeartbeat	const onHeartbeat = (callback: (response: HeartbeatResponse) => void) => {
+S	f	0	434	onReconnectFailed	const onReconnectFailed = (callback: () => void) => {
+F	frontend/src/services/performance.service.ts	4.9
+S	i	1	10	PerformanceMetrics	export interface PerformanceMetrics {
+S	i	1	60	PerformanceConfig	export interface PerformanceConfig {
+S	k	1	86	PERFORMANCE_THRESHOLDS	export const PERFORMANCE_THRESHOLDS = {
+S	c	1	96	PerformanceService	export class PerformanceService {
+F	backend/src/iptv/channel-logo.service.ts	4.8
+S	i	1	7	LogoMatchResult	export interface LogoMatchResult {
+S	i	1	14	LogoData	export interface LogoData {
+S	c	1	272	ChannelLogoService	export class ChannelLogoService {
+S	i	0	30	CategoryStatRow	interface CategoryStatRow {
+S	f	0	218	parseAliases	function parseAliases(raw: unknown): string[] {
+S	f	0	232	toStringValue	function toStringValue(raw: unknown): string {
+S	f	0	248	toNullableString	function toNullableString(raw: unknown): string | null {
+S	f	0	253	mapRow	function mapRow(row: Record<string, unknown>): LogoData {
+F	backend/src/decorators/user.decorator.ts	4.6
+S	k	1	8	User	export const User = createParamDecorator((data: unknown, ctx: ExecutionContext): UserType => {
+F	backend/src/entities/crawler-target.entity.ts	4.6
+S	c	1	14	CrawlerTarget	export class CrawlerTarget {
+F	backend/src/entities/user.entity.ts	4.6
+S	c	1	34	User	export class User {
+F	frontend/src/types/quick-fix.d.ts	4.5
+S	k	1	14	usePerformanceMonitor	export const usePerformanceMonitor: () => any;
+S	c	1	15	PerformanceMonitor	export class PerformanceMonitor {}
+S	i	1	20	Danmaku	export interface Danmaku {
+S	i	0	33	VirtualScrollItem	declare interface VirtualScrollItem<T = any> {
+S	i	0	42	Timeout	interface Timeout {
+F	frontend/src/stores/downloads.ts	4.4
+S	k	1	270	useDownloadsStore	export const useDownloadsStore = defineStore('downloads', () => {
+S	t	0	15	DownloadTaskType	type DownloadTaskType = DownloadTask['type'];
+S	t	0	16	DownloadTaskStatus	type DownloadTaskStatus = DownloadTask['status'];
+S	i	0	18	DownloadTaskInput	interface DownloadTaskInput {
+S	t	0	30	DownloadTaskLike	type DownloadTaskLike = Omit<
+S	i	0	40	RemoteActionResult	interface RemoteActionResult {
+S	i	0	46	HydrateRemoteResult	interface HydrateRemoteResult extends RemoteActionResult {
+S	f	0	50	canUseStorage	const canUseStorage = () => typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+S	f	0	51	hasAuthToken	const hasAuthToken = () => canUseStorage() && Boolean(localStorage.getItem('token'));
+S	f	0	52	createTaskId	const createTaskId = () => `download-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+S	f	0	67	extractMagnetInfoHash	const extractMagnetInfoHash = (url: string) => {
+S	f	0	93	getTaskMergeKey	const getTaskMergeKey = (task: Pick<DownloadTask, 'id' | 'url' | 'type'>) => {
+S	f	0	104	buildTaskMergeMap	const buildTaskMergeMap = (items: DownloadTask[]) => {
+S	f	0	118	toDate	const toDate = (value?: string | Date | null) => {
+S	f	0	227	persistTasks	const persistTasks = (tasks: DownloadTask[]) => {
+S	f	0	235	mergeTasks	const mergeTasks = (localTasks: DownloadTask[], remoteTasks: DownloadTask[]) => {
+S	f	0	243	getRemoteActionErrorMessage	const getRemoteActionErrorMessage = (error: unknown, fallback: string) => {
+S	f	0	251	triggerDownload	const triggerDownload = (task: DownloadTask) => {
+S	f	0	276	syncTasks	const syncTasks = (nextTasks: DownloadTask[]) => {
+S	f	0	283	upsertRemoteTask	const upsertRemoteTask = async (task: DownloadTask) => {
+S	f	0	296	removeRemoteTask	const removeRemoteTask = async (taskId: string) => {
+S	f	0	309	loadRemoteTasks	const loadRemoteTasks = async () => {
+S	f	0	422	enqueueTask	const enqueueTask = (input: DownloadTaskInput) => {
+S	f	0	469	startTask	const startTask = (taskId: string) => {
+S	f	0	489	pauseTask	const pauseTask = (taskId: string) => patchTask(taskId, {}, 'paused');
+S	f	0	490	cancelTask	const cancelTask = (taskId: string) => patchTask(taskId, { progress: 0, speed: 0 }, 'cancelled');
+S	f	0	491	markCompleted	const markCompleted = (taskId: string) =>
+S	f	0	493	markError	const markError = (taskId: string, message: string) =>
+S	f	0	496	removeTask	const removeTask = (taskId: string) => {
+F	backend/src/middleware/performance-monitoring.middleware.ts	4.3
+S	c	1	11	PerformanceMonitoringMiddleware	export class PerformanceMonitoringMiddleware implements NestMiddleware {
+S	i	1	77	PerformanceMetrics	export interface PerformanceMetrics {
+S	i	1	90	PerformanceStats	export interface PerformanceStats {
+F	frontend/src/utils/global-error-handler.ts	4.3
+S	i	1	6	ApiError	export interface ApiError {
+S	i	1	13	BusinessError	export interface BusinessError {
+S	c	1	37	GlobalErrorHandler	export class GlobalErrorHandler {
+F	backend/src/play-sources/dtos/play-source.dto.ts	4.2
+S	c	1	14	CreatePlaySourceDto	export class CreatePlaySourceDto {
+S	c	1	111	UpdatePlaySourceDto	export class UpdatePlaySourceDto {
+F	backend/src/common/filters/global-exception.filter.ts	4.1
+S	e	1	18	ErrorType	export enum ErrorType {
+S	e	1	32	ErrorSeverity	export enum ErrorSeverity {
+S	i	1	42	ErrorResponse	export interface ErrorResponse {
+S	c	1	59	GlobalExceptionFilter	export class GlobalExceptionFilter implements ExceptionFilter {
+S	i	0	7	RequestWithUser	interface RequestWithUser extends Request {
+S	t	0	13	HttpExceptionResponse	type HttpExceptionResponse = string | { message?: string | string[] };
+F	backend/src/play-sources/play-source-ranking.util.ts	4.1
+S	k	1	21	DEFAULT_PLAY_SOURCE_FRESH_HOURS	export const DEFAULT_PLAY_SOURCE_FRESH_HOURS = 12;
+S	f	1	23	isPlaySourceFresh	export function isPlaySourceFresh(
+S	f	1	35	getPlaySourceScore	export function getPlaySourceScore(playSource: PlaySource, now: Date = new Date()): number {
+S	f	1	77	comparePlaySources	export function comparePlaySources(
+S	f	0	96	getAvailabilityRank	function getAvailabilityRank(playSource: PlaySource): number {
+S	f	0	101	getTypeRank	function getTypeRank(playSource: PlaySource): number {
+S	f	0	105	getFreshnessRank	function getFreshnessRank(playSource: PlaySource, now: Date): number {
+S	f	0	117	getAdsRank	function getAdsRank(playSource: PlaySource): number {
+S	f	0	121	getPriorityValue	function getPriorityValue(playSource: PlaySource): number {
+S	f	0	125	getTimestamp	function getTimestamp(value?: Date): number {
+S	f	0	129	compareNumbers	function compareNumbers(left: number, right: number): number {
+F	frontend/src/types/danmaku.ts	4
+S	i	1	2	DanmakuMessage	export interface DanmakuMessage {
+S	i	1	31	RoomInfo	export interface RoomInfo {
+S	i	1	41	HeartbeatResponse	export interface HeartbeatResponse {
+S	i	1	48	DanmakuSettings	export interface DanmakuSettings {
+S	i	1	68	DanmakuServiceConfig	export interface DanmakuServiceConfig {
+F	frontend/src/utils/preload-service.ts	4
+S	i	1	4	RouteMeta	export interface RouteMeta {
+S	c	1	13	PreloadService	export class PreloadService {
+S	f	1	282	initPreloadService	export function initPreloadService(router: Router): PreloadService {
+S	f	1	293	getPreloadService	export function getPreloadService(): PreloadService | null {
+S	k	1	300	vPreload	export const vPreload = {
+F	frontend/src/utils/search-suggestions.ts	4
+S	f	1	6	normalizeSearchKeyword	export const normalizeSearchKeyword = (keyword: string) => keyword.trim().replace(/\\s+/g, ' ');
+S	f	1	8	dedupeKeywords	export const dedupeKeywords = (keywords: string[], limit = DEFAULT_HISTORY_LIMIT) => {
+S	f	1	26	readRecentSearches	export const readRecentSearches = () => {
+S	f	1	41	saveRecentSearch	export const saveRecentSearch = (keyword: string) => {
+S	f	1	61	clearRecentSearches	export const clearRecentSearches = () => {
+F	backend/src/media/dtos/media-resource-response.dto.ts	3.9
+S	c	1	3	MediaResourceDto	export class MediaResourceDto {
+S	c	1	55	MediaListResponseDto	export class MediaListResponseDto {
+S	c	1	78	MediaDetailResponseDto	export class MediaDetailResponseDto {
+S	c	1	89	ErrorResponse	export class ErrorResponse {
+F	frontend/src/api/media.ts	3.9
+S	i	1	20	HomeBootstrapData	export interface HomeBootstrapData {
+S	k	1	26	mediaApi	export const mediaApi = {
+S	f	0	6	splitRequestOptions	const splitRequestOptions = (params?: MediaQueryParams) => {
+S	f	0	15	splitLimitRequestOptions	const splitLimitRequestOptions = (params?: MediaQueryParams) => {
+F	backend/src/common/services/proxy-provider.service.ts	3.8
+S	c	1	20	BaseFreeProxyProvider	export abstract class BaseFreeProxyProvider implements ProxyProvider {
+S	c	1	127	KuaiDailiFreeProvider	export class KuaiDailiFreeProvider extends BaseFreeProxyProvider implements ProxyProvider {
+S	c	1	172	XiciProxyProvider	export class XiciProxyProvider extends BaseFreeProxyProvider implements ProxyProvider {
+S	c	1	221	Proxy89Provider	export class Proxy89Provider extends BaseFreeProxyProvider implements ProxyProvider {
+S	c	1	261	XiaoHuanProxyProvider	export class XiaoHuanProxyProvider extends BaseFreeProxyProvider implements ProxyProvider {
+S	c	1	324	ProxyProviderService	export class ProxyProviderService {
+S	i	0	6	XiaoHuanProxyResponse	interface XiaoHuanProxyResponse {
+S	i	0	314	ProviderHealthState	interface ProviderHealthState {
+F	backend/src/redis/redis.module.ts	3.8
+S	k	1	181	RedisClientProvider	export const RedisClientProvider = {
+S	k	1	193	RedisCacheService	export const RedisCacheService = {
+S	k	1	205	RedisSessionProvider	export const RedisSessionProvider = {
+S	c	1	223	RedisModule	export class RedisModule {}
+S	t	0	8	RedisEventHandler	type RedisEventHandler = (...args: unknown[]) => void;
+S	t	0	9	RedisExecResult	type RedisExecResult = [Error | null, unknown][];
+S	i	0	11	RedisPipelineFallback	interface RedisPipelineFallback {
+S	i	0	21	RedisClientFallback	interface RedisClientFallback {
+F	backend/src/home/home.service.ts	3.7
+S	i	1	6	HomeBootstrapData	export interface HomeBootstrapData {
+S	c	1	13	HomeService	export class HomeService {
+F	backend/src/common/types/proxy-pool.types.ts	3.6
+S	i	1	5	ProxyInfo	export interface ProxyInfo {
+S	i	1	25	ProxyPoolConfig	export interface ProxyPoolConfig {
+S	i	1	61	ProxyStats	export interface ProxyStats {
+S	i	1	73	ProxyProvider	export interface ProxyProvider {
+S	i	1	81	ProxyTestResult	export interface ProxyTestResult {
+S	i	1	88	ProxyRequestConfig	export interface ProxyRequestConfig {
+F	backend/src/media/advanced-search.service.ts	3.5
+S	i	1	8	AdvancedSearchParams	export interface AdvancedSearchParams {
+S	i	1	26	SearchResult	export interface SearchResult {
+S	i	1	42	SearchSuggestion	export interface SearchSuggestion {
+S	c	1	58	AdvancedSearchService	export class AdvancedSearchService {
+S	i	0	48	SearchSuggestionRow	interface SearchSuggestionRow {
+F	backend/test-connection.ts	3.4
+S	f	0	11	testDatabaseConnection	async function testDatabaseConnection() {
+S	f	0	41	testRedisConnection	async function testRedisConnection() {
+S	f	0	72	createDatabase	async function createDatabase() {
+S	f	0	101	runTests	async function runTests() {
+F	frontend/src/api/downloadTasks.ts	3.4
+S	i	1	4	DownloadTaskRecord	export interface DownloadTaskRecord {
+S	i	1	28	DownloadTasksResponse	export interface DownloadTasksResponse {
+S	i	1	36	DownloadTaskPayload	export interface DownloadTaskPayload {
+S	k	1	57	downloadTasksApi	export const downloadTasksApi = {
+F	frontend/src/api/search.ts	3.4
+S	i	1	3	SearchSuggestionItem	export interface SearchSuggestionItem {
+S	i	1	9	SearchHistoryPayload	export interface SearchHistoryPayload {
+S	i	1	16	SseSearchEvent	export interface SseSearchEvent {
+S	k	1	32	searchApi	export const searchApi = {
+F	backend/src/common/dto/page.dto.ts	3.3
+S	c	1	5	PageDto	export class PageDto {
+S	i	1	30	PaginatedResponse	export interface PaginatedResponse<T> {
+S	f	1	40	createPaginatedResponse	export function createPaginatedResponse<T>(
+F	backend/src/danmaku/entities/danmaku.entity.ts	3.3
+S	i	1	5	DanmakuReportRecord	export interface DanmakuReportRecord {
+S	i	1	14	DanmakuMetadata	export interface DanmakuMetadata {
+S	c	1	28	Danmaku	export class Danmaku {
+F	backend/src/common/cache/cache.service.ts	3.2
+S	i	1	13	CacheOptions	export interface CacheOptions {
+S	i	1	19	CacheableOptions	export interface CacheableOptions extends CacheOptions {
+S	i	1	24	CacheEvictOptions	export interface CacheEvictOptions extends CacheOptions {
+S	i	1	28	MultiCacheOptions	export interface MultiCacheOptions extends CacheOptions {
+S	c	1	36	CacheService	export class CacheService {
+S	i	0	5	MemoryCacheItem	interface MemoryCacheItem<T> {
+S	t	0	11	RedisInfoStats	type RedisInfoStats = Record<string, string>;
+F	backend/check-user-direct.ts	3.1
+S	f	0	6	checkUserDirectly	async function checkUserDirectly() {
+F	backend/check-user-password.ts	3.1
+S	f	0	8	checkUserPassword	async function checkUserPassword() {
+F	backend/check-users.ts	3.1
+S	f	0	7	checkUsers	async function checkUsers() {
+F	backend/init-database.ts	3.1
+S	f	0	15	initializeDatabase	async function initializeDatabase() {
+F	backend/set-user-password.ts	3.1
+S	f	0	8	setUserPassword	async function setUserPassword() {
+F	backend/src/entities/channel-logo.entity.ts	3.1
+S	c	1	13	ChannelLogo	export class ChannelLogo {
+F	backend/src/entities/iptv-channel.entity.ts	3.1
+S	c	1	20	IPTVChannel	export class IPTVChannel {
+F	backend/src/entities/recommendation.entity.ts	3.1
+S	c	1	18	Recommendation	export class Recommendation {
+F	backend/src/entities/watch-history.entity.ts	3.1
+S	c	1	21	WatchHistory	export class WatchHistory {
+F	backend/src/play-sources/play-source.service.ts	3.1
+S	i	1	30	PlaySourceOriginInfo	export interface PlaySourceOriginInfo {
+S	i	1	39	PlaySourceRefreshResult	export interface PlaySourceRefreshResult {
+S	c	1	54	PlaySourceService	export class PlaySourceService {
+S	i	0	13	PlaySourceValidationResult	interface PlaySourceValidationResult {
+S	i	0	23	PlaySourceDuplicateGroup	interface PlaySourceDuplicateGroup {
+S	i	0	47	CircuitBreakerState	interface CircuitBreakerState {
+F	backend/src/scheduler/crawler-scheduler.service.ts	3.1
+S	i	1	19	ManualCrawlResponse	export interface ManualCrawlResponse {
+S	i	1	33	CrawlerStatusResponse	export interface CrawlerStatusResponse {
+S	c	1	49	CrawlerSchedulerService	export class CrawlerSchedulerService {
+S	i	0	10	CrawlTaskResult	interface CrawlTaskResult {
+S	i	0	27	ConnectionTestResponse	interface ConnectionTestResponse {
+S	i	0	39	ToggleTargetResponse	interface ToggleTargetResponse {
+F	backend/src/source-script/source-script.service.ts	3.1
+S	t	1	9	ScriptHook	export type ScriptHook = 'getSources' | 'search' | 'recommend' | 'detail' | 'resolvePlayUrl';
+S	i	1	74	ScriptTestResult	export interface ScriptTestResult {
+S	c	1	94	SourceScriptService	export class SourceScriptService {
+S	i	0	11	ScriptMeta	interface ScriptMeta {
+S	i	0	19	ScriptModule	interface ScriptModule {
+S	i	0	33	ScriptContext	interface ScriptContext {
+F	backend/src/common/utils/request-id.util.ts	3
+S	k	1	3	REQUEST_ID_HEADER	export const REQUEST_ID_HEADER = 'x-request-id';
+S	k	1	4	REQUEST_ID_RESPONSE_HEADER	export const REQUEST_ID_RESPONSE_HEADER = 'X-Request-ID';
+S	k	1	13	generateRequestId	export const generateRequestId = (): string => {
+S	k	1	17	getRequestIdFromRequest	export const getRequestIdFromRequest = (request: Request): string | undefined => {
+S	k	1	21	ensureRequestId	export const ensureRequestId = (request: Request, response?: Response): string => {
+F	frontend/src/composables/usePageNotice.ts	3
+S	t	1	3	PageNoticeType	export type PageNoticeType = 'success' | 'error' | 'warning' | 'info';
+S	i	1	5	PageNoticeState	export interface PageNoticeState {
+S	f	1	11	usePageNotice	export const usePageNotice = () => {
+S	f	0	14	setNotice	const setNotice = (type: PageNoticeType, message: string, title?: string) => {
+S	f	0	18	clearNotice	const clearNotice = () => {
+F	backend/src/iptv/iptv.service.ts	2.9
+S	i	1	56	ChannelDuplicateGroup	export interface ChannelDuplicateGroup {
+S	c	1	64	IPTVService	export class IPTVService {
+S	i	0	20	GroupRow	interface GroupRow {
+S	i	0	24	M3UPlaylistAttributes	interface M3UPlaylistAttributes {
+S	i	0	34	M3UPlaylist	interface M3UPlaylist {
+S	i	0	39	M3USegment	interface M3USegment {
+S	i	0	45	M3UManifest	interface M3UManifest {
+S	i	0	50	M3U8ParserInstance	interface M3U8ParserInstance {
+S	f	0	538	ParserCtor	const ParserCtor = (m3u8Parser as unknown as { Parser: new () => M3U8ParserInstance }).Parser;
+F	backend/src/crawler/crawler.config.ts	2.8
+S	k	1	3	CRAWLER_TARGETS	export const CRAWLER_TARGETS: CrawlerTarget[] = [
+S	k	1	123	CRAWLER_CONFIG	export const CRAWLER_CONFIG = {
+S	k	1	171	CRAWLER_RULES	export const CRAWLER_RULES = {
+F	backend/src/middleware/request-logging.middleware.ts	2.8
+S	c	1	11	RequestLoggingMiddleware	export class RequestLoggingMiddleware implements NestMiddleware {
+S	i	1	74	RequestLogInfo	export interface RequestLogInfo {
+S	i	1	86	ResponseLogInfo	export interface ResponseLogInfo {
+F	backend/src/play-sources/play-source-health.service.ts	2.8
+S	i	1	11	HealthCheckResult	export interface HealthCheckResult {
+S	i	1	20	HealthStats	export interface HealthStats {
+S	c	1	31	PlaySourceHealthService	export class PlaySourceHealthService {
+F	backend/src/storage/storage.adapter.ts	2.8
+S	i	1	1	UploadOptions	export interface UploadOptions {
+S	i	1	7	StorageFile	export interface StorageFile {
+S	c	1	15	StorageAdapter	export abstract class StorageAdapter {
+F	backend/src/app.module.ts	2.7
+S	c	1	252	AppModule	export class AppModule {}
+S	f	0	50	getBooleanConfig	function getBooleanConfig(
+F	backend/src/users/dtos/user-recommendation-settings.interface.ts	2.7
+S	e	1	1	RecommendationFreshnessBias	export enum RecommendationFreshnessBias {
+S	i	1	7	UserRecommendationSettings	export interface UserRecommendationSettings {
+F	frontend/public/sw.js	2.7
+S	f	0	94	isStaticAsset	function isStaticAsset(pathname) {
+S	f	0	114	handleApiRequest	async function handleApiRequest(request) {
+S	f	0	157	handleStaticAsset	async function handleStaticAsset(request) {
+S	f	0	177	networkFirst	async function networkFirst(request) {
+S	f	0	196	fetchAndCache	async function fetchAndCache(request, cacheName) {
+S	f	0	224	updateCache	async function updateCache(request) {
+S	f	0	304	syncWatchHistory	async function syncWatchHistory() {
+F	frontend/src/composables/useLongPress.ts	2.7
+S	i	1	3	LongPressOptions	export interface LongPressOptions {
+S	f	1	10	useLongPress	export function useLongPress(options: LongPressOptions = {}) {
+S	f	0	21	clear	const clear = () => {
+S	f	0	28	onStart	const onStart = (e: PointerEvent) => {
+S	f	0	47	onMove	const onMove = (e: PointerEvent) => {
+S	f	0	57	onEnd	const onEnd = () => {
+S	f	0	66	onCancel	const onCancel = () => {
+F	frontend/src/stores/media.ts	2.7
+S	k	1	15	useMediaStore	export const useMediaStore = defineStore('media', () => {
+S	i	0	8	Pagination	interface Pagination {
+S	f	0	26	fetchMediaList	const fetchMediaList = async (params: MediaQueryParams = {}) => {
+S	f	0	46	fetchMediaDetail	const fetchMediaDetail = async (id: string | number) => {
+S	f	0	60	fetchPopularMedia	const fetchPopularMedia = async (limit = 10, params?: MediaQueryParams) => {
+S	f	0	72	fetchLatestMedia	const fetchLatestMedia = async (limit = 10, params?: MediaQueryParams) => {
+S	f	0	84	fetchTopRatedMedia	const fetchTopRatedMedia = async (limit = 10, minRating = 8, params?: MediaQueryParams) => {
+S	f	0	96	fetchRecommendations	const fetchRecommendations = async (mediaId: string | number, limit = 6) => {
+S	f	0	105	incrementViewCount	const incrementViewCount = async (id: string) => {
+S	f	0	113	toggleFavorite	const toggleFavorite = async (id: string, currentState?: boolean) => {
+S	f	0	125	fetchFavoriteStatus	const fetchFavoriteStatus = async (id: string) => {
+S	f	0	135	fetchFavorites	const fetchFavorites = async (params?: MediaQueryParams) => {
+F	backend/src/app.controller.ts	2.6
+S	c	1	8	AppController	export class AppController {
+F	backend/src/app.service.ts	2.6
+S	c	1	4	AppService	export class AppService {
+F	backend/src/common/guards/rate-limit.guard.ts	2.6
+S	k	1	15	RATE_LIMIT_KEY	export const RATE_LIMIT_KEY = 'rate_limit';
+S	k	1	16	RATE_LIMIT_OPTIONS	export const RATE_LIMIT_OPTIONS = 'rate_limit_options';
+S	f	1	21	RateLimit	export const RateLimit = (options: RateLimitOptions) => {
+S	c	1	43	RateLimitGuard	export class RateLimitGuard implements CanActivate {
+S	i	0	28	RateLimitRequest	interface RateLimitRequest {
+S	i	0	38	RateLimitResponse	interface RateLimitResponse {
+F	backend/src/common/utils/advanced-cache-manager.util.ts	2.5
+S	e	1	15	CacheKeyStrategy	export enum CacheKeyStrategy {
+S	i	1	27	CacheConfig	export interface CacheConfig {
+S	i	1	37	CacheStats	export interface CacheStats {
+S	c	1	52	AdvancedCacheManager	export class AdvancedCacheManager {
+S	i	0	5	CacheManager	interface CacheManager {
+F	frontend/src/utils/logger.ts	2.5
+S	k	1	118	logger	export const logger = Logger.getInstance();
+S	k	1	121	log	export const log = {
+S	t	0	6	LogLevel	type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+S	i	0	8	LoggerConfig	interface LoggerConfig {
+S	c	0	14	Logger	class Logger {
+F	backend/src/admin/dto/create-admin.dto.ts	2.4
+S	c	1	7	CreateRoleDto	export class CreateRoleDto {
+S	c	1	21	UpdateRoleDto	export class UpdateRoleDto extends PartialType(CreateRoleDto) {
+S	c	1	30	CreatePermissionDto	export class CreatePermissionDto {
+S	c	1	50	UpdatePermissionDto	export class UpdatePermissionDto extends PartialType(CreatePermissionDto) {
+F	backend/src/common/utils/param-validator.util.ts	2.4
+S	f	1	12	parseQueryNumber	export function parseQueryNumber(
+S	f	1	46	parseQueryBoolean	export function parseQueryBoolean(value: string | undefined, defaultValue: boolean): boolean {
+S	f	1	70	parseQueryEnum	export function parseQueryEnum<T extends string>(
+S	f	1	94	parseQueryDate	export function parseQueryDate(
+F	backend/src/crawler/crawler.controller.ts	2.4
+S	i	1	39	CrawlerStatsResponse	export interface CrawlerStatsResponse {
+S	c	1	84	CrawlerController	export class CrawlerController {
+S	i	0	47	SaveResult	interface SaveResult {
+S	i	0	54	PersistableCrawledData	interface PersistableCrawledData {
+F	backend/src/media/dto/limit-query.dto.ts	2.4
+S	c	1	5	KeywordQueryDto	export class KeywordQueryDto {
+S	c	1	19	LimitQueryDto	export class LimitQueryDto {
+S	c	1	29	DaysQueryDto	export class DaysQueryDto {
+S	c	1	39	StreamSearchQueryDto	export class StreamSearchQueryDto {
+F	backend/src/play-sources/mac-cms-resolver.service.ts	2.3
+S	i	1	11	ResolvedEpisode	export interface ResolvedEpisode {
+S	c	1	57	MacCmsResolverService	export class MacCmsResolverService {
+S	i	0	4	MacCmsSource	interface MacCmsSource {
+F	frontend/src/stores/auth.ts	2.3
+S	k	1	8	useAuthStore	export const useAuthStore = defineStore('auth', () => {
+S	f	0	15	setAuthHeader	const setAuthHeader = (nextToken: string) => {
+S	f	0	33	login	const login = async (credentials: { identifier: string; password: string }) => {
+S	f	0	83	logout	const logout = () => {
+S	f	0	134	startTokenRefreshTimer	const startTokenRefreshTimer = () => {
+S	f	0	143	stopTokenRefreshTimer	const stopTokenRefreshTimer = () => {
+S	f	0	150	handleStorageEvent	const handleStorageEvent = (e: StorageEvent) => {
+S	f	0	159	initAuth	const initAuth = async () => {
+F	backend/src/auth/public.decorator.ts	2.2
+S	k	1	3	IS_PUBLIC_KEY	export const IS_PUBLIC_KEY = 'isPublic';
+S	f	1	4	Public	export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
+F	backend/src/decorators/current-user.decorator.ts	2.2
+S	k	1	7	GetCurrentUser	export const GetCurrentUser = createParamDecorator(
+S	k	1	23	GetCurrentUserId	export const GetCurrentUserId = createParamDecorator((data: unknown, ctx: ExecutionContext) => {
+F	backend/src/storage/s3-storage.adapter.ts	2.2
+S	i	1	12	S3Config	export interface S3Config {
+S	c	1	23	S3StorageAdapter	export class S3StorageAdapter extends StorageAdapter {
+F	backend/src/storage/storage.service.ts	2.2
+S	t	1	5	StorageProvider	export type StorageProvider = 'local' | 's3';
+S	c	1	8	StorageService	export class StorageService {
+F	backend/src/watch-room/watch-room.service.ts	2.2
+S	i	1	5	WatchRoomInfo	export interface WatchRoomInfo {
+S	c	1	15	WatchRoomService	export class WatchRoomService implements OnModuleInit {
+F	frontend/src/api/playSource.ts	2.2
+S	i	1	4	PlaySourceListResponse	export interface PlaySourceListResponse {
+S	k	1	13	playSourceApi	export const playSourceApi = {
+F	backend/src/parse-providers/parse-providers.service.ts	2.1
+S	c	1	42	ParseProvidersService	export class ParseProvidersService {
+S	i	0	10	CategoryRow	interface CategoryRow {
+S	i	0	14	AverageSuccessRateRow	interface AverageSuccessRateRow {
+S	i	0	18	ParseProviderConfig	interface ParseProviderConfig extends Record<string, unknown> {
+S	i	0	25	TestProviderResult	interface TestProviderResult {
+S	i	0	32	ParseVideoUrlResult	interface ParseVideoUrlResult {
+F	backend/src/play-sources/dtos/create-play-source.dto.ts	2.1
+S	c	1	15	CreatePlaySourceDto	export class CreatePlaySourceDto {
+F	backend/src/play-sources/dtos/update-play-source.dto.ts	2.1
+S	c	1	4	UpdatePlaySourceDto	export class UpdatePlaySourceDto extends PartialType(CreatePlaySourceDto) {}
+F	backend/src/common/decorators/cache.decorator.ts	2
+S	f	1	19	Cacheable	export const Cacheable = (options: CacheableOptions = {}) => {
+S	f	1	62	CacheEvict	export const CacheEvict = (options: CacheEvictOptions = {}) => {
+S	f	1	102	CacheRefresh	export const CacheRefresh = (options: CacheableOptions = {}) => {
+S	i	0	7	CacheEnabledInstance	interface CacheEnabledInstance {
+S	t	0	14	AsyncMethod	type AsyncMethod = (...args: unknown[]) => Promise<unknown>;
+F	frontend/src/api/http.ts	2
+S	k	1	7	api	export const api = axios.create({
+S	f	0	24	processPendingQueue	const processPendingQueue = (token: string | null, error: unknown) => {
+S	f	0	32	handle401	const handle401 = async (error: AxiosError) => {
+S	i	0	98	StandardResponse	interface StandardResponse {
+S	c	0	125	ApiClient	class ApiClient {
+F	backend/src/auth/auth.service.ts	1.9
+S	c	1	26	AuthService	export class AuthService {
+S	i	0	8	LoginResult	interface LoginResult {
+S	t	0	13	AuthenticatedUser	type AuthenticatedUser = UserResponseDto;
+S	i	0	15	LoginAttempt	interface LoginAttempt {
+F	backend/src/common/rate-limit/rate-limit.service.ts	1.9
+S	i	1	10	RateLimitOptions	export interface RateLimitOptions {
+S	i	1	21	RateLimitInfo	export interface RateLimitInfo {
+S	c	1	35	RateLimitService	export class RateLimitService {
+S	t	0	5	RedisExecResult	type RedisExecResult = [Error | null, unknown][] | null;
+F	backend/src/iptv/hls-proxy.service.ts	1.9
+S	c	1	39	HlsProxyService	export class HlsProxyService implements OnModuleDestroy {
+S	i	0	6	HlsSegment	interface HlsSegment {
+S	i	0	12	HlsManifest	interface HlsManifest {
+S	i	0	21	ProxyOptions	interface ProxyOptions {
+F	backend/src/media/media-resource.service.ts	1.9
+S	c	1	64	MediaResourceService	export class MediaResourceService {
+S	i	0	16	MediaStatisticsRow	interface MediaStatisticsRow {
+S	i	0	23	MediaSourceStatisticsRow	interface MediaSourceStatisticsRow {
+S	i	0	36	MediaDedupInput	interface MediaDedupInput {
+F	backend/src/source-script/source-script.controller.ts	1.9
+S	c	1	47	SourceScriptController	export class SourceScriptController {
+S	c	0	26	SaveScriptDto	class SaveScriptDto {
+S	c	0	35	TestScriptDto	class TestScriptDto {
+S	c	0	40	ExecuteHookDto	class ExecuteHookDto {
+F	backend/src/watch-room/watch-room.gateway.ts	1.9
+S	c	1	44	WatchRoomGateway	export class WatchRoomGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
+S	i	0	16	RoomState	interface RoomState {
+S	i	0	26	SyncPayload	interface SyncPayload {
+S	i	0	31	SerializedRoomState	interface SerializedRoomState {
+F	backend/src/admin/dto/admin-download-task-action.dto.ts	1.8
+S	e	1	4	AdminDownloadTaskAction	export enum AdminDownloadTaskAction {
+S	c	1	9	AdminDownloadTaskActionDto	export class AdminDownloadTaskActionDto {
+S	c	1	15	AdminBatchDownloadTaskActionDto	export class AdminBatchDownloadTaskActionDto extends AdminDownloadTaskActionDto {
+F	backend/src/ai-chat/ai-chat.service.ts	1.8
+S	c	1	31	AiChatService	export class AiChatService {
+S	i	0	5	ChatContext	interface ChatContext {
+S	i	0	13	HistoryMessage	interface HistoryMessage {
+F	backend/src/common/interceptors/transform.interceptor.ts	1.8
+S	k	1	13	SKIP_TRANSFORM_KEY	export const SKIP_TRANSFORM_KEY = 'skipTransform';
+S	i	1	15	StandardResponse	export interface StandardResponse<T> {
+S	c	1	34	TransformInterceptor	export class TransformInterceptor<T> implements NestInterceptor<T, StandardResponse<T> | T> {
+F	backend/src/common/services/app-logger.service.ts	1.8
+S	c	1	9	AppLoggerService	export class AppLoggerService {
+S	i	1	290	LogContext	export interface LogContext {
+S	e	1	298	LogLevel	export enum LogLevel {
+F	backend/src/crawler/dtos/crawl-request.dto.ts	1.8
+S	c	1	3	CrawlRequestDto	export class CrawlRequestDto {
+S	c	1	12	BatchCrawlRequestDto	export class BatchCrawlRequestDto {
+S	c	1	22	CrawlAndSaveDto	export class CrawlAndSaveDto {
+F	backend/src/gateway/danmaku.gateway.ts	1.8
+S	c	1	38	DanmakuGateway	export class DanmakuGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
+S	i	0	16	DanmakuRoom	interface DanmakuRoom {
+S	i	0	22	DanmakuMessage	interface DanmakuMessage {
+F	backend/src/media/advanced-search.controller.ts	1.8
+S	c	1	53	AdvancedSearchController	export class AdvancedSearchController {
+S	f	0	325	finish	const finish = () => {
+S	f	0	333	safeNext	const safeNext = (payload: Record<string, unknown>) => {
+F	backend/src/media/dtos/search-history.dto.ts	1.8
+S	c	1	5	CreateSearchHistoryDto	export class CreateSearchHistoryDto {
+S	c	1	34	UpdateSearchHistoryDto	export class UpdateSearchHistoryDto {
+S	c	1	69	SearchHistoryQueryDto	export class SearchHistoryQueryDto {
+F	backend/src/play-sources/play-source.controller.ts	1.8
+S	c	1	50	PlaySourceController	export class PlaySourceController {
+S	i	0	37	JwtUser	interface JwtUser {
+S	i	0	42	AuthenticatedRequest	interface AuthenticatedRequest extends Request {
+F	backend/src/recommendations/dto/recommendation-query.dto.ts	1.8
+S	c	1	6	RecommendationQueryDto	export class RecommendationQueryDto {
+S	i	1	76	PaginatedRecommendations	export interface PaginatedRecommendations {
+S	i	1	88	RecommendationFilters	export interface RecommendationFilters {
+F	backend/src/admin/admin.service.ts	1.7
+S	c	1	37	AdminService	export class AdminService {
+S	i	0	25	DownloadTaskStatsRaw	interface DownloadTaskStatsRaw {
+F	backend/src/ai-chat/ai-chat.controller.ts	1.7
+S	c	1	34	AiChatController	export class AiChatController {
+S	c	0	17	ChatMessageDto	class ChatMessageDto {
+F	backend/src/auth/auth.controller.ts	1.7
+S	c	1	32	AuthController	export class AuthController {
+S	i	0	22	AuthenticatedRequest	interface AuthenticatedRequest {
+F	backend/src/auth/jwt.strategy.ts	1.7
+S	c	1	23	JwtStrategy	export class JwtStrategy extends PassportStrategy(Strategy) {
+S	i	0	7	JwtPayload	interface JwtPayload {
+F	backend/src/controllers/proxy-pool.controller.ts	1.7
+S	c	1	23	ProxyPoolController	export class ProxyPoolController {
+S	i	0	12	UpdateProxyPoolConfigDto	interface UpdateProxyPoolConfigDto {
+F	backend/src/torrent/torrent-stream.service.ts	1.7
+S	c	1	13	TorrentStreamService	export class TorrentStreamService implements OnModuleDestroy, OnModuleInit {
+S	i	0	6	ActiveTorrent	interface ActiveTorrent {
+F	backend/src/users/user.controller.ts	1.7
+S	c	1	35	UserController	export class UserController {
+S	i	0	25	AuthenticatedRequest	interface AuthenticatedRequest {
+F	backend/src/admin/admin-role.guard.ts	1.6
+S	c	1	10	AdminRoleGuard	export class AdminRoleGuard implements CanActivate {
+F	backend/src/admin/admin.controller.ts	1.6
+S	c	1	53	AdminController	export class AdminController {
+F	backend/src/admin/admin.module.ts	1.6
+S	c	1	37	AdminModule	export class AdminModule {}
+F	backend/src/admin/crawler-target-init.service.ts	1.6
+S	c	1	127	CrawlerTargetInitService	export class CrawlerTargetInitService implements OnModuleInit {
+F	backend/src/ai-chat/ai-chat.module.ts	1.6
+S	c	1	10	AiChatModule	export class AiChatModule {}
+F	backend/src/auth/auth.module.ts	1.6
+S	c	1	33	AuthModule	export class AuthModule {}
+F	backend/src/auth/jwt-auth.guard.ts	1.6
+S	c	1	7	JwtAuthGuard	export class JwtAuthGuard extends AuthGuard('jwt') {
+F	backend/src/auth/local-auth.guard.ts	1.6
+S	c	1	9	LocalAuthGuard	export class LocalAuthGuard extends AuthGuard('local') {}
+F	backend/src/auth/local.strategy.ts	1.6
+S	c	1	11	LocalStrategy	export class LocalStrategy extends PassportStrategy(Strategy) {
+F	backend/src/common/common.module.ts	1.6
+S	c	1	24	CommonModule	export class CommonModule {}
+F	backend/src/crawler/crawler.module.ts	1.6
+S	c	1	25	CrawlerModule	export class CrawlerModule {}
+F	backend/src/danmaku/controllers/danmaku.controller.ts	1.6
+S	c	1	143	DanmakuController	export class DanmakuController {
+S	i	0	48	CurrentUser	interface CurrentUser {
+S	i	0	52	DanmakuTrendsResponse	interface DanmakuTrendsResponse {
+S	i	0	64	DanmakuLeaderboardResponse	interface DanmakuLeaderboardResponse {
+S	i	0	73	DanmakuKeywordCloudResponse	interface DanmakuKeywordCloudResponse {
+S	i	0	82	DanmakuRealtimeRoomInfoResponse	interface DanmakuRealtimeRoomInfoResponse {
+S	i	0	91	DanmakuSuggestionItem	interface DanmakuSuggestionItem {
+S	i	0	99	DanmakuSuggestionsResponse	interface DanmakuSuggestionsResponse {
+S	i	0	107	DanmakuReportsResponse	interface DanmakuReportsResponse {
+S	i	0	115	DanmakuFilterRulesResponse	interface DanmakuFilterRulesResponse {
+S	i	0	123	DanmakuHealthStatusResponse	interface DanmakuHealthStatusResponse {
+F	backend/src/danmaku/danmaku.module.ts	1.6
+S	c	1	17	DanmakuModule	export class DanmakuModule {}
+F	backend/src/data-collection/data-collection.controller.ts	1.6
+S	c	1	18	DataCollectionController	export class DataCollectionController {
+F	backend/src/data-collection/data-collection.module.ts	1.6
+S	c	1	14	DataCollectionModule	export class DataCollectionModule {}
+F	backend/src/download-tasks/download-tasks.controller.ts	1.6
+S	c	1	26	DownloadTasksController	export class DownloadTasksController {
+F	backend/src/download-tasks/download-tasks.module.ts	1.6
+S	c	1	13	DownloadTasksModule	export class DownloadTasksModule {}
+F	backend/src/download-tasks/download-tasks.service.ts	1.6
+S	c	1	14	DownloadTasksService	export class DownloadTasksService {
+F	backend/src/entities/admin-log.entity.ts	1.6
+S	c	1	20	AdminLog	export class AdminLog {
+F	backend/src/entities/admin-permission.entity.ts	1.6
+S	c	1	15	AdminPermission	export class AdminPermission {
+F	backend/src/entities/admin-role.entity.ts	1.6
+S	c	1	15	AdminRole	export class AdminRole {
+F	backend/src/entities/parse-provider.entity.ts	1.6
+S	c	1	14	ParseProvider	export class ParseProvider {
+F	backend/src/entities/search-history.entity.ts	1.6
+S	c	1	17	SearchHistory	export class SearchHistory {
+F	backend/src/entities/source-script.entity.ts	1.6
+S	c	1	13	SourceScript	export class SourceScript {
+F	backend/src/home/home.controller.ts	1.6
+S	c	1	6	HomeController	export class HomeController {
+F	backend/src/home/home.module.ts	1.6
+S	c	1	12	HomeModule	export class HomeModule {}
+F	backend/src/initialization/initialization.module.ts	1.6
+S	c	1	13	InitializationModule	export class InitializationModule {}
+F	backend/src/initialization/initialization.service.ts	1.6
+S	c	1	13	InitializationService	export class InitializationService implements OnModuleInit {
+F	backend/src/iptv/iptv-scheduler.service.ts	1.6
+S	c	1	8	IptvScheduler	export class IptvScheduler {
+F	backend/src/iptv/iptv.controller.ts	1.6
+S	c	1	34	IPTVController	export class IPTVController {
+F	backend/src/iptv/iptv.module.ts	1.6
+S	c	1	36	IPTVModule	export class IPTVModule {}
+F	backend/src/media/media-resource.controller.ts	1.6
+S	c	1	43	MediaResourceController	export class MediaResourceController {
+F	backend/src/media/media.module.ts	1.6
+S	c	1	35	MediaResourceModule	export class MediaResourceModule {}
+F	backend/src/middleware/security-headers.middleware.ts	1.6
+S	c	1	9	SecurityHeadersMiddleware	export class SecurityHeadersMiddleware implements NestMiddleware {
+F	backend/src/migrations/1672531200000-AddRecommendationIndexes.ts	1.6
+S	c	1	3	AddRecommendationIndexes1672531200000	export class AddRecommendationIndexes1672531200000 implements MigrationInterface {
+F	backend/src/parse-providers/parse-providers.controller.ts	1.6
+S	c	1	13	ParseProvidersController	export class ParseProvidersController {
+F	backend/src/parse-providers/parse-providers.module.ts	1.6
+S	c	1	13	ParseProvidersModule	export class ParseProvidersModule {}
+F	backend/src/play-sources/play-source.module.ts	1.6
+S	c	1	22	PlaySourceModule	export class PlaySourceModule {}
+F	backend/src/recommendations/recommendation.controller.ts	1.6
+S	c	1	14	RecommendationController	export class RecommendationController {
+F	backend/src/recommendations/recommendation.module.ts	1.6
+S	c	1	21	RecommendationModule	export class RecommendationModule {}
+F	backend/src/scheduler/scheduler.controller.ts	1.6
+S	c	1	11	SchedulerController	export class SchedulerController {
+F	backend/src/scheduler/scheduler.module.ts	1.6
+S	c	1	28	SchedulerModule	export class SchedulerModule {}
+F	backend/src/source-script/source-script.module.ts	1.6
+S	c	1	13	SourceScriptModule	export class SourceScriptModule {}
+F	backend/src/storage/local-storage.adapter.ts	1.6
+S	c	1	7	LocalStorageAdapter	export class LocalStorageAdapter extends StorageAdapter {
+F	backend/src/storage/storage.module.ts	1.6
+S	c	1	10	StorageModule	export class StorageModule {}
+F	backend/src/torrent/torrent.controller.ts	1.6
+S	c	1	26	TorrentController	export class TorrentController {
+F	backend/src/torrent/torrent.module.ts	1.6
+S	c	1	15	TorrentModule	export class TorrentModule {}
+F	backend/src/users/user.module.ts	1.6
+S	c	1	44	UserModule	export class UserModule {}
+F	backend/src/users/user.service.ts	1.6
+S	c	1	26	UserService	export class UserService {
+F	backend/src/watch-history/watch-history.controller.ts	1.6
+S	c	1	29	WatchHistoryController	export class WatchHistoryController {
+F	backend/src/watch-history/watch-history.module.ts	1.6
+S	c	1	15	WatchHistoryModule	export class WatchHistoryModule {}
+F	backend/src/watch-history/watch-history.service.ts	1.6
+S	c	1	10	WatchHistoryService	export class WatchHistoryService {
+F	backend/src/watch-room/watch-room.controller.ts	1.6
+S	c	1	10	WatchRoomController	export class WatchRoomController {
+F	backend/src/watch-room/watch-room.module.ts	1.6
+S	c	1	25	WatchRoomModule	export class WatchRoomModule {}
+F	frontend/src/api/auth.ts	1.6
+S	k	1	4	authApi	export const authApi = {
+F	frontend/src/api/url.ts	1.6
+S	k	1	3	buildApiUrl	export const buildApiUrl = (path: string): string => {
+F	frontend/src/utils/clipboard.ts	1.6
+S	f	1	1	copyTextToClipboard	export const copyTextToClipboard = async (value: string) => {
+F	frontend/src/utils/storage.ts	1.6
+S	k	1	6	nextLocalStorage	export const nextLocalStorage = {
+F	backend/src/common/services/redis-health.service.ts	1.2
+S	i	1	5	RedisHealthResult	export interface RedisHealthResult {
+S	c	1	13	RedisHealthService	export class RedisHealthService {
+F	backend/src/common/utils/ip-checker.util.ts	1.2
+S	f	1	3	isPrivateIp	export function isPrivateIp(ip: string): boolean {
+S	f	1	19	isReservedIp	export function isReservedIp(ip: string): boolean {
+F	backend/src/danmaku/dtos/danmaku-suggestions-query.dto.ts	1.2
+S	e	1	5	DanmakuSuggestionType	export enum DanmakuSuggestionType {
+S	c	1	11	DanmakuSuggestionsQueryDto	export class DanmakuSuggestionsQueryDto {
+F	backend/src/danmaku/dtos/moderate-danmaku.dto.ts	1.2
+S	e	1	4	DanmakuModerationAction	export enum DanmakuModerationAction {
+S	c	1	9	ModerateDanmakuDto	export class ModerateDanmakuDto {
+F	backend/src/danmaku/dtos/update-danmaku-filter-rules.dto.ts	1.2
+S	e	1	5	DanmakuFilterRuleLevel	export enum DanmakuFilterRuleLevel {
+S	c	1	23	UpdateDanmakuFilterRulesDto	export class UpdateDanmakuFilterRulesDto {
+F	backend/src/danmaku/services/danmaku-filter-rules.service.ts	1.2
+S	i	1	3	DanmakuFilterRules	export interface DanmakuFilterRules {
+S	c	1	11	DanmakuFilterRulesService	export class DanmakuFilterRulesService {
+F	backend/src/users/dtos/update-user-profile.dto.ts	1.2
+S	c	1	16	UpdateUserProfileDto	export class UpdateUserProfileDto {
+S	c	1	39	UpdateRecommendationSettingsDto	export class UpdateRecommendationSettingsDto implements UserRecommendationSettings {
+F	frontend/src/types/vue.d.ts	1.2
+S	i	0	79	Window	declare interface Window {
+S	i	0	85	ProcessEnv	interface ProcessEnv {
+F	frontend/test/utils/clipboard.spec.ts	1.2
+S	f	0	8	restoreClipboard	const restoreClipboard = () => {
+S	f	0	17	restoreExecCommand	const restoreExecCommand = () => {
+F	frontend/test/utils/preload-service.spec.ts	1.2
+S	t	0	11	LazyComponent	type LazyComponent = () => Promise<unknown>;
+S	f	0	13	setIdleCallback	const setIdleCallback = () => {
+F	backend/src/admin/admin-role.guard.spec.ts	1.1
+S	f	0	7	createContext	const createContext = (role?: string) =>
+F	backend/src/download-tasks/download-tasks.service.spec.ts	1.1
+S	f	0	10	createMockQb	const createMockQb = () => ({
+F	backend/src/recommendations/recommendation.service.spec.ts	1.1
+S	f	0	35	createQueryBuilderChain	const createQueryBuilderChain = () => {
+F	frontend/src/types/router.d.ts	1.1
+S	i	0	60	RouteMeta	interface RouteMeta {
+F	frontend/test/views/HomeView.spec.ts	1.1
+S	f	0	143	mountView	const mountView = () =>
+F	backend/src/common/services/database-health.service.ts	0.9
+S	c	1	22	DatabaseHealthService	export class DatabaseHealthService implements OnModuleInit, OnModuleDestroy {
+S	i	0	6	HealthCheckRow	interface HealthCheckRow {
+S	i	0	10	DataSourceDriverWithPool	interface DataSourceDriverWithPool {
+S	i	0	16	HealthCheckOptions	interface HealthCheckOptions {
+F	backend/src/common/services/database-performance.service.ts	0.9
+S	c	1	31	DatabasePerformanceService	export class DatabasePerformanceService {
+S	i	0	5	MysqlPoolStats	interface MysqlPoolStats {
+S	i	0	11	MysqlMasterPoolDriver	interface MysqlMasterPoolDriver {
+S	t	0	19	ConnectionStats	type ConnectionStats = {
+F	backend/src/common/services/proxy-pool.service.ts	0.8
+S	c	1	32	ProxyPoolService	export class ProxyPoolService {
+S	i	0	15	AxiosProxyConfig	interface AxiosProxyConfig {
+S	i	0	25	ProviderCooldownState	interface ProviderCooldownState {
+F	backend/src/iptv/dto/iptv-channel-query.dto.ts	0.7
+S	c	1	24	IPTVChannelQueryDto	export class IPTVChannelQueryDto {
+S	f	0	5	toOptionalBoolean	function toOptionalBoolean(value: unknown): boolean | undefined {
+F	backend/src/auth/dto/refresh-token.dto.ts	0.6
+S	c	1	4	RefreshTokenDto	export class RefreshTokenDto {
+F	backend/src/auth/dtos/jwt-response.dto.ts	0.6
+S	c	1	7	JwtResponseDto	export class JwtResponseDto {
+F	backend/src/common/cache/cache.module.ts	0.6
+S	c	1	15	CacheModule	export class CacheModule {}
+F	backend/src/common/constants/redis.constants.ts	0.6
+S	k	1	1	REDIS_CLIENT	export const REDIS_CLIENT = 'REDIS_CLIENT';
+F	backend/src/common/constants/room-lifecycle.constants.ts	0.6
+S	k	1	1	ROOM_LIFECYCLE	export const ROOM_LIFECYCLE = {
+F	backend/src/common/controllers/health.controller.ts	0.6
+S	c	1	10	HealthController	export class HealthController {
+F	backend/src/common/decorators/skip-transform.decorator.ts	0.6
+S	f	1	4	SkipTransform	export const SkipTransform = () => SetMetadata(SKIP_TRANSFORM_KEY, true);
+F	backend/src/common/rate-limit/rate-limit.config.ts	0.6
+S	k	1	1	RATE_LIMIT_CONFIG	export const RATE_LIMIT_CONFIG = {
+F	backend/src/common/rate-limit/rate-limit.module.ts	0.6
+S	c	1	16	RateLimitModule	export class RateLimitModule {}
+F	backend/src/common/services/production-logger.service.ts	0.6
+S	c	1	11	ProductionLoggerService	export class ProductionLoggerService {
+F	backend/src/common/utils/ssrf-guard.util.ts	0.6
+S	f	1	11	validateProxyUrl	export function validateProxyUrl(
+F	backend/src/danmaku/dtos/report-danmaku.dto.ts	0.6
+S	c	1	5	ReportDanmakuDto	export class ReportDanmakuDto {
+F	backend/src/download-tasks/dtos/create-download-task.dto.ts	0.6
+S	c	1	19	CreateDownloadTaskDto	export class CreateDownloadTaskDto {
+F	backend/src/download-tasks/dtos/download-task-query.dto.ts	0.6
+S	c	1	6	DownloadTaskQueryDto	export class DownloadTaskQueryDto {
+F	backend/src/download-tasks/dtos/update-download-task.dto.ts	0.6
+S	c	1	4	UpdateDownloadTaskDto	export class UpdateDownloadTaskDto extends PartialType(CreateDownloadTaskDto) {}
+F	backend/src/iptv/dto/create-iptv-channel.dto.ts	0.6
+S	c	1	5	CreateIPTVChannelDto	export class CreateIPTVChannelDto {
+F	backend/src/iptv/dto/update-iptv-channel.dto.ts	0.6
+S	c	1	4	UpdateIPTVChannelDto	export class UpdateIPTVChannelDto extends PartialType(CreateIPTVChannelDto) {}
+F	backend/src/media/dto/advanced-search.dto.ts	0.6
+S	c	1	15	AdvancedSearchDto	export class AdvancedSearchDto {
+F	backend/src/media/dtos/create-media-resource.dto.ts	0.6
+S	c	1	15	CreateMediaResourceDto	export class CreateMediaResourceDto {
+F	backend/src/media/dtos/media-resource-query.dto.ts	0.6
+S	c	1	6	MediaResourceQueryDto	export class MediaResourceQueryDto extends PageDto {
+F	backend/src/media/dtos/update-media-resource.dto.ts	0.6
+S	c	1	4	UpdateMediaResourceDto	export class UpdateMediaResourceDto extends PartialType(CreateMediaResourceDto) {}
+F	backend/src/modules/proxy-pool/proxy-pool.module.ts	0.6
+S	c	1	34	ProxyPoolModule	export class ProxyPoolModule {}
+F	backend/src/parse-providers/dto/create-parse-provider.dto.ts	0.6
+S	c	1	5	CreateParseProviderDto	export class CreateParseProviderDto {
+F	backend/src/parse-providers/dto/parse-provider-query.dto.ts	0.6
+S	c	1	5	ParseProviderQueryDto	export class ParseProviderQueryDto {
+F	backend/src/parse-providers/dto/update-parse-provider.dto.ts	0.6
+S	c	1	4	UpdateParseProviderDto	export class UpdateParseProviderDto extends PartialType(CreateParseProviderDto) {}
+F	backend/src/play-sources/dto/resolve-cms.dto.ts	0.6
+S	c	1	5	ResolveCmsDto	export class ResolveCmsDto {
+F	backend/src/play-sources/dtos/play-source-query.dto.ts	0.6
+S	c	1	6	PlaySourceQueryDto	export class PlaySourceQueryDto {
+F	backend/src/torrent/dtos/torrent-rank-query.dto.ts	0.6
+S	c	1	5	TorrentRankQueryDto	export class TorrentRankQueryDto {
+F	backend/src/torrent/dtos/torrent-search-query.dto.ts	0.6
+S	c	1	5	TorrentSearchQueryDto	export class TorrentSearchQueryDto {
+F	backend/src/users/dtos/change-password.dto.ts	0.6
+S	c	1	4	ChangePasswordDto	export class ChangePasswordDto {
+F	backend/src/users/dtos/login-user.dto.ts	0.6
+S	c	1	9	LoginUserDto	export class LoginUserDto {
+F	backend/src/users/dtos/register-user.dto.ts	0.6
+S	c	1	25	RegisterUserDto	export class RegisterUserDto {
+F	backend/src/users/dtos/user-response.dto.ts	0.6
+S	c	1	8	UserResponseDto	export class UserResponseDto {
+F	backend/src/watch-history/dto/update-progress.dto.ts	0.6
+S	c	1	5	UpdateProgressDto	export class UpdateProgressDto {
+F	backend/src/watch-history/dtos/create-watch-history.dto.ts	0.6
+S	c	1	4	CreateWatchHistoryDto	export class CreateWatchHistoryDto {
+F	backend/src/watch-history/dtos/update-watch-history.dto.ts	0.6
+S	c	1	4	UpdateWatchHistoryDto	export class UpdateWatchHistoryDto extends PartialType(CreateWatchHistoryDto) {}
+F	backend/src/watch-history/dtos/watch-history-query.dto.ts	0.6
+S	c	1	5	WatchHistoryQueryDto	export class WatchHistoryQueryDto {
+F	frontend/src/i18n/locales/en.ts	0.6
+S	k	1	2	en	export const en = {
+F	frontend/src/i18n/locales/zh-CN.ts	0.6
+S	k	1	2	zhCN	export const zhCN = {

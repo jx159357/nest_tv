@@ -9,6 +9,7 @@ import {
 } from '@nestjs/swagger';
 import { DataCollectionService } from './data-collection.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AdminRoleGuard } from '../admin/admin-role.guard';
 
 @ApiTags('数据采集')
 @Controller('data-collection')
@@ -55,6 +56,7 @@ export class DataCollectionController {
   }
 
   @Patch('sources/:name/policy')
+  @UseGuards(AdminRoleGuard)
   @ApiOperation({ summary: '更新采集来源策略' })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiParam({ name: 'name', description: '爬虫源名称' })
@@ -79,6 +81,7 @@ export class DataCollectionController {
    * 爬取单个URL
    */
   @Post('crawl')
+  @UseGuards(AdminRoleGuard)
   @ApiOperation({ summary: '爬取单个URL' })
   @ApiResponse({ status: 200, description: '爬取成功' })
   @ApiResponse({ status: 400, description: '参数错误' })
@@ -104,6 +107,7 @@ export class DataCollectionController {
    * 批量爬取URL
    */
   @Post('batch-crawl')
+  @UseGuards(AdminRoleGuard)
   @ApiOperation({ summary: '批量爬取URL' })
   @ApiResponse({ status: 200, description: '批量爬取成功' })
   @ApiResponse({ status: 400, description: '参数错误' })
@@ -157,6 +161,7 @@ export class DataCollectionController {
    * 从指定来源批量采集热门资源并同步播放源
    */
   @Post('collect-popular/:sourceName')
+  @UseGuards(AdminRoleGuard)
   @ApiOperation({ summary: '按来源批量采集热门资源' })
   @ApiResponse({ status: 200, description: '采集成功' })
   @ApiResponse({ status: 404, description: '爬虫源不存在' })

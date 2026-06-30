@@ -296,7 +296,7 @@
 
   .btn-primary {
     background-color: var(--color-brand-primary);
-    color: #fff;
+    color: var(--text-inverse);
     transition: background-color 0.2s;
   }
 

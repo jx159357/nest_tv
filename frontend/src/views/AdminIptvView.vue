@@ -98,93 +98,98 @@
         </select>
       </div>
 
-      <div class="table-container">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>频道名称</th>
-              <th>分组</th>
-              <th>质量评分</th>
-              <th>响应时间</th>
-              <th>状态</th>
-              <th>来源</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="channels.length === 0">
-              <td colspan="7" class="empty-cell">暂无频道数据</td>
-            </tr>
-            <tr v-for="channel in channels" :key="channel.id">
-              <td>
-                <div class="channel-name">
-                  <img
-                    v-if="channel.logo"
-                    :src="getLogoUrl(channel.logo)"
-                    class="channel-logo"
-                    loading="lazy"
-                    @error="hideOnError"
-                  />
-                  <span>{{ channel.name }}</span>
-                </div>
-              </td>
-              <td>{{ channel.group }}</td>
-              <td>
-                <span :class="['quality-badge', getQualityClass(channel.qualityScore)]">
-                  {{ channel.qualityScore || 0 }}
-                </span>
-              </td>
-              <td>{{ channel.responseTime ? `${channel.responseTime}ms` : '-' }}</td>
-              <td>
-                <span :class="['status-badge', channel.isActive ? 'active' : 'inactive']">
-                  {{ channel.isActive ? '可用' : '不可用' }}
-                </span>
-              </td>
-              <td>{{ channel.sourceName || '-' }}</td>
-              <td>
-                <div class="action-btns">
-                  <button class="table-action" title="测试" @click="testChannel(channel.id)">
-                    测试
-                  </button>
-                  <button class="table-action" title="编辑" @click="editChannel(channel)">
-                    编辑
-                  </button>
-                  <button
-                    class="table-action table-action--danger"
-                    title="删除"
-                    @click="deleteChannel(channel.id)"
-                  >
-                    删除
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <EmptyState
+        v-if="channels.length === 0"
+        title="暂无频道数据"
+        description="点击上方按钮采集或导入频道"
+        icon="film"
+      />
+      <template v-else>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>频道名称</th>
+                <th>分组</th>
+                <th>质量评分</th>
+                <th>响应时间</th>
+                <th>状态</th>
+                <th>来源</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="channel in channels" :key="channel.id">
+                <td>
+                  <div class="channel-name">
+                    <img
+                      v-if="channel.logo"
+                      :src="getLogoUrl(channel.logo)"
+                      class="channel-logo"
+                      loading="lazy"
+                      @error="hideOnError"
+                    />
+                    <span>{{ channel.name }}</span>
+                  </div>
+                </td>
+                <td>{{ channel.group }}</td>
+                <td>
+                  <span :class="['quality-badge', getQualityClass(channel.qualityScore)]">
+                    {{ channel.qualityScore || 0 }}
+                  </span>
+                </td>
+                <td>{{ channel.responseTime ? `${channel.responseTime}ms` : '-' }}</td>
+                <td>
+                  <span :class="['status-badge', channel.isActive ? 'active' : 'inactive']">
+                    {{ channel.isActive ? '可用' : '不可用' }}
+                  </span>
+                </td>
+                <td>{{ channel.sourceName || '-' }}</td>
+                <td>
+                  <div class="action-btns">
+                    <button class="table-action" title="测试" @click="testChannel(channel.id)">
+                      测试
+                    </button>
+                    <button class="table-action" title="编辑" @click="editChannel(channel)">
+                      编辑
+                    </button>
+                    <button
+                      class="table-action table-action--danger"
+                      title="删除"
+                      @click="deleteChannel(channel.id)"
+                    >
+                      删除
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-      <!-- 分页 -->
-      <div class="pagination">
-        <button
-          :disabled="currentPage <= 1"
-          @click="
-            currentPage--;
-            loadChannels();
-          "
-        >
-          上一页
-        </button>
-        <span>第 {{ currentPage }} / {{ totalPages }} 页</span>
-        <button
-          :disabled="currentPage >= totalPages"
-          @click="
-            currentPage++;
-            loadChannels();
-          "
-        >
-          下一页
-        </button>
-      </div>
+        <!-- 分页 -->
+        <div class="pagination">
+          <button
+            :disabled="currentPage <= 1"
+            @click="
+              currentPage--;
+              loadChannels();
+            "
+          >
+            上一页
+          </button>
+          <span>第 {{ currentPage }} / {{ totalPages }} 页</span>
+          <button
+            :disabled="currentPage >= totalPages"
+            @click="
+              currentPage++;
+              loadChannels();
+            "
+          >
+            下一页
+          </button>
+        </div>
+      </template>
     </div>
 
     <!-- 直播源管理 -->
@@ -322,6 +327,8 @@
 <script setup lang="ts">
   import { ref, onMounted } from 'vue';
   import { iptvApi } from '@/api/iptv';
+  import { showConfirm, notifySuccess, notifyError } from '@/composables/useModal';
+  import { log } from '@/utils/logger';
   import type {
     IPTVChannel,
     IPTVStats,
@@ -329,6 +336,7 @@
     IptvSourceConfig,
     ChannelLogo,
   } from '@/api/iptv';
+  import EmptyState from '@/components/EmptyState.vue';
 
   const activeTab = ref('channels');
   const stats = ref<IPTVStats>({
@@ -435,7 +443,7 @@
       const res = await iptvApi.getStats();
       if (res) stats.value = res;
     } catch (error) {
-      console.error('加载统计失败:', error);
+      log.error('AdminIptv', '加载统计失败:', error);
       pageError.value = getErrorMessage(error, '加载统计失败');
     }
   };
@@ -446,7 +454,7 @@
       const res = await iptvApi.getQualityStats();
       if (res) qualityStats.value = res;
     } catch (error) {
-      console.error('加载质量统计失败:', error);
+      log.error('AdminIptv', '加载质量统计失败:', error);
       pageError.value = getErrorMessage(error, '加载质量统计失败');
     }
   };
@@ -470,7 +478,7 @@
         totalPages.value = Math.max(res.totalPages, 1);
       }
     } catch (error) {
-      console.error('加载频道失败:', error);
+      log.error('AdminIptv', '加载频道失败:', error);
       pageError.value = getErrorMessage(error, '加载频道失败');
       channels.value = [];
     }
@@ -482,7 +490,7 @@
       const res = await iptvApi.getGroups();
       if (res) groups.value = res;
     } catch (error) {
-      console.error('加载分组失败:', error);
+      log.error('AdminIptv', '加载分组失败:', error);
       pageError.value = getErrorMessage(error, '加载分组失败');
     }
   };
@@ -493,7 +501,7 @@
       const res = await iptvApi.getSources();
       if (res) sources.value = res;
     } catch (error) {
-      console.error('加载源失败:', error);
+      log.error('AdminIptv', '加载源失败:', error);
       pageError.value = getErrorMessage(error, '加载源失败');
     }
   };
@@ -504,7 +512,7 @@
       const res = await iptvApi.getLogos();
       if (res) logos.value = res;
     } catch (error) {
-      console.error('加载台标失败:', error);
+      log.error('AdminIptv', '加载台标失败:', error);
       pageError.value = getErrorMessage(error, '加载台标失败');
     }
   };
@@ -513,13 +521,13 @@
     collecting.value = true;
     try {
       const res = await iptvApi.collectFromAllSources();
-      alert(`收集完成: ${res?.newChannels || 0} 个新频道`);
+      notifySuccess('成功', `收集完成: ${res?.newChannels || 0} 个新频道`);
       await loadStats();
       await loadChannels();
     } catch (error) {
-      console.error('收集失败:', error);
+      log.error('AdminIptv', '收集失败:', error);
       pageError.value = getErrorMessage(error, '收集失败');
-      alert('收集失败');
+      notifyError('错误', '收集失败');
     } finally {
       collecting.value = false;
     }
@@ -528,10 +536,10 @@
   const collectFromSource = async (name: string) => {
     try {
       const res = await iptvApi.collectFromSource(name);
-      alert(`收集完成: ${res?.newChannels || 0} 个新频道`);
+      notifySuccess('成功', `收集完成: ${res?.newChannels || 0} 个新频道`);
       await loadStats();
     } catch (error) {
-      console.error('收集失败:', error);
+      log.error('AdminIptv', '收集失败:', error);
       pageError.value = getErrorMessage(error, '收集失败');
     }
   };
@@ -540,13 +548,16 @@
     testing.value = true;
     try {
       const res = await iptvApi.testAllChannelsQuality();
-      alert(`测试完成: ${res?.available || 0} 可用, ${res?.unavailable || 0} 不可用`);
+      notifySuccess(
+        '成功',
+        `测试完成: ${res?.available || 0} 可用, ${res?.unavailable || 0} 不可用`,
+      );
       await loadQualityStats();
       await loadChannels();
     } catch (error) {
-      console.error('测试失败:', error);
+      log.error('AdminIptv', '测试失败:', error);
       pageError.value = getErrorMessage(error, '测试失败');
-      alert('测试失败');
+      notifyError('错误', '测试失败');
     } finally {
       testing.value = false;
     }
@@ -555,10 +566,14 @@
   const testChannel = async (id: number) => {
     try {
       const res = await iptvApi.testChannelQuality(id);
-      alert(res?.isAvailable ? '频道可用' : '频道不可用');
+      if (res?.isAvailable) {
+        notifySuccess('测试结果', '频道可用');
+      } else {
+        notifyError('测试结果', '频道不可用');
+      }
       await loadChannels();
     } catch (error) {
-      console.error('测试失败:', error);
+      log.error('AdminIptv', '测试失败:', error);
       pageError.value = getErrorMessage(error, '测试失败');
     }
   };
@@ -567,10 +582,10 @@
     try {
       const res = await iptvApi.matchLogos();
       const matched = res?.filter(r => r.matched).length || 0;
-      alert(`匹配完成: ${matched} 个频道匹配成功`);
+      notifySuccess('成功', `匹配完成: ${matched} 个频道匹配成功`);
       await loadChannels();
     } catch (error) {
-      console.error('匹配失败:', error);
+      log.error('AdminIptv', '匹配失败:', error);
       pageError.value = getErrorMessage(error, '匹配失败');
     }
   };
@@ -578,10 +593,10 @@
   const initLogos = async () => {
     try {
       const res = await iptvApi.initLogos();
-      alert(`初始化完成: ${res?.initializedCount || 0} 个台标`);
+      notifySuccess('成功', `初始化完成: ${res?.initializedCount || 0} 个台标`);
       await loadLogos();
     } catch (error) {
-      console.error('初始化失败:', error);
+      log.error('AdminIptv', '初始化失败:', error);
       pageError.value = getErrorMessage(error, '初始化失败');
     }
   };
@@ -593,25 +608,25 @@
       } else {
         await iptvApi.importFromTxt(importContent.value, importGroup.value || undefined);
       }
-      alert('导入成功');
+      notifySuccess('成功', '导入成功');
       showImportDialog.value = false;
       await loadStats();
       await loadChannels();
     } catch (error) {
-      console.error('导入失败:', error);
+      log.error('AdminIptv', '导入失败:', error);
       pageError.value = getErrorMessage(error, '导入失败');
-      alert('导入失败');
+      notifyError('错误', '导入失败');
     }
   };
 
   const addSource = async () => {
     try {
       await iptvApi.addSource(newSource.value);
-      alert('添加成功');
+      notifySuccess('成功', '添加成功');
       showAddSourceDialog.value = false;
       await loadSources();
     } catch (error) {
-      console.error('添加失败:', error);
+      log.error('AdminIptv', '添加失败:', error);
       pageError.value = getErrorMessage(error, '添加失败');
     }
   };
@@ -621,50 +636,53 @@
       await iptvApi.toggleSource(name, enabled);
       await loadSources();
     } catch (error) {
-      console.error('操作失败:', error);
+      log.error('AdminIptv', '操作失败:', error);
       pageError.value = getErrorMessage(error, '操作失败');
     }
   };
 
   const removeSource = async (name: string) => {
-    if (!confirm(`确定删除源 ${name}？`)) return;
-    try {
-      await iptvApi.removeSource(name);
-      await loadSources();
-    } catch (error) {
-      console.error('删除失败:', error);
-      pageError.value = getErrorMessage(error, '删除失败');
-    }
+    showConfirm(`确定删除源 ${name}？`, async () => {
+      try {
+        await iptvApi.removeSource(name);
+        await loadSources();
+      } catch (error) {
+        log.error('AdminIptv', '删除失败:', error);
+        pageError.value = getErrorMessage(error, '删除失败');
+      }
+    });
   };
 
   const editChannel = (channel: IPTVChannel) => {
     // TODO: 实现编辑功能
-    console.log('编辑频道:', channel);
+    log.debug('AdminIptv', '编辑频道:', channel);
   };
 
   const deleteChannel = async (id: number) => {
-    if (!confirm('确定删除该频道？')) return;
-    try {
-      await iptvApi.deleteChannel(id);
-      await loadStats();
-      await loadChannels();
-    } catch (error) {
-      console.error('删除失败:', error);
-      pageError.value = getErrorMessage(error, '删除失败');
-    }
+    showConfirm('确定删除该频道？', async () => {
+      try {
+        await iptvApi.deleteChannel(id);
+        await loadStats();
+        await loadChannels();
+      } catch (error) {
+        log.error('AdminIptv', '删除失败:', error);
+        pageError.value = getErrorMessage(error, '删除失败');
+      }
+    });
   };
 
   const disableLowQuality = async () => {
-    if (!confirm('确定禁用所有低质量频道？')) return;
-    try {
-      const res = await iptvApi.disableLowQualityChannels(30);
-      alert(`已禁用 ${res?.disabledCount || 0} 个频道`);
-      await loadQualityStats();
-      await loadChannels();
-    } catch (error) {
-      console.error('操作失败:', error);
-      pageError.value = getErrorMessage(error, '操作失败');
-    }
+    showConfirm('确定禁用所有低质量频道？', async () => {
+      try {
+        const res = await iptvApi.disableLowQualityChannels(30);
+        notifySuccess('成功', `已禁用 ${res?.disabledCount || 0} 个频道`);
+        await loadQualityStats();
+        await loadChannels();
+      } catch (error) {
+        log.error('AdminIptv', '操作失败:', error);
+        pageError.value = getErrorMessage(error, '操作失败');
+      }
+    });
   };
 
   const getErrorMessage = (error: unknown, fallback: string) => {
@@ -753,7 +771,7 @@
     align-items: center;
     justify-content: center;
     border-radius: 8px;
-    background: rgba(229, 9, 20, 0.1);
+    background: var(--color-brand-overlay);
     color: var(--color-brand-primary);
     font-size: 12px;
     font-weight: 800;
@@ -828,7 +846,7 @@
 
   .btn-primary {
     background: var(--color-brand-primary);
-    color: white;
+    color: var(--text-inverse);
   }
 
   .btn-secondary {
@@ -839,22 +857,22 @@
 
   .btn-success {
     background: var(--color-success);
-    color: white;
+    color: var(--text-inverse);
   }
 
   .btn-warning {
     background: var(--color-warning);
-    color: #111827;
+    color: var(--text-inverse);
   }
 
   .btn-info {
     background: var(--color-info);
-    color: white;
+    color: var(--text-inverse);
   }
 
   .btn-danger {
     background: var(--color-danger);
-    color: white;
+    color: var(--text-inverse);
   }
 
   .btn-sm {
@@ -864,7 +882,7 @@
   }
 
   .btn:hover:not(:disabled) {
-    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
+    box-shadow: var(--shadow-lg);
   }
 
   .tabs,
@@ -893,9 +911,9 @@
   }
 
   .tab-btn.active {
-    background: rgba(229, 9, 20, 0.11);
+    background: var(--color-brand-overlay);
     color: var(--color-brand-primary);
-    box-shadow: inset 0 0 0 1px rgba(229, 9, 20, 0.18);
+    box-shadow: inset 0 0 0 1px var(--color-brand-border);
   }
 
   .tab-content {
@@ -972,14 +990,14 @@
   }
 
   .data-table th {
-    background: rgba(127, 135, 148, 0.08);
+    background: var(--surface-muted);
     color: var(--admin-text-muted);
     font-size: 12px;
     font-weight: 700;
   }
 
   .data-table tbody tr:hover {
-    background: rgba(127, 135, 148, 0.06);
+    background: var(--surface-hover);
   }
 
   .channel-name {
@@ -994,7 +1012,7 @@
     height: 28px;
     border: 1px solid var(--admin-border);
     border-radius: 6px;
-    background: white;
+    background: var(--bg-card);
     object-fit: contain;
   }
 
@@ -1048,7 +1066,7 @@
 
   .table-action:hover {
     color: var(--color-brand-primary);
-    border-color: rgba(229, 9, 20, 0.26);
+    border-color: var(--color-brand-border);
   }
 
   .table-action--danger:hover {
@@ -1196,7 +1214,7 @@
     align-items: center;
     justify-content: center;
     padding: 20px;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--overlay-medium);
   }
 
   .modal {

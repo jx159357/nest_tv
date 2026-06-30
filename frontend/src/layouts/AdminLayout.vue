@@ -274,7 +274,7 @@
     align-items: center;
     gap: 10px;
     text-decoration: none;
-    color: white;
+    color: var(--text-inverse);
   }
 
   .admin-layout__sidebar-brand-icon {
@@ -285,7 +285,7 @@
     justify-content: center;
     border-radius: 7px;
     background: var(--color-brand-primary);
-    color: white;
+    color: var(--text-inverse);
     font-size: 0.9rem;
     font-weight: 800;
   }

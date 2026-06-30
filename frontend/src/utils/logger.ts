@@ -100,61 +100,6 @@ class Logger {
   }
 
   /**
-   * 条件日志 - 仅在条件为真时输出
-   */
-  assert(condition: boolean, module: string, message: string, ...args: any[]): void {
-    if (condition && this.shouldLog('debug')) {
-      console.debug(this.formatMessage('debug', module, message), ...args);
-    }
-  }
-
-  /**
-   * 分组日志开始
-   */
-  group(module: string, label: string): void {
-    if (this.shouldLog('debug')) {
-      console.group(this.formatMessage('debug', module, label));
-    }
-  }
-
-  /**
-   * 分组日志结束
-   */
-  groupEnd(): void {
-    if (this.shouldLog('debug')) {
-      console.groupEnd();
-    }
-  }
-
-  /**
-   * 表格日志 - 仅开发环境
-   */
-  table(module: string, data: any, columns?: string[]): void {
-    if (this.shouldLog('debug')) {
-      console.debug(this.formatMessage('debug', module, 'Table data:'));
-      console.table(data, columns);
-    }
-  }
-
-  /**
-   * 计时器开始
-   */
-  time(module: string, label: string): void {
-    if (this.shouldLog('debug')) {
-      console.time(this.formatMessage('debug', module, label));
-    }
-  }
-
-  /**
-   * 计时器结束
-   */
-  timeEnd(module: string, label: string): void {
-    if (this.shouldLog('debug')) {
-      console.timeEnd(this.formatMessage('debug', module, label));
-    }
-  }
-
-  /**
    * 配置日志系统
    */
   configure(config: Partial<LoggerConfig>): void {
@@ -186,19 +131,6 @@ export const log = {
 
   performance: (module: string, message: string, duration: number) =>
     logger.performance(module, message, duration),
-
-  assert: (condition: boolean, module: string, message: string, ...args: any[]) =>
-    logger.assert(condition, module, message, ...args),
-
-  group: (module: string, label: string) => logger.group(module, label),
-
-  groupEnd: () => logger.groupEnd(),
-
-  table: (module: string, data: any, columns?: string[]) => logger.table(module, data, columns),
-
-  time: (module: string, label: string) => logger.time(module, label),
-
-  timeEnd: (module: string, label: string) => logger.timeEnd(module, label),
 
   configure: (config: Partial<LoggerConfig>) => logger.configure(config),
 

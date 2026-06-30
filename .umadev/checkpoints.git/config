@@ -1,0 +1,8 @@
+[core]
+	repositoryformatversion = 0
+	filemode = false
+	bare = false
+	logallrefupdates = true
+	worktree = D:/demo_jx/cursor_pro/nest_tv
+	symlinks = false
+	ignorecase = true
